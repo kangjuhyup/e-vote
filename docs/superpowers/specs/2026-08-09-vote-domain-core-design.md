@@ -17,17 +17,29 @@ server/src/domain/
     domain-event.ts
     id.ts
   vote/
+    vo/
+      vote-policy.vo.ts
+      identity-verification-policy.vo.ts
+    type/
+      vote-policy.type.ts
+      vote-status.type.ts
+      vote-detail.type.ts
     vote.aggregate.ts
     vote-detail.aggregate.ts
-    vote-policy.ts
     vote.events.ts
   elector/
+    type/
+      elector-status.type.ts
     elector.aggregate.ts
   candidate/
+    type/
+      candidate-status.type.ts
     candidate.aggregate.ts
   participation/
+    type/
+      participation-status.type.ts
     participation.aggregate.ts
-    participation-policy.service.ts
+    participation-eligibility.policy.ts
 ```
 
 ## Domain Concepts
@@ -42,11 +54,11 @@ server/src/domain/
 
 `ParticipationAggregate` represents one cast or canceled participation record. It stores cast-time snapshots for `groupKey` and `voteWeight`. In secret votes, it must not store a selected candidate id. In public votes, it must store the selected candidate id.
 
-`ParticipationPolicyService` evaluates rules that combine multiple domain objects, including duplicate participation, group voting, effective vote weight, and candidate selection rules.
+`ParticipationEligibilityPolicy` evaluates pure eligibility rules from supplied domain objects and snapshots. It does not load aggregates, open transactions, save data, or calculate applied vote weight.
 
 ## Policies
 
-Policy fields follow the ERD:
+`VotePolicy` is a value object. Policy fields follow the ERD:
 
 - `privacyMode`: `SECRET | PUBLIC`
 - `participationUnit`: `INDIVIDUAL | GROUP`
@@ -85,7 +97,7 @@ Status transitions are explicit. Draft votes can open, open votes can close or c
 
 ## Domain Events
 
-Emit plain domain events for meaningful state changes:
+Emit class-based domain events for meaningful state changes:
 
 - `VoteOpened`
 - `VoteClosed`
@@ -95,11 +107,11 @@ Emit plain domain events for meaningful state changes:
 - `ParticipationCast`
 - `ParticipationCanceled`
 
-Events are in-memory objects on aggregates for now. Persistence or dispatch is outside this phase.
+Events are in-memory class instances created through `static of()` factories on aggregates for now. Persistence or dispatch is outside this phase.
 
 ## Testing Strategy
 
-Use TDD for domain behavior. Tests live next to the domain files or under `server/src/domain/**/*.spec.ts` so the existing Jest `rootDir: "src"` config picks them up.
+Use TDD for domain behavior. Tests live under `server/test/domain`, mirroring the `server/src/domain` path.
 
 First tests:
 

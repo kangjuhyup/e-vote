@@ -77,7 +77,13 @@ Expected: PASS.
 ### Task 2: Vote, Vote Detail, Elector, and Candidate Aggregates
 
 **Files:**
-- Create: `server/src/domain/vote/vote-policy.ts`
+- Create: `server/src/domain/vote/vo/vote-policy.vo.ts`
+- Create: `server/src/domain/vote/vo/identity-verification-policy.vo.ts`
+- Create: `server/src/domain/vote/type/vote-policy.type.ts`
+- Create: `server/src/domain/vote/type/vote-status.type.ts`
+- Create: `server/src/domain/vote/type/vote-detail.type.ts`
+- Create: `server/src/domain/elector/type/elector-status.type.ts`
+- Create: `server/src/domain/candidate/type/candidate-status.type.ts`
 - Create: `server/src/domain/vote/vote.events.ts`
 - Create: `server/src/domain/vote/vote.aggregate.ts`
 - Create: `server/src/domain/vote/vote-detail.aggregate.ts`
@@ -87,8 +93,8 @@ Expected: PASS.
 
 **Interfaces:**
 - Consumes: `DomainError`, `DomainEvent`, `createId`, `assertPositiveNumber`
-- Produces: policy enums `PrivacyMode`, `ParticipationUnit`, `ResultStorageMode`, `VoteWeightMode`
-- Produces: status enums `VoteStatus`, `VoteDetailStatus`, `ElectorStatus`, `CandidateStatus`
+- Produces: policy const objects and union types `PrivacyMode`, `ParticipationUnit`, `ResultStorageMode`, `VoteWeightMode`
+- Produces: status const objects and union types `VoteStatus`, `VoteDetailStatus`, `ElectorStatus`, `CandidateStatus`
 - Produces: `VoteAggregate.create(params)`, `open(openedAt)`, `close(closedAt)`, `cancel(canceledAt)`, `pullEvents()`
 - Produces: `VoteDetailAggregate.create(params)`, `getEffectivePolicy(parentPolicy)`
 - Produces: `ElectorAggregate.create(params)`, `markIdentityVerified()`, `isIdentityVerified()`
@@ -103,28 +109,30 @@ import { CandidateAggregate } from '../candidate/candidate.aggregate';
 import { VoteAggregate } from './vote.aggregate';
 import { VoteDetailAggregate } from './vote-detail.aggregate';
 import {
-  CandidateStatus,
-  ElectorStatus,
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
+} from './type/vote-policy.type';
+import {
   VoteDetailStatus,
   VoteStatus,
   VoteWeightMode,
-} from './vote-policy';
+} from './type/vote-status.type';
+import { ElectorStatus } from '../elector/type/elector-status.type';
+import { CandidateStatus } from '../candidate/type/candidate-status.type';
 
 describe('vote domain aggregates', () => {
   it('calculates effective vote detail policy from parent defaults and overrides', () => {
     const vote = VoteAggregate.create({
       id: 'vote-1',
       title: 'Board election',
-      defaultPolicy: {
+      defaultPolicy: VotePolicy.of({
         privacyMode: PrivacyMode.Secret,
         participationUnit: ParticipationUnit.Individual,
         resultStorageMode: ResultStorageMode.Database,
         voteWeightMode: VoteWeightMode.Equal,
-      },
-      identityVerificationPolicy: { required: false },
+      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of({ required: false }),
       status: VoteStatus.Draft,
     });
     const detail = VoteDetailAggregate.create({
@@ -218,7 +226,7 @@ Expected: FAIL because aggregate and policy modules do not exist.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Implement policy enums, aggregate factories, validation, lifecycle transitions, and event buffering.
+Implement policy constants, aggregate factories, validation, lifecycle transitions, and event buffering.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -228,20 +236,20 @@ Expected: PASS.
 
 ---
 
-### Task 3: Participation Aggregate and Policy Service
+### Task 3: Participation Aggregate and Eligibility Policy
 
 **Files:**
 - Create: `server/src/domain/participation/participation.aggregate.ts`
-- Create: `server/src/domain/participation/participation-policy.service.ts`
+- Create: `server/src/domain/participation/participation-eligibility.policy.ts`
+- Create: `server/src/domain/participation/type/participation-status.type.ts`
 - Test: `server/src/domain/participation/participation-domain.spec.ts`
 
 **Interfaces:**
-- Consumes: policy enums and aggregates from Task 2
-- Produces: `ParticipationStatus`
+- Consumes: policy constants and aggregates from Task 2
+- Produces: const object and union type `ParticipationStatus`
 - Produces: `ParticipationAggregate.cast(params)`
 - Produces: `ParticipationAggregate.cancel(canceledAt)`
-- Produces: `ParticipationPolicyService.assertCanParticipate(params)`
-- Produces: `ParticipationPolicyService.calculateAppliedVoteWeight(effectivePolicy, elector)`
+- Produces: `ParticipationEligibilityPolicy.assertCanParticipate(params)`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -256,17 +264,18 @@ import {
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../vote/vote-policy';
+} from '../vote/vo/vote-policy.vo';
+import { ParticipationStatus } from './type/participation-status.type';
 import { ParticipationAggregate } from './participation.aggregate';
-import { ParticipationPolicyService } from './participation-policy.service';
+import { ParticipationEligibilityPolicy } from './participation-eligibility.policy';
 
 describe('participation domain', () => {
-  const publicShareGroupPolicy = {
+  const publicShareGroupPolicy = VotePolicy.of({
     privacyMode: PrivacyMode.Public,
     participationUnit: ParticipationUnit.Group,
     resultStorageMode: ResultStorageMode.Database,
     voteWeightMode: VoteWeightMode.Share,
-  };
+  });
   const secretEqualIndividualPolicy = {
     privacyMode: PrivacyMode.Secret,
     participationUnit: ParticipationUnit.Individual,
@@ -332,7 +341,7 @@ describe('participation domain', () => {
   });
 
   it('detects duplicate individual and group participation', () => {
-    const service = new ParticipationPolicyService();
+    const policy = new ParticipationEligibilityPolicy();
     const existing = [
       ParticipationAggregate.cast({
         id: 'participation-4',
@@ -345,7 +354,7 @@ describe('participation domain', () => {
     ];
 
     expect(() =>
-      service.assertCanParticipate({
+      policy.assertCanParticipate({
         voteDetailId: 'detail-1',
         elector,
         effectivePolicy: secretEqualIndividualPolicy,
@@ -354,7 +363,7 @@ describe('participation domain', () => {
     ).toThrow(DomainError);
 
     expect(() =>
-      service.assertCanParticipate({
+      policy.assertCanParticipate({
         voteDetailId: 'detail-1',
         elector,
         effectivePolicy: publicShareGroupPolicy,
@@ -408,14 +417,21 @@ Expected: PASS.
 export * from './shared/domain-error';
 export * from './shared/domain-event';
 export * from './shared/id';
-export * from './vote/vote-policy';
+export * from './vote/vo/vote-policy.vo';
+export * from './vote/vo/identity-verification-policy.vo';
+export * from './vote/type/vote-policy.type';
+export * from './vote/type/vote-status.type';
+export * from './vote/type/vote-detail.type';
 export * from './vote/vote.events';
 export * from './vote/vote.aggregate';
 export * from './vote/vote-detail.aggregate';
 export * from './elector/elector.aggregate';
+export * from './elector/type/elector-status.type';
 export * from './candidate/candidate.aggregate';
+export * from './candidate/type/candidate-status.type';
 export * from './participation/participation.aggregate';
-export * from './participation/participation-policy.service';
+export * from './participation/participation-eligibility.policy';
+export * from './participation/type/participation-status.type';
 ```
 
 - [ ] **Step 2: Run full server domain tests**

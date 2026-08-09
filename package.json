@@ -1,0 +1,20 @@
+{
+  "name": "vote",
+  "version": "0.0.1",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "build": "pnpm --filter @vote/server build",
+    "start": "pnpm --filter @vote/server start",
+    "start:dev": "pnpm --filter @vote/server start:dev",
+    "start:debug": "pnpm --filter @vote/server start:debug",
+    "start:prod": "pnpm --filter @vote/server start:prod",
+    "lint": "pnpm --filter @vote/server lint",
+    "format": "pnpm --filter @vote/server format",
+    "test": "pnpm --filter @vote/server test",
+    "test:watch": "pnpm --filter @vote/server test:watch",
+    "test:cov": "pnpm --filter @vote/server test:cov",
+    "test:debug": "pnpm --filter @vote/server test:debug",
+    "test:e2e": "pnpm --filter @vote/server test:e2e"
+  }
+}
