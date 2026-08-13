@@ -16,6 +16,9 @@ export * from './election-commission/type/election-commission-member-status.type
 export * from './election-commission/election-commission.events';
 export * from './election-commission/election-commission.aggregate';
 export * from './election-commission/election-commission-member.aggregate';
+export * from './field-voting/type/field-voting-session-status.type';
+export * from './field-voting/field-voting.events';
+export * from './field-voting/field-voting-session.aggregate';
 export * from './elector/elector.aggregate';
 export * from './elector/type/elector-status.type';
 export * from './candidate/candidate.aggregate';

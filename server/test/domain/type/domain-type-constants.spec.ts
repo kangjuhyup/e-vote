@@ -3,6 +3,7 @@ import { ElectionCommissionMemberRole } from '../../../src/domain/election-commi
 import { ElectionCommissionMemberStatus } from '../../../src/domain/election-commission/type/election-commission-member-status.type';
 import { ElectionCommissionStatus } from '../../../src/domain/election-commission/type/election-commission-status.type';
 import { ElectorStatus } from '../../../src/domain/elector/type/elector-status.type';
+import { FieldVotingSessionStatus } from '../../../src/domain/field-voting/type/field-voting-session-status.type';
 import { ParticipationStatus } from '../../../src/domain/participation/type/participation-status.type';
 import {
   ParticipationUnit,
@@ -56,6 +57,12 @@ describe('domain type constants', () => {
       'ONLINE',
       'ONSITE',
       'VISIT',
+    ]);
+    expect(Object.values(FieldVotingSessionStatus)).toEqual([
+      'SCHEDULED',
+      'OPEN',
+      'CLOSED',
+      'CANCELED',
     ]);
   });
 });
