@@ -6,7 +6,7 @@
 
 **Architecture:** The app uses Next.js App Router under `ui/src/app`, feature-owned logic under `ui/src/features/<feature>`, all React component declarations under `ui/src/components`, and cross-feature infrastructure under `ui/src/shared`. App-wide providers are composed once in `ui/src/app/providers.tsx`.
 
-**Tech Stack:** Node 24, pnpm workspace, Next.js `16.3.0`, React `19.2.8`, TypeScript, Tailwind CSS `4.3.3`, shadcn/ui-style primitives, Zustand `5.0.15`, TanStack React Query `5.101.4`.
+**Tech Stack:** Node 24, pnpm workspace, Next.js `16.3.0`, React `19.2.8`, TypeScript `5.9.3`, ESLint `9.39.5`, Tailwind CSS `4.3.3`, shadcn/ui-style primitives, Zustand `5.0.15`, TanStack React Query `5.101.4`.
 
 ## Global Constraints
 
@@ -131,16 +131,15 @@ Replace `ui/package.json` with:
     "zustand": "5.0.15"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "latest",
     "@tailwindcss/postcss": "latest",
-    "@types/node": "latest",
+    "@types/node": "24.13.3",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "eslint": "10.8.1",
+    "eslint": "9.39.5",
     "eslint-config-next": "latest",
     "tailwindcss": "4.3.3",
     "tw-animate-css": "latest",
-    "typescript": "7.0.2"
+    "typescript": "5.9.3"
   }
 }
 ```
@@ -175,7 +174,7 @@ Create `ui/tsconfig.json`:
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -210,19 +209,12 @@ export default config;
 Create `ui/eslint.config.mjs`:
 
 ```js
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextCoreWebVitals,
+  ...nextTypescript,
   {
     ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"],
   },
