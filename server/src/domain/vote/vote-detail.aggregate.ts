@@ -5,10 +5,7 @@ import {
   VoteDetailOpened,
   VoteDomainEvent,
 } from './vote.events';
-import {
-  VotePolicy,
-  VotePolicyOverrides,
-} from './vo/vote-policy.vo';
+import { VotePolicy, VotePolicyOverrides } from './vo/vote-policy.vo';
 import { VoteDetailType } from './type/vote-detail.type';
 import { VoteDetailStatus } from './type/vote-status.type';
 

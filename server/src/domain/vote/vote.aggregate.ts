@@ -6,9 +6,7 @@ import {
   VoteDomainEvent,
   VoteOpened,
 } from './vote.events';
-import {
-  IdentityVerificationPolicy,
-} from './vo/identity-verification-policy.vo';
+import { IdentityVerificationPolicy } from './vo/identity-verification-policy.vo';
 import { VotePolicy } from './vo/vote-policy.vo';
 import { VoteStatus } from './type/vote-status.type';
 
@@ -75,10 +73,7 @@ export class VoteAggregate {
   }
 
   cancel(canceledAt: Date): void {
-    if (
-      this.status !== VoteStatus.Draft &&
-      this.status !== VoteStatus.Open
-    ) {
+    if (this.status !== VoteStatus.Draft && this.status !== VoteStatus.Open) {
       throw new DomainError('only draft or open votes can be canceled');
     }
 

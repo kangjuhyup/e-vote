@@ -5,10 +5,7 @@ import { ElectorStatus } from '../../../src/domain/elector/type/elector-status.t
 import { DomainError } from '../../../src/domain/shared/domain-error';
 import { VoteAggregate } from '../../../src/domain/vote/vote.aggregate';
 import { VoteDetailAggregate } from '../../../src/domain/vote/vote-detail.aggregate';
-import {
-  VoteClosed,
-  VoteOpened,
-} from '../../../src/domain/vote/vote.events';
+import { VoteClosed, VoteOpened } from '../../../src/domain/vote/vote.events';
 import {
   ParticipationUnit,
   PrivacyMode,

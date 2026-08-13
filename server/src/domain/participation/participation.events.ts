@@ -25,5 +25,4 @@ export class ParticipationCanceled extends DomainEvent {
 }
 
 export type ParticipationDomainEvent =
-  | ParticipationCast
-  | ParticipationCanceled;
+  ParticipationCast | ParticipationCanceled;
