@@ -6,6 +6,7 @@ import { ResponseInterceptor } from './presentation/common/interceptor/response.
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks(['SIGTERM', 'SIGINT']);
   app.useGlobalInterceptors(
     new LoggingInterceptor(),
     new ResponseInterceptor(),

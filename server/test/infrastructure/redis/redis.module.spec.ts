@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Redis } from 'ioredis';
 import {
+  REDIS_HEALTH_PORT,
+  RedisHealthPort,
+} from '../../../src/application/port/redis-health.port';
+import {
   REDIS_CLIENT,
   RedisClient,
 } from '../../../src/infrastructure/redis/redis.constants';
@@ -28,6 +32,19 @@ describe('RedisModule', () => {
     const client = moduleRef.get<RedisClient>(REDIS_CLIENT);
 
     expect(client).toBeInstanceOf(Redis);
+
+    await moduleRef.close();
+  });
+
+  it('exports the Redis health port', async () => {
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [RedisModule],
+    }).compile();
+
+    const redisHealth = moduleRef.get<RedisHealthPort>(REDIS_HEALTH_PORT);
+
+    expect(redisHealth).toBeDefined();
+    expect(redisHealth).toHaveProperty('ping');
 
     await moduleRef.close();
   });
