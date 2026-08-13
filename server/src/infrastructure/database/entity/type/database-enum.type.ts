@@ -3,7 +3,13 @@ export type ParticipationUnit = 'INDIVIDUAL' | 'GROUP';
 export type ResultStorageMode = 'DATABASE' | 'BLOCKCHAIN';
 export type VoteWeightMode = 'EQUAL' | 'SHARE';
 export type VoteStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'CANCELED';
+export type VotingChannel = 'ONLINE' | 'ONSITE' | 'VISIT';
 export type VoteDetailType = 'CANDIDATE' | 'YES_NO';
+export type ElectionCommissionStatus = 'ACTIVE' | 'SUSPENDED';
+export type ElectionCommissionMemberRole = 'ADMIN' | 'FIELD_MANAGER';
+export type ElectionCommissionMemberStatus = 'ACTIVE' | 'INACTIVE';
+export type FieldVotingSessionStatus =
+  'SCHEDULED' | 'OPEN' | 'CLOSED' | 'CANCELED';
 export type ElectorStatus = 'ELIGIBLE' | 'BLOCKED';
 export type CandidateStatus = 'ACTIVE' | 'WITHDRAWN';
 export type ParticipationStatus = 'CAST' | 'CANCELED';

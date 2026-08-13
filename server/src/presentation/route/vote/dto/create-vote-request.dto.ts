@@ -31,6 +31,15 @@ const VoteWeightModeBody = {
 type VoteWeightModeBody =
   (typeof VoteWeightModeBody)[keyof typeof VoteWeightModeBody];
 
+const VotingChannelBody = {
+  Online: 'ONLINE',
+  Onsite: 'ONSITE',
+  Visit: 'VISIT',
+} as const;
+
+type VotingChannelBody =
+  (typeof VotingChannelBody)[keyof typeof VotingChannelBody];
+
 class VotePolicyBody {
   @ApiProperty({
     enum: Object.values(PrivacyModeBody),
@@ -85,12 +94,26 @@ class IdentityVerificationPolicyBody {
 
 export class CreateVoteBody {
   @ApiProperty({
+    example: 'commission-1',
+    description: '투표를 주관하는 선거관리위원회 ID입니다.',
+  })
+  readonly commissionId!: string;
+
+  @ApiProperty({
     example: 'Board election',
     minLength: 1,
     maxLength: 200,
     description: '생성할 부모 투표 제목입니다.',
   })
   readonly title!: string;
+
+  @ApiProperty({
+    enum: Object.values(VotingChannelBody),
+    isArray: true,
+    example: [VotingChannelBody.Online, VotingChannelBody.Onsite],
+    description: '부모 투표 단위로 허용하는 투표 채널입니다.',
+  })
+  readonly votingChannels!: VotingChannelBody[];
 
   @ApiProperty({
     type: () => VotePolicyBody,

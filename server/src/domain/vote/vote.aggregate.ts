@@ -9,10 +9,13 @@ import {
 import { IdentityVerificationPolicy } from './vo/identity-verification-policy.vo';
 import { VotePolicy } from './vo/vote-policy.vo';
 import { VoteStatus } from './type/vote-status.type';
+import { VotingChannel } from './type/voting-channel.type';
 
 interface CreateVoteParams {
   readonly id: string;
+  readonly commissionId: string;
   readonly title: string;
+  readonly votingChannels: readonly VotingChannel[];
   readonly defaultPolicy: VotePolicy;
   readonly identityVerificationPolicy: IdentityVerificationPolicy;
   readonly status?: VoteStatus;
@@ -25,7 +28,9 @@ export class VoteAggregate {
 
   private constructor(
     readonly id: string,
+    readonly commissionId: string,
     readonly title: string,
+    readonly votingChannels: readonly VotingChannel[],
     readonly defaultPolicy: VotePolicy,
     readonly identityVerificationPolicy: IdentityVerificationPolicy,
     public status: VoteStatus,
@@ -33,19 +38,23 @@ export class VoteAggregate {
 
   static create(params: CreateVoteParams): VoteAggregate {
     const id = createId(params.id);
+    const commissionId = createId(params.commissionId);
     const title = params.title.trim();
 
     if (title.length === 0) {
       throw new DomainError('vote title must not be empty');
     }
 
+    VoteAggregate.assertVotingChannels(params.votingChannels);
     VoteAggregate.assertIdentityVerificationPolicy(
       params.identityVerificationPolicy,
     );
 
     return new VoteAggregate(
       id,
+      commissionId,
       title,
+      [...params.votingChannels],
       params.defaultPolicy,
       params.identityVerificationPolicy,
       params.status ?? VoteStatus.Draft,
@@ -54,6 +63,10 @@ export class VoteAggregate {
 
   static reconstitute(params: ReconstituteVoteParams): VoteAggregate {
     return VoteAggregate.create(params);
+  }
+
+  allowsVotingChannel(channel: VotingChannel): boolean {
+    return this.votingChannels.includes(channel);
   }
 
   open(openedAt: Date): void {
@@ -108,6 +121,14 @@ export class VoteAggregate {
       throw new DomainError(
         'identity verification provider and method must be absent',
       );
+    }
+  }
+
+  private static assertVotingChannels(
+    votingChannels: readonly VotingChannel[],
+  ): void {
+    if (votingChannels.length === 0) {
+      throw new DomainError('vote must allow at least one voting channel');
     }
   }
 }

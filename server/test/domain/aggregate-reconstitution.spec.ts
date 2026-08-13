@@ -16,6 +16,7 @@ import {
   VoteDetailStatus,
   VoteStatus,
 } from '../../src/domain/vote/type/vote-status.type';
+import { VotingChannel } from '../../src/domain/vote/type/voting-channel.type';
 import { IdentityVerificationPolicy } from '../../src/domain/vote/vo/identity-verification-policy.vo';
 import { VotePolicy } from '../../src/domain/vote/vo/vote-policy.vo';
 
@@ -23,7 +24,9 @@ describe('aggregate reconstitution', () => {
   it('restores vote state without publishing lifecycle events', () => {
     const vote = VoteAggregate.reconstitute({
       id: 'vote-1',
+      commissionId: 'commission-1',
       title: 'Board election',
+      votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
       defaultPolicy: VotePolicy.of({
         privacyMode: PrivacyMode.Public,
         participationUnit: ParticipationUnit.Group,
@@ -39,6 +42,11 @@ describe('aggregate reconstitution', () => {
     });
 
     expect(vote.status).toBe(VoteStatus.Open);
+    expect(vote.commissionId).toBe('commission-1');
+    expect(vote.votingChannels).toEqual([
+      VotingChannel.Online,
+      VotingChannel.Onsite,
+    ]);
     expect(vote.defaultPolicy).toEqual({
       privacyMode: PrivacyMode.Public,
       participationUnit: ParticipationUnit.Group,
@@ -55,6 +63,7 @@ describe('aggregate reconstitution', () => {
       electorId: 'elector-1',
       groupKey: 'group-1',
       voteWeight: 3.5,
+      votingChannel: VotingChannel.Online,
       participatedAt: new Date('2026-08-10T00:00:00.000Z'),
       status: ParticipationStatus.Cast,
     });
@@ -62,6 +71,7 @@ describe('aggregate reconstitution', () => {
     expect(participation.candidateId).toBeUndefined();
     expect(participation.groupKey).toBe('group-1');
     expect(participation.voteWeight).toBe(3.5);
+    expect(participation.votingChannel).toBe(VotingChannel.Online);
     expect(participation.pullEvents()).toEqual([]);
   });
 

@@ -18,12 +18,15 @@ import {
   VoteDetailStatus,
   VoteStatus,
 } from '../../../src/domain/vote/type/vote-status.type';
+import { VotingChannel } from '../../../src/domain/vote/type/voting-channel.type';
 
 describe('vote domain aggregates', () => {
   it('calculates effective vote detail policy from parent defaults and overrides', () => {
     const vote = VoteAggregate.create({
       id: 'vote-1',
+      commissionId: 'commission-1',
       title: 'Board election',
+      votingChannels: [VotingChannel.Online],
       defaultPolicy: VotePolicy.of({
         privacyMode: PrivacyMode.Secret,
         participationUnit: ParticipationUnit.Individual,
@@ -64,7 +67,9 @@ describe('vote domain aggregates', () => {
     expect(() =>
       VoteAggregate.create({
         id: 'vote-2',
+        commissionId: 'commission-1',
         title: 'Invalid',
+        votingChannels: [VotingChannel.Online],
         defaultPolicy: VotePolicy.of({
           privacyMode: PrivacyMode.Secret,
           participationUnit: ParticipationUnit.Individual,
@@ -82,7 +87,9 @@ describe('vote domain aggregates', () => {
   it('emits vote lifecycle events for valid status transitions', () => {
     const vote = VoteAggregate.create({
       id: 'vote-3',
+      commissionId: 'commission-1',
       title: 'Lifecycle',
+      votingChannels: [VotingChannel.Online],
       defaultPolicy: VotePolicy.of({
         privacyMode: PrivacyMode.Secret,
         participationUnit: ParticipationUnit.Individual,
@@ -128,5 +135,53 @@ describe('vote domain aggregates', () => {
 
     expect(elector.voteWeight).toBe(2.5);
     expect(candidate.status).toBe(CandidateStatus.Active);
+  });
+
+  it('requires at least one voting channel', () => {
+    expect(() =>
+      VoteAggregate.create({
+        id: 'vote-channels-1',
+        commissionId: 'commission-1',
+        title: 'Field vote',
+        votingChannels: [],
+        defaultPolicy: VotePolicy.of({
+          privacyMode: PrivacyMode.Secret,
+          participationUnit: ParticipationUnit.Individual,
+          resultStorageMode: ResultStorageMode.Database,
+          voteWeightMode: VoteWeightMode.Equal,
+        }),
+        identityVerificationPolicy: IdentityVerificationPolicy.of({
+          required: false,
+        }),
+        status: VoteStatus.Draft,
+      }),
+    ).toThrow(DomainError);
+  });
+
+  it('checks parent-vote-level voting channel allowance', () => {
+    const vote = VoteAggregate.create({
+      id: 'vote-channels-2',
+      commissionId: 'commission-1',
+      title: 'Hybrid vote',
+      votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
+      defaultPolicy: VotePolicy.of({
+        privacyMode: PrivacyMode.Secret,
+        participationUnit: ParticipationUnit.Individual,
+        resultStorageMode: ResultStorageMode.Database,
+        voteWeightMode: VoteWeightMode.Equal,
+      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of({
+        required: false,
+      }),
+      status: VoteStatus.Draft,
+    });
+
+    expect(vote.commissionId).toBe('commission-1');
+    expect(vote.votingChannels).toEqual([
+      VotingChannel.Online,
+      VotingChannel.Onsite,
+    ]);
+    expect(vote.allowsVotingChannel(VotingChannel.Onsite)).toBe(true);
+    expect(vote.allowsVotingChannel(VotingChannel.Visit)).toBe(false);
   });
 });
