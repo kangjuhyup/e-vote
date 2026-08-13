@@ -15,7 +15,7 @@ async function runQuery<T>(queryFn: unknown): Promise<T> {
 }
 
 describe("votes query options", () => {
-  it("keeps mock detail aggregate counts consistent with the roster", async () => {
+  it("keeps fixture fallback detail aggregate counts consistent with the roster", async () => {
     const vote = await runQuery<VoteDetail | null>(
       voteDetailQueryOptions("active-general").queryFn,
     );
