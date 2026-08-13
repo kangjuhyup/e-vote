@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { AttachmentTargetType } from '../../../../src/application/port/attachment-repository.port';
 import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/confirm-attachment-upload.command';
 import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/confirm-attachment-upload.handler';
@@ -5,6 +6,17 @@ import { CreateCandidateCommand } from '../../../../src/application/command/crea
 import { CreateCandidateHandler } from '../../../../src/application/command/create-candidate.handler';
 import { RequestAttachmentUploadCommand } from '../../../../src/application/command/request-attachment-upload.command';
 import { RequestAttachmentUploadHandler } from '../../../../src/application/command/request-attachment-upload.handler';
+import {
+  CandidatePageReadView,
+  CandidateReadView,
+} from '../../../../src/application/query/candidate-read.view';
+import {
+  CandidateNotFoundError,
+  GetCandidateHandler,
+} from '../../../../src/application/query/get-candidate.handler';
+import { GetCandidateQuery } from '../../../../src/application/query/get-candidate.query';
+import { GetCandidatePageHandler } from '../../../../src/application/query/get-candidate-page.handler';
+import { GetCandidatePageQuery } from '../../../../src/application/query/get-candidate-page.query';
 import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
 import { CandidateController } from '../../../../src/presentation/route/candidate/candidate.controller';
 
@@ -16,6 +28,20 @@ describe('CandidateController', () => {
   const createCandidateHandler = {
     execute: createCandidateExecute,
   } as unknown as jest.Mocked<CreateCandidateHandler>;
+  const getCandidateExecute = jest.fn<
+    ReturnType<GetCandidateHandler['execute']>,
+    [GetCandidateQuery]
+  >();
+  const getCandidateHandler = {
+    execute: getCandidateExecute,
+  } as unknown as jest.Mocked<GetCandidateHandler>;
+  const getCandidatePageExecute = jest.fn<
+    ReturnType<GetCandidatePageHandler['execute']>,
+    [GetCandidatePageQuery]
+  >();
+  const getCandidatePageHandler = {
+    execute: getCandidatePageExecute,
+  } as unknown as jest.Mocked<GetCandidatePageHandler>;
   const requestAttachmentUploadExecute = jest.fn<
     ReturnType<RequestAttachmentUploadHandler['execute']>,
     [RequestAttachmentUploadCommand]
@@ -37,9 +63,90 @@ describe('CandidateController', () => {
     jest.clearAllMocks();
     controller = new CandidateController(
       createCandidateHandler,
+      getCandidateHandler,
+      getCandidatePageHandler,
       requestAttachmentUploadHandler,
       confirmAttachmentUploadHandler,
     );
+  });
+
+  it('maps GET /votes/:voteId/sub-votes/:voteDetailId/candidates to get candidate page handler', async () => {
+    getCandidatePageExecute.mockResolvedValue(
+      CandidatePageReadView.of({
+        items: [createCandidateReadView()],
+        page: 1,
+        pageSize: 20,
+        totalItems: 1,
+        totalPages: 1,
+      }),
+    );
+
+    const response = await controller.getCandidatePage(
+      {
+        voteId: 'vote-1',
+        voteDetailId: 'vote-detail-1',
+      },
+      {},
+    );
+
+    expect(response).toMatchObject({
+      page: 1,
+      pageSize: 20,
+      totalItems: 1,
+      items: [
+        {
+          id: 'candidate-1',
+          voteId: 'vote-1',
+          voteDetailId: 'vote-detail-1',
+          name: 'Kim',
+          createdAt: '2026-08-13T00:00:00.000Z',
+        },
+      ],
+    });
+    expect(getCandidatePageExecute.mock.calls[0][0]).toMatchObject({
+      voteId: 'vote-1',
+      voteDetailId: 'vote-detail-1',
+      page: 1,
+      pageSize: 20,
+    });
+  });
+
+  it('maps GET /votes/:voteId/sub-votes/:voteDetailId/candidates/:candidateId to get candidate handler', async () => {
+    getCandidateExecute.mockResolvedValue(createCandidateReadView());
+
+    const response = await controller.getCandidate({
+      voteId: 'vote-1',
+      voteDetailId: 'vote-detail-1',
+      candidateId: 'candidate-1',
+    });
+
+    expect(response).toMatchObject({
+      id: 'candidate-1',
+      voteId: 'vote-1',
+      voteDetailId: 'vote-detail-1',
+      candidateNo: 1,
+      name: 'Kim',
+      status: CandidateStatus.Active,
+      createdAt: '2026-08-13T00:00:00.000Z',
+      updatedAt: '2026-08-13T01:00:00.000Z',
+    });
+    expect(getCandidateExecute.mock.calls[0][0]).toMatchObject({
+      voteId: 'vote-1',
+      voteDetailId: 'vote-detail-1',
+      candidateId: 'candidate-1',
+    });
+  });
+
+  it('maps missing candidate to 404', async () => {
+    getCandidateExecute.mockRejectedValue(new CandidateNotFoundError());
+
+    await expect(
+      controller.getCandidate({
+        voteId: 'vote-1',
+        voteDetailId: 'vote-detail-1',
+        candidateId: 'missing',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('maps PUT /votes/:voteId/sub-votes/:voteDetailId/candidates to create candidate handler', async () => {
@@ -157,3 +264,17 @@ describe('CandidateController', () => {
     });
   });
 });
+
+function createCandidateReadView(): CandidateReadView {
+  return CandidateReadView.of({
+    id: 'candidate-1',
+    voteId: 'vote-1',
+    voteDetailId: 'vote-detail-1',
+    candidateNo: 1,
+    name: 'Kim',
+    description: '',
+    status: CandidateStatus.Active,
+    createdAt: new Date('2026-08-13T00:00:00.000Z'),
+    updatedAt: new Date('2026-08-13T01:00:00.000Z'),
+  });
+}

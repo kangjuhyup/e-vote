@@ -1,17 +1,23 @@
 import { normalizePageQuery } from './page.query-util';
 
-export class GetVotePageQuery {
+export class GetVoteDetailPageQuery {
   private constructor(
+    readonly voteId: string,
     readonly page: number,
     readonly pageSize: number,
   ) {}
 
   static of(params: {
+    readonly voteId: string;
     readonly page?: number;
     readonly pageSize?: number;
-  }): GetVotePageQuery {
+  }): GetVoteDetailPageQuery {
     const normalized = normalizePageQuery(params);
 
-    return new GetVotePageQuery(normalized.page, normalized.pageSize);
+    return new GetVoteDetailPageQuery(
+      params.voteId,
+      normalized.page,
+      normalized.pageSize,
+    );
   }
 }
