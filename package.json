@@ -15,6 +15,8 @@
     "test:watch": "pnpm --filter @vote/server test:watch",
     "test:cov": "pnpm --filter @vote/server test:cov",
     "test:debug": "pnpm --filter @vote/server test:debug",
-    "test:e2e": "pnpm --filter @vote/server test:e2e"
+    "test:e2e": "pnpm --filter @vote/server test:e2e",
+    "test:e2e:redis": "pnpm --filter @vote/server test:e2e:redis",
+    "test:e2e:redis:docker": "sh -c 'docker compose -p vote-redis-e2e -f docker-compose.redis-e2e.yml up -d --wait && pnpm --filter @vote/server test:e2e:redis; status=$?; docker compose -p vote-redis-e2e -f docker-compose.redis-e2e.yml down -v; exit $status'"
   }
 }
