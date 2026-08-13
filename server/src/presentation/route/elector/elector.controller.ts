@@ -56,7 +56,10 @@ export class ElectorController {
     const result = await this.createElectorHandler.execute(
       CreateElectorCommand.of({
         voteId: params.voteId,
+        name: body.name,
         identifier: body.identifier,
+        phoneNumber: body.phoneNumber,
+        birthDate: body.birthDate,
         groupKey: body.groupKey,
         voteWeight: body.voteWeight,
       }),

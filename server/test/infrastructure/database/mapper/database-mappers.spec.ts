@@ -25,6 +25,7 @@ import { FieldVotingSessionMapper } from '../../../../src/infrastructure/databas
 import { ParticipationMapper } from '../../../../src/infrastructure/database/mapper/participation.mapper';
 import { VoteMapper } from '../../../../src/infrastructure/database/mapper/vote.mapper';
 import { VoteDetailMapper } from '../../../../src/infrastructure/database/mapper/vote-detail.mapper';
+import { PersonalDataCipher } from '../../../../src/infrastructure/security/personal-data-cipher';
 
 describe('database mappers', () => {
   it('maps election commission entity state into domain aggregates', () => {
@@ -109,7 +110,11 @@ describe('database mappers', () => {
       {
         id: 'elector-1',
         vote: { id: 'vote-1' },
+        name: 'Kim Min Su',
         identifier: 'member-1',
+        phoneNumber: '010-1234-5678',
+        phoneNumberHash: 'hash:010-1234-5678',
+        birthDate: '1990-01-31',
         groupKey: 'group-1',
         voteWeight: '2.5',
         status: ElectorStatus.Eligible,
@@ -126,9 +131,52 @@ describe('database mappers', () => {
       status: CandidateStatus.Withdrawn,
     });
 
+    expect(elector.name).toBe('Kim Min Su');
+    expect(elector.phoneNumber).toBe('010-1234-5678');
+    expect(elector.birthDate).toBe('1990-01-31');
     expect(elector.voteWeight).toBe(2.5);
     expect(elector.isIdentityVerified()).toBe(true);
     expect(candidate.status).toBe(CandidateStatus.Withdrawn);
+  });
+
+  it('encrypts elector personal data when mapping to persistence', () => {
+    const cipher: PersonalDataCipher = {
+      encrypt: (plaintext) => `encrypted:${plaintext}`,
+      decrypt: (ciphertext) => ciphertext.replace('encrypted:', ''),
+      hash: (plaintext) => `hash:${plaintext}`,
+    };
+    const elector = ElectorMapper.toDomain({
+      id: 'elector-1',
+      vote: { id: 'vote-1' },
+      name: 'Kim Min Su',
+      identifier: 'member-1',
+      phoneNumber: '010-1234-5678',
+      phoneNumberHash: 'hash:010-1234-5678',
+      birthDate: '1990-01-31',
+      groupKey: 'group-1',
+      voteWeight: '2.5',
+      status: ElectorStatus.Eligible,
+    });
+
+    const persistence = ElectorMapper.toPersistence(elector, {
+      personalDataCipher: cipher,
+      now: new Date('2026-08-13T00:00:00.000Z'),
+    });
+
+    expect(persistence).toMatchObject({
+      id: 'elector-1',
+      vote: { id: 'vote-1' },
+      name: 'encrypted:Kim Min Su',
+      identifier: 'member-1',
+      phoneNumber: 'encrypted:010-1234-5678',
+      phoneNumberHash: 'hash:010-1234-5678',
+      birthDate: 'encrypted:1990-01-31',
+      groupKey: 'group-1',
+      voteWeight: 2.5,
+      status: ElectorStatus.Eligible,
+      createdAt: new Date('2026-08-13T00:00:00.000Z'),
+      updatedAt: new Date('2026-08-13T00:00:00.000Z'),
+    });
   });
 
   it('maps participation entity state without leaking secret vote candidate ids', () => {

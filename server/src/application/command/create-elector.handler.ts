@@ -8,6 +8,9 @@ import type { ElectorRepositoryPort } from '../port/elector-repository.port';
 export type CreateElectorResult = {
   id: string;
   voteId: string;
+  name: string;
+  phoneNumber?: string;
+  birthDate?: string;
   status: ElectorStatus;
 };
 
@@ -22,7 +25,10 @@ export class CreateElectorHandler {
     const elector = ElectorAggregate.create({
       id: this.electorRepository.nextId(),
       voteId: command.voteId,
+      name: command.name,
       identifier: command.identifier,
+      phoneNumber: command.phoneNumber,
+      birthDate: command.birthDate,
       groupKey: command.groupKey,
       voteWeight: command.voteWeight,
       status: ElectorStatus.Eligible,
@@ -33,6 +39,9 @@ export class CreateElectorHandler {
     return {
       id: elector.id,
       voteId: elector.voteId,
+      name: elector.name,
+      phoneNumber: elector.phoneNumber,
+      birthDate: elector.birthDate,
       status: elector.status,
     };
   }

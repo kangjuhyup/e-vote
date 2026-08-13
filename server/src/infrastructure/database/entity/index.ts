@@ -265,8 +265,11 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
           .fieldName('vote_id')
           .inversedBy('electors')
           .deleteRule('cascade'),
-      name: p.string(),
+      name: p.text(),
       identifier: p.string(),
+      phoneNumber: p.text().fieldName('phone_number').nullable(),
+      phoneNumberHash: p.string().fieldName('phone_number_hash').nullable(),
+      birthDate: p.text().fieldName('birth_date').nullable(),
       groupKey: p.string().fieldName('group_key').nullable(),
       voteWeight: p.decimal('number').fieldName('vote_weight').default(1),
       status: p.string().$type<ElectorStatus>(),
