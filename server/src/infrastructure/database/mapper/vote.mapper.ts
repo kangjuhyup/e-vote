@@ -35,8 +35,8 @@ export class VoteMapper {
       }),
       identityVerificationPolicy: IdentityVerificationPolicy.of({
         required: entity.identityVerificationRequired,
-        provider: entity.identityVerificationProvider,
-        method: entity.identityVerificationMethod,
+        provider: entity.identityVerificationProvider ?? undefined,
+        method: entity.identityVerificationMethod ?? undefined,
       }),
       status: entity.status,
     });

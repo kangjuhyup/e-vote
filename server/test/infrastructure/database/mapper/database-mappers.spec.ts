@@ -108,7 +108,7 @@ describe('database mappers', () => {
       status: ParticipationStatus.Cast,
     });
 
-    expect(participation.candidateId).toBeNull();
+    expect(participation.candidateId).toBeUndefined();
     expect(participation.voteWeight).toBe(3.5);
     expect(participation.pullEvents()).toEqual([]);
   });

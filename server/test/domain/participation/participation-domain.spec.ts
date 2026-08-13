@@ -66,7 +66,7 @@ describe('participation domain', () => {
       participatedAt: new Date('2026-08-09T00:00:00.000Z'),
     });
 
-    expect(participation.candidateId).toBeNull();
+    expect(participation.candidateId).toBeUndefined();
     expect(participation.voteWeight).toBe(1);
   });
 
@@ -76,7 +76,6 @@ describe('participation domain', () => {
         id: 'participation-2',
         voteDetailId: 'detail-1',
         elector: createElector(),
-        selectedCandidateId: null,
         effectivePolicy: publicShareGroupPolicy,
         participatedAt: new Date('2026-08-09T00:00:00.000Z'),
       }),
@@ -104,7 +103,6 @@ describe('participation domain', () => {
       id: 'participation-cancel-1',
       voteDetailId: 'detail-1',
       elector: createElector(),
-      selectedCandidateId: null,
       effectivePolicy: secretEqualIndividualPolicy,
       participatedAt: new Date('2026-08-09T00:00:00.000Z'),
     });
@@ -120,7 +118,7 @@ describe('participation domain', () => {
       ParticipationAggregate.cast({
         id: 'participation-4',
         voteDetailId: 'detail-1',
-        elector: createElector({ groupKey: null }),
+        elector: createElector({ groupKey: undefined }),
         selectedCandidateId: createCandidate().id,
         effectivePolicy: publicShareGroupPolicy,
         participatedAt: new Date('2026-08-09T00:00:00.000Z'),
@@ -136,7 +134,6 @@ describe('participation domain', () => {
         id: 'participation-5',
         voteDetailId: 'detail-1',
         elector,
-        selectedCandidateId: null,
         effectivePolicy: secretEqualIndividualPolicy,
         participatedAt: new Date('2026-08-09T00:00:00.000Z'),
       }),

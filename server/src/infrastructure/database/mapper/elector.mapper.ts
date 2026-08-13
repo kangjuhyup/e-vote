@@ -24,7 +24,7 @@ export class ElectorMapper {
       id: entity.id,
       voteId: entity.vote.id,
       identifier: entity.identifier,
-      groupKey: entity.groupKey,
+      groupKey: entity.groupKey ?? undefined,
       voteWeight: Number(entity.voteWeight),
       status: entity.status,
       identityVerified: options.identityVerified ?? false,

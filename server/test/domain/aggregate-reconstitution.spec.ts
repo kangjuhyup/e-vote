@@ -53,14 +53,13 @@ describe('aggregate reconstitution', () => {
       id: 'participation-1',
       voteDetailId: 'detail-1',
       electorId: 'elector-1',
-      candidateId: null,
       groupKey: 'group-1',
       voteWeight: 3.5,
       participatedAt: new Date('2026-08-10T00:00:00.000Z'),
       status: ParticipationStatus.Cast,
     });
 
-    expect(participation.candidateId).toBeNull();
+    expect(participation.candidateId).toBeUndefined();
     expect(participation.groupKey).toBe('group-1');
     expect(participation.voteWeight).toBe(3.5);
     expect(participation.pullEvents()).toEqual([]);

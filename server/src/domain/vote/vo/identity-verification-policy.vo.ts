@@ -2,22 +2,22 @@ import { DomainError } from '../../shared/domain-error';
 
 export type IdentityVerificationPolicyProps = {
   readonly required: boolean;
-  readonly provider?: string | null;
-  readonly method?: string | null;
+  readonly provider?: string;
+  readonly method?: string;
 };
 
 export class IdentityVerificationPolicy {
   private constructor(
     readonly required: boolean,
-    readonly provider: string | null,
-    readonly method: string | null,
+    readonly provider: string | undefined,
+    readonly method: string | undefined,
   ) {}
 
   static of(
     params: IdentityVerificationPolicyProps,
   ): IdentityVerificationPolicy {
-    const provider = params.provider?.trim() || null;
-    const method = params.method?.trim() || null;
+    const provider = params.provider?.trim() || undefined;
+    const method = params.method?.trim() || undefined;
 
     if (params.required && (!provider || !method)) {
       throw new DomainError(
