@@ -5,7 +5,7 @@ import { ParticipationProgress } from "@/components/data/participation-progress"
 import { PeriodRange } from "@/components/data/period-range";
 import type { VoteSummary } from "@/features/votes/model/vote.types";
 
-import { getVoteStatusLabel, getVoteStatusVariant } from "./vote-view-models";
+import { getVoteStatusLabel, getVoteStatusVariant } from "../lib/vote-view-models";
 
 interface VoteSummaryLinkProps {
   actionLabel?: string;

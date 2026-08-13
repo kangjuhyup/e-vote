@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { VoteSummary } from "@/features/votes/model/vote.types";
 
-import { getVoteStatusLabel, getVoteStatusVariant } from "./vote-view-models";
+import { getVoteStatusLabel, getVoteStatusVariant } from "../lib/vote-view-models";
 
 interface VoteListRowProps {
   vote: VoteSummary;

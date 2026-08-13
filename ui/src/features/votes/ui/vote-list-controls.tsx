@@ -4,7 +4,7 @@ import { SegmentedFilter } from "@/components/filters/segmented-filter";
 import { SearchField } from "@/components/forms/search-field";
 import type { VoteStatusFilter } from "@/features/votes/model/vote.types";
 
-import { voteStatusFilterOptions } from "./vote-view-models";
+import { voteStatusFilterOptions } from "../lib/vote-view-models";
 
 interface VoteListControlsProps {
   onSearchTextChange: (searchText: string) => void;

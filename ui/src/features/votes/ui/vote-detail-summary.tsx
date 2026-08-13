@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import type { VoteDetail } from "@/features/votes/model/vote.types";
 
-import { getVoteStatusLabel, getVoteStatusVariant } from "./vote-view-models";
+import { getVoteStatusLabel, getVoteStatusVariant } from "../lib/vote-view-models";
 
 interface VoteDetailSummaryProps {
   vote: VoteDetail;

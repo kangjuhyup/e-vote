@@ -11,8 +11,8 @@ import { voteListQueryOptions } from "@/features/votes/api/votes-query-options";
 import { filterVotes } from "@/features/votes/model/vote-selectors";
 import { useVotesUiStore } from "@/features/votes/store/votes-ui.store";
 
-import { VoteListControls } from "./vote-list-controls";
-import { VoteListResults } from "./vote-list-results";
+import { VoteListControls } from "../ui/vote-list-controls";
+import { VoteListResults } from "../ui/vote-list-results";
 
 export function VoteListContainer() {
   const statusFilter = useVotesUiStore((state) => state.statusFilter);

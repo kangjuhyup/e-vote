@@ -9,7 +9,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { voteDashboardQueryOptions } from "@/features/votes/api/votes-query-options";
 
-import { VoteDashboardContent } from "./vote-dashboard-content";
+import { VoteDashboardContent } from "../ui/vote-dashboard-content";
 
 export function VoteDashboardContainer() {
   const dashboardQuery = useQuery(voteDashboardQueryOptions());

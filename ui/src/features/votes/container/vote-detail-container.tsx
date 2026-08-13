@@ -10,10 +10,12 @@ import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { voteDetailQueryOptions } from "@/features/votes/api/votes-query-options";
+import { filterElectors } from "@/features/votes/model/vote-selectors";
 import { useVotesUiStore } from "@/features/votes/store/votes-ui.store";
 
-import { VoteDetailRosterSection } from "./vote-detail-roster-section";
-import { VoteDetailSummary } from "./vote-detail-summary";
+import { toCandidateItems, toRosterItems } from "../lib/vote-view-models";
+import { VoteDetailRosterSection } from "../ui/vote-detail-roster-section";
+import { VoteDetailSummary } from "../ui/vote-detail-summary";
 
 interface VoteDetailContainerProps {
   voteId: string;
@@ -29,6 +31,9 @@ export function VoteDetailContainer({ voteId }: VoteDetailContainerProps) {
 
   const voteQuery = useQuery(voteDetailQueryOptions(voteId));
   const vote = voteQuery.data;
+  const filteredElectors = vote
+    ? filterElectors(vote.electors, electorParticipationFilter)
+    : [];
 
   return (
     <PageShell
@@ -69,8 +74,9 @@ export function VoteDetailContainer({ voteId }: VoteDetailContainerProps) {
         <>
           <VoteDetailSummary vote={vote} />
           <VoteDetailRosterSection
-            vote={vote}
+            candidateItems={toCandidateItems(vote.candidates)}
             electorParticipationFilter={electorParticipationFilter}
+            rosterItems={toRosterItems(filteredElectors)}
             onElectorParticipationFilterChange={setElectorParticipationFilter}
           />
         </>
