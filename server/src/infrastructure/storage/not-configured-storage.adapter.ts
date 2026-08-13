@@ -1,5 +1,6 @@
 import {
   PresignedStorageUrl,
+  StoredObjectMetadata,
   StorageNotConfiguredError,
   StoragePort,
 } from '../../application/port/storage.port';
@@ -14,6 +15,10 @@ export class NotConfiguredStorageAdapter implements StoragePort {
   }
 
   createPresignedDeleteObjectUrl(): Promise<PresignedStorageUrl> {
+    return Promise.reject(new StorageNotConfiguredError());
+  }
+
+  getObjectMetadata(): Promise<StoredObjectMetadata | undefined> {
     return Promise.reject(new StorageNotConfiguredError());
   }
 }

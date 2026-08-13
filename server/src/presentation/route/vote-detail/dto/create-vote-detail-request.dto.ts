@@ -112,3 +112,11 @@ export class CreateVoteDetailParam {
   })
   readonly voteId!: string;
 }
+
+export class VoteDetailAttachmentParam extends CreateVoteDetailParam {
+  @ApiProperty({
+    example: 'vote-detail-1',
+    description: '자식 투표 ID입니다.',
+  })
+  readonly voteDetailId!: string;
+}
