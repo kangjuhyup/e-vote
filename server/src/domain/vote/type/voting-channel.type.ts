@@ -4,5 +4,4 @@ export const VotingChannel = {
   Visit: 'VISIT',
 } as const;
 
-export type VotingChannel =
-  (typeof VotingChannel)[keyof typeof VotingChannel];
+export type VotingChannel = (typeof VotingChannel)[keyof typeof VotingChannel];

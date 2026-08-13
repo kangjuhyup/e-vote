@@ -179,7 +179,9 @@ export class FieldVotingSessionAggregate {
     FieldVotingSessionAggregate.assertFieldChannel(params.channel);
 
     if (!params.vote.allowsVotingChannel(params.channel)) {
-      throw new DomainError('vote does not allow requested field voting channel');
+      throw new DomainError(
+        'vote does not allow requested field voting channel',
+      );
     }
 
     if (params.vote.commissionId !== params.commission.id) {
@@ -199,17 +201,11 @@ export class FieldVotingSessionAggregate {
       throw new DomainError('field voting session requires an active manager');
     }
 
-    FieldVotingSessionAggregate.assertTimeRange(
-      params.startsAt,
-      params.endsAt,
-    );
+    FieldVotingSessionAggregate.assertTimeRange(params.startsAt, params.endsAt);
   }
 
   private static assertFieldChannel(channel: VotingChannel): void {
-    if (
-      channel !== VotingChannel.Onsite &&
-      channel !== VotingChannel.Visit
-    ) {
+    if (channel !== VotingChannel.Onsite && channel !== VotingChannel.Visit) {
       throw new DomainError(
         'field voting session channel must be onsite or visit',
       );
@@ -232,7 +228,9 @@ export class FieldVotingSessionAggregate {
     const trimmed = value.trim();
 
     if (trimmed.length === 0) {
-      throw new DomainError(`field voting session ${fieldName} must not be empty`);
+      throw new DomainError(
+        `field voting session ${fieldName} must not be empty`,
+      );
     }
 
     return trimmed;

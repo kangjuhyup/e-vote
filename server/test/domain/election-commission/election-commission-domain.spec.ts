@@ -79,10 +79,6 @@ describe('election commission domain', () => {
   });
 
   it('exposes voting channel runtime constants', () => {
-    expect(Object.values(VotingChannel)).toEqual([
-      'ONLINE',
-      'ONSITE',
-      'VISIT',
-    ]);
+    expect(Object.values(VotingChannel)).toEqual(['ONLINE', 'ONSITE', 'VISIT']);
   });
 });

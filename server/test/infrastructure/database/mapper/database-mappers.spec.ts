@@ -1,5 +1,9 @@
 import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
+import { ElectionCommissionMemberRole } from '../../../../src/domain/election-commission/type/election-commission-member-role.type';
+import { ElectionCommissionMemberStatus } from '../../../../src/domain/election-commission/type/election-commission-member-status.type';
+import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
 import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
+import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
 import { ParticipationStatus } from '../../../../src/domain/participation/type/participation-status.type';
 import {
   ParticipationUnit,
@@ -13,12 +17,38 @@ import {
 } from '../../../../src/domain/vote/type/vote-status.type';
 import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
 import { CandidateMapper } from '../../../../src/infrastructure/database/mapper/candidate.mapper';
+import { ElectionCommissionMemberMapper } from '../../../../src/infrastructure/database/mapper/election-commission-member.mapper';
+import { ElectionCommissionMapper } from '../../../../src/infrastructure/database/mapper/election-commission.mapper';
 import { ElectorMapper } from '../../../../src/infrastructure/database/mapper/elector.mapper';
+import { FieldParticipationEvidenceMapper } from '../../../../src/infrastructure/database/mapper/field-participation-evidence.mapper';
+import { FieldVotingSessionMapper } from '../../../../src/infrastructure/database/mapper/field-voting-session.mapper';
 import { ParticipationMapper } from '../../../../src/infrastructure/database/mapper/participation.mapper';
 import { VoteMapper } from '../../../../src/infrastructure/database/mapper/vote.mapper';
 import { VoteDetailMapper } from '../../../../src/infrastructure/database/mapper/vote-detail.mapper';
 
 describe('database mappers', () => {
+  it('maps election commission entity state into domain aggregates', () => {
+    const commission = ElectionCommissionMapper.toDomain({
+      id: 'commission-1',
+      name: 'Main Commission',
+      status: ElectionCommissionStatus.Active,
+      createdAt: new Date('2026-08-13T00:00:00.000Z'),
+    });
+    const member = ElectionCommissionMemberMapper.toDomain({
+      id: 'member-1',
+      commission: { id: 'commission-1' },
+      name: 'Kim Manager',
+      role: ElectionCommissionMemberRole.FieldManager,
+      status: ElectionCommissionMemberStatus.Active,
+      registeredAt: new Date('2026-08-13T00:00:00.000Z'),
+    });
+
+    expect(commission.canRunVote()).toBe(true);
+    expect(commission.pullEvents()).toEqual([]);
+    expect(member.canManageFieldVoting('commission-1')).toBe(true);
+    expect(member.pullEvents()).toEqual([]);
+  });
+
   it('maps vote entity state into a vote aggregate', () => {
     const vote = VoteMapper.toDomain({
       id: 'vote-1',
@@ -120,5 +150,49 @@ describe('database mappers', () => {
     expect(participation.votingChannel).toBe(VotingChannel.Onsite);
     expect(participation.fieldVotingSessionId).toBe('session-1');
     expect(participation.pullEvents()).toEqual([]);
+  });
+
+  it('maps field voting session and evidence entity state into domain aggregates', () => {
+    const session = FieldVotingSessionMapper.toDomain({
+      id: 'session-1',
+      commission: { id: 'commission-1' },
+      vote: { id: 'vote-1' },
+      channel: VotingChannel.Onsite,
+      title: 'Lobby voting desk',
+      locationName: 'Main Lobby',
+      address: 'Seoul Office',
+      managerLinks: [{ commissionMember: { id: 'member-1' } }],
+      startsAt: new Date('2026-08-20T00:00:00.000Z'),
+      endsAt: new Date('2026-08-20T09:00:00.000Z'),
+      status: FieldVotingSessionStatus.Open,
+    });
+    const evidence = FieldParticipationEvidenceMapper.toDomain({
+      id: 'evidence-1',
+      participation: { id: 'participation-1' },
+      fieldVotingSession: { id: 'session-1' },
+      verifiedByCommissionMember: { id: 'member-1' },
+      evidenceFile: { id: 'file-1' },
+      verificationNote: 'signature checked',
+      verifiedAt: new Date('2026-08-20T01:10:00.000Z'),
+    });
+
+    expect(session).toMatchObject({
+      id: 'session-1',
+      commissionId: 'commission-1',
+      voteId: 'vote-1',
+      channel: VotingChannel.Onsite,
+      managerIds: ['member-1'],
+      status: FieldVotingSessionStatus.Open,
+    });
+    expect(session.pullEvents()).toEqual([]);
+    expect(evidence).toMatchObject({
+      id: 'evidence-1',
+      participationId: 'participation-1',
+      fieldVotingSessionId: 'session-1',
+      verifiedByCommissionMemberId: 'member-1',
+      evidenceFileId: 'file-1',
+      verificationNote: 'signature checked',
+    });
+    expect(evidence.pullEvents()).toEqual([]);
   });
 });

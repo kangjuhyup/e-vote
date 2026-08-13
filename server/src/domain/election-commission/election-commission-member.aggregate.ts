@@ -89,7 +89,9 @@ export class ElectionCommissionMemberAggregate {
     const name = params.name.trim();
 
     if (name.length === 0) {
-      throw new DomainError('election commission member name must not be empty');
+      throw new DomainError(
+        'election commission member name must not be empty',
+      );
     }
 
     return new ElectionCommissionMemberAggregate(

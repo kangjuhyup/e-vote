@@ -1,13 +1,20 @@
 # Electronic Voting ERD
 
-전자투표 시스템의 기본 테이블 설계입니다. `투표(votes)`는 부모 투표 행사이고, `투표상세(vote_details)`는 그 안에 포함되는 개별 투표 항목입니다.
+전자투표 시스템의 기본 테이블 설계입니다. `선거관리위원회(election_commissions)`는 투표 행사의 운영 주체이고, `투표(votes)`는 부모 투표 행사이며, `투표상세(vote_details)`는 그 안에 포함되는 개별 투표 항목입니다.
 
 ```mermaid
 erDiagram
+    ELECTION_COMMISSIONS ||--o{ ELECTION_COMMISSION_MEMBERS : has
+    ELECTION_COMMISSIONS ||--o{ VOTES : governs
+    ELECTION_COMMISSIONS ||--o{ FIELD_VOTING_SESSIONS : operates
     VOTES ||--|{ VOTE_DETAILS : contains
+    VOTES ||--|{ VOTE_VOTING_CHANNELS : allows
     VOTES ||--|{ ELECTORS : has
+    VOTES ||--o{ FIELD_VOTING_SESSIONS : schedules
     VOTES ||--o{ VOTE_ATTACHMENTS : has
     VOTES ||--o{ VOTE_CONTENT_CHANGE_HISTORIES : records
+    ELECTION_COMMISSION_MEMBERS ||--o{ FIELD_VOTING_SESSION_MANAGERS : manages
+    ELECTION_COMMISSION_MEMBERS ||--o{ FIELD_PARTICIPATION_EVIDENCES : verifies
     VOTE_DETAILS ||--|{ CANDIDATES : has
     VOTE_DETAILS ||--o{ VOTE_PARTICIPATIONS : receives
     VOTE_DETAILS ||--o{ VOTE_CONTENT_CHANGE_HISTORIES : changed_in
@@ -15,6 +22,9 @@ erDiagram
     ELECTORS ||--o{ VOTE_PARTICIPATIONS : casts
     ELECTORS ||--o{ ELECTOR_ATTACHMENTS : signs_with
     ELECTORS ||--o{ ELECTOR_IDENTITY_VERIFICATIONS : verifies_with
+    FIELD_VOTING_SESSIONS ||--o{ FIELD_VOTING_SESSION_MANAGERS : assigns
+    FIELD_VOTING_SESSIONS ||--o{ VOTE_PARTICIPATIONS : records
+    FIELD_VOTING_SESSIONS ||--o{ FIELD_PARTICIPATION_EVIDENCES : confirms
     CANDIDATES ||--o{ VOTE_PARTICIPATIONS : selected_in_public
     CANDIDATES ||--o{ CANDIDATE_ATTACHMENTS : has
     CANDIDATES ||--o{ VOTE_CONTENT_CHANGE_HISTORIES : changed_in
@@ -22,12 +32,33 @@ erDiagram
     CANDIDATES ||--|| VOTE_RESULTS : counted_as
     VOTE_ATTACHMENTS ||--o{ VOTE_CONTENT_CHANGE_HISTORIES : changed_in
     CANDIDATE_ATTACHMENTS ||--o{ VOTE_CONTENT_CHANGE_HISTORIES : changed_in
+    VOTE_PARTICIPATIONS ||--o| FIELD_PARTICIPATION_EVIDENCES : evidenced_by
     FILES ||--o{ VOTE_ATTACHMENTS : linked_to_votes
     FILES ||--o{ ELECTOR_ATTACHMENTS : linked_to_electors
     FILES ||--o{ CANDIDATE_ATTACHMENTS : linked_to_candidates
+    FILES ||--o{ FIELD_PARTICIPATION_EVIDENCES : linked_to_evidence
+
+    ELECTION_COMMISSIONS {
+        uuid id PK
+        string name
+        string status "ACTIVE | SUSPENDED"
+        datetime created_at
+        datetime updated_at
+    }
+
+    ELECTION_COMMISSION_MEMBERS {
+        uuid id PK
+        uuid commission_id FK
+        string name
+        string role "ADMIN | FIELD_MANAGER"
+        string status "ACTIVE | INACTIVE"
+        datetime registered_at
+        datetime updated_at
+    }
 
     VOTES {
         uuid id PK
+        uuid commission_id FK
         string title
         text description
         string default_privacy_mode "SECRET | PUBLIC"
@@ -42,6 +73,13 @@ erDiagram
         datetime ended_at
         datetime created_at
         datetime updated_at
+    }
+
+    VOTE_VOTING_CHANNELS {
+        uuid id PK
+        uuid vote_id FK
+        string channel "ONLINE | ONSITE | VISIT"
+        datetime created_at
     }
 
     VOTE_DETAILS {
@@ -83,6 +121,28 @@ erDiagram
         datetime updated_at
     }
 
+    FIELD_VOTING_SESSIONS {
+        uuid id PK
+        uuid commission_id FK
+        uuid vote_id FK
+        string channel "ONSITE | VISIT"
+        string title
+        string location_name
+        string address
+        datetime starts_at
+        datetime ends_at
+        string status "SCHEDULED | OPEN | CLOSED | CANCELED"
+        datetime created_at
+        datetime updated_at
+    }
+
+    FIELD_VOTING_SESSION_MANAGERS {
+        uuid id PK
+        uuid field_voting_session_id FK
+        uuid commission_member_id FK
+        datetime assigned_at
+    }
+
     VOTE_PARTICIPATIONS {
         uuid id PK
         uuid vote_detail_id FK
@@ -90,10 +150,23 @@ erDiagram
         uuid candidate_id FK "Nullable: PUBLIC only"
         string group_key "Nullable snapshot"
         decimal vote_weight "Applied weight snapshot"
+        string voting_channel "ONLINE | ONSITE | VISIT"
+        uuid field_voting_session_id FK "Nullable: ONLINE only"
         string status "CAST | CANCELED"
         datetime participated_at
         datetime created_at
         datetime updated_at
+    }
+
+    FIELD_PARTICIPATION_EVIDENCES {
+        uuid id PK
+        uuid participation_id FK
+        uuid field_voting_session_id FK
+        uuid verified_by_commission_member_id FK
+        uuid evidence_file_id FK "Nullable"
+        text verification_note "Nullable"
+        datetime verified_at
+        datetime created_at
     }
 
     VOTE_RESULTS {
@@ -203,10 +276,24 @@ erDiagram
 
 ## Table Notes
 
+### election_commissions
+
+투표를 주관하는 운영 주체입니다.
+
+- `status = ACTIVE`인 위원회만 새 투표와 현장/방문 투표 세션을 운영할 수 있습니다.
+
+### election_commission_members
+
+선거관리위원회 소속 운영자입니다.
+
+- `role = ADMIN` 또는 `FIELD_MANAGER`인 활성 위원만 현장/방문 투표 세션 관리자로 배정할 수 있습니다.
+- 위원 상태가 `INACTIVE`이면 새 현장/방문 투표 검증자로 사용할 수 없습니다.
+
 ### votes
 
 부모 투표 행사입니다. 하나의 `votes` 아래에 여러 개의 `vote_details`를 둘 수 있습니다.
 
+- `commission_id`: 투표를 주관하는 선거관리위원회입니다.
 - `default_privacy_mode`: 투표상세의 기본 공개 범위입니다.
 - `default_participation_unit`: 투표상세의 기본 투표권 단위입니다.
 - `default_result_storage_mode`: 투표상세 결과 저장 방식의 기본값입니다.
@@ -215,6 +302,15 @@ erDiagram
 - `identity_verification_provider`: 본인인증 제공자입니다. 필수 인증이 아니면 `NULL`입니다.
 - `identity_verification_method`: 본인인증 방식입니다. 필수 인증이 아니면 `NULL`입니다.
 - `status`: 부모 투표의 전체 진행 상태입니다.
+
+### vote_voting_channels
+
+부모 투표 단위로 허용하는 참여 채널입니다.
+
+- `ONLINE`: 온라인 투표 참여입니다.
+- `ONSITE`: 지정 장소에서 선거관리위원이 관리하는 현장 투표입니다.
+- `VISIT`: 선거관리위원이 방문하여 진행하는 방문 투표입니다.
+- 같은 부모 투표 안에서 `channel`은 중복될 수 없습니다.
 
 ### vote_details
 
@@ -256,6 +352,23 @@ effectiveVoteWeightMode =
 - 후보자 투표: 후보자 목록을 저장합니다.
 - 찬반 투표: `찬성`, `반대` 선택지를 저장합니다.
 
+### field_voting_sessions
+
+현장 또는 방문 투표 운영 단위입니다.
+
+- `commission_id`: 세션을 운영하는 선거관리위원회입니다.
+- `vote_id`: 세션이 속한 부모 투표입니다.
+- `channel`: `ONSITE` 또는 `VISIT`만 허용합니다.
+- `starts_at`은 `ends_at`보다 빨라야 합니다.
+- `status`: 예약, 개시, 종료, 취소 상태입니다.
+
+### field_voting_session_managers
+
+현장 또는 방문 투표 세션에 배정된 선거관리위원 목록입니다.
+
+- 같은 세션에 같은 위원을 중복 배정할 수 없습니다.
+- 배정 가능한지 여부는 도메인에서 위원회 일치, 역할, 활성 상태로 검증합니다.
+
 ### vote_participations
 
 선거인의 투표 참여 기록입니다.
@@ -263,8 +376,22 @@ effectiveVoteWeightMode =
 - `elector_id`: 실제 투표를 행사한 선거인입니다.
 - `group_key`: 투표 당시 `electors.group_key`를 복사한 스냅샷입니다.
 - `vote_weight`: 투표 당시 적용된 표 가중치 스냅샷입니다.
+- `voting_channel`: 참여 채널입니다.
+- `field_voting_session_id`: `ONSITE` 또는 `VISIT` 참여일 때 연결되는 현장/방문 투표 세션입니다. `ONLINE` 참여에서는 반드시 `NULL`입니다.
 - `candidate_id`: 공개 투표일 때만 선택 후보를 저장합니다.
 - 비밀 투표에서는 `candidate_id`를 반드시 `NULL`로 둡니다.
+- 중복 참여 방지는 기존과 동일하게 `vote_detail_id + elector_id` 또는 `vote_detail_id + group_key` 기준이며, 현장 세션별로 중복 범위를 나누지 않습니다.
+
+### field_participation_evidences
+
+현장 또는 방문 투표 참여 확인 증빙입니다.
+
+- `participation_id`: 증빙이 연결되는 투표 참여입니다.
+- `field_voting_session_id`: 참여가 발생한 현장/방문 투표 세션입니다.
+- `verified_by_commission_member_id`: 증빙을 확인한 선거관리위원입니다.
+- `evidence_file_id`: 서명 또는 증빙 파일 메타데이터입니다. 파일 바이너리는 스토리지에 보관합니다.
+- `verification_note`: 현장 확인 메모입니다. 민감 원문이나 신분증 원문은 저장하지 않습니다.
+- 참여 증빙 도메인 이벤트에는 주소, 확인 메모, 서명 원문 같은 민감 데이터를 포함하지 않습니다.
 
 ### vote_results
 

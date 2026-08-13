@@ -8,9 +8,14 @@ describe('database entities registry', () => {
     expect(databaseEntities.map((entity) => entity.name).sort()).toEqual([
       'CandidateAttachmentEntity',
       'CandidateEntity',
+      'ElectionCommissionEntity',
+      'ElectionCommissionMemberEntity',
       'ElectorAttachmentEntity',
       'ElectorEntity',
       'ElectorIdentityVerificationEntity',
+      'FieldParticipationEvidenceEntity',
+      'FieldVotingSessionEntity',
+      'FieldVotingSessionManagerEntity',
       'FileEntity',
       'VoteAttachmentEntity',
       'VoteContentChangeHistoryEntity',
@@ -19,6 +24,7 @@ describe('database entities registry', () => {
       'VoteParticipationEntity',
       'VoteResultEntity',
       'VoteResultStorageRecordEntity',
+      'VoteVotingChannelEntity',
     ]);
   });
 

@@ -189,7 +189,9 @@ export class ParticipationAggregate {
     }
 
     if (!fieldVotingSession) {
-      throw new DomainError('field participation requires field voting session');
+      throw new DomainError(
+        'field participation requires field voting session',
+      );
     }
 
     if (fieldVotingSession.status !== FieldVotingSessionStatus.Open) {

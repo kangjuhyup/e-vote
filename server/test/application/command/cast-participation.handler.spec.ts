@@ -128,7 +128,9 @@ describe('CastParticipationHandler', () => {
     };
     const fieldVotingSessionRepository: FieldVotingSessionRepositoryPort = {
       nextId: jest.fn().mockReturnValue('session-unused'),
-      findById: jest.fn().mockResolvedValue(createOpenFieldVotingSessionFixture()),
+      findById: jest
+        .fn()
+        .mockResolvedValue(createOpenFieldVotingSessionFixture()),
       save: jest.fn().mockResolvedValue(undefined),
     };
     const handler = new CastParticipationHandler(

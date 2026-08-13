@@ -84,9 +84,7 @@ describe('field voting session domain', () => {
       status: FieldVotingSessionStatus.Scheduled,
     });
     expect(session.hasAssignedManager('member-1')).toBe(true);
-    expect(session.pullEvents()[0]).toBeInstanceOf(
-      FieldVotingSessionScheduled,
-    );
+    expect(session.pullEvents()[0]).toBeInstanceOf(FieldVotingSessionScheduled);
   });
 
   it('rejects online field voting sessions', () => {

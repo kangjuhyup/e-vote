@@ -38,6 +38,10 @@ export class CreateVoteResponse {
     readonly commissionId: string;
     readonly status: string;
   }): CreateVoteResponse {
-    return new CreateVoteResponse(result.id, result.commissionId, result.status);
+    return new CreateVoteResponse(
+      result.id,
+      result.commissionId,
+      result.status,
+    );
   }
 }

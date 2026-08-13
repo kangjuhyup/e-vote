@@ -126,10 +126,9 @@ export class CastParticipationHandler {
       return undefined;
     }
 
-    const fieldVotingSession =
-      await this.fieldVotingSessionRepository.findById(
-        command.fieldVotingSessionId,
-      );
+    const fieldVotingSession = await this.fieldVotingSessionRepository.findById(
+      command.fieldVotingSessionId,
+    );
 
     if (!fieldVotingSession) {
       throw new FieldVotingSessionNotFoundError();

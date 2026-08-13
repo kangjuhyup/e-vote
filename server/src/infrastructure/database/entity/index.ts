@@ -5,9 +5,13 @@ import type {
   ContentChangeAction,
   ContentChangeActorType,
   ContentChangeTargetType,
+  ElectionCommissionMemberRole,
+  ElectionCommissionMemberStatus,
+  ElectionCommissionStatus,
   ElectorAttachmentType,
   ElectorStatus,
   FileStatus,
+  FieldVotingSessionStatus,
   IdentityVerificationMethod,
   IdentityVerificationProvider,
   IdentityVerificationStatus,
@@ -20,14 +24,21 @@ import type {
   VoteDetailType,
   VoteStatus,
   VoteWeightMode,
+  VotingChannel,
 } from './type/database-enum.type';
 
 export interface DatabaseEntityRegistry {
+  readonly ElectionCommissionEntity: EntityClass<AnyEntity>;
+  readonly ElectionCommissionMemberEntity: EntityClass<AnyEntity>;
   readonly VoteEntity: EntityClass<AnyEntity>;
+  readonly VoteVotingChannelEntity: EntityClass<AnyEntity>;
   readonly VoteDetailEntity: EntityClass<AnyEntity>;
   readonly ElectorEntity: EntityClass<AnyEntity>;
   readonly CandidateEntity: EntityClass<AnyEntity>;
+  readonly FieldVotingSessionEntity: EntityClass<AnyEntity>;
+  readonly FieldVotingSessionManagerEntity: EntityClass<AnyEntity>;
   readonly VoteParticipationEntity: EntityClass<AnyEntity>;
+  readonly FieldParticipationEvidenceEntity: EntityClass<AnyEntity>;
   readonly VoteResultEntity: EntityClass<AnyEntity>;
   readonly FileEntity: EntityClass<AnyEntity>;
   readonly VoteAttachmentEntity: EntityClass<AnyEntity>;
@@ -48,11 +59,36 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
 
   const { defineEntity, p } = await import('@mikro-orm/postgresql');
 
+  const ElectionCommissionSchema = defineEntity({
+    name: 'ElectionCommissionEntity',
+    tableName: 'election_commissions',
+    properties: {
+      id: p.uuid().primary(),
+      name: p.string(),
+      status: p.string().$type<ElectionCommissionStatus>(),
+      createdAt: p.datetime().fieldName('created_at'),
+      updatedAt: p.datetime().fieldName('updated_at'),
+      members: () =>
+        p.oneToMany(ElectionCommissionMemberEntity).mappedBy('commission'),
+      votes: () => p.oneToMany(VoteEntity).mappedBy('commission'),
+      fieldVotingSessions: () =>
+        p.oneToMany(FieldVotingSessionEntity).mappedBy('commission'),
+    },
+  });
+  class ElectionCommissionEntity extends ElectionCommissionSchema.class {}
+  ElectionCommissionSchema.setClass(ElectionCommissionEntity);
+
   const VoteSchema = defineEntity({
     name: 'VoteEntity',
     tableName: 'votes',
     properties: {
       id: p.uuid().primary(),
+      commission: () =>
+        p
+          .manyToOne(ElectionCommissionEntity)
+          .fieldName('commission_id')
+          .inversedBy('votes')
+          .deleteRule('restrict'),
       title: p.string(),
       description: p.text(),
       defaultPrivacyMode: p
@@ -89,6 +125,8 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
       endedAt: p.datetime().fieldName('ended_at'),
       createdAt: p.datetime().fieldName('created_at'),
       updatedAt: p.datetime().fieldName('updated_at'),
+      votingChannels: () =>
+        p.oneToMany(VoteVotingChannelEntity).mappedBy('vote'),
       voteDetails: () => p.oneToMany(VoteDetailEntity).mappedBy('vote'),
       electors: () => p.oneToMany(ElectorEntity).mappedBy('vote'),
       attachments: () => p.oneToMany(VoteAttachmentEntity).mappedBy('vote'),
@@ -98,6 +136,60 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   });
   class VoteEntity extends VoteSchema.class {}
   VoteSchema.setClass(VoteEntity);
+
+  const ElectionCommissionMemberSchema = defineEntity({
+    name: 'ElectionCommissionMemberEntity',
+    tableName: 'election_commission_members',
+    properties: {
+      id: p.uuid().primary(),
+      commission: () =>
+        p
+          .manyToOne(ElectionCommissionEntity)
+          .fieldName('commission_id')
+          .inversedBy('members')
+          .deleteRule('cascade'),
+      name: p.string(),
+      role: p.string().$type<ElectionCommissionMemberRole>(),
+      status: p.string().$type<ElectionCommissionMemberStatus>(),
+      registeredAt: p.datetime().fieldName('registered_at'),
+      updatedAt: p.datetime().fieldName('updated_at'),
+      fieldVotingSessionManagerLinks: () =>
+        p
+          .oneToMany(FieldVotingSessionManagerEntity)
+          .mappedBy('commissionMember'),
+      verifiedFieldParticipationEvidences: () =>
+        p
+          .oneToMany(FieldParticipationEvidenceEntity)
+          .mappedBy('verifiedByCommissionMember'),
+    },
+  });
+  class ElectionCommissionMemberEntity
+    extends ElectionCommissionMemberSchema.class {}
+  ElectionCommissionMemberSchema.setClass(ElectionCommissionMemberEntity);
+
+  const VoteVotingChannelSchema = defineEntity({
+    name: 'VoteVotingChannelEntity',
+    tableName: 'vote_voting_channels',
+    uniques: [
+      {
+        name: 'vote_voting_channels_vote_id_channel_unique',
+        properties: ['vote', 'channel'],
+      },
+    ],
+    properties: {
+      id: p.uuid().primary(),
+      vote: () =>
+        p
+          .manyToOne(VoteEntity)
+          .fieldName('vote_id')
+          .inversedBy('votingChannels')
+          .deleteRule('cascade'),
+      channel: p.string().$type<VotingChannel>(),
+      createdAt: p.datetime().fieldName('created_at'),
+    },
+  });
+  class VoteVotingChannelEntity extends VoteVotingChannelSchema.class {}
+  VoteVotingChannelSchema.setClass(VoteVotingChannelEntity);
 
   const VoteDetailSchema = defineEntity({
     name: 'VoteDetailEntity',
@@ -226,6 +318,43 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   class CandidateEntity extends CandidateSchema.class {}
   CandidateSchema.setClass(CandidateEntity);
 
+  const FieldVotingSessionSchema = defineEntity({
+    name: 'FieldVotingSessionEntity',
+    tableName: 'field_voting_sessions',
+    properties: {
+      id: p.uuid().primary(),
+      commission: () =>
+        p
+          .manyToOne(ElectionCommissionEntity)
+          .fieldName('commission_id')
+          .inversedBy('fieldVotingSessions')
+          .deleteRule('cascade'),
+      vote: () =>
+        p.manyToOne(VoteEntity).fieldName('vote_id').deleteRule('cascade'),
+      channel: p.string().$type<VotingChannel>(),
+      title: p.string(),
+      locationName: p.string().fieldName('location_name'),
+      address: p.string(),
+      startsAt: p.datetime().fieldName('starts_at'),
+      endsAt: p.datetime().fieldName('ends_at'),
+      status: p.string().$type<FieldVotingSessionStatus>(),
+      createdAt: p.datetime().fieldName('created_at'),
+      updatedAt: p.datetime().fieldName('updated_at'),
+      managerLinks: () =>
+        p
+          .oneToMany(FieldVotingSessionManagerEntity)
+          .mappedBy('fieldVotingSession'),
+      participations: () =>
+        p.oneToMany(VoteParticipationEntity).mappedBy('fieldVotingSession'),
+      evidences: () =>
+        p
+          .oneToMany(FieldParticipationEvidenceEntity)
+          .mappedBy('fieldVotingSession'),
+    },
+  });
+  class FieldVotingSessionEntity extends FieldVotingSessionSchema.class {}
+  FieldVotingSessionSchema.setClass(FieldVotingSessionEntity);
+
   const VoteParticipationSchema = defineEntity({
     name: 'VoteParticipationEntity',
     tableName: 'vote_participations',
@@ -258,10 +387,23 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
           .deleteRule('set null'),
       groupKey: p.string().fieldName('group_key').nullable(),
       voteWeight: p.decimal('number').fieldName('vote_weight'),
+      votingChannel: p
+        .string()
+        .$type<VotingChannel>()
+        .fieldName('voting_channel'),
+      fieldVotingSession: () =>
+        p
+          .manyToOne(FieldVotingSessionEntity)
+          .fieldName('field_voting_session_id')
+          .inversedBy('participations')
+          .nullable()
+          .deleteRule('set null'),
       status: p.string().$type<ParticipationStatus>(),
       participatedAt: p.datetime().fieldName('participated_at'),
       createdAt: p.datetime().fieldName('created_at'),
       updatedAt: p.datetime().fieldName('updated_at'),
+      fieldParticipationEvidences: () =>
+        p.oneToMany(FieldParticipationEvidenceEntity).mappedBy('participation'),
     },
   });
   class VoteParticipationEntity extends VoteParticipationSchema.class {}
@@ -323,10 +465,87 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
         p.oneToMany(ElectorAttachmentEntity).mappedBy('file'),
       candidateAttachments: () =>
         p.oneToMany(CandidateAttachmentEntity).mappedBy('file'),
+      fieldParticipationEvidences: () =>
+        p.oneToMany(FieldParticipationEvidenceEntity).mappedBy('evidenceFile'),
     },
   });
   class FileEntity extends FileSchema.class {}
   FileSchema.setClass(FileEntity);
+
+  const FieldVotingSessionManagerSchema = defineEntity({
+    name: 'FieldVotingSessionManagerEntity',
+    tableName: 'field_voting_session_managers',
+    uniques: [
+      {
+        name: 'field_voting_session_managers_session_member_unique',
+        properties: ['fieldVotingSession', 'commissionMember'],
+      },
+    ],
+    properties: {
+      id: p.uuid().primary(),
+      fieldVotingSession: () =>
+        p
+          .manyToOne(FieldVotingSessionEntity)
+          .fieldName('field_voting_session_id')
+          .inversedBy('managerLinks')
+          .deleteRule('cascade'),
+      commissionMember: () =>
+        p
+          .manyToOne(ElectionCommissionMemberEntity)
+          .fieldName('commission_member_id')
+          .inversedBy('fieldVotingSessionManagerLinks')
+          .deleteRule('cascade'),
+      assignedAt: p.datetime().fieldName('assigned_at'),
+    },
+  });
+  class FieldVotingSessionManagerEntity
+    extends FieldVotingSessionManagerSchema.class {}
+  FieldVotingSessionManagerSchema.setClass(FieldVotingSessionManagerEntity);
+
+  const FieldParticipationEvidenceSchema = defineEntity({
+    name: 'FieldParticipationEvidenceEntity',
+    tableName: 'field_participation_evidences',
+    uniques: [
+      {
+        name: 'field_participation_evidences_participation_id_unique',
+        properties: ['participation'],
+      },
+    ],
+    properties: {
+      id: p.uuid().primary(),
+      participation: () =>
+        p
+          .manyToOne(VoteParticipationEntity)
+          .fieldName('participation_id')
+          .inversedBy('fieldParticipationEvidences')
+          .deleteRule('cascade'),
+      fieldVotingSession: () =>
+        p
+          .manyToOne(FieldVotingSessionEntity)
+          .fieldName('field_voting_session_id')
+          .inversedBy('evidences')
+          .deleteRule('cascade'),
+      verifiedByCommissionMember: () =>
+        p
+          .manyToOne(ElectionCommissionMemberEntity)
+          .fieldName('verified_by_commission_member_id')
+          .inversedBy('verifiedFieldParticipationEvidences')
+          .deleteRule('restrict'),
+      evidenceFile: () =>
+        p
+          .manyToOne(FileEntity)
+          .fieldName('evidence_file_id')
+          .inversedBy('fieldParticipationEvidences')
+          .nullable()
+          .deleteRule('set null'),
+      verificationNote: p.text().fieldName('verification_note').nullable(),
+      verifiedAt: p.datetime().fieldName('verified_at'),
+      createdAt: p.datetime().fieldName('created_at'),
+    },
+  });
+  class FieldParticipationEvidenceEntity
+    extends FieldParticipationEvidenceSchema.class {}
+  FieldParticipationEvidenceSchema.setClass(FieldParticipationEvidenceEntity);
 
   const VoteAttachmentSchema = defineEntity({
     name: 'VoteAttachmentEntity',
@@ -564,11 +783,17 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   VoteResultStorageRecordSchema.setClass(VoteResultStorageRecordEntity);
 
   const databaseEntities = [
+    ElectionCommissionEntity,
+    ElectionCommissionMemberEntity,
     VoteEntity,
+    VoteVotingChannelEntity,
     VoteDetailEntity,
     ElectorEntity,
     CandidateEntity,
+    FieldVotingSessionEntity,
+    FieldVotingSessionManagerEntity,
     VoteParticipationEntity,
+    FieldParticipationEvidenceEntity,
     VoteResultEntity,
     FileEntity,
     VoteAttachmentEntity,
@@ -580,11 +805,17 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   ];
 
   cachedRegistry = {
+    ElectionCommissionEntity,
+    ElectionCommissionMemberEntity,
     VoteEntity,
+    VoteVotingChannelEntity,
     VoteDetailEntity,
     ElectorEntity,
     CandidateEntity,
+    FieldVotingSessionEntity,
+    FieldVotingSessionManagerEntity,
     VoteParticipationEntity,
+    FieldParticipationEvidenceEntity,
     VoteResultEntity,
     FileEntity,
     VoteAttachmentEntity,

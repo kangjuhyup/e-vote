@@ -53,11 +53,7 @@ describe('domain type constants', () => {
       'ACTIVE',
       'INACTIVE',
     ]);
-    expect(Object.values(VotingChannel)).toEqual([
-      'ONLINE',
-      'ONSITE',
-      'VISIT',
-    ]);
+    expect(Object.values(VotingChannel)).toEqual(['ONLINE', 'ONSITE', 'VISIT']);
     expect(Object.values(FieldVotingSessionStatus)).toEqual([
       'SCHEDULED',
       'OPEN',
