@@ -6,7 +6,7 @@ interface CreateElectorParams {
   readonly id: string;
   readonly voteId: string;
   readonly identifier: string;
-  readonly groupKey?: string | null;
+  readonly groupKey?: string;
   readonly voteWeight?: number;
   readonly status?: ElectorStatus;
   readonly identityVerified?: boolean;
@@ -19,7 +19,7 @@ export class ElectorAggregate {
     readonly id: string,
     readonly voteId: string,
     readonly identifier: string,
-    readonly groupKey: string | null,
+    readonly groupKey: string | undefined,
     readonly voteWeight: number,
     readonly status: ElectorStatus,
     identityVerified: boolean,
@@ -43,7 +43,7 @@ export class ElectorAggregate {
       id,
       voteId,
       identifier,
-      params.groupKey?.trim() || null,
+      params.groupKey?.trim() || undefined,
       voteWeight,
       params.status ?? ElectorStatus.Eligible,
       params.identityVerified ?? false,

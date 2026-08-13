@@ -19,7 +19,7 @@ interface CastParticipationParams {
   readonly id: string;
   readonly voteDetailId: string;
   readonly elector: ElectorAggregate;
-  readonly selectedCandidateId: string | null;
+  readonly selectedCandidateId?: string;
   readonly effectivePolicy: VotePolicy;
   readonly participatedAt: Date;
 }
@@ -31,8 +31,8 @@ export class ParticipationAggregate {
     readonly id: string,
     readonly voteDetailId: string,
     readonly electorId: string,
-    readonly candidateId: string | null,
-    readonly groupKey: string | null,
+    readonly candidateId: string | undefined,
+    readonly groupKey: string | undefined,
     readonly voteWeight: number,
     readonly participatedAt: Date,
     public status: ParticipationStatus,
@@ -115,10 +115,10 @@ export class ParticipationAggregate {
 
   private static resolveCandidateId(
     effectivePolicy: VotePolicy,
-    selectedCandidateId: string | null,
-  ): string | null {
+    selectedCandidateId: string | undefined,
+  ): string | undefined {
     if (effectivePolicy.privacyMode === PrivacyMode.Secret) {
-      return null;
+      return undefined;
     }
 
     if (!selectedCandidateId) {
