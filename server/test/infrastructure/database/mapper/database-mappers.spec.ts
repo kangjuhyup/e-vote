@@ -109,12 +109,16 @@ describe('database mappers', () => {
       candidate: null,
       groupKey: 'group-1',
       voteWeight: '3.5',
+      votingChannel: VotingChannel.Onsite,
+      fieldVotingSession: { id: 'session-1' },
       participatedAt: new Date('2026-08-10T00:00:00.000Z'),
       status: ParticipationStatus.Cast,
     });
 
     expect(participation.candidateId).toBeUndefined();
     expect(participation.voteWeight).toBe(3.5);
+    expect(participation.votingChannel).toBe(VotingChannel.Onsite);
+    expect(participation.fieldVotingSessionId).toBe('session-1');
     expect(participation.pullEvents()).toEqual([]);
   });
 });

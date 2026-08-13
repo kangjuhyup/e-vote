@@ -11,6 +11,7 @@ describe('CreateVoteDetailHandler', () => {
       .mockResolvedValue(undefined);
     const repository: VoteDetailRepositoryPort = {
       nextId: jest.fn().mockReturnValue('vote-detail-1'),
+      findById: jest.fn().mockResolvedValue(undefined),
       save,
     };
     const handler = new CreateVoteDetailHandler(repository);

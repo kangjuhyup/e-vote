@@ -63,6 +63,7 @@ describe('aggregate reconstitution', () => {
       electorId: 'elector-1',
       groupKey: 'group-1',
       voteWeight: 3.5,
+      votingChannel: VotingChannel.Online,
       participatedAt: new Date('2026-08-10T00:00:00.000Z'),
       status: ParticipationStatus.Cast,
     });
@@ -70,6 +71,7 @@ describe('aggregate reconstitution', () => {
     expect(participation.candidateId).toBeUndefined();
     expect(participation.groupKey).toBe('group-1');
     expect(participation.voteWeight).toBe(3.5);
+    expect(participation.votingChannel).toBe(VotingChannel.Online);
     expect(participation.pullEvents()).toEqual([]);
   });
 
