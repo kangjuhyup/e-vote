@@ -18,6 +18,7 @@
     "test:cov": "node --no-warnings --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
     "test:debug": "node --no-warnings --experimental-vm-modules --inspect-brk -r tsconfig-paths/register -r ts-node/register ./node_modules/jest/bin/jest.js --runInBand",
     "test:e2e": "node --no-warnings --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
+    "test:e2e:redis": "node --no-warnings --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-redis-e2e.json",
     "db:migration:create": "mikro-orm migration:create",
     "db:migration:up": "mikro-orm migration:up",
     "db:migration:down": "mikro-orm migration:down"
@@ -40,6 +41,7 @@
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "ioredis": "^6.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
