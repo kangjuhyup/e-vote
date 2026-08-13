@@ -3,9 +3,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   DATABASE_HEALTH_PORT,
   DatabaseHealthPort,
-} from './application/port/database-health.port';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+} from '../src/application/port/database-health.port';
+import { AppController } from '../src/app.controller';
+import { AppService } from '../src/app.service';
 
 describe('AppController', () => {
   let appController: AppController;
