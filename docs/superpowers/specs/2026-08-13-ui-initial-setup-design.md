@@ -13,14 +13,15 @@ Initialize the `ui` workspace as a Next.js frontend for the electronic voting se
 - Use Zustand for client UI state.
 - Use TanStack React Query for server state.
 - Use shadcn/ui as the default component design system.
-- Organize frontend source code with a feature slice structure.
+- Organize frontend source code with a feature slice structure for feature logic.
+- Keep React component declarations under `ui/src/components`, not under feature folders.
 - Keep server code unchanged.
 
 ## Architecture
 
-The frontend is a single Next.js App Router application under `ui`. Next app routes stay in `ui/src/app`, while feature-owned UI, hooks, queries, stores, and model code live under `ui/src/features/<feature>`.
+The frontend is a single Next.js App Router application under `ui`. Next app routes stay in `ui/src/app`, while feature-owned query options, stores, and model code live under `ui/src/features/<feature>`.
 
-Shared cross-feature code lives under `ui/src/shared`. Application-wide providers live under `ui/src/app/providers.tsx` so App Router layouts can wrap the full client tree without leaking provider setup into feature slices.
+React components live under `ui/src/components`. shadcn/ui primitives live under `ui/src/components/ui`, and composed dashboard components live under `ui/src/components/dashboard`. Shared cross-feature infrastructure lives under `ui/src/shared`. Application-wide providers live under `ui/src/app/providers.tsx` so App Router layouts can wrap the full client tree without leaking provider setup into feature slices.
 
 Directory shape:
 
@@ -40,29 +41,37 @@ ui/
           dashboard.types.ts
         store/
           dashboard-ui.store.ts
-        ui/
-          dashboard-page.tsx
-    shared/
-      config/
-        query-client.ts
-      lib/
-        utils.ts
+    components/
+      dashboard/
+        activity-list.tsx
+        dashboard-page.tsx
+        metric-card.tsx
+        operations-panel.tsx
       ui/
         badge.tsx
         button.tsx
         card.tsx
         separator.tsx
+    shared/
+      config/
+        query-client.ts
+      lib/
+        utils.ts
 ```
 
 ## Feature Slice Rules
 
-Each feature owns its route-level composition, feature-specific API query options, local Zustand stores, and feature-only types.
+Each feature owns feature-specific API query options, local Zustand stores, and feature-only types.
 
-`src/app` imports feature entry components but does not hold feature logic.
+Feature folders must not declare React components. They expose typed state/query/model interfaces consumed by components.
 
-`src/shared` contains reusable primitives and infrastructure that are not owned by a single feature. shadcn/ui components are stored in `src/shared/ui` to keep design primitives separate from feature slices.
+`src/app` imports route-level composed components from `src/components` but does not hold feature logic.
 
-Cross-feature imports should point to `src/shared` or explicit feature entry files. A feature must not reach into another feature's internal `api`, `store`, or `model` folders in this setup phase.
+`src/components` contains all React component declarations. `src/components/ui` stores shadcn/ui primitives. Domain-specific composed components live in their own component folders, such as `src/components/dashboard`.
+
+`src/shared` contains reusable infrastructure that is not owned by a single feature.
+
+Cross-feature imports should point to `src/shared`, `src/components`, or explicit feature entry files. A feature must not reach into another feature's internal `api`, `store`, or `model` folders in this setup phase.
 
 ## State Management
 
@@ -81,7 +90,7 @@ shadcn/ui is configured with Tailwind CSS and CSS variables. The initial compone
 - `Card`
 - `Separator`
 
-The initial dashboard page uses these components directly from `src/shared/ui`.
+The initial dashboard page uses these components directly from `src/components/ui`.
 
 ## Runtime And Tooling
 
@@ -98,7 +107,7 @@ The `ui` package defines its own Next.js scripts:
 - `start`
 - `lint`
 
-TypeScript path alias `@/*` points to `ui/src/*`.
+TypeScript path alias `@/*` points to `ui/src/*`. shadcn aliases point UI components to `@/components/ui` and utilities to `@/shared/lib/utils`.
 
 ## Initial Screen
 
@@ -107,7 +116,7 @@ The first screen is a working electronic voting operations dashboard starter. It
 - shadcn/ui primitives rendering correctly.
 - Zustand state changing through client controls.
 - React Query loading dashboard metrics.
-- Feature slice imports through a route-level page component.
+- Feature logic imports through components declared in `src/components`.
 
 The screen is a starter UI, not a complete voting product workflow.
 
