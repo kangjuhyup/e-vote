@@ -1,5 +1,5 @@
-import { SignInPage } from "@/components/auth/sign-in-page";
-import { VoteDetailPage } from "@/components/votes/vote-detail-page";
+import { SignInContainer } from "@/features/auth/container/sign-in-container";
+import { VoteDetailContainer } from "@/features/votes/container/vote-detail-container";
 import { auth } from "@/shared/auth/auth";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +16,10 @@ export default async function VoteDetailRoute({
   const session = await auth();
 
   if (!session?.user) {
-    return <SignInPage />;
+    return <SignInContainer />;
   }
 
   const { voteId } = await params;
 
-  return <VoteDetailPage voteId={voteId} />;
+  return <VoteDetailContainer voteId={voteId} />;
 }

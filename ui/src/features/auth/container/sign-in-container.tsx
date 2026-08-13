@@ -8,10 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { E_VOTE_PROVIDER_ID } from "@/shared/auth/oidc";
 import { signIn } from "@/shared/auth/auth";
+import { E_VOTE_PROVIDER_ID } from "@/shared/auth/oidc";
 
-export function SignInPage() {
+export function SignInContainer() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <Card className="w-full max-w-md rounded-lg">

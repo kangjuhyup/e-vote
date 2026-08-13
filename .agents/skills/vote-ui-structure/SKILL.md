@@ -8,3 +8,5 @@ description: Use when adding, changing, or reviewing vote frontend UI structure,
 Canonical rules: `../../../skills/ui-structure.md`
 
 Before working on vote frontend UI code, read and apply the canonical rules above.
+
+Non-negotiable boundary: reusable components are feature-independent. Do not place feature-slice folders under `ui/src/components`, and do not import `@/features` from `ui/src/components`; put feature-aware React Query/Zustand wiring in `ui/src/features/<feature>/container`.

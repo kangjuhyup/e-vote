@@ -1,11 +1,11 @@
 import { formatKoreanDateTime } from "@/shared/lib/date-format";
 
-interface VotePeriodProps {
-  startsAt: string;
+interface PeriodRangeProps {
   endsAt: string;
+  startsAt: string;
 }
 
-export function VotePeriod({ startsAt, endsAt }: VotePeriodProps) {
+export function PeriodRange({ endsAt, startsAt }: PeriodRangeProps) {
   return (
     <span>
       {formatKoreanDateTime(startsAt)} - {formatKoreanDateTime(endsAt)}
