@@ -4,6 +4,10 @@ import {
   databaseRepositoryPortTokens,
   databaseRepositoryProviders,
 } from './database-repository.providers';
+import {
+  databaseTransactionPortTokens,
+  databaseTransactionProviders,
+} from './database-transaction.providers';
 import { createDatabaseConfig } from './database.config';
 
 @Module({})
@@ -36,8 +40,14 @@ export class DatabaseModule {
     return {
       module: DatabaseModule,
       imports: [configModule, mikroOrmModule],
-      providers: [...databaseRepositoryProviders],
-      exports: [...databaseRepositoryPortTokens],
+      providers: [
+        ...databaseRepositoryProviders,
+        ...databaseTransactionProviders,
+      ],
+      exports: [
+        ...databaseRepositoryPortTokens,
+        ...databaseTransactionPortTokens,
+      ],
     };
   }
 }
