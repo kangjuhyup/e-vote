@@ -25,6 +25,7 @@ const statusFilters: Array<{ value: VoteStatusFilter; label: string }> = [
   { value: "scheduled", label: "예정" },
   { value: "completed", label: "종료" },
   { value: "draft", label: "초안" },
+  { value: "canceled", label: "취소" },
 ];
 
 function VoteListLoadingState() {
