@@ -11,6 +11,7 @@ import {
   VoteDetailStatus,
   VoteStatus,
 } from '../../../../src/domain/vote/type/vote-status.type';
+import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
 import { CandidateMapper } from '../../../../src/infrastructure/database/mapper/candidate.mapper';
 import { ElectorMapper } from '../../../../src/infrastructure/database/mapper/elector.mapper';
 import { ParticipationMapper } from '../../../../src/infrastructure/database/mapper/participation.mapper';
@@ -21,7 +22,9 @@ describe('database mappers', () => {
   it('maps vote entity state into a vote aggregate', () => {
     const vote = VoteMapper.toDomain({
       id: 'vote-1',
+      commission: { id: 'commission-1' },
       title: 'Board election',
+      votingChannels: [{ channel: VotingChannel.Online }],
       defaultPrivacyMode: PrivacyMode.Public,
       defaultParticipationUnit: ParticipationUnit.Group,
       defaultResultStorageMode: ResultStorageMode.Blockchain,
@@ -33,6 +36,8 @@ describe('database mappers', () => {
     });
 
     expect(vote.status).toBe(VoteStatus.Open);
+    expect(vote.commissionId).toBe('commission-1');
+    expect(vote.votingChannels).toEqual([VotingChannel.Online]);
     expect(vote.defaultPolicy).toEqual({
       privacyMode: PrivacyMode.Public,
       participationUnit: ParticipationUnit.Group,

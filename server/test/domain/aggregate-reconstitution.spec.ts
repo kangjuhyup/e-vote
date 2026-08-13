@@ -16,6 +16,7 @@ import {
   VoteDetailStatus,
   VoteStatus,
 } from '../../src/domain/vote/type/vote-status.type';
+import { VotingChannel } from '../../src/domain/vote/type/voting-channel.type';
 import { IdentityVerificationPolicy } from '../../src/domain/vote/vo/identity-verification-policy.vo';
 import { VotePolicy } from '../../src/domain/vote/vo/vote-policy.vo';
 
@@ -23,7 +24,9 @@ describe('aggregate reconstitution', () => {
   it('restores vote state without publishing lifecycle events', () => {
     const vote = VoteAggregate.reconstitute({
       id: 'vote-1',
+      commissionId: 'commission-1',
       title: 'Board election',
+      votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
       defaultPolicy: VotePolicy.of({
         privacyMode: PrivacyMode.Public,
         participationUnit: ParticipationUnit.Group,
@@ -39,6 +42,11 @@ describe('aggregate reconstitution', () => {
     });
 
     expect(vote.status).toBe(VoteStatus.Open);
+    expect(vote.commissionId).toBe('commission-1');
+    expect(vote.votingChannels).toEqual([
+      VotingChannel.Online,
+      VotingChannel.Onsite,
+    ]);
     expect(vote.defaultPolicy).toEqual({
       privacyMode: PrivacyMode.Public,
       participationUnit: ParticipationUnit.Group,

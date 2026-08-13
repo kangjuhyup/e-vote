@@ -31,7 +31,9 @@ export class VoteController {
   async createVote(@Body() body: CreateVoteBody): Promise<CreateVoteResponse> {
     const result = await this.createVoteHandler.execute(
       CreateVoteCommand.of({
+        commissionId: body.commissionId,
         title: body.title,
+        votingChannels: body.votingChannels,
         defaultPolicy: body.defaultPolicy,
         identityVerificationPolicy: body.identityVerificationPolicy,
       }),
