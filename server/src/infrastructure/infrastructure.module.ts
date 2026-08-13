@@ -5,6 +5,6 @@ import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [DatabaseModule.register(), RedisModule, StorageModule],
-  exports: [RedisModule, StorageModule],
+  exports: [DatabaseModule, RedisModule, StorageModule],
 })
 export class InfrastructureModule {}

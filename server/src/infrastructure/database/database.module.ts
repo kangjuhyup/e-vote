@@ -1,5 +1,9 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  databaseRepositoryPortTokens,
+  databaseRepositoryProviders,
+} from './database-repository.providers';
 import { createDatabaseConfig } from './database.config';
 
 @Module({})
@@ -32,6 +36,8 @@ export class DatabaseModule {
     return {
       module: DatabaseModule,
       imports: [configModule, mikroOrmModule],
+      providers: [...databaseRepositoryProviders],
+      exports: [...databaseRepositoryPortTokens],
     };
   }
 }

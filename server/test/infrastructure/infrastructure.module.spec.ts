@@ -1,4 +1,5 @@
 import { MODULE_METADATA } from '@nestjs/common/constants';
+import { DatabaseModule } from '../../src/infrastructure/database/database.module';
 import { InfrastructureModule } from '../../src/infrastructure/infrastructure.module';
 import { RedisModule } from '../../src/infrastructure/redis/redis.module';
 import { StorageModule } from '../../src/infrastructure/storage/storage.module';
@@ -20,6 +21,7 @@ describe('InfrastructureModule', () => {
       InfrastructureModule,
     ) as unknown[];
 
+    expect(exports).toContain(DatabaseModule);
     expect(exports).toContain(RedisModule);
     expect(exports).toContain(StorageModule);
   });
