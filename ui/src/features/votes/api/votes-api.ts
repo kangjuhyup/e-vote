@@ -26,35 +26,90 @@ type VoteApiFetcher = (
   init?: RequestInit,
 ) => Promise<Response>;
 
+const VOTE_API_PAGE_SIZE = 100;
+
+interface VoteApiPageResponse<TItem> {
+  items: TItem[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+interface VotePolicyResponseDto {
+  privacyMode: string;
+  participationUnit: string;
+  resultStorageMode: string;
+  voteWeightMode: string;
+}
+
+interface IdentityVerificationPolicyResponseDto {
+  required: boolean;
+  provider?: string;
+  method?: string;
+}
+
 export interface VoteSummaryResponseDto {
   id: string;
+  commissionId: string;
   title: string;
+  votingChannels: string[];
+  defaultPolicy: VotePolicyResponseDto;
+  identityVerificationPolicy: IdentityVerificationPolicyResponseDto;
   status: string;
-  startsAt: string;
-  endsAt: string;
-  electorCount: number;
-  participatedCount: number;
+  startedAt: string;
+  endedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  electorCount?: number;
+  participatedCount?: number;
 }
 
 export interface VoteCandidateResponseDto {
   id: string;
+  voteId?: string;
+  voteDetailId: string;
+  candidateNo: number;
   name: string;
   description: string;
-  order: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface VoteDetailItemResponseDto {
+  id: string;
+  voteId: string;
+  title: string;
+  description: string;
+  type: string;
+  sortOrder: number;
+  status: string;
+  candidates: VoteCandidateResponseDto[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface VoteElectorResponseDto {
   id: string;
+  voteId: string;
   name: string;
-  label: string;
-  participated: boolean;
-  participatedAt: string | null;
+  identifier: string;
+  phoneNumber?: string;
+  birthDate?: string;
+  groupKey?: string;
+  voteWeight: number;
+  status: string;
+  identityVerified: boolean;
+  participated?: boolean;
+  participatedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface VoteDetailResponseDto extends VoteSummaryResponseDto {
   description: string;
-  candidates: VoteCandidateResponseDto[];
-  electors: VoteElectorResponseDto[];
+  voteDetails: VoteDetailItemResponseDto[];
 }
 
 interface CreateVotesApiClientOptions {
@@ -76,11 +131,22 @@ function resolveVoteApiBaseUrl() {
   );
 }
 
-function buildVoteApiUrl(baseUrl: string, path: string) {
+function buildVoteApiUrl(
+  baseUrl: string,
+  path: string,
+  query?: Record<string, string | number>,
+) {
   const normalizedBaseUrl = baseUrl.replace(/\/+$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const searchParams = new URLSearchParams();
 
-  return `${normalizedBaseUrl}${normalizedPath}`;
+  Object.entries(query ?? {}).forEach(([key, value]) => {
+    searchParams.set(key, String(value));
+  });
+
+  const search = searchParams.size > 0 ? `?${searchParams.toString()}` : "";
+
+  return `${normalizedBaseUrl}${normalizedPath}${search}`;
 }
 
 function mapVoteStatus(status: string): VoteStatus {
@@ -117,10 +183,10 @@ export function mapVoteSummaryResponse(
     id: response.id,
     title: response.title,
     status: mapVoteStatus(response.status),
-    startsAt: response.startsAt,
-    endsAt: response.endsAt,
-    electorCount: response.electorCount,
-    participatedCount: response.participatedCount,
+    startsAt: response.startedAt,
+    endsAt: response.endedAt,
+    electorCount: response.electorCount ?? 0,
+    participatedCount: response.participatedCount ?? 0,
   };
 }
 
@@ -131,7 +197,7 @@ function mapVoteCandidateResponse(
     id: response.id,
     name: response.name,
     description: response.description,
-    order: response.order,
+    order: response.candidateNo,
   };
 }
 
@@ -139,28 +205,39 @@ function mapVoteElectorResponse(response: VoteElectorResponseDto): VoteElector {
   return {
     id: response.id,
     name: response.name,
-    label: response.label,
-    participated: response.participated,
-    participatedAt: response.participatedAt,
+    label: response.groupKey ?? response.identifier,
+    participated: response.participated ?? false,
+    participatedAt: response.participatedAt ?? null,
   };
 }
 
 export function mapVoteDetailResponse(
   response: VoteDetailResponseDto,
+  electors: VoteElectorResponseDto[] = [],
 ): VoteDetail {
+  const mappedElectors = electors.map(mapVoteElectorResponse);
+  const participatedCount = mappedElectors.filter(
+    (elector) => elector.participated,
+  ).length;
+
   return {
     ...mapVoteSummaryResponse(response),
+    electorCount: response.electorCount ?? mappedElectors.length,
+    participatedCount: response.participatedCount ?? participatedCount,
     description: response.description,
-    candidates: response.candidates.map(mapVoteCandidateResponse),
-    electors: response.electors.map(mapVoteElectorResponse),
+    candidates: response.voteDetails.flatMap((voteDetail) =>
+      voteDetail.candidates.map(mapVoteCandidateResponse),
+    ),
+    electors: mappedElectors,
   };
 }
 
 function fetchVoteApiResponse(
   path: string,
   input: { baseUrl: string; fetcher: VoteApiFetcher },
+  query?: Record<string, string | number>,
 ): Promise<Response> {
-  return input.fetcher(buildVoteApiUrl(input.baseUrl, path), {
+  return input.fetcher(buildVoteApiUrl(input.baseUrl, path, query), {
     headers: { Accept: "application/json" },
   });
 }
@@ -168,14 +245,58 @@ function fetchVoteApiResponse(
 async function requestVoteApi<T>(
   path: string,
   input: { baseUrl: string; fetcher: VoteApiFetcher },
+  query?: Record<string, string | number>,
 ): Promise<T> {
-  const response = await fetchVoteApiResponse(path, input);
+  const response = await fetchVoteApiResponse(path, input, query);
 
   if (!response.ok) {
     throw new Error(`Vote API request failed: ${response.status}`);
   }
 
   return unwrapVoteApiResponse<T>(await response.json());
+}
+
+async function requestVoteApiOrNull<T>(
+  path: string,
+  input: { baseUrl: string; fetcher: VoteApiFetcher },
+): Promise<T | null> {
+  const response = await fetchVoteApiResponse(path, input);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Vote API request failed: ${response.status}`);
+  }
+
+  return unwrapVoteApiResponse<T>(await response.json());
+}
+
+async function requestVoteApiPage<T>(
+  path: string,
+  input: { baseUrl: string; fetcher: VoteApiFetcher },
+): Promise<T[]> {
+  const items: T[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await requestVoteApi<VoteApiPageResponse<T>>(
+      path,
+      input,
+      {
+        page,
+        pageSize: VOTE_API_PAGE_SIZE,
+      },
+    );
+
+    items.push(...response.items);
+    totalPages = response.totalPages;
+    page += 1;
+  } while (page <= totalPages);
+
+  return items;
 }
 
 export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) {
@@ -189,7 +310,7 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
       return fallbackVoteDetails.map(toVoteSummary);
     }
 
-    const response = await requestVoteApi<VoteSummaryResponseDto[]>("/votes", {
+    const response = await requestVoteApiPage<VoteSummaryResponseDto>("/votes", {
       baseUrl,
       fetcher,
     });
@@ -202,25 +323,25 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
       return findVoteDetail(fallbackVoteDetails, voteId);
     }
 
-    const response = await fetchVoteApiResponse(
-      `/votes/${encodeURIComponent(voteId)}`,
+    const encodedVoteId = encodeURIComponent(voteId);
+    const response = await requestVoteApiOrNull<VoteDetailResponseDto>(
+      `/votes/${encodedVoteId}`,
       {
         baseUrl,
         fetcher,
       },
     );
 
-    if (response.status === 404) {
+    if (response === null) {
       return null;
     }
 
-    if (!response.ok) {
-      throw new Error(`Vote API request failed: ${response.status}`);
-    }
-
-    return mapVoteDetailResponse(
-      unwrapVoteApiResponse<VoteDetailResponseDto>(await response.json()),
+    const electors = await requestVoteApiPage<VoteElectorResponseDto>(
+      `/votes/${encodedVoteId}/electors`,
+      { baseUrl, fetcher },
     );
+
+    return mapVoteDetailResponse(response, electors);
   }
 
   async function fetchVoteDashboard(): Promise<VoteDashboard> {
