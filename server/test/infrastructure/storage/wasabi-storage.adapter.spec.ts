@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -15,6 +16,13 @@ type PresignStorageUrl = (
   command: PresignStorageCommand,
   options: { expiresIn: number },
 ) => Promise<string>;
+type SendHeadObject = (command: HeadObjectCommand) => Promise<{
+  ContentType: string;
+  ContentLength: number;
+  ETag: string;
+  LastModified: Date;
+  Metadata: Record<string, string>;
+}>;
 
 const config: WasabiStorageConfig = {
   endpoint: 'https://s3.ap-northeast-1.wasabisys.com',
@@ -126,6 +134,68 @@ describe('WasabiStorageAdapter', () => {
     });
     expect(firstPresignOptions(presign)).toEqual({ expiresIn: 300 });
   });
+
+  it('reads uploaded object metadata with HEAD object', async () => {
+    const send = jest.fn<SendHeadObject>().mockResolvedValue({
+      ContentType: 'application/pdf',
+      ContentLength: 1024,
+      ETag: '"etag"',
+      LastModified: now,
+      Metadata: {
+        voteId: 'vote-1',
+      },
+    });
+    const adapter = new WasabiStorageAdapter(
+      createStorageClient(),
+      config,
+      jest.fn<PresignStorageUrl>(),
+      () => 'unused-key',
+      () => now,
+      send,
+    );
+
+    await expect(
+      adapter.getObjectMetadata('attachments/generated-key'),
+    ).resolves.toEqual({
+      storageKey: 'attachments/generated-key',
+      contentType: 'application/pdf',
+      contentLength: 1024,
+      eTag: '"etag"',
+      lastModified: now,
+      metadata: {
+        voteId: 'vote-1',
+      },
+    });
+
+    expect(send).toHaveBeenCalledTimes(1);
+    const command = firstHeadObjectCommand(send);
+    expect(command).toBeInstanceOf(HeadObjectCommand);
+    expect(command.input).toEqual({
+      Bucket: 'vote-files',
+      Key: 'attachments/generated-key',
+    });
+  });
+
+  it('returns undefined when uploaded object is missing', async () => {
+    const send = jest.fn<SendHeadObject>().mockRejectedValue({
+      name: 'NotFound',
+      $metadata: {
+        httpStatusCode: 404,
+      },
+    });
+    const adapter = new WasabiStorageAdapter(
+      createStorageClient(),
+      config,
+      jest.fn<PresignStorageUrl>(),
+      () => 'unused-key',
+      () => now,
+      send,
+    );
+
+    await expect(
+      adapter.getObjectMetadata('attachments/missing-key'),
+    ).resolves.toBeUndefined();
+  });
 });
 
 function createStorageClient(): S3Client {
@@ -164,4 +234,17 @@ function firstPresignOptions(presign: jest.MockedFunction<PresignStorageUrl>): {
   }
 
   return firstCall[2];
+}
+
+function firstHeadObjectCommand(
+  send: jest.MockedFunction<SendHeadObject>,
+): HeadObjectCommand {
+  const calls = send.mock.calls as [HeadObjectCommand][];
+  const firstCall = calls[0];
+
+  if (!firstCall) {
+    throw new Error('expected storage client to receive a HEAD command');
+  }
+
+  return firstCall[0];
 }

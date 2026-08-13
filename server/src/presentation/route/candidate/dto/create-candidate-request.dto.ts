@@ -30,3 +30,11 @@ export class CreateCandidateParam {
   })
   readonly voteDetailId!: string;
 }
+
+export class CandidateAttachmentParam extends CreateCandidateParam {
+  @ApiProperty({
+    example: 'candidate-1',
+    description: '후보 ID입니다.',
+  })
+  readonly candidateId!: string;
+}

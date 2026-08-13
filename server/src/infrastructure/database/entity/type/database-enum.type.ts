@@ -15,6 +15,7 @@ export type CandidateStatus = 'ACTIVE' | 'WITHDRAWN';
 export type ParticipationStatus = 'CAST' | 'CANCELED';
 export type FileStatus = 'ACTIVE' | 'DELETED';
 export type VoteAttachmentType = 'NOTICE' | 'GUIDE' | 'ETC';
+export type VoteDetailAttachmentType = 'NOTICE' | 'GUIDE' | 'ETC';
 export type ElectorAttachmentType = 'SIGNATURE' | 'ETC';
 export type CandidateAttachmentType =
   'PROFILE_IMAGE' | 'PLEDGE' | 'POSTER' | 'ETC';

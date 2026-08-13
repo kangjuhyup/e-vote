@@ -19,6 +19,7 @@ describe('database entities registry', () => {
       'FileEntity',
       'VoteAttachmentEntity',
       'VoteContentChangeHistoryEntity',
+      'VoteDetailAttachmentEntity',
       'VoteDetailEntity',
       'VoteEntity',
       'VoteParticipationEntity',

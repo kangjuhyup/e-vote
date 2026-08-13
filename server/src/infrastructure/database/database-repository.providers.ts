@@ -1,4 +1,5 @@
 import type { Provider } from '@nestjs/common';
+import { ATTACHMENT_REPOSITORY_PORT } from '../../application/port/attachment-repository.port';
 import { CANDIDATE_REPOSITORY_PORT } from '../../application/port/candidate-repository.port';
 import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from '../../application/port/election-commission-member-repository.port';
 import { ELECTION_COMMISSION_REPOSITORY_PORT } from '../../application/port/election-commission-repository.port';
@@ -10,6 +11,7 @@ import { PARTICIPATION_REPOSITORY_PORT } from '../../application/port/participat
 import { VOTE_DETAIL_REPOSITORY_PORT } from '../../application/port/vote-detail-repository.port';
 import { VOTE_READ_REPOSITORY_PORT } from '../../application/port/vote-read-repository.port';
 import { VOTE_REPOSITORY_PORT } from '../../application/port/vote-repository.port';
+import { AttachmentRepositoryAdapter } from './repository/attachment-repository.adapter';
 import { CandidateRepositoryAdapter } from './repository/candidate-repository.adapter';
 import { ElectionCommissionMemberRepositoryAdapter } from './repository/election-commission-member-repository.adapter';
 import { ElectionCommissionRepositoryAdapter } from './repository/election-commission-repository.adapter';
@@ -67,6 +69,10 @@ export const databaseRepositoryProviders: Provider[] = [
     provide: FILE_REPOSITORY_PORT,
     useClass: FileRepositoryAdapter,
   },
+  {
+    provide: ATTACHMENT_REPOSITORY_PORT,
+    useClass: AttachmentRepositoryAdapter,
+  },
 ];
 
 export const databaseRepositoryPortTokens = [
@@ -81,4 +87,5 @@ export const databaseRepositoryPortTokens = [
   FIELD_VOTING_SESSION_REPOSITORY_PORT,
   FIELD_PARTICIPATION_EVIDENCE_REPOSITORY_PORT,
   FILE_REPOSITORY_PORT,
+  ATTACHMENT_REPOSITORY_PORT,
 ] as const;
