@@ -23,10 +23,7 @@ export class FieldVotingSessionOpened extends DomainEvent {
   }
 
   static of(params: DomainEventProps): FieldVotingSessionOpened {
-    return new FieldVotingSessionOpened(
-      params.aggregateId,
-      params.occurredAt,
-    );
+    return new FieldVotingSessionOpened(params.aggregateId, params.occurredAt);
   }
 }
 
@@ -38,10 +35,7 @@ export class FieldVotingSessionClosed extends DomainEvent {
   }
 
   static of(params: DomainEventProps): FieldVotingSessionClosed {
-    return new FieldVotingSessionClosed(
-      params.aggregateId,
-      params.occurredAt,
-    );
+    return new FieldVotingSessionClosed(params.aggregateId, params.occurredAt);
   }
 }
 
@@ -60,8 +54,24 @@ export class FieldVotingSessionCanceled extends DomainEvent {
   }
 }
 
+export class FieldParticipationEvidenceRecorded extends DomainEvent {
+  readonly type = 'FieldParticipationEvidenceRecorded' as const;
+
+  private constructor(aggregateId: string, occurredAt: Date) {
+    super(aggregateId, occurredAt);
+  }
+
+  static of(params: DomainEventProps): FieldParticipationEvidenceRecorded {
+    return new FieldParticipationEvidenceRecorded(
+      params.aggregateId,
+      params.occurredAt,
+    );
+  }
+}
+
 export type FieldVotingDomainEvent =
   | FieldVotingSessionScheduled
   | FieldVotingSessionOpened
   | FieldVotingSessionClosed
-  | FieldVotingSessionCanceled;
+  | FieldVotingSessionCanceled
+  | FieldParticipationEvidenceRecorded;
