@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, UserRound } from "lucide-react";
 
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ActivityList } from "@/components/dashboard/activity-list";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { OperationsPanel } from "@/components/dashboard/operations-panel";
@@ -12,7 +13,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { dashboardMetricsQueryOptions } from "@/features/dashboard/api/dashboard-query-options";
 import { useDashboardUiStore } from "@/features/dashboard/store/dashboard-ui.store";
 
-export function DashboardPage() {
+interface DashboardPageProps {
+  sessionUser: {
+    name: string | null;
+    email: string | null;
+  };
+}
+
+export function DashboardPage({ sessionUser }: DashboardPageProps) {
   const density = useDashboardUiStore((state) => state.density);
   const statusFilter = useDashboardUiStore((state) => state.statusFilter);
   const setDensity = useDashboardUiStore((state) => state.setDensity);
@@ -35,18 +43,32 @@ export function DashboardPage() {
               확인합니다.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => dashboardMetricsQuery.refetch()}
-            disabled={dashboardMetricsQuery.isFetching}
-          >
-            <RefreshCw
-              className={dashboardMetricsQuery.isFetching ? "animate-spin" : ""}
-              aria-hidden="true"
-            />
-            새로고침
-          </Button>
+          <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+            <div className="flex min-h-9 items-center gap-2 rounded-md border bg-card px-3 text-sm">
+              <UserRound
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="max-w-56 truncate">
+                {sessionUser.name ?? sessionUser.email ?? "인증 사용자"}
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => dashboardMetricsQuery.refetch()}
+              disabled={dashboardMetricsQuery.isFetching}
+            >
+              <RefreshCw
+                className={
+                  dashboardMetricsQuery.isFetching ? "animate-spin" : ""
+                }
+                aria-hidden="true"
+              />
+              새로고침
+            </Button>
+            <SignOutButton />
+          </div>
         </header>
 
         <section className="grid gap-4 md:grid-cols-3">
