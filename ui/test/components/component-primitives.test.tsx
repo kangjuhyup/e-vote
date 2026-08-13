@@ -1,10 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { OrderedOptionList } from "./collections/ordered-option-list";
-import { ParticipantRoster } from "./collections/participant-roster";
-import { ParticipationProgress } from "./data/participation-progress";
-import { StatusBadge } from "./data/status-badge";
+import { OrderedOptionList } from "@/components/collections/ordered-option-list";
+import { ParticipantRoster } from "@/components/collections/participant-roster";
+import { ParticipationProgress } from "@/components/data/participation-progress";
+import { StatusBadge } from "@/components/data/status-badge";
 
 describe("feature-independent components", () => {
   it("renders generic status, progress, and ordered option content", () => {

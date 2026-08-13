@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { toCandidateItems } from "./vote-view-models";
+import { toCandidateItems } from "@/features/votes/lib/vote-view-models";
 
 describe("vote view models", () => {
   it("orders candidate items by ballot order", () => {

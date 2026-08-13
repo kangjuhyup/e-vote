@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const srcRoot = path.resolve(import.meta.dirname, "..");
+const srcRoot = path.join(process.cwd(), "src");
 const componentsRoot = path.join(srcRoot, "components");
 const featuresRoot = path.join(srcRoot, "features");
 
@@ -43,6 +43,16 @@ function isFeatureLayer(filePath: string, layer: string) {
 }
 
 describe("component boundaries", () => {
+  it("keeps test files outside the src tree", () => {
+    const srcTestFiles = walkFiles(srcRoot).filter((filePath) =>
+      /\.(test|spec)\.(ts|tsx|js|jsx)$/.test(filePath),
+    );
+
+    expect(srcTestFiles.map((filePath) => path.relative(srcRoot, filePath))).toEqual(
+      [],
+    );
+  });
+
   it("keeps components independent from feature modules", () => {
     const componentSourceFiles = walkFiles(componentsRoot).filter((filePath) =>
       /\.(ts|tsx)$/.test(filePath),

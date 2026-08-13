@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatKoreanDateTime } from "./date-format";
+import { formatKoreanDateTime } from "@/shared/lib/date-format";
 
 describe("formatKoreanDateTime", () => {
   it("formats timestamps with the application timezone", () => {

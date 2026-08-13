@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildTenantOidcIssuer, mapEVoteProfileToUser } from "./oidc";
+import { buildTenantOidcIssuer, mapEVoteProfileToUser } from "@/shared/auth/oidc";
 
 describe("buildTenantOidcIssuer", () => {
   it("builds a tenant-scoped OIDC issuer from an origin and tenant code", () => {

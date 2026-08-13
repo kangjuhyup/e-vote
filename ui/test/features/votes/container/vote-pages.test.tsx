@@ -7,9 +7,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useVotesUiStore } from "@/features/votes/store/votes-ui.store";
 
-import { VoteDashboardContainer } from "./vote-dashboard-container";
-import { VoteDetailContainer } from "./vote-detail-container";
-import { VoteListContainer } from "./vote-list-container";
+import { VoteDashboardContainer } from "@/features/votes/container/vote-dashboard-container";
+import { VoteDetailContainer } from "@/features/votes/container/vote-detail-container";
+import { VoteListContainer } from "@/features/votes/container/vote-list-container";
 
 const queryClients: QueryClient[] = [];
 

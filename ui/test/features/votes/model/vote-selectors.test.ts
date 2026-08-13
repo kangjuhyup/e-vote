@@ -7,8 +7,8 @@ import {
   findVoteDetail,
   formatParticipationRate,
   getParticipationPercent,
-} from "./vote-selectors";
-import type { VoteDetail, VoteSummary } from "./vote.types";
+} from "@/features/votes/model/vote-selectors";
+import type { VoteDetail, VoteSummary } from "@/features/votes/model/vote.types";
 
 const summaries: VoteSummary[] = [
   {

@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   voteDashboardQueryOptions,
   voteDetailQueryOptions,
-} from "./votes-query-options";
-import type { VoteDashboard, VoteDetail } from "../model/vote.types";
+} from "@/features/votes/api/votes-query-options";
+import type { VoteDashboard, VoteDetail } from "@/features/votes/model/vote.types";
 
 async function runQuery<T>(queryFn: unknown): Promise<T> {
   if (typeof queryFn !== "function") {

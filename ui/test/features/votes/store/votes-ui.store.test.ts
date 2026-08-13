@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { useVotesUiStore } from "./votes-ui.store";
+import { useVotesUiStore } from "@/features/votes/store/votes-ui.store";
 
 describe("useVotesUiStore", () => {
   beforeEach(() => {

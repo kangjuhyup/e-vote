@@ -10,6 +10,7 @@ Reusable components are feature-independent presentation units. They must not kn
 ```text
 ui/src/
   app/                  # Next App Router route files, auth gates, providers
+  test/                 # tests mirroring src structure
   components/           # reusable feature-independent presentation components
     collections/        # reusable list/table/card collection components
     data/               # reusable data display components
@@ -36,6 +37,12 @@ ui/src/
 - Import feature-aware containers from `@/features/<feature>/container/...` or generic components from `@/components/...`.
 - Put app-wide providers in `providers.tsx`.
 - Do not put reusable UI components here.
+
+`ui/test`:
+- Put every test file here, at the same level as `ui/src`.
+- Mirror the `src` structure for discoverability, e.g. `ui/test/features/votes/model/vote-selectors.test.ts`.
+- Do not put `*.test.*` or `*.spec.*` files under `ui/src`.
+- Prefer `@/` imports from tests instead of fragile relative imports back into `src`.
 
 `ui/src/components`:
 - Put reusable presentation components here.
@@ -148,6 +155,8 @@ Use these suffixes:
 
 Before finishing a UI change:
 
+- No `*.test.*` or `*.spec.*` files exist under `ui/src`.
+- All UI tests live under `ui/test`.
 - No `.tsx` files exist under `ui/src/features` outside `<feature>/container` or `<feature>/ui`.
 - No non-container JSX composition files exist in `<feature>/container`.
 - No `@/components` imports exist under `ui/src/features` outside `<feature>/container` or `<feature>/ui`.
