@@ -20,6 +20,7 @@ export interface VoteSummary {
   endsAt: string;
   electorCount: number;
   participatedCount: number;
+  participationKnown: boolean;
 }
 
 export interface VoteCandidate {
@@ -35,6 +36,7 @@ export interface VoteElector {
   label: string;
   participated: boolean;
   participatedAt: string | null;
+  participationKnown: boolean;
 }
 
 export interface VoteDetail extends VoteSummary {

@@ -38,6 +38,7 @@ export function VoteDetailSummary({ vote }: VoteDetailSummaryProps) {
           </div>
         </div>
         <ParticipationProgress
+          isKnown={vote.participationKnown}
           value={vote.participatedCount}
           max={vote.electorCount}
         />

@@ -13,6 +13,7 @@ export interface ParticipantRosterItem {
   name: string;
   participated: boolean;
   participatedAt: string | null;
+  participationStatus?: "participated" | "not-participated" | "unknown";
 }
 
 interface ParticipantRosterProps {
@@ -48,20 +49,7 @@ export function ParticipantRoster({
             </thead>
             <tbody className="divide-y">
               {items.map((item) => (
-                <tr key={item.id}>
-                  <td className="py-3 font-medium">{item.name}</td>
-                  <td className="py-3 text-muted-foreground">{item.label}</td>
-                  <td className="py-3">
-                    <Badge variant={item.participated ? "default" : "outline"}>
-                      {item.participated ? "참여" : "미참여"}
-                    </Badge>
-                  </td>
-                  <td className="py-3 text-muted-foreground">
-                    {item.participatedAt
-                      ? formatKoreanDateTime(item.participatedAt)
-                      : "-"}
-                  </td>
-                </tr>
+                <ParticipantRosterRow key={item.id} item={item} />
               ))}
             </tbody>
           </table>
@@ -69,5 +57,35 @@ export function ParticipantRoster({
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function ParticipantRosterRow({ item }: { item: ParticipantRosterItem }) {
+  const participationStatus =
+    item.participationStatus ??
+    (item.participated ? "participated" : "not-participated");
+  const isUnknown = participationStatus === "unknown";
+
+  return (
+    <tr>
+      <td className="py-3 font-medium">{item.name}</td>
+      <td className="py-3 text-muted-foreground">{item.label}</td>
+      <td className="py-3">
+        <Badge
+          variant={participationStatus === "participated" ? "default" : "outline"}
+        >
+          {isUnknown
+            ? "집계 전"
+            : participationStatus === "participated"
+              ? "참여"
+              : "미참여"}
+        </Badge>
+      </td>
+      <td className="py-3 text-muted-foreground">
+        {item.participatedAt && !isUnknown
+          ? formatKoreanDateTime(item.participatedAt)
+          : "-"}
+      </td>
+    </tr>
   );
 }

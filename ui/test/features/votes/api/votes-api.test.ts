@@ -6,6 +6,87 @@ import {
   mapVoteSummaryResponse,
   unwrapVoteApiResponse,
 } from "@/features/votes/api/votes-api";
+import type {
+  VoteDetailResponseDto,
+  VoteElectorResponseDto,
+  VoteSummaryResponseDto,
+} from "@/features/votes/api/votes-api";
+
+function voteSummaryDto(
+  overrides: Partial<VoteSummaryResponseDto> = {},
+): VoteSummaryResponseDto {
+  return {
+    id: "vote-1",
+    commissionId: "commission-1",
+    title: "Board election",
+    votingChannels: ["ONLINE"],
+    defaultPolicy: {
+      privacyMode: "SECRET",
+      participationUnit: "INDIVIDUAL",
+      resultStorageMode: "DATABASE",
+      voteWeightMode: "EQUAL",
+    },
+    identityVerificationPolicy: {
+      required: false,
+    },
+    status: "OPEN",
+    startedAt: "2026-08-10T09:00:00.000Z",
+    endedAt: "2026-08-20T09:00:00.000Z",
+    createdAt: "2026-08-09T09:00:00.000Z",
+    updatedAt: "2026-08-09T10:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function voteDetailDto(
+  overrides: Partial<VoteDetailResponseDto> = {},
+): VoteDetailResponseDto {
+  const { description, voteDetails, ...summaryOverrides } = overrides;
+
+  return {
+    ...voteSummaryDto(summaryOverrides),
+    description: description ?? "대표 후보를 선출합니다.",
+    voteDetails: voteDetails ?? [],
+  };
+}
+
+function electorDto(
+  overrides: Partial<VoteElectorResponseDto> = {},
+): VoteElectorResponseDto {
+  return {
+    id: "elector-1",
+    voteId: "vote-1",
+    name: "Lee",
+    identifier: "member-1",
+    groupKey: "운영팀",
+    voteWeight: 1,
+    status: "ELIGIBLE",
+    identityVerified: false,
+    createdAt: "2026-08-09T09:00:00.000Z",
+    updatedAt: "2026-08-09T10:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function pageDto<T>(items: T[], page = 1, totalPages = 1) {
+  return {
+    items,
+    page,
+    pageSize: 100,
+    totalItems: items.length,
+    totalPages,
+  };
+}
+
+function jsonResponse(data: unknown) {
+  return new Response(
+    JSON.stringify({
+      success: true,
+      data,
+      timestamp: "2026-08-13T00:00:00.000Z",
+    }),
+  );
+}
 
 describe("votes api", () => {
   it("unwraps the server response envelope from the presentation interceptor", () => {
@@ -22,26 +103,15 @@ describe("votes api", () => {
   it("maps server vote status DTO values into UI vote statuses", () => {
     expect(
       ["DRAFT", "OPEN", "CLOSED", "CANCELED"].map((status) =>
-        mapVoteSummaryResponse({
-          id: `vote-${status}`,
-          commissionId: "commission-1",
-          title: status,
-          votingChannels: ["ONLINE"],
-          defaultPolicy: {
-            privacyMode: "SECRET",
-            participationUnit: "INDIVIDUAL",
-            resultStorageMode: "DATABASE",
-            voteWeightMode: "EQUAL",
-          },
-          identityVerificationPolicy: {
-            required: false,
-          },
-          status,
-          startedAt: "2026-08-10T09:00:00.000Z",
-          endedAt: "2026-08-20T09:00:00.000Z",
-          createdAt: "2026-08-09T09:00:00.000Z",
-          updatedAt: "2026-08-09T10:00:00.000Z",
-        }),
+        mapVoteSummaryResponse(
+          voteSummaryDto({
+            id: `vote-${status}`,
+            title: status,
+            status,
+            startedAt: "2026-08-10T09:00:00.000Z",
+          }),
+          "2026-08-13T00:00:00.000Z",
+        ),
       ),
     ).toEqual([
       expect.objectContaining({ status: "draft" }),
@@ -49,6 +119,18 @@ describe("votes api", () => {
       expect.objectContaining({ status: "completed" }),
       expect.objectContaining({ status: "canceled" }),
     ]);
+  });
+
+  it("maps future draft votes into the scheduled dashboard bucket", () => {
+    expect(
+      mapVoteSummaryResponse(
+        voteSummaryDto({
+          status: "DRAFT",
+          startedAt: "2026-09-01T09:00:00.000Z",
+        }),
+        "2026-08-13T00:00:00.000Z",
+      ),
+    ).toEqual(expect.objectContaining({ status: "scheduled" }));
   });
 
   it("maps server vote detail DTO values without leaking DTO casing", () => {
@@ -140,43 +222,24 @@ describe("votes api", () => {
     });
   });
 
-  it("fetches vote summaries from the configured server API base URL", async () => {
-    const fetcher = vi.fn(async () => {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: {
-            items: [
-              {
-                id: "vote-1",
-                commissionId: "commission-1",
-                title: "Board election",
-                votingChannels: ["ONLINE"],
-                defaultPolicy: {
-                  privacyMode: "SECRET",
-                  participationUnit: "INDIVIDUAL",
-                  resultStorageMode: "DATABASE",
-                  voteWeightMode: "EQUAL",
-                },
-                identityVerificationPolicy: {
-                  required: false,
-                },
-                status: "OPEN",
-                startedAt: "2026-08-10T09:00:00.000Z",
-                endedAt: "2026-08-20T09:00:00.000Z",
-                createdAt: "2026-08-09T09:00:00.000Z",
-                updatedAt: "2026-08-09T10:00:00.000Z",
-              },
-            ],
-            page: 1,
-            pageSize: 100,
-            totalItems: 1,
-            totalPages: 1,
-          },
-          timestamp: "2026-08-13T00:00:00.000Z",
-          requestId: "request-1",
-        }),
-      );
+  it("enriches vote summaries with detail elector totals from the configured server API", async () => {
+    const fetcher = vi.fn(async (input: string) => {
+      if (input === "http://localhost:3000/votes?page=1&pageSize=100") {
+        return jsonResponse(pageDto([voteSummaryDto()]));
+      }
+
+      if (input === "http://localhost:3000/votes/vote-1") {
+        return jsonResponse(voteDetailDto());
+      }
+
+      if (
+        input ===
+        "http://localhost:3000/votes/vote-1/electors?page=1&pageSize=100"
+      ) {
+        return jsonResponse(pageDto([electorDto()]));
+      }
+
+      throw new Error(`unexpected URL: ${input}`);
     });
     const client = createVotesApiClient({
       baseUrl: "http://localhost:3000/",
@@ -189,16 +252,16 @@ describe("votes api", () => {
         status: "active",
         startsAt: "2026-08-10T09:00:00.000Z",
         endsAt: "2026-08-20T09:00:00.000Z",
-        electorCount: 0,
+        electorCount: 1,
         participatedCount: 0,
+        participationKnown: false,
       }),
     ]);
-    expect(fetcher).toHaveBeenCalledWith(
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
       "http://localhost:3000/votes?page=1&pageSize=100",
-      {
-        headers: { Accept: "application/json" },
-      },
-    );
+      "http://localhost:3000/votes/vote-1",
+      "http://localhost:3000/votes/vote-1/electors?page=1&pageSize=100",
+    ]);
   });
 
   it("fetches vote detail and elector roster from the configured server API", async () => {
@@ -298,12 +361,14 @@ describe("votes api", () => {
         id: "vote/1",
         status: "active",
         electorCount: 1,
+        participationKnown: false,
         candidates: [expect.objectContaining({ id: "candidate-1", order: 1 })],
         electors: [
           expect.objectContaining({
             id: "elector-1",
             label: "운영팀",
             participated: false,
+            participationKnown: false,
           }),
         ],
       }),
@@ -311,6 +376,60 @@ describe("votes api", () => {
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
       "http://localhost:3000/api/votes/vote%2F1",
       "http://localhost:3000/api/votes/vote%2F1/electors?page=1&pageSize=100",
+    ]);
+  });
+
+  it("fetches every elector roster page for vote details", async () => {
+    const fetcher = vi.fn(async (input: string) => {
+      if (input === "http://localhost:3000/api/votes/vote-1") {
+        return jsonResponse(voteDetailDto());
+      }
+
+      if (
+        input ===
+        "http://localhost:3000/api/votes/vote-1/electors?page=1&pageSize=100"
+      ) {
+        return jsonResponse(
+          pageDto(
+            [electorDto({ id: "elector-1", identifier: "member-1" })],
+            1,
+            2,
+          ),
+        );
+      }
+
+      if (
+        input ===
+        "http://localhost:3000/api/votes/vote-1/electors?page=2&pageSize=100"
+      ) {
+        return jsonResponse(
+          pageDto(
+            [electorDto({ id: "elector-2", identifier: "member-2" })],
+            2,
+            2,
+          ),
+        );
+      }
+
+      throw new Error(`unexpected URL: ${input}`);
+    });
+    const client = createVotesApiClient({
+      baseUrl: "http://localhost:3000/api",
+      fetcher,
+    });
+
+    await expect(client.fetchVoteDetail("vote-1")).resolves.toEqual(
+      expect.objectContaining({
+        electors: [
+          expect.objectContaining({ id: "elector-1" }),
+          expect.objectContaining({ id: "elector-2" }),
+        ],
+      }),
+    );
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      "http://localhost:3000/api/votes/vote-1",
+      "http://localhost:3000/api/votes/vote-1/electors?page=1&pageSize=100",
+      "http://localhost:3000/api/votes/vote-1/electors?page=2&pageSize=100",
     ]);
   });
 

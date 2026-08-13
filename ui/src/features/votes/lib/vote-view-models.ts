@@ -59,6 +59,16 @@ export function toCandidateItems(candidates: VoteCandidate[]) {
     }));
 }
 
+function getElectorParticipationStatus(
+  elector: VoteElector,
+): "participated" | "not-participated" | "unknown" {
+  if (!elector.participationKnown) {
+    return "unknown";
+  }
+
+  return elector.participated ? "participated" : "not-participated";
+}
+
 export function toRosterItems(electors: VoteElector[]) {
   return electors.map((elector) => ({
     id: elector.id,
@@ -66,5 +76,6 @@ export function toRosterItems(electors: VoteElector[]) {
     name: elector.name,
     participated: elector.participated,
     participatedAt: elector.participatedAt,
+    participationStatus: getElectorParticipationStatus(elector),
   }));
 }

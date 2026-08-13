@@ -11,6 +11,7 @@ export const voteFixtureDetails: VoteDetail[] = [
     endsAt: "2026-08-20T09:00:00.000Z",
     electorCount: 3,
     participatedCount: 2,
+    participationKnown: true,
     candidates: [
       {
         id: "candidate-1",
@@ -32,6 +33,7 @@ export const voteFixtureDetails: VoteDetail[] = [
         label: "운영팀",
         participated: true,
         participatedAt: "2026-08-11T02:00:00.000Z",
+        participationKnown: true,
       },
       {
         id: "elector-2",
@@ -39,6 +41,7 @@ export const voteFixtureDetails: VoteDetail[] = [
         label: "재무팀",
         participated: false,
         participatedAt: null,
+        participationKnown: true,
       },
       {
         id: "elector-3",
@@ -46,6 +49,7 @@ export const voteFixtureDetails: VoteDetail[] = [
         label: "감사팀",
         participated: true,
         participatedAt: "2026-08-12T04:20:00.000Z",
+        participationKnown: true,
       },
     ],
   },
@@ -58,6 +62,7 @@ export const voteFixtureDetails: VoteDetail[] = [
     endsAt: "2026-09-05T09:00:00.000Z",
     electorCount: 1,
     participatedCount: 0,
+    participationKnown: true,
     candidates: [
       {
         id: "candidate-budget-1",
@@ -79,6 +84,7 @@ export const voteFixtureDetails: VoteDetail[] = [
         label: "기획팀",
         participated: false,
         participatedAt: null,
+        participationKnown: true,
       },
     ],
   },
@@ -91,6 +97,7 @@ export const voteFixtureDetails: VoteDetail[] = [
     endsAt: "2026-07-07T09:00:00.000Z",
     electorCount: 1,
     participatedCount: 1,
+    participationKnown: true,
     candidates: [
       {
         id: "candidate-policy-1",
@@ -112,6 +119,7 @@ export const voteFixtureDetails: VoteDetail[] = [
         label: "법무팀",
         participated: true,
         participatedAt: "2026-07-02T03:10:00.000Z",
+        participationKnown: true,
       },
     ],
   },

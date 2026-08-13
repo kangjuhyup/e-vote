@@ -19,6 +19,7 @@ export function toVoteSummary(vote: VoteSummary): VoteSummary {
     endsAt: vote.endsAt,
     electorCount: vote.electorCount,
     participatedCount: vote.participatedCount,
+    participationKnown: vote.participationKnown,
   };
 }
 
@@ -68,7 +69,8 @@ export function filterElectors(
   }
 
   return electors.filter((elector) =>
-    filter === "participated" ? elector.participated : !elector.participated,
+    elector.participationKnown &&
+    (filter === "participated" ? elector.participated : !elector.participated),
   );
 }
 
@@ -89,20 +91,24 @@ export function buildVoteDashboard(
   const completedVotes = summaries.filter((vote) => vote.status === "completed");
   const attentionVotes = summaries.filter(
     (vote) =>
+      vote.participationKnown &&
       vote.status === "active" &&
       getParticipationPercent(vote.participatedCount, vote.electorCount) < 40,
   );
+  const participationKnownVotes = summaries.filter(
+    (vote) => vote.participationKnown,
+  );
 
   const averageParticipationPercent =
-    votes.length === 0
-      ? 0
+    participationKnownVotes.length === 0
+      ? null
       : Math.round(
-          votes.reduce(
+          participationKnownVotes.reduce(
             (sum, vote) =>
               sum +
               getParticipationPercent(vote.participatedCount, vote.electorCount),
             0,
-          ) / votes.length,
+          ) / participationKnownVotes.length,
         );
 
   return {
@@ -110,7 +116,10 @@ export function buildVoteDashboard(
       activeVotes: activeVotes.length,
       scheduledVotes: upcomingVotes.length,
       completedVotes: completedVotes.length,
-      averageParticipationRate: `${averageParticipationPercent}%`,
+      averageParticipationRate:
+        averageParticipationPercent === null
+          ? "집계 전"
+          : `${averageParticipationPercent}%`,
     },
     activeVotes,
     upcomingVotes,
@@ -118,10 +127,12 @@ export function buildVoteDashboard(
     recentActivities: votes.slice(0, 4).map((vote) => ({
       id: `${vote.id}-activity`,
       title: vote.title,
-      detail: `${formatParticipationRate(
-        vote.participatedCount,
-        vote.electorCount,
-      )} 참여 / ${vote.electorCount.toLocaleString()}명 대상`,
+      detail: vote.participationKnown
+        ? `${formatParticipationRate(
+            vote.participatedCount,
+            vote.electorCount,
+          )} 참여 / ${vote.electorCount.toLocaleString()}명 대상`
+        : `참여 집계 전 / ${vote.electorCount.toLocaleString()}명 대상`,
       status: vote.status === "active" ? "stable" : "pending",
     })),
     generatedAt,

@@ -149,10 +149,35 @@ function buildVoteApiUrl(
   return `${normalizedBaseUrl}${normalizedPath}${search}`;
 }
 
-function mapVoteStatus(status: string): VoteStatus {
+function hasKnownVoteParticipationCounts(response: VoteSummaryResponseDto) {
+  return (
+    typeof response.electorCount === "number" &&
+    typeof response.participatedCount === "number"
+  );
+}
+
+function hasKnownElectorParticipation(response: VoteElectorResponseDto) {
+  return typeof response.participated === "boolean";
+}
+
+function startsAfter(startedAt: string, now: string) {
+  const startedAtTime = Date.parse(startedAt);
+  const nowTime = Date.parse(now);
+
+  return (
+    Number.isFinite(startedAtTime) &&
+    Number.isFinite(nowTime) &&
+    startedAtTime > nowTime
+  );
+}
+
+function mapVoteStatus(
+  status: string,
+  input: { startedAt: string; now: string },
+): VoteStatus {
   switch (status) {
     case "DRAFT":
-      return "draft";
+      return startsAfter(input.startedAt, input.now) ? "scheduled" : "draft";
     case "OPEN":
       return "active";
     case "CLOSED":
@@ -178,15 +203,22 @@ export function unwrapVoteApiResponse<T>(payload: unknown): T {
 
 export function mapVoteSummaryResponse(
   response: VoteSummaryResponseDto,
+  now = new Date().toISOString(),
 ): VoteSummary {
+  const participationKnown = hasKnownVoteParticipationCounts(response);
+
   return {
     id: response.id,
     title: response.title,
-    status: mapVoteStatus(response.status),
+    status: mapVoteStatus(response.status, {
+      startedAt: response.startedAt,
+      now,
+    }),
     startsAt: response.startedAt,
     endsAt: response.endedAt,
     electorCount: response.electorCount ?? 0,
     participatedCount: response.participatedCount ?? 0,
+    participationKnown,
   };
 }
 
@@ -208,22 +240,31 @@ function mapVoteElectorResponse(response: VoteElectorResponseDto): VoteElector {
     label: response.groupKey ?? response.identifier,
     participated: response.participated ?? false,
     participatedAt: response.participatedAt ?? null,
+    participationKnown: hasKnownElectorParticipation(response),
   };
 }
 
 export function mapVoteDetailResponse(
   response: VoteDetailResponseDto,
   electors: VoteElectorResponseDto[] = [],
+  now = new Date().toISOString(),
 ): VoteDetail {
   const mappedElectors = electors.map(mapVoteElectorResponse);
-  const participatedCount = mappedElectors.filter(
-    (elector) => elector.participated,
-  ).length;
+  const electorsHaveKnownParticipation =
+    electors.length > 0 && electors.every(hasKnownElectorParticipation);
+  const participationKnown =
+    hasKnownVoteParticipationCounts(response) || electorsHaveKnownParticipation;
+  const participatedCount =
+    response.participatedCount ??
+    (electorsHaveKnownParticipation
+      ? mappedElectors.filter((elector) => elector.participated).length
+      : 0);
 
   return {
-    ...mapVoteSummaryResponse(response),
+    ...mapVoteSummaryResponse(response, now),
     electorCount: response.electorCount ?? mappedElectors.length,
-    participatedCount: response.participatedCount ?? participatedCount,
+    participatedCount,
+    participationKnown,
     description: response.description,
     candidates: response.voteDetails.flatMap((voteDetail) =>
       voteDetail.candidates.map(mapVoteCandidateResponse),
@@ -305,24 +346,10 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
   const fallbackVoteDetails = options.fallbackVoteDetails ?? voteFixtureDetails;
   const now = options.now ?? (() => new Date().toISOString());
 
-  async function fetchVoteList(): Promise<VoteSummary[]> {
-    if (baseUrl.trim().length === 0) {
-      return fallbackVoteDetails.map(toVoteSummary);
-    }
-
-    const response = await requestVoteApiPage<VoteSummaryResponseDto>("/votes", {
-      baseUrl,
-      fetcher,
-    });
-
-    return response.map(mapVoteSummaryResponse);
-  }
-
-  async function fetchVoteDetail(voteId: string): Promise<VoteDetail | null> {
-    if (baseUrl.trim().length === 0) {
-      return findVoteDetail(fallbackVoteDetails, voteId);
-    }
-
+  async function fetchVoteDetailFromServer(
+    voteId: string,
+    requestTime: string,
+  ): Promise<VoteDetail | null> {
     const encodedVoteId = encodeURIComponent(voteId);
     const response = await requestVoteApiOrNull<VoteDetailResponseDto>(
       `/votes/${encodedVoteId}`,
@@ -341,7 +368,37 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
       { baseUrl, fetcher },
     );
 
-    return mapVoteDetailResponse(response, electors);
+    return mapVoteDetailResponse(response, electors, requestTime);
+  }
+
+  async function fetchVoteList(): Promise<VoteSummary[]> {
+    if (baseUrl.trim().length === 0) {
+      return fallbackVoteDetails.map(toVoteSummary);
+    }
+
+    const requestTime = now();
+    const response = await requestVoteApiPage<VoteSummaryResponseDto>("/votes", {
+      baseUrl,
+      fetcher,
+    });
+
+    return Promise.all(
+      response.map(async (vote) => {
+        const detail = await fetchVoteDetailFromServer(vote.id, requestTime);
+
+        return detail
+          ? toVoteSummary(detail)
+          : mapVoteSummaryResponse(vote, requestTime);
+      }),
+    );
+  }
+
+  async function fetchVoteDetail(voteId: string): Promise<VoteDetail | null> {
+    if (baseUrl.trim().length === 0) {
+      return findVoteDetail(fallbackVoteDetails, voteId);
+    }
+
+    return fetchVoteDetailFromServer(voteId, now());
   }
 
   async function fetchVoteDashboard(): Promise<VoteDashboard> {

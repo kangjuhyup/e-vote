@@ -31,6 +31,15 @@ describe("feature-independent components", () => {
     expect(markup).toContain("김대표");
   });
 
+  it("renders unknown participation progress without implying zero votes", () => {
+    const markup = renderToStaticMarkup(
+      <ParticipationProgress value={0} max={12} isKnown={false} />,
+    );
+
+    expect(markup).toContain("집계 전");
+    expect(markup).toContain("참여 집계 전 / 12명 대상");
+  });
+
   it("renders empty labels for generic collection components", () => {
     const markup = renderToStaticMarkup(
       <>
@@ -49,5 +58,26 @@ describe("feature-independent components", () => {
 
     expect(markup).toContain("선택 항목이 없습니다.");
     expect(markup).toContain("참여자가 없습니다.");
+  });
+
+  it("renders unknown roster participation as uncounted instead of not participated", () => {
+    const markup = renderToStaticMarkup(
+      <ParticipantRoster
+        title="참여자"
+        items={[
+          {
+            id: "elector-1",
+            label: "운영팀",
+            name: "이선거",
+            participated: false,
+            participatedAt: null,
+            participationStatus: "unknown",
+          },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain("집계 전");
+    expect(markup).not.toContain("미참여");
   });
 });

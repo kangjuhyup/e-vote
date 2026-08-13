@@ -37,6 +37,7 @@ export function VoteSummaryLink({
         ) : null}
       </div>
       <ParticipationProgress
+        isKnown={vote.participationKnown}
         value={vote.participatedCount}
         max={vote.electorCount}
       />

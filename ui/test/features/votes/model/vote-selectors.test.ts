@@ -19,6 +19,7 @@ const summaries: VoteSummary[] = [
     endsAt: "2026-08-20T09:00:00.000Z",
     electorCount: 100,
     participatedCount: 72,
+    participationKnown: true,
   },
   {
     id: "scheduled-budget",
@@ -28,6 +29,7 @@ const summaries: VoteSummary[] = [
     endsAt: "2026-09-05T09:00:00.000Z",
     electorCount: 50,
     participatedCount: 0,
+    participationKnown: true,
   },
 ];
 
@@ -45,6 +47,7 @@ const details: VoteDetail[] = [
         label: "운영팀",
         participated: true,
         participatedAt: "2026-08-11T02:00:00.000Z",
+        participationKnown: true,
       },
       {
         id: "elector-2",
@@ -52,6 +55,7 @@ const details: VoteDetail[] = [
         label: "재무팀",
         participated: false,
         participatedAt: null,
+        participationKnown: true,
       },
     ],
   },
@@ -86,15 +90,23 @@ describe("vote selectors", () => {
   });
 
   it("filters electors by participation state", () => {
-    expect(filterElectors(details[0].electors, "participated")).toEqual([
+    const unknownElector = {
+      id: "elector-unknown",
+      name: "집계전",
+      label: "운영팀",
+      participated: false,
+      participatedAt: null,
+      participationKnown: false,
+    };
+    const electors = [...details[0].electors, unknownElector];
+
+    expect(filterElectors(electors, "participated")).toEqual([
       details[0].electors[0],
     ]);
-    expect(filterElectors(details[0].electors, "not-participated")).toEqual([
+    expect(filterElectors(electors, "not-participated")).toEqual([
       details[0].electors[1],
     ]);
-    expect(filterElectors(details[0].electors, "all")).toEqual(
-      details[0].electors,
-    );
+    expect(filterElectors(electors, "all")).toEqual(electors);
   });
 
   it("returns null for an unknown vote detail id", () => {
@@ -122,5 +134,37 @@ describe("vote selectors", () => {
     expect("electors" in buildVoteDashboard(details).activeVotes[0]).toBe(
       false,
     );
+  });
+
+  it("does not calculate attention or average metrics from unknown participation counts", () => {
+    const unknownActiveVote: VoteSummary = {
+      id: "unknown-active",
+      title: "참여 집계 미제공 투표",
+      status: "active",
+      startsAt: "2026-08-10T09:00:00.000Z",
+      endsAt: "2026-08-20T09:00:00.000Z",
+      electorCount: 20,
+      participatedCount: 0,
+      participationKnown: false,
+    };
+
+    const unknownOnlyDashboard = buildVoteDashboard(
+      [unknownActiveVote],
+      "2026-08-13T00:00:00.000Z",
+    );
+
+    expect(unknownOnlyDashboard.metrics.averageParticipationRate).toBe(
+      "집계 전",
+    );
+    expect(unknownOnlyDashboard.attentionVotes).toEqual([]);
+    expect(unknownOnlyDashboard.recentActivities[0]).toMatchObject({
+      detail: "참여 집계 전 / 20명 대상",
+    });
+
+    expect(
+      buildVoteDashboard([unknownActiveVote, summaries[0]]).metrics,
+    ).toMatchObject({
+      averageParticipationRate: "72%",
+    });
   });
 });

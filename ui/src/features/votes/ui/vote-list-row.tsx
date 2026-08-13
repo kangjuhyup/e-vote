@@ -29,11 +29,14 @@ export function VoteListRow({ vote }: VoteListRowProps) {
             <PeriodRange startsAt={vote.startsAt} endsAt={vote.endsAt} />
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            선거인 {vote.electorCount.toLocaleString()}명 / 참여{" "}
-            {vote.participatedCount.toLocaleString()}명
+            선거인 {vote.electorCount.toLocaleString()}명 /{" "}
+            {vote.participationKnown
+              ? `참여 ${vote.participatedCount.toLocaleString()}명`
+              : "참여 집계 전"}
           </p>
         </div>
         <ParticipationProgress
+          isKnown={vote.participationKnown}
           value={vote.participatedCount}
           max={vote.electorCount}
         />
