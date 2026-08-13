@@ -156,13 +156,20 @@ export function mapVoteDetailResponse(
   };
 }
 
+function fetchVoteApiResponse(
+  path: string,
+  input: { baseUrl: string; fetcher: VoteApiFetcher },
+): Promise<Response> {
+  return input.fetcher(buildVoteApiUrl(input.baseUrl, path), {
+    headers: { Accept: "application/json" },
+  });
+}
+
 async function requestVoteApi<T>(
   path: string,
   input: { baseUrl: string; fetcher: VoteApiFetcher },
 ): Promise<T> {
-  const response = await input.fetcher(buildVoteApiUrl(input.baseUrl, path), {
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetchVoteApiResponse(path, input);
 
   if (!response.ok) {
     throw new Error(`Vote API request failed: ${response.status}`);
@@ -195,7 +202,7 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
       return findVoteDetail(fallbackVoteDetails, voteId);
     }
 
-    const response = await requestVoteApi<VoteDetailResponseDto>(
+    const response = await fetchVoteApiResponse(
       `/votes/${encodeURIComponent(voteId)}`,
       {
         baseUrl,
@@ -203,7 +210,17 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
       },
     );
 
-    return mapVoteDetailResponse(response);
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Vote API request failed: ${response.status}`);
+    }
+
+    return mapVoteDetailResponse(
+      unwrapVoteApiResponse<VoteDetailResponseDto>(await response.json()),
+    );
   }
 
   async function fetchVoteDashboard(): Promise<VoteDashboard> {

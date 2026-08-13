@@ -120,4 +120,53 @@ describe("votes api", () => {
       headers: { Accept: "application/json" },
     });
   });
+
+  it("fetches vote detail with an encoded vote id from the configured server API", async () => {
+    const fetcher = vi.fn(async () => {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            id: "vote/1",
+            title: "Board election",
+            description: "대표 후보를 선출합니다.",
+            status: "OPEN",
+            startsAt: "2026-08-10T09:00:00.000Z",
+            endsAt: "2026-08-20T09:00:00.000Z",
+            electorCount: 0,
+            participatedCount: 0,
+            candidates: [],
+            electors: [],
+          },
+          timestamp: "2026-08-13T00:00:00.000Z",
+        }),
+      );
+    });
+    const client = createVotesApiClient({
+      baseUrl: "http://localhost:3000/api",
+      fetcher,
+    });
+
+    await expect(client.fetchVoteDetail("vote/1")).resolves.toEqual(
+      expect.objectContaining({ id: "vote/1", status: "active" }),
+    );
+    expect(fetcher).toHaveBeenCalledWith(
+      "http://localhost:3000/api/votes/vote%2F1",
+      {
+        headers: { Accept: "application/json" },
+      },
+    );
+  });
+
+  it("returns null for a missing vote detail response from the server API", async () => {
+    const fetcher = vi.fn(async () => {
+      return new Response(null, { status: 404 });
+    });
+    const client = createVotesApiClient({
+      baseUrl: "http://localhost:3000",
+      fetcher,
+    });
+
+    await expect(client.fetchVoteDetail("missing")).resolves.toBeNull();
+  });
 });
