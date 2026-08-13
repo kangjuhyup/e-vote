@@ -19,7 +19,10 @@ describe('CreateElectorHandler', () => {
     const result = await handler.execute(
       CreateElectorCommand.of({
         voteId: 'vote-1',
+        name: 'Kim Min Su',
         identifier: 'member-1',
+        phoneNumber: '010-1234-5678',
+        birthDate: '1990-01-31',
         groupKey: 'group-1',
         voteWeight: 2,
       }),
@@ -28,6 +31,9 @@ describe('CreateElectorHandler', () => {
     expect(result).toEqual({
       id: 'elector-1',
       voteId: 'vote-1',
+      name: 'Kim Min Su',
+      phoneNumber: '010-1234-5678',
+      birthDate: '1990-01-31',
       status: ElectorStatus.Eligible,
     });
     expect(save).toHaveBeenCalledTimes(1);
@@ -35,7 +41,10 @@ describe('CreateElectorHandler', () => {
     expect(save.mock.calls[0][0]).toMatchObject({
       id: 'elector-1',
       voteId: 'vote-1',
+      name: 'Kim Min Su',
       identifier: 'member-1',
+      phoneNumber: '010-1234-5678',
+      birthDate: '1990-01-31',
       groupKey: 'group-1',
       voteWeight: 2,
       status: ElectorStatus.Eligible,

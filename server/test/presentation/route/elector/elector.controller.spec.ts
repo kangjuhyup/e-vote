@@ -35,13 +35,19 @@ describe('ElectorController', () => {
     createElectorExecute.mockResolvedValue({
       id: 'elector-1',
       voteId: 'vote-1',
+      name: 'Kim Min Su',
+      phoneNumber: '010-1234-5678',
+      birthDate: '1990-01-31',
       status: ElectorStatus.Eligible,
     });
 
     const response = await controller.createElector(
       { voteId: 'vote-1' },
       {
+        name: 'Kim Min Su',
         identifier: 'member-1',
+        phoneNumber: '010-1234-5678',
+        birthDate: '1990-01-31',
         groupKey: 'group-1',
         voteWeight: 2,
       },
@@ -50,12 +56,18 @@ describe('ElectorController', () => {
     expect(response).toEqual({
       id: 'elector-1',
       voteId: 'vote-1',
+      name: 'Kim Min Su',
+      phoneNumber: '010-1234-5678',
+      birthDate: '1990-01-31',
       status: ElectorStatus.Eligible,
     });
     expect(createElectorExecute).toHaveBeenCalledTimes(1);
     expect(createElectorExecute.mock.calls[0][0]).toMatchObject({
       voteId: 'vote-1',
+      name: 'Kim Min Su',
       identifier: 'member-1',
+      phoneNumber: '010-1234-5678',
+      birthDate: '1990-01-31',
       groupKey: 'group-1',
       voteWeight: 2,
     });

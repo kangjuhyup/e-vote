@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { maskDecoratedPersonalData } from '../serializer/mask-personal-data';
 import { RequestWithId } from '../type/request-with-id.type';
 
 type SuccessResponse<T> = {
@@ -27,12 +28,16 @@ export class ResponseInterceptor<T> implements NestInterceptor<
     const request = context.switchToHttp().getRequest<RequestWithId>();
 
     return next.handle().pipe(
-      map((data) => ({
-        success: true,
-        data,
-        timestamp: new Date().toISOString(),
-        requestId: request.requestId,
-      })),
+      map((data) => {
+        const maskedData = maskDecoratedPersonalData(data);
+
+        return {
+          success: true,
+          data: maskedData,
+          timestamp: new Date().toISOString(),
+          requestId: request.requestId,
+        };
+      }),
     );
   }
 }
