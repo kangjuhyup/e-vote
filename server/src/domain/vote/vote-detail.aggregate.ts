@@ -19,6 +19,8 @@ interface CreateVoteDetailParams {
   readonly status?: VoteDetailStatus;
 }
 
+type ReconstituteVoteDetailParams = Required<CreateVoteDetailParams>;
+
 export class VoteDetailAggregate {
   private readonly events: VoteDomainEvent[] = [];
 
@@ -54,6 +56,12 @@ export class VoteDetailAggregate {
       params.sortOrder,
       params.status ?? VoteDetailStatus.Draft,
     );
+  }
+
+  static reconstitute(
+    params: ReconstituteVoteDetailParams,
+  ): VoteDetailAggregate {
+    return VoteDetailAggregate.create(params);
   }
 
   getEffectivePolicy(parentPolicy: VotePolicy): VotePolicy {

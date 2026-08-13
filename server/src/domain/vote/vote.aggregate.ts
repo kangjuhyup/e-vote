@@ -18,6 +18,8 @@ interface CreateVoteParams {
   readonly status?: VoteStatus;
 }
 
+type ReconstituteVoteParams = Required<CreateVoteParams>;
+
 export class VoteAggregate {
   private readonly events: VoteDomainEvent[] = [];
 
@@ -48,6 +50,10 @@ export class VoteAggregate {
       params.identityVerificationPolicy,
       params.status ?? VoteStatus.Draft,
     );
+  }
+
+  static reconstitute(params: ReconstituteVoteParams): VoteAggregate {
+    return VoteAggregate.create(params);
   }
 
   open(openedAt: Date): void {

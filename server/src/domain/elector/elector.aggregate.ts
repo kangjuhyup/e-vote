@@ -12,6 +12,8 @@ interface CreateElectorParams {
   readonly identityVerified?: boolean;
 }
 
+type ReconstituteElectorParams = Required<CreateElectorParams>;
+
 export class ElectorAggregate {
   private identityVerified: boolean;
 
@@ -48,6 +50,10 @@ export class ElectorAggregate {
       params.status ?? ElectorStatus.Eligible,
       params.identityVerified ?? false,
     );
+  }
+
+  static reconstitute(params: ReconstituteElectorParams): ElectorAggregate {
+    return ElectorAggregate.create(params);
   }
 
   markIdentityVerified(): void {

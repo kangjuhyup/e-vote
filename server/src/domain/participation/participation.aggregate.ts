@@ -24,6 +24,17 @@ interface CastParticipationParams {
   readonly participatedAt: Date;
 }
 
+interface ReconstituteParticipationParams {
+  readonly id: string;
+  readonly voteDetailId: string;
+  readonly electorId: string;
+  readonly candidateId: string | null;
+  readonly groupKey: string | null;
+  readonly voteWeight: number;
+  readonly participatedAt: Date;
+  readonly status: ParticipationStatus;
+}
+
 export class ParticipationAggregate {
   private readonly events: ParticipationDomainEvent[] = [];
 
@@ -80,6 +91,21 @@ export class ParticipationAggregate {
     );
 
     return participation;
+  }
+
+  static reconstitute(
+    params: ReconstituteParticipationParams,
+  ): ParticipationAggregate {
+    return new ParticipationAggregate(
+      createId(params.id),
+      createId(params.voteDetailId),
+      createId(params.electorId),
+      params.candidateId ? createId(params.candidateId) : null,
+      params.groupKey,
+      params.voteWeight,
+      params.participatedAt,
+      params.status,
+    );
   }
 
   cancel(canceledAt: Date): void {
