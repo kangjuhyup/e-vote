@@ -2,6 +2,7 @@ import { CheckCircle2, CircleDashed } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { VoteElector } from "@/features/votes/model/vote.types";
+import { formatKoreanDateTime } from "@/shared/lib/date-format";
 
 interface ElectorRosterProps {
   electors: VoteElector[];
@@ -12,10 +13,7 @@ function formatParticipatedAt(value: string | null) {
     return "미참여";
   }
 
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return formatKoreanDateTime(value);
 }
 
 export function ElectorRoster({ electors }: ElectorRosterProps) {

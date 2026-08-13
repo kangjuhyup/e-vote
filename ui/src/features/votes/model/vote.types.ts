@@ -59,9 +59,9 @@ export interface VoteActivity {
 
 export interface VoteDashboard {
   metrics: VoteDashboardMetrics;
-  activeVotes: VoteDetail[];
-  upcomingVotes: VoteDetail[];
-  attentionVotes: VoteDetail[];
+  activeVotes: VoteSummary[];
+  upcomingVotes: VoteSummary[];
+  attentionVotes: VoteSummary[];
   recentActivities: VoteActivity[];
   generatedAt: string;
 }

@@ -1,11 +1,26 @@
 import type {
   ElectorParticipationFilter,
   VoteDashboard,
-  VoteDetail,
   VoteElector,
   VoteStatusFilter,
   VoteSummary,
 } from "./vote.types";
+
+function clampParticipationPercent(value: number) {
+  return Math.min(100, Math.max(0, value));
+}
+
+export function toVoteSummary(vote: VoteSummary): VoteSummary {
+  return {
+    id: vote.id,
+    title: vote.title,
+    status: vote.status,
+    startsAt: vote.startsAt,
+    endsAt: vote.endsAt,
+    electorCount: vote.electorCount,
+    participatedCount: vote.participatedCount,
+  };
+}
 
 export function getParticipationPercent(
   participatedCount: number,
@@ -15,7 +30,9 @@ export function getParticipationPercent(
     return 0;
   }
 
-  return Math.round((participatedCount / electorCount) * 100);
+  return clampParticipationPercent(
+    Math.round((participatedCount / electorCount) * 100),
+  );
 }
 
 export function formatParticipationRate(
@@ -55,18 +72,22 @@ export function filterElectors(
   );
 }
 
-export function findVoteDetail(votes: VoteDetail[], voteId: string) {
+export function findVoteDetail<TVote extends { id: string }>(
+  votes: TVote[],
+  voteId: string,
+) {
   return votes.find((vote) => vote.id === voteId) ?? null;
 }
 
 export function buildVoteDashboard(
-  votes: VoteDetail[],
+  votes: VoteSummary[],
   generatedAt = "",
 ): VoteDashboard {
-  const activeVotes = votes.filter((vote) => vote.status === "active");
-  const upcomingVotes = votes.filter((vote) => vote.status === "scheduled");
-  const completedVotes = votes.filter((vote) => vote.status === "completed");
-  const attentionVotes = votes.filter(
+  const summaries = votes.map(toVoteSummary);
+  const activeVotes = summaries.filter((vote) => vote.status === "active");
+  const upcomingVotes = summaries.filter((vote) => vote.status === "scheduled");
+  const completedVotes = summaries.filter((vote) => vote.status === "completed");
+  const attentionVotes = summaries.filter(
     (vote) =>
       vote.status === "active" &&
       getParticipationPercent(vote.participatedCount, vote.electorCount) < 40,

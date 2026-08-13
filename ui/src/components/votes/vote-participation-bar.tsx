@@ -19,7 +19,14 @@ export function VoteParticipationBar({
           {participatedCount.toLocaleString()} / {electorCount.toLocaleString()}
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-sm bg-muted">
+      <div
+        className="h-2 w-full overflow-hidden rounded-sm bg-muted"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+        aria-label="참여율"
+      >
         <div
           className="h-full rounded-sm bg-primary"
           style={{ width: `${percent}%` }}

@@ -19,7 +19,7 @@ import { VoteSummaryCard } from "@/components/votes/vote-summary-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { voteDashboardQueryOptions } from "@/features/votes/api/votes-query-options";
-import type { VoteDetail } from "@/features/votes/model/vote.types";
+import type { VoteSummary } from "@/features/votes/model/vote.types";
 
 function DashboardLoadingState() {
   return (
@@ -59,7 +59,7 @@ function DashboardErrorState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function VoteRow({ vote }: { vote: VoteDetail }) {
+function VoteRow({ vote }: { vote: VoteSummary }) {
   return (
     <Link
       href={`/votes/${vote.id}`}
@@ -89,7 +89,7 @@ function VoteSection({
 }: {
   title: string;
   emptyLabel: string;
-  votes: VoteDetail[];
+  votes: VoteSummary[];
 }) {
   return (
     <Card className="rounded-lg">

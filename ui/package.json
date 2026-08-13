@@ -24,11 +24,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "24.13.3",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "eslint": "9.39.5",
     "eslint-config-next": "latest",
+    "jsdom": "^30.0.1",
     "tailwindcss": "4.3.3",
     "tw-animate-css": "latest",
     "typescript": "5.9.3",

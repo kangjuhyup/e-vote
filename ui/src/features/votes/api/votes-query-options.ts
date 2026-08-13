@@ -3,6 +3,7 @@ import { queryOptions } from "@tanstack/react-query";
 import {
   buildVoteDashboard,
   findVoteDetail,
+  toVoteSummary,
 } from "@/features/votes/model/vote-selectors";
 import type {
   VoteDashboard,
@@ -21,8 +22,8 @@ const mockVoteDetails: VoteDetail[] = [
     status: "active",
     startsAt: "2026-08-10T09:00:00.000Z",
     endsAt: "2026-08-20T09:00:00.000Z",
-    electorCount: 100,
-    participatedCount: 72,
+    electorCount: 3,
+    participatedCount: 2,
     candidates: [
       {
         id: "candidate-1",
@@ -68,7 +69,7 @@ const mockVoteDetails: VoteDetail[] = [
     status: "scheduled",
     startsAt: "2026-09-01T09:00:00.000Z",
     endsAt: "2026-09-05T09:00:00.000Z",
-    electorCount: 50,
+    electorCount: 1,
     participatedCount: 0,
     candidates: [
       {
@@ -101,8 +102,8 @@ const mockVoteDetails: VoteDetail[] = [
     status: "completed",
     startsAt: "2026-07-01T09:00:00.000Z",
     endsAt: "2026-07-07T09:00:00.000Z",
-    electorCount: 80,
-    participatedCount: 64,
+    electorCount: 1,
+    participatedCount: 1,
     candidates: [
       {
         id: "candidate-policy-1",
@@ -133,22 +134,13 @@ async function waitForMockData() {
   await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
 }
 
-function toVoteSummary(vote: VoteDetail): VoteSummary {
-  return {
-    id: vote.id,
-    title: vote.title,
-    status: vote.status,
-    startsAt: vote.startsAt,
-    endsAt: vote.endsAt,
-    electorCount: vote.electorCount,
-    participatedCount: vote.participatedCount,
-  };
-}
-
 async function fetchVoteDashboard(): Promise<VoteDashboard> {
   await waitForMockData();
 
-  return buildVoteDashboard(mockVoteDetails, new Date().toISOString());
+  return buildVoteDashboard(
+    mockVoteDetails.map(toVoteSummary),
+    new Date().toISOString(),
+  );
 }
 
 async function fetchVoteList(): Promise<VoteSummary[]> {

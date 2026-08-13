@@ -170,6 +170,9 @@ export function VoteDetailPage({ voteId }: VoteDetailPageProps) {
                           : "outline"
                       }
                       size="sm"
+                      aria-pressed={
+                        electorParticipationFilter === filter.value
+                      }
                       onClick={() => setElectorParticipationFilter(filter.value)}
                     >
                       {filter.label}

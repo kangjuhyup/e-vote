@@ -69,6 +69,8 @@ describe("vote selectors", () => {
     expect(formatParticipationRate(72, 100)).toBe("72%");
     expect(getParticipationPercent(0, 0)).toBe(0);
     expect(formatParticipationRate(0, 0)).toBe("0%");
+    expect(getParticipationPercent(12, 10)).toBe(100);
+    expect(getParticipationPercent(-1, 10)).toBe(0);
   });
 
   it("filters votes by status and search text", () => {
@@ -109,10 +111,16 @@ describe("vote selectors", () => {
         completedVotes: 0,
         averageParticipationRate: "36%",
       },
-      activeVotes: [details[0]],
-      upcomingVotes: [details[1]],
+      activeVotes: [summaries[0]],
+      upcomingVotes: [summaries[1]],
       attentionVotes: [],
       generatedAt: "2026-08-13T00:00:00.000Z",
     });
+    expect("candidates" in buildVoteDashboard(details).activeVotes[0]).toBe(
+      false,
+    );
+    expect("electors" in buildVoteDashboard(details).activeVotes[0]).toBe(
+      false,
+    );
   });
 });

@@ -135,6 +135,7 @@ export function VoteListPage() {
               type="button"
               variant={statusFilter === filter.value ? "default" : "outline"}
               size="sm"
+              aria-pressed={statusFilter === filter.value}
               onClick={() => setStatusFilter(filter.value)}
             >
               {filter.label}
@@ -142,6 +143,7 @@ export function VoteListPage() {
           ))}
         </div>
         <label className="relative block">
+          <span className="sr-only">투표 제목 검색</span>
           <Search
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
