@@ -5,6 +5,10 @@ import {
 } from '@nestjs/common';
 import { DATABASE_HEALTH_PORT } from './application/port/database-health.port';
 import type { DatabaseHealthPort } from './application/port/database-health.port';
+import { REDIS_HEALTH_PORT } from './application/port/redis-health.port';
+import type { RedisHealthPort } from './application/port/redis-health.port';
+import { STORAGE_HEALTH_PORT } from './application/port/storage-health.port';
+import type { StorageHealthPort } from './application/port/storage-health.port';
 
 type LivenessResponse = {
   status: 'ok';
@@ -14,6 +18,8 @@ type ReadinessResponse = {
   status: 'ok';
   checks: {
     database: 'up';
+    redis: 'up';
+    storage: 'up';
   };
 };
 
@@ -22,6 +28,10 @@ export class AppService {
   constructor(
     @Inject(DATABASE_HEALTH_PORT)
     private readonly databaseHealth: DatabaseHealthPort,
+    @Inject(REDIS_HEALTH_PORT)
+    private readonly redisHealth: RedisHealthPort,
+    @Inject(STORAGE_HEALTH_PORT)
+    private readonly storageHealth: StorageHealthPort,
   ) {}
 
   getHello(): string {
@@ -35,7 +45,11 @@ export class AppService {
   }
 
   async getReadiness(): Promise<ReadinessResponse> {
-    const database = await this.databaseHealth.ping();
+    const [database, redis, storage] = await Promise.all([
+      this.databaseHealth.ping(),
+      this.redisHealth.ping(),
+      this.storageHealth.ping(),
+    ]);
 
     if (database.status === 'down') {
       throw new ServiceUnavailableException(
@@ -43,10 +57,24 @@ export class AppService {
       );
     }
 
+    if (redis.status === 'down') {
+      throw new ServiceUnavailableException(
+        `redis is not ready: ${redis.reason}`,
+      );
+    }
+
+    if (storage.status === 'down') {
+      throw new ServiceUnavailableException(
+        `storage is not ready: ${storage.reason}`,
+      );
+    }
+
     return {
       status: 'ok',
       checks: {
         database: 'up',
+        redis: 'up',
+        storage: 'up',
       },
     };
   }

@@ -9,6 +9,8 @@ type ReadinessResponse = {
   status: 'ok';
   checks: {
     database: 'up';
+    redis: 'up';
+    storage: 'up';
   };
 };
 
