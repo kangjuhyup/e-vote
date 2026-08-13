@@ -8,6 +8,7 @@ import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from '../../application/port/fie
 import { FILE_REPOSITORY_PORT } from '../../application/port/file-repository.port';
 import { PARTICIPATION_REPOSITORY_PORT } from '../../application/port/participation-repository.port';
 import { VOTE_DETAIL_REPOSITORY_PORT } from '../../application/port/vote-detail-repository.port';
+import { VOTE_READ_REPOSITORY_PORT } from '../../application/port/vote-read-repository.port';
 import { VOTE_REPOSITORY_PORT } from '../../application/port/vote-repository.port';
 import { CandidateRepositoryAdapter } from './repository/candidate-repository.adapter';
 import { ElectionCommissionMemberRepositoryAdapter } from './repository/election-commission-member-repository.adapter';
@@ -18,6 +19,7 @@ import { FieldVotingSessionRepositoryAdapter } from './repository/field-voting-s
 import { FileRepositoryAdapter } from './repository/file-repository.adapter';
 import { ParticipationRepositoryAdapter } from './repository/participation-repository.adapter';
 import { VoteDetailRepositoryAdapter } from './repository/vote-detail-repository.adapter';
+import { VoteReadRepositoryAdapter } from './repository/vote-read-repository.adapter';
 import { VoteRepositoryAdapter } from './repository/vote-repository.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
@@ -36,6 +38,10 @@ export const databaseRepositoryProviders: Provider[] = [
   {
     provide: VOTE_DETAIL_REPOSITORY_PORT,
     useClass: VoteDetailRepositoryAdapter,
+  },
+  {
+    provide: VOTE_READ_REPOSITORY_PORT,
+    useClass: VoteReadRepositoryAdapter,
   },
   {
     provide: ELECTOR_REPOSITORY_PORT,
@@ -68,6 +74,7 @@ export const databaseRepositoryPortTokens = [
   ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
   VOTE_REPOSITORY_PORT,
   VOTE_DETAIL_REPOSITORY_PORT,
+  VOTE_READ_REPOSITORY_PORT,
   ELECTOR_REPOSITORY_PORT,
   CANDIDATE_REPOSITORY_PORT,
   PARTICIPATION_REPOSITORY_PORT,

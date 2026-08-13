@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { ELECTION_COMMISSION_REPOSITORY_PORT } from './application/port/election-commission-repository.port';
 import { REDIS_HEALTH_PORT } from './application/port/redis-health.port';
 import { STORAGE_HEALTH_PORT } from './application/port/storage-health.port';
+import { VOTE_READ_REPOSITORY_PORT } from './application/port/vote-read-repository.port';
+import { VOTE_REPOSITORY_PORT } from './application/port/vote-repository.port';
 import { AppModule } from './app.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 
@@ -19,8 +22,26 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
         ping: jest.fn(),
       },
     },
+    {
+      provide: ELECTION_COMMISSION_REPOSITORY_PORT,
+      useValue: {},
+    },
+    {
+      provide: VOTE_REPOSITORY_PORT,
+      useValue: {},
+    },
+    {
+      provide: VOTE_READ_REPOSITORY_PORT,
+      useValue: {},
+    },
   ],
-  exports: [REDIS_HEALTH_PORT, STORAGE_HEALTH_PORT],
+  exports: [
+    REDIS_HEALTH_PORT,
+    STORAGE_HEALTH_PORT,
+    ELECTION_COMMISSION_REPOSITORY_PORT,
+    VOTE_REPOSITORY_PORT,
+    VOTE_READ_REPOSITORY_PORT,
+  ],
 })
 class InfrastructureModuleStub {}
 

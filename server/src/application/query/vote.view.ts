@@ -1,0 +1,304 @@
+import type { CandidateStatus } from '../../domain/candidate/type/candidate-status.type';
+import type { VoteDetailType } from '../../domain/vote/type/vote-detail.type';
+import type {
+  ParticipationUnit,
+  PrivacyMode,
+  ResultStorageMode,
+  VoteWeightMode,
+} from '../../domain/vote/type/vote-policy.type';
+import type {
+  VoteDetailStatus,
+  VoteStatus,
+} from '../../domain/vote/type/vote-status.type';
+import type { VotingChannel } from '../../domain/vote/type/voting-channel.type';
+
+export type VotePolicyViewProps = {
+  readonly privacyMode: PrivacyMode;
+  readonly participationUnit: ParticipationUnit;
+  readonly resultStorageMode: ResultStorageMode;
+  readonly voteWeightMode: VoteWeightMode;
+};
+
+export class VotePolicyView {
+  private constructor(
+    readonly privacyMode: PrivacyMode,
+    readonly participationUnit: ParticipationUnit,
+    readonly resultStorageMode: ResultStorageMode,
+    readonly voteWeightMode: VoteWeightMode,
+  ) {}
+
+  static of(params: VotePolicyViewProps): VotePolicyView {
+    return new VotePolicyView(
+      params.privacyMode,
+      params.participationUnit,
+      params.resultStorageMode,
+      params.voteWeightMode,
+    );
+  }
+}
+
+export type VotePolicyOverridesViewProps = Partial<VotePolicyViewProps>;
+
+export class VotePolicyOverridesView {
+  readonly privacyMode?: PrivacyMode;
+  readonly participationUnit?: ParticipationUnit;
+  readonly resultStorageMode?: ResultStorageMode;
+  readonly voteWeightMode?: VoteWeightMode;
+
+  private constructor(params: VotePolicyOverridesViewProps) {
+    if (params.privacyMode !== undefined) {
+      this.privacyMode = params.privacyMode;
+    }
+    if (params.participationUnit !== undefined) {
+      this.participationUnit = params.participationUnit;
+    }
+    if (params.resultStorageMode !== undefined) {
+      this.resultStorageMode = params.resultStorageMode;
+    }
+    if (params.voteWeightMode !== undefined) {
+      this.voteWeightMode = params.voteWeightMode;
+    }
+  }
+
+  static of(params: VotePolicyOverridesViewProps): VotePolicyOverridesView {
+    return new VotePolicyOverridesView(params);
+  }
+}
+
+export type IdentityVerificationPolicyViewProps = {
+  readonly required: boolean;
+  readonly provider?: string;
+  readonly method?: string;
+};
+
+export class IdentityVerificationPolicyView {
+  readonly provider?: string;
+  readonly method?: string;
+
+  private constructor(
+    readonly required: boolean,
+    provider: string | undefined,
+    method: string | undefined,
+  ) {
+    if (provider !== undefined) {
+      this.provider = provider;
+    }
+    if (method !== undefined) {
+      this.method = method;
+    }
+  }
+
+  static of(
+    params: IdentityVerificationPolicyViewProps,
+  ): IdentityVerificationPolicyView {
+    return new IdentityVerificationPolicyView(
+      params.required,
+      params.provider,
+      params.method,
+    );
+  }
+}
+
+export type CandidateViewProps = {
+  readonly id: string;
+  readonly voteDetailId: string;
+  readonly candidateNo: number;
+  readonly name: string;
+  readonly description: string;
+  readonly status: CandidateStatus;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+};
+
+export class CandidateView {
+  private constructor(
+    readonly id: string,
+    readonly voteDetailId: string,
+    readonly candidateNo: number,
+    readonly name: string,
+    readonly description: string,
+    readonly status: CandidateStatus,
+    readonly createdAt: Date,
+    readonly updatedAt: Date,
+  ) {}
+
+  static of(params: CandidateViewProps): CandidateView {
+    return new CandidateView(
+      params.id,
+      params.voteDetailId,
+      params.candidateNo,
+      params.name,
+      params.description,
+      params.status,
+      params.createdAt,
+      params.updatedAt,
+    );
+  }
+}
+
+export type VoteDetailViewProps = {
+  readonly id: string;
+  readonly voteId: string;
+  readonly title: string;
+  readonly description: string;
+  readonly type: VoteDetailType;
+  readonly overrides?: VotePolicyOverridesView;
+  readonly sortOrder: number;
+  readonly status: VoteDetailStatus;
+  readonly candidates: readonly CandidateView[];
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+};
+
+export class VoteDetailView {
+  readonly overrides?: VotePolicyOverridesView;
+
+  private constructor(
+    readonly id: string,
+    readonly voteId: string,
+    readonly title: string,
+    readonly description: string,
+    readonly type: VoteDetailType,
+    overrides: VotePolicyOverridesView | undefined,
+    readonly sortOrder: number,
+    readonly status: VoteDetailStatus,
+    readonly candidates: readonly CandidateView[],
+    readonly createdAt: Date,
+    readonly updatedAt: Date,
+  ) {
+    if (overrides !== undefined) {
+      this.overrides = overrides;
+    }
+  }
+
+  static of(params: VoteDetailViewProps): VoteDetailView {
+    return new VoteDetailView(
+      params.id,
+      params.voteId,
+      params.title,
+      params.description,
+      params.type,
+      params.overrides,
+      params.sortOrder,
+      params.status,
+      params.candidates,
+      params.createdAt,
+      params.updatedAt,
+    );
+  }
+}
+
+export type VoteSummaryViewProps = {
+  readonly id: string;
+  readonly commissionId: string;
+  readonly title: string;
+  readonly votingChannels: readonly VotingChannel[];
+  readonly defaultPolicy: VotePolicyView;
+  readonly identityVerificationPolicy: IdentityVerificationPolicyView;
+  readonly status: VoteStatus;
+  readonly startedAt: Date;
+  readonly endedAt: Date;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+};
+
+export class VoteSummaryView {
+  private constructor(
+    readonly id: string,
+    readonly commissionId: string,
+    readonly title: string,
+    readonly votingChannels: readonly VotingChannel[],
+    readonly defaultPolicy: VotePolicyView,
+    readonly identityVerificationPolicy: IdentityVerificationPolicyView,
+    readonly status: VoteStatus,
+    readonly startedAt: Date,
+    readonly endedAt: Date,
+    readonly createdAt: Date,
+    readonly updatedAt: Date,
+  ) {}
+
+  static of(params: VoteSummaryViewProps): VoteSummaryView {
+    return new VoteSummaryView(
+      params.id,
+      params.commissionId,
+      params.title,
+      params.votingChannels,
+      params.defaultPolicy,
+      params.identityVerificationPolicy,
+      params.status,
+      params.startedAt,
+      params.endedAt,
+      params.createdAt,
+      params.updatedAt,
+    );
+  }
+}
+
+export type VoteViewProps = VoteSummaryViewProps & {
+  readonly description: string;
+  readonly voteDetails: readonly VoteDetailView[];
+};
+
+export class VoteView {
+  private constructor(
+    readonly id: string,
+    readonly commissionId: string,
+    readonly title: string,
+    readonly description: string,
+    readonly votingChannels: readonly VotingChannel[],
+    readonly defaultPolicy: VotePolicyView,
+    readonly identityVerificationPolicy: IdentityVerificationPolicyView,
+    readonly status: VoteStatus,
+    readonly voteDetails: readonly VoteDetailView[],
+    readonly startedAt: Date,
+    readonly endedAt: Date,
+    readonly createdAt: Date,
+    readonly updatedAt: Date,
+  ) {}
+
+  static of(params: VoteViewProps): VoteView {
+    return new VoteView(
+      params.id,
+      params.commissionId,
+      params.title,
+      params.description,
+      params.votingChannels,
+      params.defaultPolicy,
+      params.identityVerificationPolicy,
+      params.status,
+      params.voteDetails,
+      params.startedAt,
+      params.endedAt,
+      params.createdAt,
+      params.updatedAt,
+    );
+  }
+}
+
+export type VotePageViewProps = {
+  readonly items: readonly VoteSummaryView[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly totalItems: number;
+  readonly totalPages: number;
+};
+
+export class VotePageView {
+  private constructor(
+    readonly items: readonly VoteSummaryView[],
+    readonly page: number,
+    readonly pageSize: number,
+    readonly totalItems: number,
+    readonly totalPages: number,
+  ) {}
+
+  static of(params: VotePageViewProps): VotePageView {
+    return new VotePageView(
+      params.items,
+      params.page,
+      params.pageSize,
+      params.totalItems,
+      params.totalPages,
+    );
+  }
+}
