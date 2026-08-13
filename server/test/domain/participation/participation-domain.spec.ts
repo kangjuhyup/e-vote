@@ -112,9 +112,7 @@ describe('participation domain', () => {
     participation.pullEvents();
     participation.cancel(new Date('2026-08-10T00:00:00.000Z'));
 
-    expect(participation.pullEvents()[0]).toBeInstanceOf(
-      ParticipationCanceled,
-    );
+    expect(participation.pullEvents()[0]).toBeInstanceOf(ParticipationCanceled);
   });
 
   it('requires group key for group participation', () => {

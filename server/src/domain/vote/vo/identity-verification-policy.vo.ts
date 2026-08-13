@@ -13,7 +13,9 @@ export class IdentityVerificationPolicy {
     readonly method: string | null,
   ) {}
 
-  static of(params: IdentityVerificationPolicyProps): IdentityVerificationPolicy {
+  static of(
+    params: IdentityVerificationPolicyProps,
+  ): IdentityVerificationPolicy {
     const provider = params.provider?.trim() || null;
     const method = params.method?.trim() || null;
 

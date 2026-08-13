@@ -3,10 +3,11 @@ import { DATABASE_HEALTH_PORT } from './application/port/database-health.port';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { NotConfiguredDatabaseHealthAdapter } from './infrastructure/database/not-configured-database-health.adapter';
+import { StorageModule } from './infrastructure/storage/storage.module';
 import { RequestIdMiddleware } from './presentation/common/middleware/request-id.middleware';
 
 @Module({
-  imports: [],
+  imports: [StorageModule],
   controllers: [AppController],
   providers: [
     AppService,

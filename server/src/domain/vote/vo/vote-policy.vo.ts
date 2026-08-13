@@ -33,8 +33,7 @@ export class VotePolicy {
     return VotePolicy.of({
       privacyMode: overrides.privacyMode ?? this.privacyMode,
       participationUnit: overrides.participationUnit ?? this.participationUnit,
-      resultStorageMode:
-        overrides.resultStorageMode ?? this.resultStorageMode,
+      resultStorageMode: overrides.resultStorageMode ?? this.resultStorageMode,
       voteWeightMode: overrides.voteWeightMode ?? this.voteWeightMode,
     });
   }

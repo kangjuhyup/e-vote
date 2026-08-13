@@ -35,9 +35,7 @@ export class ParticipationEligibilityPolicy {
     this.assertIndividualParticipation(params);
   }
 
-  private assertGroupParticipation(
-    params: AssertCanParticipateParams,
-  ): void {
+  private assertGroupParticipation(params: AssertCanParticipateParams): void {
     if (!params.elector.groupKey) {
       throw new DomainError('group participation requires elector groupKey');
     }
