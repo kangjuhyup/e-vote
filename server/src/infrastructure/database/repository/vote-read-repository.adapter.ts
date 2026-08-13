@@ -98,14 +98,10 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
 
   async findDetailById(voteId: string): Promise<VoteView | undefined> {
     const { VoteEntity } = await getDatabaseEntities();
-    const entity = (await this.em.findOne(
-      VoteEntity as any,
-      { id: voteId } as any,
-      {
-        populate: VOTE_DETAIL_READ_RELATIONS,
-        ...JOINED_RELATION_LOAD_OPTIONS,
-      } as any,
-    )) as unknown as VoteReadPersistence | null;
+    const entity = (await this.em.findOne(VoteEntity as any, { id: voteId }, {
+      populate: VOTE_DETAIL_READ_RELATIONS,
+      ...JOINED_RELATION_LOAD_OPTIONS,
+    } as any)) as unknown as VoteReadPersistence | null;
 
     return entity ? this.toVoteView(entity) : undefined;
   }
@@ -114,7 +110,7 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
     const { VoteEntity } = await getDatabaseEntities();
     const [entities, totalItems] = (await this.em.findAndCount(
       VoteEntity as any,
-      {} as any,
+      {},
       {
         populate: VOTE_PAGE_READ_RELATIONS,
         limit: request.pageSize,

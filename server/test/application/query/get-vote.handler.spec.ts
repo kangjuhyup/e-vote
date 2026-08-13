@@ -25,8 +25,9 @@ import { GetVotePageQuery } from '../../../src/application/query/get-vote-page.q
 describe('vote query handlers', () => {
   it('loads a vote detail through the read repository', async () => {
     const vote = createVoteView();
+    const findDetailById = jest.fn().mockResolvedValue(vote);
     const repository: VoteReadRepositoryPort = {
-      findDetailById: jest.fn().mockResolvedValue(vote),
+      findDetailById,
       findPage: jest.fn().mockResolvedValue(createVotePageView()),
     };
     const handler = new GetVoteHandler(repository);
@@ -34,12 +35,13 @@ describe('vote query handlers', () => {
     await expect(
       handler.execute(GetVoteQuery.of({ voteId: 'vote-1' })),
     ).resolves.toBe(vote);
-    expect(repository.findDetailById).toHaveBeenCalledWith('vote-1');
+    expect(findDetailById).toHaveBeenCalledWith('vote-1');
   });
 
   it('throws when a vote detail is missing', async () => {
+    const findDetailById = jest.fn().mockResolvedValue(undefined);
     const repository: VoteReadRepositoryPort = {
-      findDetailById: jest.fn().mockResolvedValue(undefined),
+      findDetailById,
       findPage: jest.fn().mockResolvedValue(createVotePageView()),
     };
     const handler = new GetVoteHandler(repository);
@@ -51,16 +53,17 @@ describe('vote query handlers', () => {
 
   it('loads a normalized vote page through the read repository', async () => {
     const page = createVotePageView();
+    const findPage = jest.fn().mockResolvedValue(page);
     const repository: VoteReadRepositoryPort = {
       findDetailById: jest.fn().mockResolvedValue(createVoteView()),
-      findPage: jest.fn().mockResolvedValue(page),
+      findPage,
     };
     const handler = new GetVotePageHandler(repository);
 
     await expect(
       handler.execute(GetVotePageQuery.of({ page: 0, pageSize: 101 })),
     ).resolves.toBe(page);
-    expect(repository.findPage).toHaveBeenCalledWith({
+    expect(findPage).toHaveBeenCalledWith({
       page: 1,
       pageSize: 100,
     });
