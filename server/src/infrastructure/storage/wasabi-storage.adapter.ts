@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -9,18 +10,27 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   CreatePresignedPutObjectUrlParams,
   PresignedStorageUrl,
+  StoredObjectMetadata,
   StoragePort,
 } from '../../application/port/storage.port';
 import { WasabiStorageConfig } from './wasabi-storage.config';
 
 type PresignStorageCommand =
   PutObjectCommand | GetObjectCommand | DeleteObjectCommand;
+type InspectStorageCommand = HeadObjectCommand;
 
 type PresignStorageUrl = (
   client: S3Client,
   command: PresignStorageCommand,
   options: { expiresIn: number },
 ) => Promise<string>;
+type SendStorageCommand = (command: InspectStorageCommand) => Promise<{
+  ContentType?: string;
+  ContentLength?: number;
+  ETag?: string;
+  LastModified?: Date;
+  Metadata?: Record<string, string>;
+}>;
 
 type StorageKeyGenerator = () => string;
 type Clock = () => Date;
@@ -32,6 +42,7 @@ export class WasabiStorageAdapter implements StoragePort {
     private readonly presignStorageUrl: PresignStorageUrl = getSignedUrl,
     private readonly generateStorageKey: StorageKeyGenerator = randomUUID,
     private readonly now: Clock = () => new Date(),
+    private readonly sendStorageCommand?: SendStorageCommand,
   ) {}
 
   static create(config: WasabiStorageConfig): WasabiStorageAdapter {
@@ -87,6 +98,34 @@ export class WasabiStorageAdapter implements StoragePort {
     );
   }
 
+  async getObjectMetadata(
+    storageKey: string,
+  ): Promise<StoredObjectMetadata | undefined> {
+    const command = new HeadObjectCommand({
+      Bucket: this.config.bucket,
+      Key: storageKey,
+    });
+
+    try {
+      const output = await this.send(command);
+
+      return {
+        storageKey,
+        contentType: output.ContentType,
+        contentLength: output.ContentLength,
+        eTag: output.ETag,
+        lastModified: output.LastModified,
+        metadata: output.Metadata,
+      };
+    } catch (error) {
+      if (isObjectNotFoundError(error)) {
+        return undefined;
+      }
+
+      throw error;
+    }
+  }
+
   private async createPresignedUrl(
     storageKey: string,
     command: PresignStorageCommand,
@@ -112,4 +151,29 @@ export class WasabiStorageAdapter implements StoragePort {
 
     return `${this.config.keyPrefix}/${key}`;
   }
+
+  private send(command: InspectStorageCommand): ReturnType<SendStorageCommand> {
+    if (this.sendStorageCommand) {
+      return this.sendStorageCommand(command);
+    }
+
+    return this.client.send(command);
+  }
+}
+
+function isObjectNotFoundError(error: unknown): boolean {
+  const storageError = error as {
+    readonly name?: string;
+    readonly Code?: string;
+    readonly $metadata?: {
+      readonly httpStatusCode?: number;
+    };
+  };
+
+  return (
+    storageError.name === 'NotFound' ||
+    storageError.name === 'NoSuchKey' ||
+    storageError.Code === 'NoSuchKey' ||
+    storageError.$metadata?.httpStatusCode === 404
+  );
 }

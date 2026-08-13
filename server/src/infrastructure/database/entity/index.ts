@@ -21,6 +21,7 @@ import type {
   ResultStorageMode,
   ResultStorageStatus,
   VoteAttachmentType,
+  VoteDetailAttachmentType,
   VoteDetailType,
   VoteStatus,
   VoteWeightMode,
@@ -42,6 +43,7 @@ export interface DatabaseEntityRegistry {
   readonly VoteResultEntity: EntityClass<AnyEntity>;
   readonly FileEntity: EntityClass<AnyEntity>;
   readonly VoteAttachmentEntity: EntityClass<AnyEntity>;
+  readonly VoteDetailAttachmentEntity: EntityClass<AnyEntity>;
   readonly ElectorAttachmentEntity: EntityClass<AnyEntity>;
   readonly CandidateAttachmentEntity: EntityClass<AnyEntity>;
   readonly ElectorIdentityVerificationEntity: EntityClass<AnyEntity>;
@@ -239,6 +241,8 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
       participations: () =>
         p.oneToMany(VoteParticipationEntity).mappedBy('voteDetail'),
       results: () => p.oneToMany(VoteResultEntity).mappedBy('voteDetail'),
+      attachments: () =>
+        p.oneToMany(VoteDetailAttachmentEntity).mappedBy('voteDetail'),
       contentChangeHistories: () =>
         p.oneToMany(VoteContentChangeHistoryEntity).mappedBy('voteDetail'),
       resultStorageRecords: () =>
@@ -464,6 +468,8 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
       createdAt: p.datetime().fieldName('created_at'),
       deletedAt: p.datetime().fieldName('deleted_at').nullable(),
       voteAttachments: () => p.oneToMany(VoteAttachmentEntity).mappedBy('file'),
+      voteDetailAttachments: () =>
+        p.oneToMany(VoteDetailAttachmentEntity).mappedBy('file'),
       electorAttachments: () =>
         p.oneToMany(ElectorAttachmentEntity).mappedBy('file'),
       candidateAttachments: () =>
@@ -582,6 +588,37 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   });
   class VoteAttachmentEntity extends VoteAttachmentSchema.class {}
   VoteAttachmentSchema.setClass(VoteAttachmentEntity);
+
+  const VoteDetailAttachmentSchema = defineEntity({
+    name: 'VoteDetailAttachmentEntity',
+    tableName: 'vote_detail_attachments',
+    uniques: [
+      {
+        name: 'vote_detail_attachments_vote_detail_id_file_id_unique',
+        properties: ['voteDetail', 'file'],
+      },
+    ],
+    properties: {
+      id: p.uuid().primary(),
+      voteDetail: () =>
+        p
+          .manyToOne(VoteDetailEntity)
+          .fieldName('vote_detail_id')
+          .inversedBy('attachments')
+          .deleteRule('cascade'),
+      file: () =>
+        p
+          .manyToOne(FileEntity)
+          .fieldName('file_id')
+          .inversedBy('voteDetailAttachments')
+          .deleteRule('cascade'),
+      type: p.string().$type<VoteDetailAttachmentType>(),
+      sortOrder: p.integer().fieldName('sort_order'),
+      createdAt: p.datetime().fieldName('created_at'),
+    },
+  });
+  class VoteDetailAttachmentEntity extends VoteDetailAttachmentSchema.class {}
+  VoteDetailAttachmentSchema.setClass(VoteDetailAttachmentEntity);
 
   const ElectorAttachmentSchema = defineEntity({
     name: 'ElectorAttachmentEntity',
@@ -800,6 +837,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
     VoteResultEntity,
     FileEntity,
     VoteAttachmentEntity,
+    VoteDetailAttachmentEntity,
     ElectorAttachmentEntity,
     CandidateAttachmentEntity,
     ElectorIdentityVerificationEntity,
@@ -822,6 +860,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
     VoteResultEntity,
     FileEntity,
     VoteAttachmentEntity,
+    VoteDetailAttachmentEntity,
     ElectorAttachmentEntity,
     CandidateAttachmentEntity,
     ElectorIdentityVerificationEntity,

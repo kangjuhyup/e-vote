@@ -12,6 +12,15 @@ export type PresignedStorageUrl = {
   readonly expiresAt: Date;
 };
 
+export type StoredObjectMetadata = {
+  readonly storageKey: string;
+  readonly contentType?: string;
+  readonly contentLength?: number;
+  readonly eTag?: string;
+  readonly lastModified?: Date;
+  readonly metadata?: Record<string, string>;
+};
+
 export interface StoragePort {
   createPresignedPutObjectUrl(
     params: CreatePresignedPutObjectUrlParams,
@@ -20,6 +29,9 @@ export interface StoragePort {
   createPresignedDeleteObjectUrl(
     storageKey: string,
   ): Promise<PresignedStorageUrl>;
+  getObjectMetadata(
+    storageKey: string,
+  ): Promise<StoredObjectMetadata | undefined>;
 }
 
 export class StorageNotConfiguredError extends Error {
