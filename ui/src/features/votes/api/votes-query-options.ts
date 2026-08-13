@@ -148,7 +148,7 @@ function toVoteSummary(vote: VoteDetail): VoteSummary {
 async function fetchVoteDashboard(): Promise<VoteDashboard> {
   await waitForMockData();
 
-  return buildVoteDashboard(mockVoteDetails);
+  return buildVoteDashboard(mockVoteDetails, new Date().toISOString());
 }
 
 async function fetchVoteList(): Promise<VoteSummary[]> {

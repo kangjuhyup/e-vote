@@ -100,7 +100,9 @@ describe("vote selectors", () => {
   });
 
   it("builds dashboard sections from vote details", () => {
-    expect(buildVoteDashboard(details)).toMatchObject({
+    expect(
+      buildVoteDashboard(details, "2026-08-13T00:00:00.000Z"),
+    ).toMatchObject({
       metrics: {
         activeVotes: 1,
         scheduledVotes: 1,
@@ -110,6 +112,7 @@ describe("vote selectors", () => {
       activeVotes: [details[0]],
       upcomingVotes: [details[1]],
       attentionVotes: [],
+      generatedAt: "2026-08-13T00:00:00.000Z",
     });
   });
 });

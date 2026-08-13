@@ -59,7 +59,10 @@ export function findVoteDetail(votes: VoteDetail[], voteId: string) {
   return votes.find((vote) => vote.id === voteId) ?? null;
 }
 
-export function buildVoteDashboard(votes: VoteDetail[]): VoteDashboard {
+export function buildVoteDashboard(
+  votes: VoteDetail[],
+  generatedAt = "",
+): VoteDashboard {
   const activeVotes = votes.filter((vote) => vote.status === "active");
   const upcomingVotes = votes.filter((vote) => vote.status === "scheduled");
   const completedVotes = votes.filter((vote) => vote.status === "completed");
@@ -100,6 +103,6 @@ export function buildVoteDashboard(votes: VoteDetail[]): VoteDashboard {
       )} 참여 / ${vote.electorCount.toLocaleString()}명 대상`,
       status: vote.status === "active" ? "stable" : "pending",
     })),
-    generatedAt: new Date().toISOString(),
+    generatedAt,
   };
 }
