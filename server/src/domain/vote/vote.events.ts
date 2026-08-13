@@ -61,8 +61,4 @@ export class VoteDetailClosed extends DomainEvent {
 }
 
 export type VoteDomainEvent =
-  | VoteOpened
-  | VoteClosed
-  | VoteCanceled
-  | VoteDetailOpened
-  | VoteDetailClosed;
+  VoteOpened | VoteClosed | VoteCanceled | VoteDetailOpened | VoteDetailClosed;

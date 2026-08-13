@@ -1,4 +1,6 @@
 import { ElectorAggregate } from '../elector/elector.aggregate';
+import { FieldVotingSessionAggregate } from '../field-voting/field-voting-session.aggregate';
+import { FieldVotingSessionStatus } from '../field-voting/type/field-voting-session-status.type';
 import { DomainError } from '../shared/domain-error';
 import { createId } from '../shared/id';
 import {
@@ -11,6 +13,7 @@ import {
   PrivacyMode,
   VoteWeightMode,
 } from '../vote/type/vote-policy.type';
+import { VotingChannel } from '../vote/type/voting-channel.type';
 import { VotePolicy } from '../vote/vo/vote-policy.vo';
 import { ElectorStatus } from '../elector/type/elector-status.type';
 import { ParticipationStatus } from './type/participation-status.type';
@@ -19,9 +22,24 @@ interface CastParticipationParams {
   readonly id: string;
   readonly voteDetailId: string;
   readonly elector: ElectorAggregate;
-  readonly selectedCandidateId: string | null;
+  readonly selectedCandidateId?: string;
   readonly effectivePolicy: VotePolicy;
+  readonly votingChannel: VotingChannel;
+  readonly fieldVotingSession?: FieldVotingSessionAggregate;
   readonly participatedAt: Date;
+}
+
+interface ReconstituteParticipationParams {
+  readonly id: string;
+  readonly voteDetailId: string;
+  readonly electorId: string;
+  readonly candidateId?: string;
+  readonly groupKey?: string;
+  readonly voteWeight: number;
+  readonly votingChannel: VotingChannel;
+  readonly fieldVotingSessionId?: string;
+  readonly participatedAt: Date;
+  readonly status: ParticipationStatus;
 }
 
 export class ParticipationAggregate {
@@ -31,9 +49,11 @@ export class ParticipationAggregate {
     readonly id: string,
     readonly voteDetailId: string,
     readonly electorId: string,
-    readonly candidateId: string | null,
-    readonly groupKey: string | null,
+    readonly candidateId: string | undefined,
+    readonly groupKey: string | undefined,
     readonly voteWeight: number,
+    readonly votingChannel: VotingChannel,
+    readonly fieldVotingSessionId: string | undefined,
     readonly participatedAt: Date,
     public status: ParticipationStatus,
   ) {}
@@ -57,6 +77,11 @@ export class ParticipationAggregate {
       params.effectivePolicy,
       params.selectedCandidateId,
     );
+    const fieldVotingSessionId =
+      ParticipationAggregate.resolveFieldVotingSessionId(
+        params.votingChannel,
+        params.fieldVotingSession,
+      );
     const voteWeight = ParticipationAggregate.calculateAppliedVoteWeight(
       params.effectivePolicy,
       params.elector,
@@ -69,6 +94,8 @@ export class ParticipationAggregate {
       candidateId,
       params.elector.groupKey,
       voteWeight,
+      params.votingChannel,
+      fieldVotingSessionId,
       params.participatedAt,
       ParticipationStatus.Cast,
     );
@@ -80,6 +107,25 @@ export class ParticipationAggregate {
     );
 
     return participation;
+  }
+
+  static reconstitute(
+    params: ReconstituteParticipationParams,
+  ): ParticipationAggregate {
+    return new ParticipationAggregate(
+      createId(params.id),
+      createId(params.voteDetailId),
+      createId(params.electorId),
+      params.candidateId ? createId(params.candidateId) : undefined,
+      params.groupKey,
+      params.voteWeight,
+      params.votingChannel,
+      params.fieldVotingSessionId
+        ? createId(params.fieldVotingSessionId)
+        : undefined,
+      params.participatedAt,
+      params.status,
+    );
   }
 
   cancel(canceledAt: Date): void {
@@ -115,10 +161,10 @@ export class ParticipationAggregate {
 
   private static resolveCandidateId(
     effectivePolicy: VotePolicy,
-    selectedCandidateId: string | null,
-  ): string | null {
+    selectedCandidateId: string | undefined,
+  ): string | undefined {
     if (effectivePolicy.privacyMode === PrivacyMode.Secret) {
-      return null;
+      return undefined;
     }
 
     if (!selectedCandidateId) {
@@ -126,5 +172,36 @@ export class ParticipationAggregate {
     }
 
     return createId(selectedCandidateId);
+  }
+
+  private static resolveFieldVotingSessionId(
+    votingChannel: VotingChannel,
+    fieldVotingSession: FieldVotingSessionAggregate | undefined,
+  ): string | undefined {
+    if (votingChannel === VotingChannel.Online) {
+      if (fieldVotingSession) {
+        throw new DomainError(
+          'online participation must not use field voting session',
+        );
+      }
+
+      return undefined;
+    }
+
+    if (!fieldVotingSession) {
+      throw new DomainError(
+        'field participation requires field voting session',
+      );
+    }
+
+    if (fieldVotingSession.status !== FieldVotingSessionStatus.Open) {
+      throw new DomainError('field voting session must be open');
+    }
+
+    if (fieldVotingSession.channel !== votingChannel) {
+      throw new DomainError('field voting session channel mismatch');
+    }
+
+    return fieldVotingSession.id;
   }
 }

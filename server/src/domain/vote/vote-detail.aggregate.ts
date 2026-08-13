@@ -5,10 +5,7 @@ import {
   VoteDetailOpened,
   VoteDomainEvent,
 } from './vote.events';
-import {
-  VotePolicy,
-  VotePolicyOverrides,
-} from './vo/vote-policy.vo';
+import { VotePolicy, VotePolicyOverrides } from './vo/vote-policy.vo';
 import { VoteDetailType } from './type/vote-detail.type';
 import { VoteDetailStatus } from './type/vote-status.type';
 
@@ -21,6 +18,8 @@ interface CreateVoteDetailParams {
   readonly sortOrder: number;
   readonly status?: VoteDetailStatus;
 }
+
+type ReconstituteVoteDetailParams = Required<CreateVoteDetailParams>;
 
 export class VoteDetailAggregate {
   private readonly events: VoteDomainEvent[] = [];
@@ -57,6 +56,12 @@ export class VoteDetailAggregate {
       params.sortOrder,
       params.status ?? VoteDetailStatus.Draft,
     );
+  }
+
+  static reconstitute(
+    params: ReconstituteVoteDetailParams,
+  ): VoteDetailAggregate {
+    return VoteDetailAggregate.create(params);
   }
 
   getEffectivePolicy(parentPolicy: VotePolicy): VotePolicy {

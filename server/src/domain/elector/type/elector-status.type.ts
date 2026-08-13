@@ -3,5 +3,4 @@ export const ElectorStatus = {
   Blocked: 'BLOCKED',
 } as const;
 
-export type ElectorStatus =
-  (typeof ElectorStatus)[keyof typeof ElectorStatus];
+export type ElectorStatus = (typeof ElectorStatus)[keyof typeof ElectorStatus];

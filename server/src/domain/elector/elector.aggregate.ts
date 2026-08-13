@@ -5,12 +5,21 @@ import { ElectorStatus } from './type/elector-status.type';
 interface CreateElectorParams {
   readonly id: string;
   readonly voteId: string;
+  readonly name?: string;
   readonly identifier: string;
-  readonly groupKey?: string | null;
+  readonly phoneNumber?: string;
+  readonly birthDate?: string;
+  readonly groupKey?: string;
   readonly voteWeight?: number;
   readonly status?: ElectorStatus;
   readonly identityVerified?: boolean;
 }
+
+type ReconstituteElectorParams = CreateElectorParams & {
+  readonly voteWeight: number;
+  readonly status: ElectorStatus;
+  readonly identityVerified: boolean;
+};
 
 export class ElectorAggregate {
   private identityVerified: boolean;
@@ -18,8 +27,11 @@ export class ElectorAggregate {
   private constructor(
     readonly id: string,
     readonly voteId: string,
+    readonly name: string,
     readonly identifier: string,
-    readonly groupKey: string | null,
+    readonly phoneNumber: string | undefined,
+    readonly birthDate: string | undefined,
+    readonly groupKey: string | undefined,
     readonly voteWeight: number,
     readonly status: ElectorStatus,
     identityVerified: boolean,
@@ -31,10 +43,17 @@ export class ElectorAggregate {
     const id = createId(params.id);
     const voteId = createId(params.voteId);
     const identifier = params.identifier.trim();
+    const name = params.name?.trim() || identifier;
+    const phoneNumber = params.phoneNumber?.trim() || undefined;
+    const birthDate = params.birthDate?.trim() || undefined;
     const voteWeight = params.voteWeight ?? 1;
 
     if (identifier.length === 0) {
       throw new DomainError('elector identifier must not be empty');
+    }
+
+    if (name.length === 0) {
+      throw new DomainError('elector name must not be empty');
     }
 
     assertPositiveNumber(voteWeight, 'voteWeight');
@@ -42,12 +61,19 @@ export class ElectorAggregate {
     return new ElectorAggregate(
       id,
       voteId,
+      name,
       identifier,
-      params.groupKey?.trim() || null,
+      phoneNumber,
+      birthDate,
+      params.groupKey?.trim() || undefined,
       voteWeight,
       params.status ?? ElectorStatus.Eligible,
       params.identityVerified ?? false,
     );
+  }
+
+  static reconstitute(params: ReconstituteElectorParams): ElectorAggregate {
+    return ElectorAggregate.create(params);
   }
 
   markIdentityVerified(): void {

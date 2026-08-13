@@ -6,10 +6,10 @@ import {
 
 @Injectable()
 export class NotConfiguredDatabaseHealthAdapter implements DatabaseHealthPort {
-  async ping(): Promise<DatabaseHealthResult> {
-    return {
+  ping(): Promise<DatabaseHealthResult> {
+    return Promise.resolve({
       status: 'down',
       reason: 'not_configured',
-    };
+    });
   }
 }

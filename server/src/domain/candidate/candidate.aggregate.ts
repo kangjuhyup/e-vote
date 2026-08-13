@@ -10,6 +10,8 @@ interface CreateCandidateParams {
   readonly status?: CandidateStatus;
 }
 
+type ReconstituteCandidateParams = Required<CreateCandidateParams>;
+
 export class CandidateAggregate {
   private constructor(
     readonly id: string,
@@ -41,6 +43,10 @@ export class CandidateAggregate {
       name,
       params.status ?? CandidateStatus.Active,
     );
+  }
+
+  static reconstitute(params: ReconstituteCandidateParams): CandidateAggregate {
+    return CandidateAggregate.create(params);
   }
 
   withdraw(): void {
