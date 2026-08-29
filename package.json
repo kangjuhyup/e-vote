@@ -7,6 +7,8 @@
     "node": ">=24.0.0"
   },
   "scripts": {
+    "dev": "sh scripts/dev.sh",
+    "dev:docker": "docker compose up -d --wait",
     "dev:ui": "pnpm --filter @vote/ui dev",
     "build:ui": "pnpm --filter @vote/ui build",
     "start:ui": "pnpm --filter @vote/ui start",

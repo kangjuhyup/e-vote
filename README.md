@@ -13,6 +13,16 @@ pnpm workspace 기반 monorepo입니다.
 pnpm install
 ```
 
+## Local Development
+
+```bash
+# start PostgreSQL, Redis, the OIDC auth service, the API server, and the UI
+pnpm dev
+```
+
+The default local ports are `5432` for PostgreSQL, `6381` for Redis, `3000`
+for the API server, `3001` for the UI, and `3002` for the OIDC auth service.
+
 ## Server
 
 ```bash

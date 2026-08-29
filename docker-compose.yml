@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
     command: ['redis-server', '--appendonly', 'yes']
     ports:
-      - '${REDIS_PORT:-6379}:6379'
+      - '127.0.0.1:${REDIS_PORT:-6381}:6379'
     volumes:
       - redis-data:/data
     healthcheck:
@@ -31,6 +31,36 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  auth-service:
+    image: ghcr.io/kangjuhyup/auth/auth-service:vV0.1.0
+    container_name: vote-auth-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_DRIVER: ${AUTH_SERVICE_DB_DRIVER:-postgresql}
+      DB_HOST: ${AUTH_SERVICE_DB_HOST:-postgres}
+      DB_PORT: ${AUTH_SERVICE_DB_PORT:-5432}
+      DB_NAME: ${AUTH_SERVICE_DB_NAME:-vote}
+      DB_USER: ${AUTH_SERVICE_DB_USER:-vote}
+      DB_PASSWORD: ${AUTH_SERVICE_DB_PASSWORD:-vote}
+      REDIS_URL: ${AUTH_SERVICE_REDIS_URL:-redis://redis:6379/0}
+      OIDC_ISSUER: ${AUTH_SERVICE_OIDC_ISSUER:-http://localhost:3002}
+      OIDC_COOKIE_KEYS: ${AUTH_SERVICE_OIDC_COOKIE_KEYS:-vote-local-oidc-cookie-key-1,vote-local-oidc-cookie-key-2}
+      OIDC_ACCESS_TOKEN_FORMAT: ${AUTH_SERVICE_OIDC_ACCESS_TOKEN_FORMAT:-jwt}
+      OIDC_ADAPTER_DRIVER: ${AUTH_SERVICE_OIDC_ADAPTER_DRIVER:-redis}
+      OIDC_CACHE_TTL_MARGIN_SEC: ${AUTH_SERVICE_OIDC_CACHE_TTL_MARGIN_SEC:-30}
+      OIDC_CACHE_NEGATIVE_TTL_SEC: ${AUTH_SERVICE_OIDC_CACHE_NEGATIVE_TTL_SEC:-30}
+      OIDC_CACHE_BACKFILL_TTL_SEC: ${AUTH_SERVICE_OIDC_CACHE_BACKFILL_TTL_SEC:-300}
+      OTP_TOKEN_SECRET: ${AUTH_SERVICE_OTP_TOKEN_SECRET:-vote-local-otp-token-secret}
+      OTP_PASSWORD_RESET_TTL_SEC: ${AUTH_SERVICE_OTP_PASSWORD_RESET_TTL_SEC:-900}
+      JWKS_ENCRYPTION_KEY: ${AUTH_SERVICE_JWKS_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+    ports:
+      - '${AUTH_SERVICE_PORT:-3002}:3000'
 
 volumes:
   postgres-data:
