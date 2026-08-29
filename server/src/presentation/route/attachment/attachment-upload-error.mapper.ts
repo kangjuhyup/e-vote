@@ -14,8 +14,8 @@ import {
 import {
   UploadedAttachmentMetadataMismatchError,
   UploadedAttachmentObjectNotFoundError,
-} from '../../../application/command/confirm-attachment-upload.handler';
-import { StorageNotConfiguredError } from '../../../application/port/storage.port';
+} from '../../../application/command/handler/confirm-attachment-upload.handler';
+import { StorageNotConfiguredError } from '../../../application/port/gateway/storage.port';
 
 export function throwAttachmentUploadHttpError(error: unknown): never {
   if (

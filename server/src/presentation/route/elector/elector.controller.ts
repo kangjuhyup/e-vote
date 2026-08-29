@@ -1,6 +1,14 @@
-import { Body, Controller, HttpCode, Param, Put } from '@nestjs/common';
+import {
+  Body,
+  ConflictException,
+  Controller,
+  HttpCode,
+  Param,
+  Put,
+} from '@nestjs/common';
 import {
   ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -8,9 +16,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthenticateElectorCommand } from '../../../application/command/authenticate-elector.command';
-import { AuthenticateElectorHandler } from '../../../application/command/authenticate-elector.handler';
+import { AuthenticateElectorHandler } from '../../../application/command/handler/authenticate-elector.handler';
 import { CreateElectorCommand } from '../../../application/command/create-elector.command';
-import { CreateElectorHandler } from '../../../application/command/create-elector.handler';
+import { CreateElectorHandler } from '../../../application/command/handler/create-elector.handler';
+import { DomainError } from '../../../domain/shared/domain-error';
 import {
   AuthenticateElectorBody,
   AuthenticateElectorParam,
@@ -49,23 +58,34 @@ export class ElectorController {
     type: CreateElectorResponse,
     description: '선거인 생성 결과입니다.',
   })
+  @ApiConflictResponse({
+    description: '같은 그룹 선거인의 지분이 기존 그룹 지분과 다릅니다.',
+  })
   async createElector(
     @Param() params: CreateElectorParam,
     @Body() body: CreateElectorBody,
   ): Promise<CreateElectorResponse> {
-    const result = await this.createElectorHandler.execute(
-      CreateElectorCommand.of({
-        voteId: params.voteId,
-        name: body.name,
-        identifier: body.identifier,
-        phoneNumber: body.phoneNumber,
-        birthDate: body.birthDate,
-        groupKey: body.groupKey,
-        voteWeight: body.voteWeight,
-      }),
-    );
+    try {
+      const result = await this.createElectorHandler.execute(
+        CreateElectorCommand.of({
+          voteId: params.voteId,
+          name: body.name,
+          identifier: body.identifier,
+          phoneNumber: body.phoneNumber,
+          birthDate: body.birthDate,
+          groupKey: body.groupKey,
+          voteWeight: body.voteWeight,
+        }),
+      );
 
-    return CreateElectorResponse.of(result);
+      return CreateElectorResponse.of(result);
+    } catch (error) {
+      if (error instanceof DomainError) {
+        throw new ConflictException(error.message);
+      }
+
+      throw error;
+    }
   }
 
   @Put(':electorId/authentication')

@@ -2,8 +2,11 @@ import { Module, Provider } from '@nestjs/common';
 import {
   STORAGE_HEALTH_PORT,
   StorageHealthPort,
-} from '../../application/port/storage-health.port';
-import { STORAGE_PORT, StoragePort } from '../../application/port/storage.port';
+} from '../../application/port/health/storage-health.port';
+import {
+  STORAGE_PORT,
+  StoragePort,
+} from '../../application/port/gateway/storage.port';
 import { NotConfiguredStorageHealthAdapter } from './not-configured-storage-health.adapter';
 import { NotConfiguredStorageAdapter } from './not-configured-storage.adapter';
 import { WasabiStorageAdapter } from './wasabi-storage.adapter';

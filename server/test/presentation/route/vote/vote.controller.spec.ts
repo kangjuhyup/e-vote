@@ -1,17 +1,17 @@
 import { NotFoundException } from '@nestjs/common';
 import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/confirm-attachment-upload.command';
-import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/confirm-attachment-upload.handler';
+import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
 import { CreateVoteCommand } from '../../../../src/application/command/create-vote.command';
-import { CreateVoteHandler } from '../../../../src/application/command/create-vote.handler';
+import { CreateVoteHandler } from '../../../../src/application/command/handler/create-vote.handler';
 import { RequestAttachmentUploadCommand } from '../../../../src/application/command/request-attachment-upload.command';
-import { RequestAttachmentUploadHandler } from '../../../../src/application/command/request-attachment-upload.handler';
-import { AttachmentTargetType } from '../../../../src/application/port/attachment-repository.port';
-import { GetVotePageHandler } from '../../../../src/application/query/get-vote-page.handler';
+import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
+import { AttachmentTargetType } from '../../../../src/application/port/persistence/command/attachment-repository.port';
+import { GetVotePageHandler } from '../../../../src/application/query/handler/get-vote-page.handler';
 import { GetVotePageQuery } from '../../../../src/application/query/get-vote-page.query';
 import {
   GetVoteHandler,
   VoteNotFoundError,
-} from '../../../../src/application/query/get-vote.handler';
+} from '../../../../src/application/query/handler/get-vote.handler';
 import { GetVoteQuery } from '../../../../src/application/query/get-vote.query';
 import {
   CandidateView,
@@ -22,7 +22,7 @@ import {
   VotePolicyView,
   VoteSummaryView,
   VoteView,
-} from '../../../../src/application/query/vote.view';
+} from '../../../../src/application/query/view/vote.view';
 import {
   ParticipationUnit,
   PrivacyMode,
@@ -31,6 +31,8 @@ import {
 } from '../../../../src/domain/vote/type/vote-policy.type';
 import { VoteStatus } from '../../../../src/domain/vote/type/vote-status.type';
 import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
+import { VoteAttachmentController } from '../../../../src/presentation/route/vote/vote-attachment.controller';
+import { VoteReadController } from '../../../../src/presentation/route/vote/vote-read.controller';
 import { VoteController } from '../../../../src/presentation/route/vote/vote.controller';
 
 describe('VoteController', () => {
@@ -71,13 +73,14 @@ describe('VoteController', () => {
   } as unknown as jest.Mocked<ConfirmAttachmentUploadHandler>;
 
   let controller: VoteController;
+  let readController: VoteReadController;
+  let attachmentController: VoteAttachmentController;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new VoteController(
-      createVoteHandler,
-      getVoteHandler,
-      getVotePageHandler,
+    controller = new VoteController(createVoteHandler);
+    readController = new VoteReadController(getVoteHandler, getVotePageHandler);
+    attachmentController = new VoteAttachmentController(
       requestAttachmentUploadHandler,
       confirmAttachmentUploadHandler,
     );
@@ -86,7 +89,7 @@ describe('VoteController', () => {
   it('maps GET /votes to vote page query handler', async () => {
     getVotePageExecute.mockResolvedValue(createVotePageView());
 
-    const response = await controller.getVotePage({
+    const response = await readController.getVotePage({
       page: '2',
       pageSize: '10',
     });
@@ -129,7 +132,7 @@ describe('VoteController', () => {
   it('maps GET /votes/:voteId to vote detail query handler', async () => {
     getVoteExecute.mockResolvedValue(createVoteView());
 
-    const response = await controller.getVote({ voteId: 'vote-1' });
+    const response = await readController.getVote({ voteId: 'vote-1' });
 
     expect(response).toEqual({
       id: 'vote-1',
@@ -190,7 +193,7 @@ describe('VoteController', () => {
     getVoteExecute.mockRejectedValue(new VoteNotFoundError());
 
     await expect(
-      controller.getVote({ voteId: 'missing-vote' }),
+      readController.getVote({ voteId: 'missing-vote' }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -236,7 +239,7 @@ describe('VoteController', () => {
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
 
-    const response = await controller.requestVoteAttachmentUpload(
+    const response = await attachmentController.requestVoteAttachmentUpload(
       { voteId: 'vote-1' },
       {
         attachmentType: 'NOTICE',
@@ -273,7 +276,7 @@ describe('VoteController', () => {
       storageKey: 'attachments/vote-key',
     });
 
-    const response = await controller.confirmVoteAttachmentUpload(
+    const response = await attachmentController.confirmVoteAttachmentUpload(
       { voteId: 'vote-1' },
       {
         storageKey: 'attachments/vote-key',

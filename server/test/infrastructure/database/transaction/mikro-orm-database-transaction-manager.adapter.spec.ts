@@ -4,7 +4,7 @@ import {
   type EntityManager,
   type TransactionOptions,
 } from '@mikro-orm/postgresql';
-import type { DatabaseTransactionOptions } from '../../../../src/infrastructure/database/transaction/database-transaction-manager.port';
+import type { DatabaseTransactionOptions } from '../../../../src/application/port/persistence/transaction/database-transaction-manager.port';
 import { MikroOrmDatabaseTransactionManagerAdapter } from '../../../../src/infrastructure/database/transaction/mikro-orm-database-transaction-manager.adapter';
 
 describe('MikroOrmDatabaseTransactionManagerAdapter', () => {

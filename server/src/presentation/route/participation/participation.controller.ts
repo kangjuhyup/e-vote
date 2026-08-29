@@ -1,15 +1,34 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
 import {
+  BadRequestException,
+  Body,
+  ConflictException,
+  Controller,
+  NotFoundException,
+  Param,
+  Post,
+} from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
   ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { CastParticipationCommand } from '../../../application/command/cast-participation.command';
-import { CastParticipationHandler } from '../../../application/command/cast-participation.handler';
+import {
+  CandidateNotFoundError,
+  CastParticipationHandler,
+  ElectorNotFoundError,
+  FieldVotingSessionNotFoundError,
+  VoteDetailNotFoundError,
+  VoteNotFoundError,
+} from '../../../application/command/handler/cast-participation.handler';
 import { RecordFieldParticipationEvidenceCommand } from '../../../application/command/record-field-participation-evidence.command';
-import { RecordFieldParticipationEvidenceHandler } from '../../../application/command/record-field-participation-evidence.handler';
+import { RecordFieldParticipationEvidenceHandler } from '../../../application/command/handler/record-field-participation-evidence.handler';
+import { DomainError } from '../../../domain/shared/domain-error';
 import { CastParticipationBody } from './dto/cast-participation-request.dto';
 import { CastParticipationResponse } from './dto/cast-participation-response.dto';
 import {
@@ -39,22 +58,40 @@ export class ParticipationController {
     type: CastParticipationResponse,
     description: '투표 참여 기록 결과입니다.',
   })
+  @ApiBadRequestResponse({
+    description: '선택 후보 ID 등 필수 참여 정보가 누락됐습니다.',
+  })
+  @ApiNotFoundResponse({
+    description: '투표, 자식 투표, 선거인, 후보 또는 현장 세션이 없습니다.',
+  })
+  @ApiConflictResponse({
+    description:
+      '투표 상태, 채널, 자격 또는 중복 참여 조건을 충족하지 않습니다.',
+  })
   async castParticipation(
     @Body() body: CastParticipationBody,
   ): Promise<CastParticipationResponse> {
-    const result = await this.castParticipationHandler.execute(
-      CastParticipationCommand.of({
-        voteId: body.voteId,
-        voteDetailId: body.voteDetailId,
-        electorId: body.electorId,
-        selectedCandidateId: body.selectedCandidateId,
-        votingChannel: body.votingChannel,
-        fieldVotingSessionId: body.fieldVotingSessionId,
-        participatedAt: new Date(body.participatedAt),
-      }),
-    );
+    if (!body.selectedCandidateId?.trim()) {
+      throw new BadRequestException('selected candidate is required');
+    }
 
-    return CastParticipationResponse.of(result);
+    try {
+      const result = await this.castParticipationHandler.execute(
+        CastParticipationCommand.of({
+          voteId: body.voteId,
+          voteDetailId: body.voteDetailId,
+          electorId: body.electorId,
+          selectedCandidateId: body.selectedCandidateId,
+          votingChannel: body.votingChannel,
+          fieldVotingSessionId: body.fieldVotingSessionId,
+          participatedAt: new Date(body.participatedAt),
+        }),
+      );
+
+      return CastParticipationResponse.of(result);
+    } catch (error) {
+      throwParticipationHttpError(error);
+    }
   }
 
   @Post(':participationId/field-evidence')
@@ -92,4 +129,40 @@ export class ParticipationController {
 
     return RecordFieldParticipationEvidenceResponse.of(result);
   }
+}
+
+function throwParticipationHttpError(error: unknown): never {
+  if (
+    error instanceof VoteNotFoundError ||
+    error instanceof VoteDetailNotFoundError ||
+    error instanceof ElectorNotFoundError ||
+    error instanceof CandidateNotFoundError ||
+    error instanceof FieldVotingSessionNotFoundError
+  ) {
+    throw new NotFoundException(error.message);
+  }
+
+  if (error instanceof DomainError || isUniqueConstraintError(error)) {
+    throw new ConflictException(
+      error instanceof Error ? error.message : 'participation already exists',
+    );
+  }
+
+  throw error;
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const candidate = error as {
+    readonly code?: unknown;
+    readonly name?: unknown;
+  };
+
+  return (
+    candidate.code === '23505' ||
+    candidate.name === 'UniqueConstraintViolationException'
+  );
 }

@@ -2,11 +2,11 @@ import {
   AttachmentTargetType,
   CandidateAttachmentType,
   VoteAttachmentType,
-} from '../port/attachment-repository.port';
+} from '../port/persistence/command/attachment-repository.port';
 import type {
   AttachmentTarget,
   AttachmentType,
-} from '../port/attachment-repository.port';
+} from '../port/persistence/command/attachment-repository.port';
 
 export const MAX_ATTACHMENT_SIZE_BYTES = 20 * 1024 * 1024;
 

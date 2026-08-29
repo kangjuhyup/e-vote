@@ -11,7 +11,7 @@ import {
   type DatabaseTransactionManager,
   type DatabaseTransactionOptions,
   type DatabaseTransactionPropagation,
-} from './database-transaction-manager.port';
+} from '../../../application/port/persistence/transaction/database-transaction-manager.port';
 
 @Injectable()
 export class MikroOrmDatabaseTransactionManagerAdapter implements DatabaseTransactionManager {

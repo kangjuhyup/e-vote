@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import { AttachmentTargetNotFoundError } from '../../../../src/application/command/attachment-target.validator';
 import { UnsupportedAttachmentMimeTypeError } from '../../../../src/application/command/attachment-upload.policy';
-import { UploadedAttachmentObjectNotFoundError } from '../../../../src/application/command/confirm-attachment-upload.handler';
-import { StorageNotConfiguredError } from '../../../../src/application/port/storage.port';
+import { UploadedAttachmentObjectNotFoundError } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
+import { StorageNotConfiguredError } from '../../../../src/application/port/gateway/storage.port';
 import { throwAttachmentUploadHttpError } from '../../../../src/presentation/route/attachment/attachment-upload-error.mapper';
 
 describe('throwAttachmentUploadHttpError', () => {

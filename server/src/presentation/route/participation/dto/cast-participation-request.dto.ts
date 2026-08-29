@@ -29,11 +29,11 @@ export class CastParticipationBody {
   readonly electorId!: string;
 
   @ApiProperty({
-    required: false,
     example: 'candidate-1',
-    description: '공개 투표에서 선택한 후보 ID입니다.',
+    description:
+      '선택한 후보 ID입니다. 비밀투표에서는 참여 기록과 분리해 집계합니다.',
   })
-  readonly selectedCandidateId?: string;
+  readonly selectedCandidateId!: string;
 
   @ApiProperty({
     enum: Object.values(VotingChannelBody),

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   RedisHealthPort,
   RedisHealthResult,
-} from '../../application/port/redis-health.port';
+} from '../../application/port/health/redis-health.port';
 import { REDIS_CLIENT, type RedisClient } from './redis.constants';
 
 @Injectable()

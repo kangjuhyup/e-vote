@@ -1,23 +1,25 @@
 import { NotFoundException } from '@nestjs/common';
-import { AttachmentTargetType } from '../../../../src/application/port/attachment-repository.port';
+import { AttachmentTargetType } from '../../../../src/application/port/persistence/command/attachment-repository.port';
 import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/confirm-attachment-upload.command';
-import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/confirm-attachment-upload.handler';
+import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
 import { CreateCandidateCommand } from '../../../../src/application/command/create-candidate.command';
-import { CreateCandidateHandler } from '../../../../src/application/command/create-candidate.handler';
+import { CreateCandidateHandler } from '../../../../src/application/command/handler/create-candidate.handler';
 import { RequestAttachmentUploadCommand } from '../../../../src/application/command/request-attachment-upload.command';
-import { RequestAttachmentUploadHandler } from '../../../../src/application/command/request-attachment-upload.handler';
+import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
 import {
   CandidatePageReadView,
   CandidateReadView,
-} from '../../../../src/application/query/candidate-read.view';
+} from '../../../../src/application/query/view/candidate-read.view';
 import {
   CandidateNotFoundError,
   GetCandidateHandler,
-} from '../../../../src/application/query/get-candidate.handler';
+} from '../../../../src/application/query/handler/get-candidate.handler';
 import { GetCandidateQuery } from '../../../../src/application/query/get-candidate.query';
-import { GetCandidatePageHandler } from '../../../../src/application/query/get-candidate-page.handler';
+import { GetCandidatePageHandler } from '../../../../src/application/query/handler/get-candidate-page.handler';
 import { GetCandidatePageQuery } from '../../../../src/application/query/get-candidate-page.query';
 import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
+import { CandidateAttachmentController } from '../../../../src/presentation/route/candidate/candidate-attachment.controller';
+import { CandidateReadController } from '../../../../src/presentation/route/candidate/candidate-read.controller';
 import { CandidateController } from '../../../../src/presentation/route/candidate/candidate.controller';
 
 describe('CandidateController', () => {
@@ -58,13 +60,17 @@ describe('CandidateController', () => {
   } as unknown as jest.Mocked<ConfirmAttachmentUploadHandler>;
 
   let controller: CandidateController;
+  let readController: CandidateReadController;
+  let attachmentController: CandidateAttachmentController;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new CandidateController(
-      createCandidateHandler,
+    controller = new CandidateController(createCandidateHandler);
+    readController = new CandidateReadController(
       getCandidateHandler,
       getCandidatePageHandler,
+    );
+    attachmentController = new CandidateAttachmentController(
       requestAttachmentUploadHandler,
       confirmAttachmentUploadHandler,
     );
@@ -81,7 +87,7 @@ describe('CandidateController', () => {
       }),
     );
 
-    const response = await controller.getCandidatePage(
+    const response = await readController.getCandidatePage(
       {
         voteId: 'vote-1',
         voteDetailId: 'vote-detail-1',
@@ -114,7 +120,7 @@ describe('CandidateController', () => {
   it('maps GET /votes/:voteId/sub-votes/:voteDetailId/candidates/:candidateId to get candidate handler', async () => {
     getCandidateExecute.mockResolvedValue(createCandidateReadView());
 
-    const response = await controller.getCandidate({
+    const response = await readController.getCandidate({
       voteId: 'vote-1',
       voteDetailId: 'vote-detail-1',
       candidateId: 'candidate-1',
@@ -141,7 +147,7 @@ describe('CandidateController', () => {
     getCandidateExecute.mockRejectedValue(new CandidateNotFoundError());
 
     await expect(
-      controller.getCandidate({
+      readController.getCandidate({
         voteId: 'vote-1',
         voteDetailId: 'vote-detail-1',
         candidateId: 'missing',
@@ -187,19 +193,20 @@ describe('CandidateController', () => {
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
 
-    const response = await controller.requestCandidateAttachmentUpload(
-      {
-        voteId: 'vote-1',
-        voteDetailId: 'vote-detail-1',
-        candidateId: 'candidate-1',
-      },
-      {
-        attachmentType: 'POSTER',
-        originalName: 'poster.png',
-        mimeType: 'image/png',
-        sizeBytes: 1024,
-      },
-    );
+    const response =
+      await attachmentController.requestCandidateAttachmentUpload(
+        {
+          voteId: 'vote-1',
+          voteDetailId: 'vote-detail-1',
+          candidateId: 'candidate-1',
+        },
+        {
+          attachmentType: 'POSTER',
+          originalName: 'poster.png',
+          mimeType: 'image/png',
+          sizeBytes: 1024,
+        },
+      );
 
     expect(response).toEqual({
       storageKey: 'attachments/candidate-key',
@@ -228,20 +235,21 @@ describe('CandidateController', () => {
       storageKey: 'attachments/candidate-key',
     });
 
-    const response = await controller.confirmCandidateAttachmentUpload(
-      {
-        voteId: 'vote-1',
-        voteDetailId: 'vote-detail-1',
-        candidateId: 'candidate-1',
-      },
-      {
-        storageKey: 'attachments/candidate-key',
-        attachmentType: 'PROFILE_IMAGE',
-        originalName: 'profile.png',
-        mimeType: 'image/png',
-        sizeBytes: 2048,
-      },
-    );
+    const response =
+      await attachmentController.confirmCandidateAttachmentUpload(
+        {
+          voteId: 'vote-1',
+          voteDetailId: 'vote-detail-1',
+          candidateId: 'candidate-1',
+        },
+        {
+          storageKey: 'attachments/candidate-key',
+          attachmentType: 'PROFILE_IMAGE',
+          originalName: 'profile.png',
+          mimeType: 'image/png',
+          sizeBytes: 2048,
+        },
+      );
 
     expect(response).toEqual({
       attachmentId: 'attachment-1',

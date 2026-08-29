@@ -1,7 +1,7 @@
 import type {
   AttachmentTarget,
   AttachmentType,
-} from '../port/attachment-repository.port';
+} from '../port/persistence/command/attachment-repository.port';
 
 export class ConfirmAttachmentUploadCommand {
   private constructor(

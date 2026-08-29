@@ -12,7 +12,7 @@ import {
   PresignedStorageUrl,
   StoredObjectMetadata,
   StoragePort,
-} from '../../application/port/storage.port';
+} from '../../application/port/gateway/storage.port';
 import { WasabiStorageConfig } from './wasabi-storage.config';
 
 type PresignStorageCommand =

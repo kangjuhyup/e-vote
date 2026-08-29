@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   DatabaseHealthPort,
   DatabaseHealthResult,
-} from '../../application/port/database-health.port';
+} from '../../application/port/health/database-health.port';
 
 @Injectable()
 export class NotConfiguredDatabaseHealthAdapter implements DatabaseHealthPort {

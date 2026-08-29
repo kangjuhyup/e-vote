@@ -3,7 +3,7 @@ import {
   StoredObjectMetadata,
   StorageNotConfiguredError,
   StoragePort,
-} from '../../application/port/storage.port';
+} from '../../application/port/gateway/storage.port';
 
 export class NotConfiguredStorageAdapter implements StoragePort {
   createPresignedPutObjectUrl(): Promise<PresignedStorageUrl> {

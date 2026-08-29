@@ -3,11 +3,11 @@ import {
   STORAGE_PORT,
   StorageNotConfiguredError,
   StoragePort,
-} from '../../../src/application/port/storage.port';
+} from '../../../src/application/port/gateway/storage.port';
 import {
   STORAGE_HEALTH_PORT,
   StorageHealthPort,
-} from '../../../src/application/port/storage-health.port';
+} from '../../../src/application/port/health/storage-health.port';
 import { StorageModule } from '../../../src/infrastructure/storage/storage.module';
 import { WasabiStorageAdapter } from '../../../src/infrastructure/storage/wasabi-storage.adapter';
 import { WasabiStorageHealthAdapter } from '../../../src/infrastructure/storage/wasabi-storage-health.adapter';

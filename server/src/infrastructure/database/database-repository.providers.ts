@@ -1,34 +1,36 @@
 import type { Provider } from '@nestjs/common';
-import { ATTACHMENT_REPOSITORY_PORT } from '../../application/port/attachment-repository.port';
-import { CANDIDATE_READ_REPOSITORY_PORT } from '../../application/port/candidate-read-repository.port';
-import { CANDIDATE_REPOSITORY_PORT } from '../../application/port/candidate-repository.port';
-import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from '../../application/port/election-commission-member-repository.port';
-import { ELECTION_COMMISSION_REPOSITORY_PORT } from '../../application/port/election-commission-repository.port';
-import { ELECTOR_READ_REPOSITORY_PORT } from '../../application/port/elector-read-repository.port';
-import { ELECTOR_REPOSITORY_PORT } from '../../application/port/elector-repository.port';
-import { FIELD_PARTICIPATION_EVIDENCE_REPOSITORY_PORT } from '../../application/port/field-participation-evidence-repository.port';
-import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from '../../application/port/field-voting-session-repository.port';
-import { FILE_REPOSITORY_PORT } from '../../application/port/file-repository.port';
-import { PARTICIPATION_REPOSITORY_PORT } from '../../application/port/participation-repository.port';
-import { VOTE_DETAIL_READ_REPOSITORY_PORT } from '../../application/port/vote-detail-read-repository.port';
-import { VOTE_DETAIL_REPOSITORY_PORT } from '../../application/port/vote-detail-repository.port';
-import { VOTE_READ_REPOSITORY_PORT } from '../../application/port/vote-read-repository.port';
-import { VOTE_REPOSITORY_PORT } from '../../application/port/vote-repository.port';
-import { AttachmentRepositoryAdapter } from './repository/attachment-repository.adapter';
-import { CandidateReadRepositoryAdapter } from './repository/candidate-read-repository.adapter';
-import { CandidateRepositoryAdapter } from './repository/candidate-repository.adapter';
-import { ElectionCommissionMemberRepositoryAdapter } from './repository/election-commission-member-repository.adapter';
-import { ElectionCommissionRepositoryAdapter } from './repository/election-commission-repository.adapter';
-import { ElectorReadRepositoryAdapter } from './repository/elector-read-repository.adapter';
-import { ElectorRepositoryAdapter } from './repository/elector-repository.adapter';
-import { FieldParticipationEvidenceRepositoryAdapter } from './repository/field-participation-evidence-repository.adapter';
-import { FieldVotingSessionRepositoryAdapter } from './repository/field-voting-session-repository.adapter';
-import { FileRepositoryAdapter } from './repository/file-repository.adapter';
-import { ParticipationRepositoryAdapter } from './repository/participation-repository.adapter';
-import { VoteDetailReadRepositoryAdapter } from './repository/vote-detail-read-repository.adapter';
-import { VoteDetailRepositoryAdapter } from './repository/vote-detail-repository.adapter';
-import { VoteReadRepositoryAdapter } from './repository/vote-read-repository.adapter';
-import { VoteRepositoryAdapter } from './repository/vote-repository.adapter';
+import { ATTACHMENT_REPOSITORY_PORT } from '../../application/port/persistence/command/attachment-repository.port';
+import { CANDIDATE_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/candidate-read-repository.port';
+import { CANDIDATE_REPOSITORY_PORT } from '../../application/port/persistence/command/candidate-repository.port';
+import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from '../../application/port/persistence/command/election-commission-member-repository.port';
+import { ELECTION_COMMISSION_REPOSITORY_PORT } from '../../application/port/persistence/command/election-commission-repository.port';
+import { ELECTOR_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/elector-read-repository.port';
+import { ELECTOR_REPOSITORY_PORT } from '../../application/port/persistence/command/elector-repository.port';
+import { FIELD_PARTICIPATION_EVIDENCE_REPOSITORY_PORT } from '../../application/port/persistence/command/field-participation-evidence-repository.port';
+import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from '../../application/port/persistence/command/field-voting-session-repository.port';
+import { FILE_REPOSITORY_PORT } from '../../application/port/persistence/command/file-repository.port';
+import { PARTICIPATION_REPOSITORY_PORT } from '../../application/port/persistence/command/participation-repository.port';
+import { VOTE_DETAIL_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/vote-detail-read-repository.port';
+import { VOTE_DETAIL_REPOSITORY_PORT } from '../../application/port/persistence/command/vote-detail-repository.port';
+import { VOTE_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/vote-read-repository.port';
+import { VOTE_REPOSITORY_PORT } from '../../application/port/persistence/command/vote-repository.port';
+import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/vote-statistics-read-repository.port';
+import { AttachmentRepositoryAdapter } from './repository/command/attachment-repository.adapter';
+import { CandidateReadRepositoryAdapter } from './repository/query/candidate-read-repository.adapter';
+import { CandidateRepositoryAdapter } from './repository/command/candidate-repository.adapter';
+import { ElectionCommissionMemberRepositoryAdapter } from './repository/command/election-commission-member-repository.adapter';
+import { ElectionCommissionRepositoryAdapter } from './repository/command/election-commission-repository.adapter';
+import { ElectorReadRepositoryAdapter } from './repository/query/elector-read-repository.adapter';
+import { ElectorRepositoryAdapter } from './repository/command/elector-repository.adapter';
+import { FieldParticipationEvidenceRepositoryAdapter } from './repository/command/field-participation-evidence-repository.adapter';
+import { FieldVotingSessionRepositoryAdapter } from './repository/command/field-voting-session-repository.adapter';
+import { FileRepositoryAdapter } from './repository/command/file-repository.adapter';
+import { ParticipationRepositoryAdapter } from './repository/command/participation-repository.adapter';
+import { VoteDetailReadRepositoryAdapter } from './repository/query/vote-detail-read-repository.adapter';
+import { VoteDetailRepositoryAdapter } from './repository/command/vote-detail-repository.adapter';
+import { VoteReadRepositoryAdapter } from './repository/query/vote-read-repository.adapter';
+import { VoteRepositoryAdapter } from './repository/command/vote-repository.adapter';
+import { VoteStatisticsReadRepositoryAdapter } from './repository/query/vote-statistics-read-repository.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
   {
@@ -54,6 +56,10 @@ export const databaseRepositoryProviders: Provider[] = [
   {
     provide: VOTE_READ_REPOSITORY_PORT,
     useClass: VoteReadRepositoryAdapter,
+  },
+  {
+    provide: VOTE_STATISTICS_READ_REPOSITORY_PORT,
+    useClass: VoteStatisticsReadRepositoryAdapter,
   },
   {
     provide: ELECTOR_REPOSITORY_PORT,
@@ -100,6 +106,7 @@ export const databaseRepositoryPortTokens = [
   VOTE_DETAIL_REPOSITORY_PORT,
   VOTE_DETAIL_READ_REPOSITORY_PORT,
   VOTE_READ_REPOSITORY_PORT,
+  VOTE_STATISTICS_READ_REPOSITORY_PORT,
   ELECTOR_REPOSITORY_PORT,
   ELECTOR_READ_REPOSITORY_PORT,
   CANDIDATE_REPOSITORY_PORT,

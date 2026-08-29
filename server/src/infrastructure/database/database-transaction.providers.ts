@@ -1,5 +1,5 @@
 import type { Provider } from '@nestjs/common';
-import { DATABASE_TRANSACTION_MANAGER } from './transaction/database-transaction-manager.port';
+import { DATABASE_TRANSACTION_MANAGER } from '../../application/port/persistence/transaction/database-transaction-manager.port';
 import { MikroOrmDatabaseTransactionManagerAdapter } from './transaction/mikro-orm-database-transaction-manager.adapter';
 
 export const databaseTransactionProviders: Provider[] = [
