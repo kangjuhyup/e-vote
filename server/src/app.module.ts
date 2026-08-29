@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AttachmentTargetValidator } from './application/command/attachment-target.validator';
 import { ConfirmAttachmentUploadHandler } from './application/command/handler/confirm-attachment-upload.handler';
 import { CreateCandidateHandler } from './application/command/handler/create-candidate.handler';
@@ -20,7 +20,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { NotConfiguredDatabaseHealthAdapter } from './infrastructure/database/not-configured-database-health.adapter';
-import { RequestIdMiddleware } from './presentation/common/middleware/request-id.middleware';
 import { CandidateAttachmentController } from './presentation/route/candidate/candidate-attachment.controller';
 import { CandidateReadController } from './presentation/route/candidate/candidate-read.controller';
 import { CandidateController } from './presentation/route/candidate/candidate.controller';
@@ -73,8 +72,4 @@ import { VoteStatisticsController } from './presentation/route/vote-statistics/v
     },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RequestIdMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}

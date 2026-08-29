@@ -5,8 +5,8 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Response } from 'express';
-import { RequestWithId } from '../type/request-with-id.type';
+import { Request, Response } from 'express';
+import { getResponseRequestId } from '../util/request-id.util';
 
 type ErrorResponse = {
   success: false;
@@ -23,7 +23,7 @@ type ErrorResponse = {
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const http = host.switchToHttp();
-    const request = http.getRequest<RequestWithId>();
+    const request = http.getRequest<Request>();
     const response = http.getResponse<Response>();
     const statusCode =
       exception instanceof HttpException
@@ -38,7 +38,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         path: request.originalUrl,
       },
       timestamp: new Date().toISOString(),
-      requestId: request.requestId,
+      requestId: getResponseRequestId(response),
     } satisfies ErrorResponse);
   }
 

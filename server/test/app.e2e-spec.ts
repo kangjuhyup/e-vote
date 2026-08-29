@@ -9,7 +9,6 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { HttpExceptionFilter } from '../src/presentation/common/filter/http-exception.filter';
-import { LoggingInterceptor } from '../src/presentation/common/interceptor/logging.interceptor';
 import { ResponseInterceptor } from '../src/presentation/common/interceptor/response.interceptor';
 
 type HttpTestResponse = {
@@ -50,10 +49,7 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalInterceptors(
-      new LoggingInterceptor(),
-      new ResponseInterceptor(),
-    );
+    app.useGlobalInterceptors(new ResponseInterceptor());
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
   });
@@ -87,6 +83,9 @@ describe('AppController (e2e)', () => {
 
     expect(response.headers['x-request-id']).toEqual(expect.any(String));
     expect(response.headers['x-request-id']).not.toHaveLength(0);
+    expect(response.body).toMatchObject({
+      requestId: response.headers['x-request-id'],
+    });
   });
 
   it('/liveness (GET)', async () => {

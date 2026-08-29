@@ -35,6 +35,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1109.0",
     "@aws-sdk/s3-request-presigner": "^3.1109.0",
+    "@kangjuhyup/rvlog": "^0.2.0",
+    "@kangjuhyup/rvlog-nest": "^1.0.1",
     "@mikro-orm/core": "^7.1.11",
     "@mikro-orm/migrations": "7.1.11",
     "@mikro-orm/nestjs": "^7.0.2",
