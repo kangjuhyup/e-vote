@@ -13,12 +13,12 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { GetElectorPageHandler } from '../../../application/query/get-elector-page.handler';
+import { GetElectorPageHandler } from '../../../application/query/handler/get-elector-page.handler';
 import { GetElectorPageQuery as GetElectorPageApplicationQuery } from '../../../application/query/get-elector-page.query';
 import {
   ElectorNotFoundError,
   GetElectorHandler,
-} from '../../../application/query/get-elector.handler';
+} from '../../../application/query/handler/get-elector.handler';
 import { GetElectorQuery } from '../../../application/query/get-elector.query';
 import { GetElectorPageQuery as GetElectorPageRequestQuery } from './dto/get-elector-page-request.dto';
 import { GetElectorPageResponse } from './dto/get-elector-page-response.dto';

@@ -2,13 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   AttachmentTarget,
   AttachmentTargetType,
-} from '../port/attachment-repository.port';
-import { CANDIDATE_REPOSITORY_PORT } from '../port/candidate-repository.port';
-import type { CandidateRepositoryPort } from '../port/candidate-repository.port';
-import { VOTE_DETAIL_REPOSITORY_PORT } from '../port/vote-detail-repository.port';
-import type { VoteDetailRepositoryPort } from '../port/vote-detail-repository.port';
-import { VOTE_REPOSITORY_PORT } from '../port/vote-repository.port';
-import type { VoteRepositoryPort } from '../port/vote-repository.port';
+} from '../port/persistence/command/attachment-repository.port';
+import { CANDIDATE_REPOSITORY_PORT } from '../port/persistence/command/candidate-repository.port';
+import type { CandidateRepositoryPort } from '../port/persistence/command/candidate-repository.port';
+import { VOTE_DETAIL_REPOSITORY_PORT } from '../port/persistence/command/vote-detail-repository.port';
+import type { VoteDetailRepositoryPort } from '../port/persistence/command/vote-detail-repository.port';
+import { VOTE_REPOSITORY_PORT } from '../port/persistence/command/vote-repository.port';
+import type { VoteRepositoryPort } from '../port/persistence/command/vote-repository.port';
 
 export class AttachmentTargetNotFoundError extends Error {
   constructor() {

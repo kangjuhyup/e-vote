@@ -1,7 +1,7 @@
 import { CreateElectionCommissionCommand } from '../../../../src/application/command/create-election-commission.command';
-import { CreateElectionCommissionHandler } from '../../../../src/application/command/create-election-commission.handler';
+import { CreateElectionCommissionHandler } from '../../../../src/application/command/handler/create-election-commission.handler';
 import { RegisterElectionCommissionMemberCommand } from '../../../../src/application/command/register-election-commission-member.command';
-import { RegisterElectionCommissionMemberHandler } from '../../../../src/application/command/register-election-commission-member.handler';
+import { RegisterElectionCommissionMemberHandler } from '../../../../src/application/command/handler/register-election-commission-member.handler';
 import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
 import { ElectionCommissionMemberStatus } from '../../../../src/domain/election-commission/type/election-commission-member-status.type';
 import { ElectionCommissionController } from '../../../../src/presentation/route/election-commission/election-commission.controller';

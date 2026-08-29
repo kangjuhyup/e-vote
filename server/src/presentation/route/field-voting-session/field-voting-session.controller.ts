@@ -8,13 +8,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CancelFieldVotingSessionCommand } from '../../../application/command/cancel-field-voting-session.command';
-import { CancelFieldVotingSessionHandler } from '../../../application/command/cancel-field-voting-session.handler';
+import { CancelFieldVotingSessionHandler } from '../../../application/command/handler/cancel-field-voting-session.handler';
 import { CloseFieldVotingSessionCommand } from '../../../application/command/close-field-voting-session.command';
-import { CloseFieldVotingSessionHandler } from '../../../application/command/close-field-voting-session.handler';
+import { CloseFieldVotingSessionHandler } from '../../../application/command/handler/close-field-voting-session.handler';
 import { CreateFieldVotingSessionCommand } from '../../../application/command/create-field-voting-session.command';
-import { CreateFieldVotingSessionHandler } from '../../../application/command/create-field-voting-session.handler';
+import { CreateFieldVotingSessionHandler } from '../../../application/command/handler/create-field-voting-session.handler';
 import { OpenFieldVotingSessionCommand } from '../../../application/command/open-field-voting-session.command';
-import { OpenFieldVotingSessionHandler } from '../../../application/command/open-field-voting-session.handler';
+import { OpenFieldVotingSessionHandler } from '../../../application/command/handler/open-field-voting-session.handler';
 import {
   ChangeFieldVotingSessionStatusBody,
   ChangeFieldVotingSessionStatusParam,

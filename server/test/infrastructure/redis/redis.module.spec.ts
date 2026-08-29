@@ -3,7 +3,7 @@ import { Redis } from 'ioredis';
 import {
   REDIS_HEALTH_PORT,
   RedisHealthPort,
-} from '../../../src/application/port/redis-health.port';
+} from '../../../src/application/port/health/redis-health.port';
 import {
   REDIS_CLIENT,
   RedisClient,

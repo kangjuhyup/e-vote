@@ -25,8 +25,8 @@ describe('ResponseInterceptor personal data masking', () => {
     const interceptor = new ResponseInterceptor();
     const context = {
       switchToHttp: () => ({
-        getRequest: () => ({
-          requestId: 'request-1',
+        getResponse: () => ({
+          getHeader: () => 'request-1',
         }),
       }),
     } as ExecutionContext;

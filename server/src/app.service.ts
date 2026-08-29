@@ -3,12 +3,12 @@ import {
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { DATABASE_HEALTH_PORT } from './application/port/database-health.port';
-import type { DatabaseHealthPort } from './application/port/database-health.port';
-import { REDIS_HEALTH_PORT } from './application/port/redis-health.port';
-import type { RedisHealthPort } from './application/port/redis-health.port';
-import { STORAGE_HEALTH_PORT } from './application/port/storage-health.port';
-import type { StorageHealthPort } from './application/port/storage-health.port';
+import { DATABASE_HEALTH_PORT } from './application/port/health/database-health.port';
+import type { DatabaseHealthPort } from './application/port/health/database-health.port';
+import { REDIS_HEALTH_PORT } from './application/port/health/redis-health.port';
+import type { RedisHealthPort } from './application/port/health/redis-health.port';
+import { STORAGE_HEALTH_PORT } from './application/port/health/storage-health.port';
+import type { StorageHealthPort } from './application/port/health/storage-health.port';
 
 type LivenessResponse = {
   status: 'ok';

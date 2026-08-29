@@ -1,7 +1,7 @@
 import {
   StorageHealthPort,
   StorageHealthResult,
-} from '../../application/port/storage-health.port';
+} from '../../application/port/health/storage-health.port';
 
 export class NotConfiguredStorageHealthAdapter implements StorageHealthPort {
   ping(): Promise<StorageHealthResult> {

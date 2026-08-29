@@ -2,7 +2,7 @@ import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import {
   StorageHealthPort,
   StorageHealthResult,
-} from '../../application/port/storage-health.port';
+} from '../../application/port/health/storage-health.port';
 import { WasabiStorageConfig } from './wasabi-storage.config';
 
 type S3StorageHealthClient = {

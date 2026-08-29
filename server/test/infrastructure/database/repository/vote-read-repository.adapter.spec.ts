@@ -1,5 +1,5 @@
 import { LoadStrategy } from '@mikro-orm/core';
-import { VoteReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/vote-read-repository.adapter';
+import { VoteReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/vote-read-repository.adapter';
 import {
   ParticipationUnit,
   PrivacyMode,

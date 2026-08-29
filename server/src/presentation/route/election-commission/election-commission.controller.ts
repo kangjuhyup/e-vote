@@ -7,9 +7,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateElectionCommissionCommand } from '../../../application/command/create-election-commission.command';
-import { CreateElectionCommissionHandler } from '../../../application/command/create-election-commission.handler';
+import { CreateElectionCommissionHandler } from '../../../application/command/handler/create-election-commission.handler';
 import { RegisterElectionCommissionMemberCommand } from '../../../application/command/register-election-commission-member.command';
-import { RegisterElectionCommissionMemberHandler } from '../../../application/command/register-election-commission-member.handler';
+import { RegisterElectionCommissionMemberHandler } from '../../../application/command/handler/register-election-commission-member.handler';
 import { CreateElectionCommissionBody } from './dto/create-election-commission-request.dto';
 import { CreateElectionCommissionResponse } from './dto/create-election-commission-response.dto';
 import {

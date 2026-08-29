@@ -1,8 +1,12 @@
 import { CastParticipationCommand } from '../../../../src/application/command/cast-participation.command';
-import { CastParticipationHandler } from '../../../../src/application/command/cast-participation.handler';
+import {
+  CandidateNotFoundError,
+  CastParticipationHandler,
+} from '../../../../src/application/command/handler/cast-participation.handler';
 import { RecordFieldParticipationEvidenceCommand } from '../../../../src/application/command/record-field-participation-evidence.command';
-import { RecordFieldParticipationEvidenceHandler } from '../../../../src/application/command/record-field-participation-evidence.handler';
+import { RecordFieldParticipationEvidenceHandler } from '../../../../src/application/command/handler/record-field-participation-evidence.handler';
 import { ParticipationStatus } from '../../../../src/domain/participation/type/participation-status.type';
+import { DomainError } from '../../../../src/domain/shared/domain-error';
 import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
 import { ParticipationController } from '../../../../src/presentation/route/participation/participation.controller';
 
@@ -66,6 +70,53 @@ describe('ParticipationController', () => {
     });
   });
 
+  it('rejects a missing selected candidate as bad request', async () => {
+    await expect(
+      controller.castParticipation({
+        voteId: 'vote-1',
+        voteDetailId: 'detail-1',
+        electorId: 'elector-1',
+        selectedCandidateId: '',
+        votingChannel: VotingChannel.Online,
+        participatedAt: '2026-08-20T01:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(castParticipationExecute).not.toHaveBeenCalled();
+  });
+
+  it('maps an invalid candidate to not found', async () => {
+    castParticipationExecute.mockRejectedValue(new CandidateNotFoundError());
+
+    await expect(
+      controller.castParticipation({
+        voteId: 'vote-1',
+        voteDetailId: 'detail-1',
+        electorId: 'elector-1',
+        selectedCandidateId: 'missing',
+        votingChannel: VotingChannel.Online,
+        participatedAt: '2026-08-20T01:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it.each([
+    new DomainError('vote must be open for participation'),
+    Object.assign(new Error('duplicate participation'), { code: '23505' }),
+  ])('maps a participation conflict to HTTP 409', async (error) => {
+    castParticipationExecute.mockRejectedValue(error);
+
+    await expect(
+      controller.castParticipation({
+        voteId: 'vote-1',
+        voteDetailId: 'detail-1',
+        electorId: 'elector-1',
+        selectedCandidateId: 'candidate-1',
+        votingChannel: VotingChannel.Online,
+        participatedAt: '2026-08-20T01:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
   it('maps POST /participations/:participationId/field-evidence to evidence handler', async () => {
     recordEvidenceExecute.mockResolvedValue({
       id: 'evidence-1',
@@ -98,3 +149,8 @@ describe('ParticipationController', () => {
     });
   });
 });
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';

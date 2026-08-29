@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { REDIS_HEALTH_PORT } from '../../application/port/redis-health.port';
+import { REDIS_HEALTH_PORT } from '../../application/port/health/redis-health.port';
 import {
   RedisClientProvider,
   redisClientProvider,

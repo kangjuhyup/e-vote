@@ -1,25 +1,27 @@
 import { NotFoundException } from '@nestjs/common';
-import { AttachmentTargetType } from '../../../../src/application/port/attachment-repository.port';
+import { AttachmentTargetType } from '../../../../src/application/port/persistence/command/attachment-repository.port';
 import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/confirm-attachment-upload.command';
-import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/confirm-attachment-upload.handler';
+import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
 import { CreateVoteDetailCommand } from '../../../../src/application/command/create-vote-detail.command';
-import { CreateVoteDetailHandler } from '../../../../src/application/command/create-vote-detail.handler';
+import { CreateVoteDetailHandler } from '../../../../src/application/command/handler/create-vote-detail.handler';
 import { RequestAttachmentUploadCommand } from '../../../../src/application/command/request-attachment-upload.command';
-import { RequestAttachmentUploadHandler } from '../../../../src/application/command/request-attachment-upload.handler';
+import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
 import {
   GetVoteDetailHandler,
   VoteDetailNotFoundError,
-} from '../../../../src/application/query/get-vote-detail.handler';
+} from '../../../../src/application/query/handler/get-vote-detail.handler';
 import { GetVoteDetailQuery } from '../../../../src/application/query/get-vote-detail.query';
-import { GetVoteDetailPageHandler } from '../../../../src/application/query/get-vote-detail-page.handler';
+import { GetVoteDetailPageHandler } from '../../../../src/application/query/handler/get-vote-detail-page.handler';
 import { GetVoteDetailPageQuery } from '../../../../src/application/query/get-vote-detail-page.query';
 import {
   VoteDetailPageReadView,
   VoteDetailPolicyOverridesReadView,
   VoteDetailReadView,
-} from '../../../../src/application/query/vote-detail-read.view';
+} from '../../../../src/application/query/view/vote-detail-read.view';
 import { PrivacyMode } from '../../../../src/domain/vote/type/vote-policy.type';
 import { VoteDetailStatus } from '../../../../src/domain/vote/type/vote-status.type';
+import { VoteDetailAttachmentController } from '../../../../src/presentation/route/vote-detail/vote-detail-attachment.controller';
+import { VoteDetailReadController } from '../../../../src/presentation/route/vote-detail/vote-detail-read.controller';
 import { VoteDetailController } from '../../../../src/presentation/route/vote-detail/vote-detail.controller';
 
 describe('VoteDetailController', () => {
@@ -60,13 +62,17 @@ describe('VoteDetailController', () => {
   } as unknown as jest.Mocked<ConfirmAttachmentUploadHandler>;
 
   let controller: VoteDetailController;
+  let readController: VoteDetailReadController;
+  let attachmentController: VoteDetailAttachmentController;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new VoteDetailController(
-      createVoteDetailHandler,
+    controller = new VoteDetailController(createVoteDetailHandler);
+    readController = new VoteDetailReadController(
       getVoteDetailHandler,
       getVoteDetailPageHandler,
+    );
+    attachmentController = new VoteDetailAttachmentController(
       requestAttachmentUploadHandler,
       confirmAttachmentUploadHandler,
     );
@@ -83,7 +89,7 @@ describe('VoteDetailController', () => {
       }),
     );
 
-    const response = await controller.getVoteDetailPage(
+    const response = await readController.getVoteDetailPage(
       { voteId: 'vote-1' },
       {
         page: '2',
@@ -117,7 +123,7 @@ describe('VoteDetailController', () => {
   it('maps GET /votes/:voteId/sub-votes/:voteDetailId to get vote detail handler', async () => {
     getVoteDetailExecute.mockResolvedValue(createVoteDetailReadView());
 
-    const response = await controller.getVoteDetail({
+    const response = await readController.getVoteDetail({
       voteId: 'vote-1',
       voteDetailId: 'vote-detail-1',
     });
@@ -142,7 +148,7 @@ describe('VoteDetailController', () => {
     getVoteDetailExecute.mockRejectedValue(new VoteDetailNotFoundError());
 
     await expect(
-      controller.getVoteDetail({
+      readController.getVoteDetail({
         voteId: 'vote-1',
         voteDetailId: 'missing',
       }),
@@ -185,18 +191,19 @@ describe('VoteDetailController', () => {
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
 
-    const response = await controller.requestVoteDetailAttachmentUpload(
-      {
-        voteId: 'vote-1',
-        voteDetailId: 'vote-detail-1',
-      },
-      {
-        attachmentType: 'NOTICE',
-        originalName: 'notice.pdf',
-        mimeType: 'application/pdf',
-        sizeBytes: 1024,
-      },
-    );
+    const response =
+      await attachmentController.requestVoteDetailAttachmentUpload(
+        {
+          voteId: 'vote-1',
+          voteDetailId: 'vote-detail-1',
+        },
+        {
+          attachmentType: 'NOTICE',
+          originalName: 'notice.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+      );
 
     expect(response).toEqual({
       storageKey: 'attachments/detail-key',
@@ -224,20 +231,21 @@ describe('VoteDetailController', () => {
       storageKey: 'attachments/detail-key',
     });
 
-    const response = await controller.confirmVoteDetailAttachmentUpload(
-      {
-        voteId: 'vote-1',
-        voteDetailId: 'vote-detail-1',
-      },
-      {
-        storageKey: 'attachments/detail-key',
-        attachmentType: 'GUIDE',
-        originalName: 'guide.pdf',
-        mimeType: 'application/pdf',
-        sizeBytes: 2048,
-        sortOrder: 2,
-      },
-    );
+    const response =
+      await attachmentController.confirmVoteDetailAttachmentUpload(
+        {
+          voteId: 'vote-1',
+          voteDetailId: 'vote-detail-1',
+        },
+        {
+          storageKey: 'attachments/detail-key',
+          attachmentType: 'GUIDE',
+          originalName: 'guide.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+          sortOrder: 2,
+        },
+      );
 
     expect(response).toEqual({
       attachmentId: 'attachment-1',

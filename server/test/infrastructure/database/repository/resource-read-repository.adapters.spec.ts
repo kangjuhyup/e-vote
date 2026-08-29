@@ -1,7 +1,7 @@
 import { LoadStrategy } from '@mikro-orm/core';
-import { CandidateReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/candidate-read-repository.adapter';
-import { ElectorReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/elector-read-repository.adapter';
-import { VoteDetailReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/vote-detail-read-repository.adapter';
+import { CandidateReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/candidate-read-repository.adapter';
+import { ElectorReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/elector-read-repository.adapter';
+import { VoteDetailReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/vote-detail-read-repository.adapter';
 import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
 import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
 import { PrivacyMode } from '../../../../src/domain/vote/type/vote-policy.type';

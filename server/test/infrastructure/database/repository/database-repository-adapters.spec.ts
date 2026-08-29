@@ -1,12 +1,12 @@
 import { LoadStrategy } from '@mikro-orm/core';
-import { AttachmentRepositoryAdapter } from '../../../../src/infrastructure/database/repository/attachment-repository.adapter';
-import { ParticipationRepositoryAdapter } from '../../../../src/infrastructure/database/repository/participation-repository.adapter';
-import { VoteRepositoryAdapter } from '../../../../src/infrastructure/database/repository/vote-repository.adapter';
-import { VoteDetailRepositoryAdapter } from '../../../../src/infrastructure/database/repository/vote-detail-repository.adapter';
-import { ElectorRepositoryAdapter } from '../../../../src/infrastructure/database/repository/elector-repository.adapter';
-import { ElectionCommissionMemberRepositoryAdapter } from '../../../../src/infrastructure/database/repository/election-commission-member-repository.adapter';
-import { FieldVotingSessionRepositoryAdapter } from '../../../../src/infrastructure/database/repository/field-voting-session-repository.adapter';
-import { CandidateRepositoryAdapter } from '../../../../src/infrastructure/database/repository/candidate-repository.adapter';
+import { AttachmentRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/attachment-repository.adapter';
+import { ParticipationRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/participation-repository.adapter';
+import { VoteRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/vote-repository.adapter';
+import { VoteDetailRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/vote-detail-repository.adapter';
+import { ElectorRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/elector-repository.adapter';
+import { ElectionCommissionMemberRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/election-commission-member-repository.adapter';
+import { FieldVotingSessionRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/field-voting-session-repository.adapter';
+import { CandidateRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/candidate-repository.adapter';
 import { ParticipationAggregate } from '../../../../src/domain/participation/participation.aggregate';
 import { ElectorAggregate } from '../../../../src/domain/elector/elector.aggregate';
 import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
@@ -22,7 +22,7 @@ import {
   AttachmentTargetType,
   CandidateAttachmentType,
   VoteAttachmentType,
-} from '../../../../src/application/port/attachment-repository.port';
+} from '../../../../src/application/port/persistence/command/attachment-repository.port';
 
 type MockEntityManager = {
   readonly assign: jest.Mock<void, [object, Record<string, unknown>]>;
@@ -37,6 +37,20 @@ type MockEntityManager = {
   readonly getReference: jest.Mock<{ id: unknown }, [unknown, unknown]>;
   readonly nativeDelete: jest.Mock<Promise<number>, [unknown, unknown]>;
   readonly persist: jest.Mock<void, [unknown]>;
+  readonly transactional: jest.Mock<
+    Promise<unknown>,
+    [(em: MockEntityManager) => Promise<unknown>]
+  >;
+  readonly getTransactionContext: jest.Mock<string, []>;
+  readonly getConnection: jest.Mock<
+    {
+      execute: jest.Mock<
+        Promise<unknown[]>,
+        [string, readonly unknown[], 'all'?, unknown?]
+      >;
+    },
+    []
+  >;
 };
 
 describe('database repository adapters', () => {
@@ -127,7 +141,10 @@ describe('database repository adapters', () => {
       participatedAt: new Date('2026-08-13T00:00:00.000Z'),
     });
 
-    await new ParticipationRepositoryAdapter(em as any).save(participation);
+    await new ParticipationRepositoryAdapter(em as any).saveCastWithResult(
+      participation,
+      'candidate-1',
+    );
 
     expect(em.create).toHaveBeenCalledTimes(1);
     expect(em.create.mock.calls[0][1]).toMatchObject({
@@ -138,6 +155,101 @@ describe('database repository adapters', () => {
       votingChannel: VotingChannel.Online,
     });
     expect(em.flush).toHaveBeenCalledTimes(1);
+    expect(em.transactional).toHaveBeenCalledTimes(1);
+    expect(em.getConnection().execute).toHaveBeenCalledWith(
+      expect.stringContaining('on conflict (vote_detail_id, candidate_id)'),
+      [expect.any(String), 'detail-1', 'candidate-1', 1],
+      'all',
+      'transaction-context',
+    );
+  });
+
+  it('locks cast resources in a transaction before executing cast work', async () => {
+    const em = createMockEntityManager();
+    const work = jest.fn<Promise<string>, []>().mockResolvedValue('cast');
+
+    await expect(
+      new ParticipationRepositoryAdapter(em as any).runCastTransaction(
+        {
+          voteId: 'vote-1',
+          voteDetailId: 'detail-1',
+          electorId: 'elector-1',
+          candidateId: 'candidate-1',
+          fieldVotingSessionId: 'session-1',
+        },
+        work,
+      ),
+    ).resolves.toBe('cast');
+
+    expect(em.transactional).toHaveBeenCalledTimes(1);
+    expect(em.getConnection().execute.mock.calls).toEqual([
+      [
+        expect.stringMatching(/from votes.*for share/s),
+        ['vote-1'],
+        'all',
+        'transaction-context',
+      ],
+      [
+        expect.stringMatching(/from vote_details.*for share/s),
+        ['detail-1'],
+        'all',
+        'transaction-context',
+      ],
+      [
+        expect.stringMatching(/from electors.*for share/s),
+        ['elector-1'],
+        'all',
+        'transaction-context',
+      ],
+      [
+        expect.stringMatching(/from candidates.*for share/s),
+        ['candidate-1'],
+        'all',
+        'transaction-context',
+      ],
+      [
+        expect.stringMatching(/from field_voting_sessions.*for share/s),
+        ['session-1'],
+        'all',
+        'transaction-context',
+      ],
+      [
+        expect.stringMatching(/join electors peer.*for share of peer/s),
+        ['vote-1', 'elector-1'],
+        'all',
+        'transaction-context',
+      ],
+    ]);
+    expect(work).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects cast work when a group contains different vote weights', async () => {
+    const em = createMockEntityManager();
+    const execute = em.getConnection().execute;
+    const work = jest.fn<Promise<string>, []>().mockResolvedValue('cast');
+    for (let index = 0; index < 5; index += 1) {
+      execute.mockResolvedValueOnce([]);
+    }
+    execute.mockResolvedValueOnce([
+      { vote_weight: '3.000000' },
+      { vote_weight: '5.000000' },
+    ]);
+
+    await expect(
+      new ParticipationRepositoryAdapter(em as any).runCastTransaction(
+        {
+          voteId: 'vote-1',
+          voteDetailId: 'detail-1',
+          electorId: 'elector-1',
+          candidateId: 'candidate-1',
+          fieldVotingSessionId: 'session-1',
+        },
+        work,
+      ),
+    ).rejects.toThrow(
+      'electors in the same group must have the same vote weight',
+    );
+    expect(work).not.toHaveBeenCalled();
   });
 
   it('persists uploaded file metadata and a vote attachment link', async () => {
@@ -261,7 +373,10 @@ function createdData(
 }
 
 function createMockEntityManager(): MockEntityManager {
-  return {
+  const execute = jest
+    .fn<Promise<unknown[]>, [string, readonly unknown[], 'all'?, unknown?]>()
+    .mockResolvedValue([]);
+  const em = {
     assign: jest.fn<void, [object, Record<string, unknown>]>(),
     count: jest.fn<Promise<number>, [unknown, unknown]>().mockResolvedValue(0),
     create: jest.fn<
@@ -282,5 +397,26 @@ function createMockEntityManager(): MockEntityManager {
       .fn<Promise<number>, [unknown, unknown]>()
       .mockResolvedValue(0),
     persist: jest.fn<void, [unknown]>(),
-  };
+    transactional: jest.fn<
+      Promise<unknown>,
+      [(em: MockEntityManager) => Promise<unknown>]
+    >(),
+    getTransactionContext: jest
+      .fn<string, []>()
+      .mockReturnValue('transaction-context'),
+    getConnection: jest
+      .fn<
+        {
+          execute: jest.Mock<
+            Promise<unknown[]>,
+            [string, readonly unknown[], 'all'?, unknown?]
+          >;
+        },
+        []
+      >()
+      .mockReturnValue({ execute }),
+  } as MockEntityManager;
+  em.transactional.mockImplementation((work) => work(em));
+
+  return em;
 }

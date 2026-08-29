@@ -7,7 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { maskDecoratedPersonalData } from '../serializer/mask-personal-data';
-import { RequestWithId } from '../type/request-with-id.type';
+import { getResponseRequestId } from '../util/request-id.util';
 
 type SuccessResponse<T> = {
   success: true;
@@ -25,7 +25,9 @@ export class ResponseInterceptor<T> implements NestInterceptor<
     context: ExecutionContext,
     next: CallHandler<T>,
   ): Observable<SuccessResponse<T>> {
-    const request = context.switchToHttp().getRequest<RequestWithId>();
+    const response = context.switchToHttp().getResponse<{
+      getHeader(name: string): number | string | string[] | undefined;
+    }>();
 
     return next.handle().pipe(
       map((data) => {
@@ -35,7 +37,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<
           success: true,
           data: maskedData,
           timestamp: new Date().toISOString(),
-          requestId: request.requestId,
+          requestId: getResponseRequestId(response),
         };
       }),
     );

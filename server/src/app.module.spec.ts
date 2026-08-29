@@ -1,17 +1,18 @@
 import { Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ATTACHMENT_REPOSITORY_PORT } from './application/port/attachment-repository.port';
-import { CANDIDATE_READ_REPOSITORY_PORT } from './application/port/candidate-read-repository.port';
-import { CANDIDATE_REPOSITORY_PORT } from './application/port/candidate-repository.port';
-import { ELECTION_COMMISSION_REPOSITORY_PORT } from './application/port/election-commission-repository.port';
-import { ELECTOR_READ_REPOSITORY_PORT } from './application/port/elector-read-repository.port';
-import { REDIS_HEALTH_PORT } from './application/port/redis-health.port';
-import { STORAGE_PORT } from './application/port/storage.port';
-import { STORAGE_HEALTH_PORT } from './application/port/storage-health.port';
-import { VOTE_DETAIL_READ_REPOSITORY_PORT } from './application/port/vote-detail-read-repository.port';
-import { VOTE_DETAIL_REPOSITORY_PORT } from './application/port/vote-detail-repository.port';
-import { VOTE_READ_REPOSITORY_PORT } from './application/port/vote-read-repository.port';
-import { VOTE_REPOSITORY_PORT } from './application/port/vote-repository.port';
+import { ATTACHMENT_REPOSITORY_PORT } from './application/port/persistence/command/attachment-repository.port';
+import { CANDIDATE_READ_REPOSITORY_PORT } from './application/port/persistence/query/candidate-read-repository.port';
+import { CANDIDATE_REPOSITORY_PORT } from './application/port/persistence/command/candidate-repository.port';
+import { ELECTION_COMMISSION_REPOSITORY_PORT } from './application/port/persistence/command/election-commission-repository.port';
+import { ELECTOR_READ_REPOSITORY_PORT } from './application/port/persistence/query/elector-read-repository.port';
+import { REDIS_HEALTH_PORT } from './application/port/health/redis-health.port';
+import { STORAGE_PORT } from './application/port/gateway/storage.port';
+import { STORAGE_HEALTH_PORT } from './application/port/health/storage-health.port';
+import { VOTE_DETAIL_READ_REPOSITORY_PORT } from './application/port/persistence/query/vote-detail-read-repository.port';
+import { VOTE_DETAIL_REPOSITORY_PORT } from './application/port/persistence/command/vote-detail-repository.port';
+import { VOTE_READ_REPOSITORY_PORT } from './application/port/persistence/query/vote-read-repository.port';
+import { VOTE_REPOSITORY_PORT } from './application/port/persistence/command/vote-repository.port';
+import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from './application/port/persistence/query/vote-statistics-read-repository.port';
 import { AppModule } from './app.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 
@@ -87,6 +88,10 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
       useValue: {},
     },
     {
+      provide: VOTE_STATISTICS_READ_REPOSITORY_PORT,
+      useValue: {},
+    },
+    {
       provide: ATTACHMENT_REPOSITORY_PORT,
       useValue: {
         saveAttachedFile: jest.fn(),
@@ -105,6 +110,7 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
     VOTE_DETAIL_READ_REPOSITORY_PORT,
     CANDIDATE_READ_REPOSITORY_PORT,
     ELECTOR_READ_REPOSITORY_PORT,
+    VOTE_STATISTICS_READ_REPOSITORY_PORT,
     ATTACHMENT_REPOSITORY_PORT,
   ],
 })
