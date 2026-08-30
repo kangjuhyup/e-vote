@@ -18,10 +18,13 @@ interface CreateVoteParams {
   readonly votingChannels: readonly VotingChannel[];
   readonly defaultPolicy: VotePolicy;
   readonly identityVerificationPolicy: IdentityVerificationPolicy;
+  readonly electoralRollSnapshotId?: string;
   readonly status?: VoteStatus;
 }
 
-type ReconstituteVoteParams = Required<CreateVoteParams>;
+type ReconstituteVoteParams = Omit<CreateVoteParams, 'status'> & {
+  readonly status: VoteStatus;
+};
 
 export class VoteAggregate {
   private readonly events: VoteDomainEvent[] = [];
@@ -33,6 +36,7 @@ export class VoteAggregate {
     public votingChannels: readonly VotingChannel[],
     public defaultPolicy: VotePolicy,
     public identityVerificationPolicy: IdentityVerificationPolicy,
+    public electoralRollSnapshotId: string | undefined,
     public status: VoteStatus,
   ) {}
 
@@ -57,6 +61,9 @@ export class VoteAggregate {
       [...params.votingChannels],
       params.defaultPolicy,
       params.identityVerificationPolicy,
+      params.electoralRollSnapshotId
+        ? createId(params.electoralRollSnapshotId)
+        : undefined,
       params.status ?? VoteStatus.Draft,
     );
   }
@@ -92,6 +99,16 @@ export class VoteAggregate {
     this.votingChannels = [...params.votingChannels];
     this.defaultPolicy = params.defaultPolicy;
     this.identityVerificationPolicy = params.identityVerificationPolicy;
+  }
+
+  attachElectoralRollSnapshot(snapshotId: string): void {
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError(
+        'only draft votes can attach an electoral roll snapshot',
+      );
+    }
+
+    this.electoralRollSnapshotId = createId(snapshotId);
   }
 
   open(openedAt: Date): void {

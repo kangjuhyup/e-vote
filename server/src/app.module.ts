@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AttachmentTargetValidator } from './application/command/attachment-target.validator';
 import { ConfirmAttachmentUploadHandler } from './application/command/handler/confirm-attachment-upload.handler';
+import { AddElectoralRollMemberHandler } from './application/command/handler/add-electoral-roll-member.handler';
+import { AttachElectoralRollSnapshotHandler } from './application/command/handler/attach-electoral-roll-snapshot.handler';
 import { AuthenticateElectorHandler } from './application/command/handler/authenticate-elector.handler';
 import { BlockElectorHandler } from './application/command/handler/block-elector.handler';
 import { CancelFieldVotingSessionHandler } from './application/command/handler/cancel-field-voting-session.handler';
@@ -9,14 +11,18 @@ import { ChangeVoteStatusHandler } from './application/command/handler/change-vo
 import { CloseFieldVotingSessionHandler } from './application/command/handler/close-field-voting-session.handler';
 import { CreateCandidateHandler } from './application/command/handler/create-candidate.handler';
 import { CreateElectionCommissionHandler } from './application/command/handler/create-election-commission.handler';
+import { CreateElectoralRollHandler } from './application/command/handler/create-electoral-roll.handler';
+import { CreateElectoralRollSnapshotHandler } from './application/command/handler/create-electoral-roll-snapshot.handler';
 import { CreateElectorHandler } from './application/command/handler/create-elector.handler';
 import { CreateFieldVotingSessionHandler } from './application/command/handler/create-field-voting-session.handler';
 import { CreateVoteDetailHandler } from './application/command/handler/create-vote-detail.handler';
 import { CreateVoteHandler } from './application/command/handler/create-vote.handler';
 import { OpenFieldVotingSessionHandler } from './application/command/handler/open-field-voting-session.handler';
 import { RegisterElectionCommissionMemberHandler } from './application/command/handler/register-election-commission-member.handler';
+import { RemoveElectoralRollMemberHandler } from './application/command/handler/remove-electoral-roll-member.handler';
 import { RequestAttachmentUploadHandler } from './application/command/handler/request-attachment-upload.handler';
 import { UpdateCandidateHandler } from './application/command/handler/update-candidate.handler';
+import { UpdateElectoralRollMemberHandler } from './application/command/handler/update-electoral-roll-member.handler';
 import { UpdateElectorHandler } from './application/command/handler/update-elector.handler';
 import { UpdateVoteDetailHandler } from './application/command/handler/update-vote-detail.handler';
 import { UpdateVoteHandler } from './application/command/handler/update-vote.handler';
@@ -27,6 +33,7 @@ import { GetCandidatePageHandler } from './application/query/handler/get-candida
 import { GetCandidateHandler } from './application/query/handler/get-candidate.handler';
 import { GetElectionCommissionHandler } from './application/query/handler/get-election-commission.handler';
 import { GetElectionCommissionPageHandler } from './application/query/handler/get-election-commission-page.handler';
+import { GetElectoralRollHandler } from './application/query/handler/get-electoral-roll.handler';
 import { GetFieldVotingSessionHandler } from './application/query/handler/get-field-voting-session.handler';
 import { GetFieldVotingSessionPageHandler } from './application/query/handler/get-field-voting-session-page.handler';
 import { GetElectorPageHandler } from './application/query/handler/get-elector-page.handler';
@@ -47,6 +54,8 @@ import { CandidateReadController } from './presentation/route/candidate/candidat
 import { CandidateController } from './presentation/route/candidate/candidate.controller';
 import { ElectionCommissionReadController } from './presentation/route/election-commission/election-commission-read.controller';
 import { ElectionCommissionController } from './presentation/route/election-commission/election-commission.controller';
+import { ElectoralRollController } from './presentation/route/electoral-roll/electoral-roll.controller';
+import { ElectoralRollReadController } from './presentation/route/electoral-roll/electoral-roll-read.controller';
 import { ElectorController } from './presentation/route/elector/elector.controller';
 import { FieldVotingSessionReadController } from './presentation/route/field-voting-session/field-voting-session-read.controller';
 import { FieldVotingSessionController } from './presentation/route/field-voting-session/field-voting-session.controller';
@@ -74,6 +83,8 @@ import { VoteStatisticsController } from './presentation/route/vote-statistics/v
     CandidateAttachmentController,
     ElectionCommissionReadController,
     ElectionCommissionController,
+    ElectoralRollController,
+    ElectoralRollReadController,
     ElectorController,
     FieldVotingSessionReadController,
     FieldVotingSessionController,
@@ -88,6 +99,12 @@ import { VoteStatisticsController } from './presentation/route/vote-statistics/v
     CreateCandidateHandler,
     CreateElectionCommissionHandler,
     RegisterElectionCommissionMemberHandler,
+    CreateElectoralRollHandler,
+    AddElectoralRollMemberHandler,
+    UpdateElectoralRollMemberHandler,
+    RemoveElectoralRollMemberHandler,
+    CreateElectoralRollSnapshotHandler,
+    AttachElectoralRollSnapshotHandler,
     CreateElectorHandler,
     AuthenticateElectorHandler,
     CreateFieldVotingSessionHandler,
@@ -112,6 +129,7 @@ import { VoteStatisticsController } from './presentation/route/vote-statistics/v
     GetCandidatePageHandler,
     GetElectionCommissionHandler,
     GetElectionCommissionPageHandler,
+    GetElectoralRollHandler,
     GetFieldVotingSessionHandler,
     GetFieldVotingSessionPageHandler,
     GetElectorHandler,

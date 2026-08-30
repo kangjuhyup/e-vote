@@ -31,6 +31,13 @@ export function createElectorEntities(
           .fieldName('vote_id')
           .inversedBy('electors')
           .deleteRule('cascade'),
+      snapshotMember: () =>
+        p
+          .manyToOne(getEntity(context, 'ElectoralRollSnapshotMemberEntity'))
+          .fieldName('snapshot_member_id')
+          .inversedBy('electors')
+          .deleteRule('restrict')
+          .nullable(),
       name: p.text(),
       identifier: p.string(),
       phoneNumber: p.text().fieldName('phone_number').nullable(),

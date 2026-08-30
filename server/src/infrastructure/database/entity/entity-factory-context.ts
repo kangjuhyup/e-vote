@@ -2,6 +2,10 @@ import type { AnyEntity, EntityClass } from '@mikro-orm/core';
 
 export interface DatabaseEntityClasses {
   readonly ElectionCommissionEntity: EntityClass<AnyEntity>;
+  readonly ElectoralRollEntity: EntityClass<AnyEntity>;
+  readonly ElectoralRollMemberEntity: EntityClass<AnyEntity>;
+  readonly ElectoralRollSnapshotEntity: EntityClass<AnyEntity>;
+  readonly ElectoralRollSnapshotMemberEntity: EntityClass<AnyEntity>;
   readonly VoteEntity: EntityClass<AnyEntity>;
   readonly ElectionCommissionMemberEntity: EntityClass<AnyEntity>;
   readonly VoteVotingChannelEntity: EntityClass<AnyEntity>;

@@ -14,6 +14,7 @@ import { EntityRelationReference } from './mapper-relation.type';
 export type VotePersistence = {
   readonly id: string;
   readonly commission: EntityRelationReference;
+  readonly electoralRollSnapshot: EntityRelationReference | null;
   readonly title: string;
   readonly votingChannels: readonly {
     readonly channel: VotingChannel;
@@ -33,6 +34,7 @@ export class VoteMapper {
     return VoteAggregate.reconstitute({
       id: entity.id,
       commissionId: entity.commission.id,
+      electoralRollSnapshotId: entity.electoralRollSnapshot?.id,
       title: entity.title,
       votingChannels: entity.votingChannels.map(
         (votingChannel) => votingChannel.channel,

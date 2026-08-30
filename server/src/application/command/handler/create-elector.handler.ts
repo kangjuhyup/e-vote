@@ -4,6 +4,12 @@ import { ElectorStatus } from '../../../domain/elector/type/elector-status.type'
 import { CreateElectorCommand } from '../create-elector.command';
 import { ELECTOR_REPOSITORY_PORT } from '../../port/persistence/command/elector-repository.port';
 import type { ElectorRepositoryPort } from '../../port/persistence/command/elector-repository.port';
+import {
+  VOTE_REPOSITORY_PORT,
+  type VoteRepositoryPort,
+} from '../../port/persistence/command/vote-repository.port';
+import { DomainError } from '../../../domain/shared/domain-error';
+import { ManagedResourceNotFoundError } from '../vote-management.error';
 
 export type CreateElectorResult = {
   id: string;
@@ -17,11 +23,24 @@ export type CreateElectorResult = {
 @Injectable()
 export class CreateElectorHandler {
   constructor(
+    @Inject(VOTE_REPOSITORY_PORT)
+    private readonly voteRepository: VoteRepositoryPort,
     @Inject(ELECTOR_REPOSITORY_PORT)
     private readonly electorRepository: ElectorRepositoryPort,
   ) {}
 
   async execute(command: CreateElectorCommand): Promise<CreateElectorResult> {
+    const vote = await this.voteRepository.findById(command.voteId);
+    if (!vote) throw new ManagedResourceNotFoundError('vote');
+    if (vote.status !== 'DRAFT') {
+      throw new DomainError('only draft vote resources can be created');
+    }
+    if (vote.electoralRollSnapshotId !== undefined) {
+      throw new DomainError(
+        'electors are managed by the attached electoral roll snapshot',
+      );
+    }
+
     const elector = ElectorAggregate.create({
       id: this.electorRepository.nextId(),
       voteId: command.voteId,

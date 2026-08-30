@@ -59,7 +59,7 @@ describe('database repository adapters', () => {
 
     await new VoteRepositoryAdapter(em as any).findById('vote-1');
     expect(em.findOne.mock.calls[0][2]).toMatchObject({
-      populate: ['commission', 'votingChannels'],
+      populate: ['commission', 'electoralRollSnapshot', 'votingChannels'],
       strategy: LoadStrategy.JOINED,
     });
 

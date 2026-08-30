@@ -30,12 +30,18 @@ describe('VoteReadRepositoryAdapter', () => {
 
     expect(em.findOne.mock.calls[0][1]).toEqual({ id: 'vote-1' });
     expect(em.findOne.mock.calls[0][2]).toMatchObject({
-      populate: ['commission', 'votingChannels', 'voteDetails.candidates'],
+      populate: [
+        'commission',
+        'electoralRollSnapshot',
+        'votingChannels',
+        'voteDetails.candidates',
+      ],
       strategy: LoadStrategy.JOINED,
     });
     expect(result).toMatchObject({
       id: 'vote-1',
       commissionId: 'commission-1',
+      electoralRollSnapshotId: 'snapshot-1',
       title: 'Board election',
       description: 'Annual board election',
       votingChannels: [VotingChannel.Onsite, VotingChannel.Online],
@@ -100,7 +106,7 @@ describe('VoteReadRepositoryAdapter', () => {
     const result = await adapter.findPage({ page: 2, pageSize: 20 });
 
     expect(em.findAndCount.mock.calls[0][2]).toMatchObject({
-      populate: ['commission', 'votingChannels'],
+      populate: ['commission', 'electoralRollSnapshot', 'votingChannels'],
       limit: 20,
       offset: 20,
       orderBy: {
@@ -143,6 +149,7 @@ function createVoteEntity(): Record<string, unknown> {
   return {
     id: 'vote-1',
     commission: { id: 'commission-1' },
+    electoralRollSnapshot: { id: 'snapshot-1' },
     title: 'Board election',
     description: 'Annual board election',
     votingChannels: [

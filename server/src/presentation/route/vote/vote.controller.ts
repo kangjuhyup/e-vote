@@ -6,10 +6,12 @@ import {
   Param,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -27,6 +29,11 @@ import {
   UpdateVoteBody,
 } from './dto/manage-vote-request.dto';
 import { ManageVoteResponse } from './dto/manage-vote-response.dto';
+import { AttachElectoralRollSnapshotCommand } from '../../../application/command/attach-electoral-roll-snapshot.command';
+import { AttachElectoralRollSnapshotHandler } from '../../../application/command/handler/attach-electoral-roll-snapshot.handler';
+import { throwMappedElectoralRollError } from '../electoral-roll/electoral-roll-error.mapper';
+import { AttachElectoralRollSnapshotBody } from './dto/attach-electoral-roll-snapshot-request.dto';
+import { AttachElectoralRollSnapshotResponse } from './dto/attach-electoral-roll-snapshot-response.dto';
 
 @ApiTags('votes')
 @Controller('votes')
@@ -35,6 +42,7 @@ export class VoteController {
     private readonly createVoteHandler: CreateVoteHandler,
     private readonly updateVoteHandler?: UpdateVoteHandler,
     private readonly changeVoteStatusHandler?: ChangeVoteStatusHandler,
+    private readonly attachElectoralRollSnapshotHandler?: AttachElectoralRollSnapshotHandler,
   ) {}
 
   @Post()
@@ -62,6 +70,26 @@ export class VoteController {
     );
 
     return CreateVoteResponse.of(result);
+  }
+
+  @Put(':voteId/electoral-roll-snapshot')
+  @ApiOkResponse({ type: AttachElectoralRollSnapshotResponse })
+  async attachElectoralRollSnapshot(
+    @Param() params: VoteParam,
+    @Body() body: AttachElectoralRollSnapshotBody,
+  ): Promise<AttachElectoralRollSnapshotResponse> {
+    try {
+      return AttachElectoralRollSnapshotResponse.of(
+        await this.attachElectoralRollSnapshotHandler!.execute(
+          AttachElectoralRollSnapshotCommand.of({
+            voteId: params.voteId,
+            snapshotId: body.snapshotId,
+          }),
+        ),
+      );
+    } catch (error) {
+      throwMappedElectoralRollError(error);
+    }
   }
 
   @Patch(':voteId')

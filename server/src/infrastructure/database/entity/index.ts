@@ -1,6 +1,7 @@
 import type { AnyEntity, EntityClass } from '@mikro-orm/core';
 import { createAttachmentEntities } from './attachment.entities';
 import { createElectionCommissionEntities } from './election-commission.entities';
+import { createElectoralRollEntities } from './electoral-roll.entities';
 import { createElectorEntities } from './elector.entities';
 import {
   registerEntities,
@@ -30,6 +31,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   };
 
   registerEntities(context, createElectionCommissionEntities(context));
+  registerEntities(context, createElectoralRollEntities(context));
   registerEntities(context, createVoteEntities(context));
   registerEntities(context, createElectorEntities(context));
   registerEntities(context, createParticipationEntities(context));
@@ -39,6 +41,10 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   const entities = context.entities as DatabaseEntityClasses;
   const databaseEntities = [
     entities.ElectionCommissionEntity,
+    entities.ElectoralRollEntity,
+    entities.ElectoralRollMemberEntity,
+    entities.ElectoralRollSnapshotEntity,
+    entities.ElectoralRollSnapshotMemberEntity,
     entities.VoteEntity,
     entities.ElectionCommissionMemberEntity,
     entities.VoteVotingChannelEntity,
