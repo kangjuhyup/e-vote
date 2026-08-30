@@ -1,9 +1,9 @@
-import { AddElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/add-electoral-roll-member.command';
+import { AddElectoralRollMembersCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/add-electoral-roll-members.command';
 import { AttachElectoralRollSnapshotCommand } from '../../../../src/modules/vote/application/command/dto/request/attach-electoral-roll-snapshot.command';
 import { RemoveElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/remove-electoral-roll-member.command';
 import { UpdateElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/update-electoral-roll-member.command';
 import { ElectoralRollSnapshotCreator } from '../../../../src/modules/electoral-roll/application/command/electoral-roll-snapshot.creator';
-import { AddElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
+import { AddElectoralRollMembersHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-members.handler';
 import { AttachElectoralRollSnapshotHandler } from '../../../../src/modules/vote/application/command/handler/attach-electoral-roll-snapshot.handler';
 import { RemoveElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/remove-electoral-roll-member.handler';
 import { UpdateElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/update-electoral-roll-member.handler';
@@ -28,44 +28,94 @@ import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.
 describe('electoral roll command handlers', () => {
   const now = new Date('2026-08-30T00:00:00.000Z');
 
-  it('adds a member and snapshots the new source revision transactionally', async () => {
+  it('adds a member batch with one revision and one snapshot transactionally', async () => {
     const roll = createRoll();
     const rollRepository = createRollRepository(roll, []);
     const snapshotRepository = createSnapshotRepository();
     const transactionManager = immediateTransactionManager();
 
-    const result = await new AddElectoralRollMemberHandler(
+    const result = await new AddElectoralRollMembersHandler(
       rollRepository,
       new ElectoralRollSnapshotCreator(rollRepository, snapshotRepository),
       transactionManager,
     ).execute(
-      AddElectoralRollMemberCommand.of({
+      AddElectoralRollMembersCommand.of({
         electoralRollId: roll.id,
-        identifier: 'member-1',
-        groupKey: 'group-1',
-        voteWeight: 2,
+        members: [
+          { identifier: 'member-1', groupKey: 'group-1', voteWeight: 2 },
+          { identifier: 'member-2' },
+        ],
         changedAt: now,
       }),
     );
 
-    expect(result).toMatchObject({ identifier: 'member-1', revision: 2 });
-    expect(rollRepository.saveMember.mock.calls).toHaveLength(1);
-    expect(rollRepository.save.mock.calls).toEqual([[roll]]);
-    expect(snapshotRepository.save.mock.calls[0]?.[0]).toMatchObject({
+    expect(result).toEqual({
       electoralRollId: roll.id,
+      revision: 2,
+      addedMemberCount: 2,
+    });
+    expect(rollRepository.saveMembers.mock.calls).toHaveLength(1);
+    expect(rollRepository.saveMembers.mock.calls[0]?.[0]).toHaveLength(2);
+    expect(rollRepository.save.mock.calls).toContainEqual([roll]);
+    expect(snapshotRepository.save.mock.calls).toHaveLength(1);
+    expect(snapshotRepository.save.mock.calls[0]?.[0]).toMatchObject({
       sourceRevision: 2,
-      memberCount: 1,
+      memberCount: 2,
       members: [
-        {
-          identifier: 'member-1',
-          groupKey: 'group-1',
-          voteWeight: 2,
-        },
+        expect.objectContaining({ identifier: 'member-1', voteWeight: 2 }),
+        expect.objectContaining({ identifier: 'member-2', voteWeight: 1 }),
       ],
     });
     expect(transactionManager.runInTransaction.mock.calls[0]?.[1]).toEqual({
       isolationLevel: 'serializable',
     });
+  });
+
+  it('rejects an empty member batch', () => {
+    expect(() =>
+      AddElectoralRollMembersCommand.of({
+        electoralRollId: 'roll-1',
+        members: [],
+        changedAt: now,
+      }),
+    ).toThrow('between 1 and 50000 members');
+  });
+
+  it('rejects a member batch larger than 50000 items', () => {
+    expect(() =>
+      AddElectoralRollMembersCommand.of({
+        electoralRollId: 'roll-1',
+        members: Array.from({ length: 50_001 }, (_, index) => ({
+          identifier: `member-${index}`,
+        })),
+        changedAt: now,
+      }),
+    ).toThrow('between 1 and 50000 members');
+  });
+
+  it('rejects duplicate normalized identifiers before persistence', async () => {
+    const roll = createRoll();
+    const rollRepository = createRollRepository(roll, []);
+    const handler = new AddElectoralRollMembersHandler(
+      rollRepository,
+      new ElectoralRollSnapshotCreator(
+        rollRepository,
+        createSnapshotRepository(),
+      ),
+      immediateTransactionManager(),
+    );
+
+    await expect(
+      handler.execute(
+        AddElectoralRollMembersCommand.of({
+          electoralRollId: roll.id,
+          members: [{ identifier: 'member-1' }, { identifier: ' member-1 ' }],
+          changedAt: now,
+        }),
+      ),
+    ).rejects.toThrow('duplicate electoral roll member identifier');
+    expect(rollRepository.saveMembers.mock.calls).toHaveLength(0);
+    expect(rollRepository.save.mock.calls).toHaveLength(0);
   });
 
   it('snapshots updated member values for the new source revision', async () => {
@@ -244,10 +294,13 @@ function createRollRepository(
   members: readonly ElectoralRollMemberAggregate[],
 ): jest.Mocked<ElectoralRollRepositoryPort> {
   const storedMembers = [...members];
+  let memberSequence = storedMembers.length;
 
   return {
     nextId: jest.fn().mockReturnValue('roll-2'),
-    nextMemberId: jest.fn().mockReturnValue('member-2'),
+    nextMemberId: jest
+      .fn()
+      .mockImplementation(() => `member-${++memberSequence}`),
     findById: jest.fn().mockResolvedValue(roll),
     findMemberById: jest
       .fn()
@@ -268,6 +321,14 @@ function createRollRepository(
         else storedMembers.push(member);
         return Promise.resolve();
       }),
+    saveMembers: jest
+      .fn()
+      .mockImplementation(
+        (savedMembers: readonly ElectoralRollMemberAggregate[]) => {
+          storedMembers.push(...savedMembers);
+          return Promise.resolve();
+        },
+      ),
     removeMember: jest
       .fn()
       .mockImplementation((_rollId: string, memberId: string) => {

@@ -151,6 +151,37 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
     );
   }
 
+  async saveMembers(
+    members: readonly ElectoralRollMemberAggregate[],
+  ): Promise<void> {
+    if (members.length === 0) return;
+
+    const { ElectoralRollEntity, ElectoralRollMemberEntity } =
+      await getDatabaseEntities();
+
+    for (const member of members) {
+      this.em.persist(
+        this.em.create(
+          ElectoralRollMemberEntity as any,
+          {
+            id: member.id,
+            electoralRoll: entityReference(
+              this.em,
+              ElectoralRollEntity,
+              member.electoralRollId,
+            ),
+            identifier: member.identifier,
+            groupKey: member.groupKey ?? null,
+            voteWeight: member.voteWeight,
+            createdAt: member.createdAt,
+            updatedAt: member.updatedAt,
+          } as any,
+        ),
+      );
+    }
+    await this.em.flush();
+  }
+
   async removeMember(electoralRollId: string, memberId: string): Promise<void> {
     const { ElectoralRollMemberEntity } = await getDatabaseEntities();
     await this.em.nativeDelete(ElectoralRollMemberEntity as any, {

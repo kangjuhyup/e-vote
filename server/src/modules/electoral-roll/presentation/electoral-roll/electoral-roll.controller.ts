@@ -11,19 +11,20 @@ import {
   Put,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AddElectoralRollMemberCommand } from '../../application/command/dto/request/add-electoral-roll-member.command';
+import { AddElectoralRollMembersCommand } from '../../application/command/dto/request/add-electoral-roll-members.command';
 import { CreateElectoralRollCommand } from '../../application/command/dto/request/create-electoral-roll.command';
 import { RemoveElectoralRollMemberCommand } from '../../application/command/dto/request/remove-electoral-roll-member.command';
 import { UpdateElectoralRollMemberCommand } from '../../application/command/dto/request/update-electoral-roll-member.command';
-import { AddElectoralRollMemberHandler } from '../../application/command/handler/add-electoral-roll-member.handler';
+import { AddElectoralRollMembersHandler } from '../../application/command/handler/add-electoral-roll-members.handler';
 import { CreateElectoralRollHandler } from '../../application/command/handler/create-electoral-roll.handler';
 import { RemoveElectoralRollMemberHandler } from '../../application/command/handler/remove-electoral-roll-member.handler';
 import { UpdateElectoralRollMemberHandler } from '../../application/command/handler/update-electoral-roll-member.handler';
 import { throwMappedElectoralRollError } from './electoral-roll-error.mapper';
 import { CreateElectoralRollBody } from './dto/create-electoral-roll-request.dto';
 import { CreateElectoralRollResponse } from './dto/create-electoral-roll-response.dto';
+import { AddElectoralRollMembersBody } from './dto/add-electoral-roll-members-request.dto';
+import { AddElectoralRollMembersResponse } from './dto/add-electoral-roll-members-response.dto';
 import {
-  AddElectoralRollMemberBody,
   ElectoralRollMemberParam,
   ElectoralRollParam,
   UpdateElectoralRollMemberBody,
@@ -38,7 +39,7 @@ import {
 export class ElectoralRollController {
   constructor(
     private readonly createElectoralRollHandler: CreateElectoralRollHandler,
-    private readonly addMemberHandler: AddElectoralRollMemberHandler,
+    private readonly addMembersHandler: AddElectoralRollMembersHandler,
     private readonly updateMemberHandler: UpdateElectoralRollMemberHandler,
     private readonly removeMemberHandler: RemoveElectoralRollMemberHandler,
   ) {}
@@ -62,18 +63,18 @@ export class ElectoralRollController {
 
   @Put(':electoralRollId/members')
   @HttpCode(201)
-  @ApiCreatedResponse({ type: ManageElectoralRollMemberResponse })
-  async addMember(
+  @ApiCreatedResponse({ type: AddElectoralRollMembersResponse })
+  async addMembers(
     @User() user: UserPrincipal,
     @Param() params: ElectoralRollParam,
-    @Body() body: AddElectoralRollMemberBody,
-  ): Promise<ManageElectoralRollMemberResponse> {
+    @Body() body: AddElectoralRollMembersBody,
+  ): Promise<AddElectoralRollMembersResponse> {
     try {
-      return ManageElectoralRollMemberResponse.of(
-        await this.addMemberHandler.execute(
-          AddElectoralRollMemberCommand.of({
-            ...params,
-            ...body,
+      return AddElectoralRollMembersResponse.of(
+        await this.addMembersHandler.execute(
+          AddElectoralRollMembersCommand.of({
+            electoralRollId: params.electoralRollId,
+            members: body.members,
             changedAt: new Date(),
           }),
         ),

@@ -20,5 +20,6 @@ export interface ElectoralRollRepositoryPort {
   ): Promise<readonly ElectoralRollMemberAggregate[]>;
   save(electoralRoll: ElectoralRollAggregate): Promise<void>;
   saveMember(member: ElectoralRollMemberAggregate): Promise<void>;
+  saveMembers(members: readonly ElectoralRollMemberAggregate[]): Promise<void>;
   removeMember(electoralRollId: string, memberId: string): Promise<void>;
 }

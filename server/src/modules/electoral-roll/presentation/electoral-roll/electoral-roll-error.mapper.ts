@@ -1,7 +1,13 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
 import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  DuplicateElectoralRollMemberIdentifierError,
   ElectoralRollMemberNotFoundError,
   ElectoralRollNotFoundError,
+  InvalidElectoralRollMemberBatchError,
 } from '../../application/command/electoral-roll.error';
 import { ManagedResourceNotFoundError } from '../../../../shared/application/error/managed-resource.error';
 import { DomainError } from '../../../../shared/domain/domain-error';
@@ -11,6 +17,10 @@ import {
 } from '../../../../shared/application/error/election-commission-access.error';
 
 export function throwMappedElectoralRollError(error: unknown): never {
+  if (error instanceof InvalidElectoralRollMemberBatchError) {
+    throw new BadRequestException(error.message);
+  }
+
   if (
     error instanceof ElectoralRollNotFoundError ||
     error instanceof ElectoralRollMemberNotFoundError ||
@@ -22,6 +32,7 @@ export function throwMappedElectoralRollError(error: unknown): never {
 
   if (
     error instanceof ElectionCommissionUnavailableError ||
+    error instanceof DuplicateElectoralRollMemberIdentifierError ||
     error instanceof DomainError ||
     isUniqueConstraintError(error)
   ) {

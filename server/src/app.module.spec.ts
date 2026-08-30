@@ -99,6 +99,7 @@ import { PlatformModule } from './platform/platform.module';
         findMembersByRollId: jest.fn(),
         save: jest.fn(),
         saveMember: jest.fn(),
+        saveMembers: jest.fn(),
         removeMember: jest.fn(),
       },
     },
