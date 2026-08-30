@@ -45,6 +45,14 @@ import { SMS_DISPATCH_REPOSITORY_PORT } from '../shared/application/port/persist
 import { SmsDispatchRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/command/sms-dispatch-repository.adapter';
 import { SMS_DISPATCH_READ_REPOSITORY_PORT } from '../modules/vote/application/port/persistence/query/sms-dispatch-read-repository.port';
 import { SmsDispatchReadRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/query/sms-dispatch-read-repository.adapter';
+import { BILLING_ORDER_REPOSITORY_PORT } from '../modules/billing/application/port/persistence/command/billing-order-repository.port';
+import { BILLING_ORDER_READ_REPOSITORY_PORT } from '../modules/billing/application/port/persistence/query/billing-order-read-repository.port';
+import { BillingOrderRepositoryAdapter } from '../modules/billing/infrastructure/database/repository/command/billing-order-repository.adapter';
+import { BillingOrderReadRepositoryAdapter } from '../modules/billing/infrastructure/database/repository/query/billing-order-read-repository.adapter';
+import { ELECTION_COMMISSION_MEMBERSHIP_ACCESS_PORT } from '../shared/application/port/capability/election-commission-membership-access.port';
+import { ElectionCommissionMembershipAccessAdapter } from '../modules/election-commission/infrastructure/database/repository/query/election-commission-membership-access.adapter';
+import { VOTE_ELECTOR_COUNT_ACCESS_PORT } from '../shared/application/port/capability/vote-elector-count-access.port';
+import { VoteElectorCountAccessAdapter } from '../modules/elector/infrastructure/database/repository/query/vote-elector-count-access.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
   {
@@ -139,6 +147,22 @@ export const databaseRepositoryProviders: Provider[] = [
     provide: SMS_DISPATCH_READ_REPOSITORY_PORT,
     useClass: SmsDispatchReadRepositoryAdapter,
   },
+  {
+    provide: BILLING_ORDER_REPOSITORY_PORT,
+    useClass: BillingOrderRepositoryAdapter,
+  },
+  {
+    provide: BILLING_ORDER_READ_REPOSITORY_PORT,
+    useClass: BillingOrderReadRepositoryAdapter,
+  },
+  {
+    provide: ELECTION_COMMISSION_MEMBERSHIP_ACCESS_PORT,
+    useClass: ElectionCommissionMembershipAccessAdapter,
+  },
+  {
+    provide: VOTE_ELECTOR_COUNT_ACCESS_PORT,
+    useClass: VoteElectorCountAccessAdapter,
+  },
 ];
 
 export const databaseRepositoryPortTokens = [
@@ -165,4 +189,8 @@ export const databaseRepositoryPortTokens = [
   ATTACHMENT_REPOSITORY_PORT,
   SMS_DISPATCH_REPOSITORY_PORT,
   SMS_DISPATCH_READ_REPOSITORY_PORT,
+  BILLING_ORDER_REPOSITORY_PORT,
+  BILLING_ORDER_READ_REPOSITORY_PORT,
+  ELECTION_COMMISSION_MEMBERSHIP_ACCESS_PORT,
+  VOTE_ELECTOR_COUNT_ACCESS_PORT,
 ] as const;

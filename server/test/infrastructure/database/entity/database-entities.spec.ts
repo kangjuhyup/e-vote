@@ -6,6 +6,7 @@ describe('database entities registry', () => {
     const { databaseEntities } = await createDatabaseEntityRegistry();
 
     expect(databaseEntities.map((entity) => entity.name).sort()).toEqual([
+      'BillingOrderEntity',
       'CandidateAttachmentEntity',
       'CandidateEntity',
       'ElectionCommissionEntity',

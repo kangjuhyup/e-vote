@@ -34,3 +34,4 @@ export type ContentChangeAction =
   'CREATED' | 'UPDATED' | 'DELETED' | 'STATUS_CHANGED' | 'POLICY_CHANGED';
 export type ContentChangeActorType = 'ADMIN' | 'SYSTEM';
 export type ResultStorageStatus = 'PENDING' | 'SAVED' | 'FAILED';
+export type BillingOrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'REFUNDED';

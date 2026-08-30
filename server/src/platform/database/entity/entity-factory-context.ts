@@ -27,6 +27,7 @@ export interface DatabaseEntityClasses {
   readonly VoteResultStorageRecordEntity: EntityClass<AnyEntity>;
   readonly SmsDispatchEntity: EntityClass<AnyEntity>;
   readonly SmsDeliveryEntity: EntityClass<AnyEntity>;
+  readonly BillingOrderEntity: EntityClass<AnyEntity>;
 }
 
 export interface DatabaseEntityFactoryContext {

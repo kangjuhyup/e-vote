@@ -57,6 +57,7 @@ pnpm start:prod
 
 - [선거인명부 목록 API](docs/api/electoral-rolls.md)
 - [SMS notification API](docs/api/sms-notifications.md): vote reminder, result, upcoming, and field-session SMS commands with a random development Adapter. No real SMS provider is called.
+- [투표 이용료 Billing API](docs/api/billing.md)
 
 ## UI
 

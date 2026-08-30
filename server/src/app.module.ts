@@ -112,6 +112,10 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
 import { AuthenticatedUserGuard } from './shared/presentation/common/guard/authenticated-user.guard';
 import { SMS_SENDER_PORT } from './shared/application/port/gateway/sms-sender.port';
 import { SMS_RECIPIENT_ACCESS_PORT } from './shared/application/port/capability/sms-recipient-access.port';
+import { BillingOrderController } from './modules/billing/presentation/billing-order/billing-order.controller';
+import { CreateVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/create-vote-usage-billing-order.handler';
+import { MarkBillingOrderPaidHandler } from './modules/billing/application/command/handler/mark-billing-order-paid.handler';
+import { GetBillingOrderHandler } from './modules/billing/application/query/handler/get-billing-order.handler';
 
 @Module({
   imports: [
@@ -145,6 +149,7 @@ import { SMS_RECIPIENT_ACCESS_PORT } from './shared/application/port/capability/
     ElectorReadController,
     VoteStatisticsController,
     FieldParticipationEvidenceController,
+    BillingOrderController,
   ],
   providers: [
     AppService,
@@ -229,6 +234,9 @@ import { SMS_RECIPIENT_ACCESS_PORT } from './shared/application/port/capability/
     GetElectorPageHandler,
     GetVoteTurnoutHandler,
     GetVoteResultHandler,
+    CreateVoteUsageBillingOrderHandler,
+    MarkBillingOrderPaidHandler,
+    GetBillingOrderHandler,
     {
       provide: DATABASE_HEALTH_PORT,
       useClass: NotConfiguredDatabaseHealthAdapter,

@@ -25,7 +25,7 @@ describe('database config', () => {
         warnWhenNoEntities: false,
       },
     });
-    expect(config.entities).toHaveLength(26);
+    expect(config.entities).toHaveLength(27);
     expect(config.entitiesTs).toBe(config.entities);
   });
 
