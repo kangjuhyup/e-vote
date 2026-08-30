@@ -1,5 +1,8 @@
 export class ManagedResourceNotFoundError extends Error {
-  constructor(resource: 'candidate' | 'elector' | 'vote' | 'vote detail') {
+  constructor(
+    resource:
+      'candidate' | 'elector' | 'field voting session' | 'vote' | 'vote detail',
+  ) {
     super(`${resource} not found`);
   }
 }

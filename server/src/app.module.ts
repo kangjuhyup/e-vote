@@ -19,9 +19,11 @@ import { CreateVoteDetailHandler } from './modules/vote/application/command/hand
 import { CreateVoteHandler } from './modules/vote/application/command/handler/create-vote.handler';
 import { OpenFieldVotingSessionHandler } from './modules/field-voting/application/command/handler/open-field-voting-session.handler';
 import { RecordFieldParticipationEvidenceHandler } from './modules/field-voting/application/command/handler/record-field-participation-evidence.handler';
+import { SendFieldVotingSessionSmsHandler } from './modules/field-voting/application/command/handler/send-field-voting-session-sms.handler';
 import { RegisterElectionCommissionMemberHandler } from './modules/election-commission/application/command/handler/register-election-commission-member.handler';
 import { RemoveElectoralRollMemberHandler } from './modules/electoral-roll/application/command/handler/remove-electoral-roll-member.handler';
 import { RequestAttachmentUploadHandler } from './modules/vote/application/command/handler/request-attachment-upload.handler';
+import { SendVoteSmsHandler } from './modules/vote/application/command/handler/send-vote-sms.handler';
 import { UpdateCandidateHandler } from './modules/vote/application/command/handler/update-candidate.handler';
 import { UpdateElectoralRollMemberHandler } from './modules/electoral-roll/application/command/handler/update-electoral-roll-member.handler';
 import { UpdateElectorHandler } from './modules/elector/application/command/handler/update-elector.handler';
@@ -43,6 +45,8 @@ import { GetVoteDetailPageHandler } from './modules/vote/application/query/handl
 import { GetVoteDetailHandler } from './modules/vote/application/query/handler/get-vote-detail.handler';
 import { GetVotePageHandler } from './modules/vote/application/query/handler/get-vote-page.handler';
 import { GetVoteHandler } from './modules/vote/application/query/handler/get-vote.handler';
+import { GetSmsDispatchPageHandler } from './modules/vote/application/query/handler/get-sms-dispatch-page.handler';
+import { GetSmsDispatchHandler } from './modules/vote/application/query/handler/get-sms-dispatch.handler';
 import { GetVoteResultHandler } from './modules/participation/application/query/handler/get-vote-result.handler';
 import { GetVoteTurnoutHandler } from './modules/participation/application/query/handler/get-vote-turnout.handler';
 import { AppController } from './app.controller';
@@ -55,6 +59,8 @@ import {
 } from './composition/database-repository.providers';
 import { NotConfiguredDatabaseHealthAdapter } from './platform/database/not-configured-database-health.adapter';
 import { NotConfiguredElectorIdentityVerificationAdapter } from './modules/elector/infrastructure/security/not-configured-elector-identity-verification.adapter';
+import { RandomSmsSenderAdapter } from './shared/infrastructure/sms/random-sms-sender.adapter';
+import { ElectorSmsRecipientAccessAdapter } from './modules/elector/infrastructure/sms/elector-sms-recipient-access.adapter';
 import { CandidateAttachmentController } from './modules/vote/presentation/candidate/candidate-attachment.controller';
 import { CandidateReadController } from './modules/vote/presentation/candidate/candidate-read.controller';
 import { CandidateController } from './modules/vote/presentation/candidate/candidate.controller';
@@ -65,6 +71,7 @@ import { ElectoralRollReadController } from './modules/electoral-roll/presentati
 import { ElectorController } from './modules/elector/presentation/elector/elector.controller';
 import { FieldVotingSessionReadController } from './modules/field-voting/presentation/field-voting-session/field-voting-session-read.controller';
 import { FieldVotingSessionController } from './modules/field-voting/presentation/field-voting-session/field-voting-session.controller';
+import { FieldVotingSessionSmsController } from './modules/field-voting/presentation/field-voting-session-sms/field-voting-session-sms.controller';
 import { ElectorReadController } from './modules/elector/presentation/elector/elector-read.controller';
 import { VoteDetailAttachmentController } from './modules/vote/presentation/vote-detail/vote-detail-attachment.controller';
 import { VoteDetailReadController } from './modules/vote/presentation/vote-detail/vote-detail-read.controller';
@@ -72,6 +79,8 @@ import { VoteDetailController } from './modules/vote/presentation/vote-detail/vo
 import { VoteAttachmentController } from './modules/vote/presentation/vote/vote-attachment.controller';
 import { VoteReadController } from './modules/vote/presentation/vote/vote-read.controller';
 import { VoteController } from './modules/vote/presentation/vote/vote.controller';
+import { VoteSmsController } from './modules/vote/presentation/vote-sms/vote-sms.controller';
+import { VoteSmsReadController } from './modules/vote/presentation/vote-sms/vote-sms-read.controller';
 import { VoteStatisticsController } from './modules/participation/presentation/vote-statistics/vote-statistics.controller';
 import { FieldParticipationEvidenceController } from './modules/field-voting/presentation/participation/field-participation-evidence.controller';
 import {
@@ -98,6 +107,8 @@ import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from './modules/field-voting/app
 import { PARTICIPATION_REPOSITORY_PORT } from './modules/participation/application/port/persistence/command/participation-repository.port';
 import { FILE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/file-repository.port';
 import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-roll/application/port/persistence/command/electoral-roll-snapshot-repository.port';
+import { SMS_SENDER_PORT } from './shared/application/port/gateway/sms-sender.port';
+import { SMS_RECIPIENT_ACCESS_PORT } from './shared/application/port/capability/sms-recipient-access.port';
 
 @Module({
   imports: [
@@ -110,6 +121,8 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
   controllers: [
     AppController,
     VoteController,
+    VoteSmsController,
+    VoteSmsReadController,
     VoteReadController,
     VoteAttachmentController,
     VoteDetailController,
@@ -125,6 +138,7 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
     ElectorController,
     FieldVotingSessionReadController,
     FieldVotingSessionController,
+    FieldVotingSessionSmsController,
     ElectorReadController,
     VoteStatisticsController,
     FieldParticipationEvidenceController,
@@ -178,6 +192,7 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
     CloseFieldVotingSessionHandler,
     CancelFieldVotingSessionHandler,
     RecordFieldParticipationEvidenceHandler,
+    SendFieldVotingSessionSmsHandler,
     UpdateVoteHandler,
     ChangeVoteStatusHandler,
     UpdateVoteDetailHandler,
@@ -188,7 +203,10 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
     BlockElectorHandler,
     RequestAttachmentUploadHandler,
     ConfirmAttachmentUploadHandler,
+    SendVoteSmsHandler,
     GetVoteHandler,
+    GetSmsDispatchPageHandler,
+    GetSmsDispatchHandler,
     GetVotePageHandler,
     GetVoteDetailHandler,
     GetVoteDetailPageHandler,
@@ -210,6 +228,14 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
     {
       provide: ELECTOR_IDENTITY_VERIFICATION_PORT,
       useClass: NotConfiguredElectorIdentityVerificationAdapter,
+    },
+    {
+      provide: SMS_SENDER_PORT,
+      useClass: RandomSmsSenderAdapter,
+    },
+    {
+      provide: SMS_RECIPIENT_ACCESS_PORT,
+      useClass: ElectorSmsRecipientAccessAdapter,
     },
   ],
 })

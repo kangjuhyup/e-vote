@@ -53,6 +53,10 @@ pnpm start:dev
 pnpm start:prod
 ```
 
+### Server APIs
+
+- [SMS notification API](docs/api/sms-notifications.md): vote reminder, result, upcoming, and field-session SMS commands with a random development Adapter. No real SMS provider is called.
+
 ## UI
 
 ```bash

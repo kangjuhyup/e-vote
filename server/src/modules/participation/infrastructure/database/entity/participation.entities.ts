@@ -52,6 +52,10 @@ export function createParticipationEntities(
         p
           .oneToMany(getEntity(context, 'FieldParticipationEvidenceEntity'))
           .mappedBy('fieldVotingSession'),
+      smsDispatches: () =>
+        p
+          .oneToMany(getEntity(context, 'SmsDispatchEntity'))
+          .mappedBy('fieldVotingSession'),
     },
   });
   class FieldVotingSessionEntity extends FieldVotingSessionSchema.class {}

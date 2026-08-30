@@ -3,6 +3,14 @@ import { GetVoteResultHandler } from '../src/modules/participation/application/q
 import { GetVoteTurnoutHandler } from '../src/modules/participation/application/query/handler/get-vote-turnout.handler';
 import { AppModule } from '../src/app.module';
 import { VoteStatisticsController } from '../src/modules/participation/presentation/vote-statistics/vote-statistics.controller';
+import { VoteSmsController } from '../src/modules/vote/presentation/vote-sms/vote-sms.controller';
+import { FieldVotingSessionSmsController } from '../src/modules/field-voting/presentation/field-voting-session-sms/field-voting-session-sms.controller';
+import { SendVoteSmsHandler } from '../src/modules/vote/application/command/handler/send-vote-sms.handler';
+import { SendFieldVotingSessionSmsHandler } from '../src/modules/field-voting/application/command/handler/send-field-voting-session-sms.handler';
+import { SMS_SENDER_PORT } from '../src/shared/application/port/gateway/sms-sender.port';
+import { RandomSmsSenderAdapter } from '../src/shared/infrastructure/sms/random-sms-sender.adapter';
+import { SMS_RECIPIENT_ACCESS_PORT } from '../src/shared/application/port/capability/sms-recipient-access.port';
+import { ElectorSmsRecipientAccessAdapter } from '../src/modules/elector/infrastructure/sms/elector-sms-recipient-access.adapter';
 
 describe('AppModule', () => {
   it('registers vote statistics query endpoints and handlers', () => {
@@ -18,5 +26,37 @@ describe('AppModule', () => {
     expect(controllers).toContain(VoteStatisticsController);
     expect(providers).toContain(GetVoteTurnoutHandler);
     expect(providers).toContain(GetVoteResultHandler);
+  });
+
+  it('registers SMS endpoints, handlers, and the random development adapter', () => {
+    const controllers = Reflect.getMetadata(
+      MODULE_METADATA.CONTROLLERS,
+      AppModule,
+    ) as unknown[];
+    const providers = Reflect.getMetadata(
+      MODULE_METADATA.PROVIDERS,
+      AppModule,
+    ) as unknown[];
+
+    expect(controllers).toEqual(
+      expect.arrayContaining([
+        VoteSmsController,
+        FieldVotingSessionSmsController,
+      ]),
+    );
+    expect(providers).toEqual(
+      expect.arrayContaining([
+        SendVoteSmsHandler,
+        SendFieldVotingSessionSmsHandler,
+      ]),
+    );
+    expect(providers).toContainEqual({
+      provide: SMS_SENDER_PORT,
+      useClass: RandomSmsSenderAdapter,
+    });
+    expect(providers).toContainEqual({
+      provide: SMS_RECIPIENT_ACCESS_PORT,
+      useClass: ElectorSmsRecipientAccessAdapter,
+    });
   });
 });

@@ -41,6 +41,10 @@ import { VoteDetailRepositoryAdapter } from '../modules/vote/infrastructure/data
 import { VoteReadRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/query/vote-read-repository.adapter';
 import { VoteRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/command/vote-repository.adapter';
 import { VoteStatisticsReadRepositoryAdapter } from '../modules/participation/infrastructure/database/repository/query/vote-statistics-read-repository.adapter';
+import { SMS_DISPATCH_REPOSITORY_PORT } from '../shared/application/port/persistence/sms-dispatch-repository.port';
+import { SmsDispatchRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/command/sms-dispatch-repository.adapter';
+import { SMS_DISPATCH_READ_REPOSITORY_PORT } from '../modules/vote/application/port/persistence/query/sms-dispatch-read-repository.port';
+import { SmsDispatchReadRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/query/sms-dispatch-read-repository.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
   {
@@ -127,6 +131,14 @@ export const databaseRepositoryProviders: Provider[] = [
     provide: ATTACHMENT_REPOSITORY_PORT,
     useClass: AttachmentRepositoryAdapter,
   },
+  {
+    provide: SMS_DISPATCH_REPOSITORY_PORT,
+    useClass: SmsDispatchRepositoryAdapter,
+  },
+  {
+    provide: SMS_DISPATCH_READ_REPOSITORY_PORT,
+    useClass: SmsDispatchReadRepositoryAdapter,
+  },
 ];
 
 export const databaseRepositoryPortTokens = [
@@ -151,4 +163,6 @@ export const databaseRepositoryPortTokens = [
   FIELD_PARTICIPATION_EVIDENCE_REPOSITORY_PORT,
   FILE_REPOSITORY_PORT,
   ATTACHMENT_REPOSITORY_PORT,
+  SMS_DISPATCH_REPOSITORY_PORT,
+  SMS_DISPATCH_READ_REPOSITORY_PORT,
 ] as const;
