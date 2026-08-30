@@ -2,8 +2,10 @@ import {
   Body,
   ConflictException,
   Controller,
+  Delete,
   HttpCode,
   Param,
+  Patch,
   Put,
 } from '@nestjs/common';
 import {
@@ -30,6 +32,15 @@ import {
   CreateElectorParam,
 } from './dto/create-elector-request.dto';
 import { CreateElectorResponse } from './dto/create-elector-response.dto';
+import { UpdateElectorCommand } from '../../../application/command/update-elector.command';
+import { BlockElectorCommand } from '../../../application/command/block-elector.command';
+import { UpdateElectorHandler } from '../../../application/command/handler/update-elector.handler';
+import { BlockElectorHandler } from '../../../application/command/handler/block-elector.handler';
+import {
+  ManageElectorParam,
+  UpdateElectorBody,
+} from './dto/manage-elector-request.dto';
+import { ManageElectorResponse } from './dto/manage-elector-response.dto';
 
 @ApiTags('electors')
 @Controller('votes/:voteId/electors')
@@ -37,6 +48,8 @@ export class ElectorController {
   constructor(
     private readonly createElectorHandler: CreateElectorHandler,
     private readonly authenticateElectorHandler: AuthenticateElectorHandler,
+    private readonly updateElectorHandler?: UpdateElectorHandler,
+    private readonly blockElectorHandler?: BlockElectorHandler,
   ) {}
 
   @Put()
@@ -86,6 +99,25 @@ export class ElectorController {
 
       throw error;
     }
+  }
+
+  @Patch(':electorId')
+  async updateElector(
+    @Param() params: ManageElectorParam,
+    @Body() body: UpdateElectorBody,
+  ) {
+    return ManageElectorResponse.of(
+      await this.updateElectorHandler!.execute(
+        UpdateElectorCommand.of({ ...params, ...body }),
+      ),
+    );
+  }
+
+  @Delete(':electorId')
+  async deleteElector(@Param() params: ManageElectorParam) {
+    return ManageElectorResponse.of(
+      await this.blockElectorHandler!.execute(BlockElectorCommand.of(params)),
+    );
   }
 
   @Put(':electorId/authentication')

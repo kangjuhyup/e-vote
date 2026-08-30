@@ -4,6 +4,11 @@ import { ATTACHMENT_REPOSITORY_PORT } from './application/port/persistence/comma
 import { CANDIDATE_READ_REPOSITORY_PORT } from './application/port/persistence/query/candidate-read-repository.port';
 import { CANDIDATE_REPOSITORY_PORT } from './application/port/persistence/command/candidate-repository.port';
 import { ELECTION_COMMISSION_REPOSITORY_PORT } from './application/port/persistence/command/election-commission-repository.port';
+import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from './application/port/persistence/command/election-commission-member-repository.port';
+import { ELECTOR_REPOSITORY_PORT } from './application/port/persistence/command/elector-repository.port';
+import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from './application/port/persistence/command/field-voting-session-repository.port';
+import { ELECTION_COMMISSION_READ_REPOSITORY_PORT } from './application/port/persistence/query/election-commission-read-repository.port';
+import { FIELD_VOTING_SESSION_READ_REPOSITORY_PORT } from './application/port/persistence/query/field-voting-session-read-repository.port';
 import { ELECTOR_READ_REPOSITORY_PORT } from './application/port/persistence/query/elector-read-repository.port';
 import { REDIS_HEALTH_PORT } from './application/port/health/redis-health.port';
 import { STORAGE_PORT } from './application/port/gateway/storage.port';
@@ -72,6 +77,31 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
       },
     },
     {
+      provide: ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
+      useValue: {
+        nextId: jest.fn(),
+        findById: jest.fn(),
+        findByIds: jest.fn(),
+        save: jest.fn(),
+      },
+    },
+    {
+      provide: ELECTOR_REPOSITORY_PORT,
+      useValue: { nextId: jest.fn(), findById: jest.fn(), save: jest.fn() },
+    },
+    {
+      provide: FIELD_VOTING_SESSION_REPOSITORY_PORT,
+      useValue: { nextId: jest.fn(), findById: jest.fn(), save: jest.fn() },
+    },
+    {
+      provide: ELECTION_COMMISSION_READ_REPOSITORY_PORT,
+      useValue: {},
+    },
+    {
+      provide: FIELD_VOTING_SESSION_READ_REPOSITORY_PORT,
+      useValue: {},
+    },
+    {
       provide: VOTE_READ_REPOSITORY_PORT,
       useValue: {},
     },
@@ -106,6 +136,11 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
     VOTE_DETAIL_REPOSITORY_PORT,
     CANDIDATE_REPOSITORY_PORT,
     ELECTION_COMMISSION_REPOSITORY_PORT,
+    ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
+    ELECTOR_REPOSITORY_PORT,
+    FIELD_VOTING_SESSION_REPOSITORY_PORT,
+    ELECTION_COMMISSION_READ_REPOSITORY_PORT,
+    FIELD_VOTING_SESSION_READ_REPOSITORY_PORT,
     VOTE_READ_REPOSITORY_PORT,
     VOTE_DETAIL_READ_REPOSITORY_PORT,
     CANDIDATE_READ_REPOSITORY_PORT,

@@ -29,10 +29,10 @@ export class VoteAggregate {
   private constructor(
     readonly id: string,
     readonly commissionId: string,
-    readonly title: string,
-    readonly votingChannels: readonly VotingChannel[],
-    readonly defaultPolicy: VotePolicy,
-    readonly identityVerificationPolicy: IdentityVerificationPolicy,
+    public title: string,
+    public votingChannels: readonly VotingChannel[],
+    public defaultPolicy: VotePolicy,
+    public identityVerificationPolicy: IdentityVerificationPolicy,
     public status: VoteStatus,
   ) {}
 
@@ -67,6 +67,31 @@ export class VoteAggregate {
 
   allowsVotingChannel(channel: VotingChannel): boolean {
     return this.votingChannels.includes(channel);
+  }
+
+  updateSettings(params: {
+    readonly title: string;
+    readonly votingChannels: readonly VotingChannel[];
+    readonly defaultPolicy: VotePolicy;
+    readonly identityVerificationPolicy: IdentityVerificationPolicy;
+  }): void {
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError('only draft votes can be updated');
+    }
+
+    const title = params.title.trim();
+    if (title.length === 0) {
+      throw new DomainError('vote title must not be empty');
+    }
+    VoteAggregate.assertVotingChannels(params.votingChannels);
+    VoteAggregate.assertIdentityVerificationPolicy(
+      params.identityVerificationPolicy,
+    );
+
+    this.title = title;
+    this.votingChannels = [...params.votingChannels];
+    this.defaultPolicy = params.defaultPolicy;
+    this.identityVerificationPolicy = params.identityVerificationPolicy;
   }
 
   open(openedAt: Date): void {
