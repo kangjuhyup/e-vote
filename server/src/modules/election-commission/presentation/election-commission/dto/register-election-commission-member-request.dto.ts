@@ -10,6 +10,15 @@ type ElectionCommissionMemberRoleBody =
 
 export class RegisterElectionCommissionMemberBody {
   @ApiProperty({
+    example: 'oidc-subject-1',
+    minLength: 1,
+    maxLength: 255,
+    description:
+      '위원 권한을 부여할 사용자의 UserPrincipal.id(OIDC subject)입니다.',
+  })
+  readonly userPrincipalId!: string;
+
+  @ApiProperty({
     example: 'Kim Manager',
     minLength: 1,
     maxLength: 100,

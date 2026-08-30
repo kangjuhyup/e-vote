@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Public } from './shared/presentation/common/decorator/public.decorator';
 
 type LivenessResponse = {
   status: 'ok';
@@ -15,6 +16,7 @@ type ReadinessResponse = {
 };
 
 @Controller()
+@Public()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 

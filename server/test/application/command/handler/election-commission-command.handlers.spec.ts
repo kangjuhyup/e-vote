@@ -62,6 +62,7 @@ describe('election commission command handlers', () => {
     const result = await handler.execute(
       RegisterElectionCommissionMemberCommand.of({
         commissionId: 'commission-1',
+        userPrincipalId: 'user-1',
         name: 'Kim Manager',
         role: ElectionCommissionMemberRole.FieldManager,
         registeredAt: new Date('2026-08-13T00:00:00.000Z'),
@@ -76,5 +77,6 @@ describe('election commission command handlers', () => {
     expect(save.mock.calls[0][0]).toBeInstanceOf(
       ElectionCommissionMemberAggregate,
     );
+    expect(save.mock.calls[0][0].userPrincipalId).toBe('user-1');
   });
 });

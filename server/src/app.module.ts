@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
 import { ConfirmAttachmentUploadHandler } from './modules/vote/application/command/handler/confirm-attachment-upload.handler';
 import { AddElectoralRollMemberHandler } from './modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
@@ -12,7 +13,7 @@ import { CloseFieldVotingSessionHandler } from './modules/field-voting/applicati
 import { CreateCandidateHandler } from './modules/vote/application/command/handler/create-candidate.handler';
 import { CreateElectionCommissionHandler } from './modules/election-commission/application/command/handler/create-election-commission.handler';
 import { CreateElectoralRollHandler } from './modules/electoral-roll/application/command/handler/create-electoral-roll.handler';
-import { CreateElectoralRollSnapshotHandler } from './modules/electoral-roll/application/command/handler/create-electoral-roll-snapshot.handler';
+import { ElectoralRollSnapshotCreator } from './modules/electoral-roll/application/command/electoral-roll-snapshot.creator';
 import { CreateElectorHandler } from './modules/elector/application/command/handler/create-elector.handler';
 import { CreateFieldVotingSessionHandler } from './modules/field-voting/application/command/handler/create-field-voting-session.handler';
 import { CreateVoteDetailHandler } from './modules/vote/application/command/handler/create-vote-detail.handler';
@@ -35,6 +36,7 @@ import { GetCandidateHandler } from './modules/vote/application/query/handler/ge
 import { GetElectionCommissionHandler } from './modules/election-commission/application/query/handler/get-election-commission.handler';
 import { GetElectionCommissionPageHandler } from './modules/election-commission/application/query/handler/get-election-commission-page.handler';
 import { GetElectoralRollHandler } from './modules/electoral-roll/application/query/handler/get-electoral-roll.handler';
+import { GetElectoralRollPageHandler } from './modules/electoral-roll/application/query/handler/get-electoral-roll-page.handler';
 import { GetFieldVotingSessionHandler } from './modules/field-voting/application/query/handler/get-field-voting-session.handler';
 import { GetFieldVotingSessionPageHandler } from './modules/field-voting/application/query/handler/get-field-voting-session-page.handler';
 import { GetElectorPageHandler } from './modules/elector/application/query/handler/get-elector-page.handler';
@@ -98,6 +100,7 @@ import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from './modules/field-voting/app
 import { PARTICIPATION_REPOSITORY_PORT } from './modules/participation/application/port/persistence/command/participation-repository.port';
 import { FILE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/file-repository.port';
 import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-roll/application/port/persistence/command/electoral-roll-snapshot-repository.port';
+import { AuthenticatedUserGuard } from './shared/presentation/common/guard/authenticated-user.guard';
 
 @Module({
   imports: [
@@ -131,6 +134,10 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
   ],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthenticatedUserGuard,
+    },
     {
       provide: ELECTION_COMMISSION_ACCESS_PORT,
       useExisting: ELECTION_COMMISSION_REPOSITORY_PORT,
@@ -169,7 +176,7 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
     AddElectoralRollMemberHandler,
     UpdateElectoralRollMemberHandler,
     RemoveElectoralRollMemberHandler,
-    CreateElectoralRollSnapshotHandler,
+    ElectoralRollSnapshotCreator,
     AttachElectoralRollSnapshotHandler,
     CreateElectorHandler,
     AuthenticateElectorHandler,
@@ -197,6 +204,7 @@ import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-rol
     GetElectionCommissionHandler,
     GetElectionCommissionPageHandler,
     GetElectoralRollHandler,
+    GetElectoralRollPageHandler,
     GetFieldVotingSessionHandler,
     GetFieldVotingSessionPageHandler,
     GetElectorHandler,

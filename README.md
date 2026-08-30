@@ -53,6 +53,10 @@ pnpm start:dev
 pnpm start:prod
 ```
 
+### API Interface
+
+- [선거인명부 목록 API](docs/api/electoral-rolls.md)
+
 ## UI
 
 ```bash
@@ -95,11 +99,31 @@ The local Compose bootstrap registers
 `http://localhost:3001/api/auth/callback/e-vote` automatically. Override it
 with `AUTH_CLIENT_REDIRECT_URI` when the vote UI origin changes.
 
+After login, the UI stores the OIDC access token only inside the encrypted
+Auth.js JWT session cookie. The server-side `/api/vote-server/*` route reads
+that cookie and forwards the token to the Vote API as a Bearer token. It is not
+added to the browser-visible session object.
+
+The Vote API validates the JWT signature through the tenant JWKS and checks the
+exact issuer, audience, and token lifetime before assigning a `UserPrincipal`
+to `request.user`. Local development derives these values from the shared OIDC
+settings:
+
+```text
+issuer   = {AUTH_OIDC_ISSUER}/t/{AUTH_OIDC_TENANT_CODE}/oidc
+jwks     = {issuer}/jwks
+audience = e-vote
+```
+
+For deployments with a different API token contract, set the server-only
+overrides `VOTE_AUTH_ISSUER`, `VOTE_AUTH_JWKS_URI`, and
+`VOTE_AUTH_AUDIENCE`. Production OIDC and JWKS URLs should use HTTPS.
+
 ### UI Mock Mode
 
 Set `NEXT_PUBLIC_VOTE_API_MODE=mock` or run `pnpm dev:ui:mock`. In mock mode,
 the UI reads local vote fixtures, does not call the configured vote API,
-disables the `/api/vote-server` proxy rewrite, and uses a local `Mock 관리자`
+does not call the authenticated `/api/vote-server` route, and uses a local `Mock 관리자`
 session without contacting the OIDC server. The client-side NextAuth session
 provider and logout action are also disabled. An `API · 인증 Mock` badge is
 shown in the application header so the active mode is visible.
@@ -116,10 +140,8 @@ the mode. Mock mode is intended for local UI development only.
 - `/commissions`: create election commissions and register members
 - `/field-sessions`: create and operate onsite or visit voting sessions
 
-The current server exposes write APIs but no list APIs for commissions and
-field voting sessions. In live mode, those pages show only records created in
-the current browser session and explain the limitation. Mock mode provides
-complete in-memory lists. Ballot casting is intentionally excluded from this
+The current server exposes list APIs for commissions, electoral rolls, and
+field voting sessions. Ballot casting is intentionally excluded from this
 administrator UI and belongs to the separate voter-facing application.
 
 ## Run Tests

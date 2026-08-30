@@ -6,6 +6,7 @@ import { EntityRelationReference } from '../../../../../platform/database/mapper
 export type ElectionCommissionMemberPersistence = {
   readonly id: string;
   readonly commission: EntityRelationReference;
+  readonly userPrincipalId: string | null;
   readonly name: string;
   readonly role: ElectionCommissionMemberRole;
   readonly status: ElectionCommissionMemberStatus;
@@ -19,6 +20,7 @@ export class ElectionCommissionMemberMapper {
     return ElectionCommissionMemberAggregate.reconstitute({
       id: entity.id,
       commissionId: entity.commission.id,
+      userPrincipalId: entity.userPrincipalId ?? undefined,
       name: entity.name,
       role: entity.role,
       status: entity.status,

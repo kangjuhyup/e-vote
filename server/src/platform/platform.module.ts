@@ -6,6 +6,7 @@ import {
 import { LoggingModule } from './logging/logging.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './storage/storage.module';
+import { AuthenticationModule } from './authentication/authentication.module';
 
 @Module({})
 export class PlatformModule {
@@ -13,12 +14,19 @@ export class PlatformModule {
     return {
       module: PlatformModule,
       imports: [
+        AuthenticationModule,
         DatabaseModule.register(options),
         LoggingModule,
         RedisModule,
         StorageModule,
       ],
-      exports: [DatabaseModule, LoggingModule, RedisModule, StorageModule],
+      exports: [
+        AuthenticationModule,
+        DatabaseModule,
+        LoggingModule,
+        RedisModule,
+        StorageModule,
+      ],
     };
   }
 }

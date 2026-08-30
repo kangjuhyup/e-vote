@@ -1,4 +1,4 @@
-import NextAuth, { type NextAuthConfig } from "next-auth";
+import NextAuth, { type NextAuthConfig } from 'next-auth';
 
 import {
   E_VOTE_CLIENT_ID,
@@ -6,7 +6,8 @@ import {
   type EVoteOidcProfile,
   getTenantOidcIssuer,
   mapEVoteProfileToUser,
-} from "@/shared/auth/oidc";
+} from '@/shared/auth/oidc';
+import { persistVoteAccessToken } from '@/shared/auth/vote-session-token';
 
 const eVoteClientSecret =
   process.env.AUTH_E_VOTE_SECRET ?? process.env.AUTH_E_VOTE_CLIENT_SECRET;
@@ -15,22 +16,22 @@ export const authConfig = {
   providers: [
     {
       id: E_VOTE_PROVIDER_ID,
-      name: "E-Vote",
-      type: "oidc",
+      name: 'E-Vote',
+      type: 'oidc',
       issuer: getTenantOidcIssuer(),
       idToken: false,
       clientId: E_VOTE_CLIENT_ID,
       ...(eVoteClientSecret ? { clientSecret: eVoteClientSecret } : {}),
       authorization: {
         params: {
-          scope: "openid profile email",
+          scope: 'openid profile email',
         },
       },
-      checks: ["pkce", "state", "nonce"],
+      checks: ['pkce', 'state', 'nonce'],
       client: {
         token_endpoint_auth_method: eVoteClientSecret
-          ? "client_secret_basic"
-          : "none",
+          ? 'client_secret_basic'
+          : 'none',
       },
       profile(profile: EVoteOidcProfile) {
         return mapEVoteProfileToUser(profile);
@@ -38,7 +39,12 @@ export const authConfig = {
     },
   ],
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
+  },
+  callbacks: {
+    jwt({ token, account }) {
+      return persistVoteAccessToken(token, account);
+    },
   },
 } satisfies NextAuthConfig;
 

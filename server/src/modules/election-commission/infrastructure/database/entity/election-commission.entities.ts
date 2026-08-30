@@ -42,6 +42,12 @@ export function createElectionCommissionEntities(
   const ElectionCommissionMemberSchema = defineEntity({
     name: 'ElectionCommissionMemberEntity',
     tableName: 'election_commission_members',
+    uniques: [
+      {
+        name: 'election_commission_members_commission_user_unique',
+        properties: ['commission', 'userPrincipalId'],
+      },
+    ],
     properties: {
       id: p.uuid().primary(),
       commission: () =>
@@ -50,6 +56,7 @@ export function createElectionCommissionEntities(
           .fieldName('commission_id')
           .inversedBy('members')
           .deleteRule('cascade'),
+      userPrincipalId: p.string().fieldName('user_principal_id').nullable(),
       name: p.string(),
       role: p.string().$type<ElectionCommissionMemberRole>(),
       status: p.string().$type<ElectionCommissionMemberStatus>(),

@@ -72,6 +72,7 @@ export class ElectionCommissionMemberRepositoryAdapter implements ElectionCommis
           ElectionCommissionEntity,
           member.commissionId,
         ),
+        userPrincipalId: member.userPrincipalId ?? null,
         name: member.name,
         role: member.role,
         status: member.status,

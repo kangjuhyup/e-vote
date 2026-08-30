@@ -13,18 +13,15 @@ import {
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AddElectoralRollMemberCommand } from '../../application/command/dto/request/add-electoral-roll-member.command';
 import { CreateElectoralRollCommand } from '../../application/command/dto/request/create-electoral-roll.command';
-import { CreateElectoralRollSnapshotCommand } from '../../application/command/dto/request/create-electoral-roll-snapshot.command';
 import { RemoveElectoralRollMemberCommand } from '../../application/command/dto/request/remove-electoral-roll-member.command';
 import { UpdateElectoralRollMemberCommand } from '../../application/command/dto/request/update-electoral-roll-member.command';
 import { AddElectoralRollMemberHandler } from '../../application/command/handler/add-electoral-roll-member.handler';
 import { CreateElectoralRollHandler } from '../../application/command/handler/create-electoral-roll.handler';
-import { CreateElectoralRollSnapshotHandler } from '../../application/command/handler/create-electoral-roll-snapshot.handler';
 import { RemoveElectoralRollMemberHandler } from '../../application/command/handler/remove-electoral-roll-member.handler';
 import { UpdateElectoralRollMemberHandler } from '../../application/command/handler/update-electoral-roll-member.handler';
 import { throwMappedElectoralRollError } from './electoral-roll-error.mapper';
 import { CreateElectoralRollBody } from './dto/create-electoral-roll-request.dto';
 import { CreateElectoralRollResponse } from './dto/create-electoral-roll-response.dto';
-import { CreateElectoralRollSnapshotResponse } from './dto/create-electoral-roll-snapshot-response.dto';
 import {
   AddElectoralRollMemberBody,
   ElectoralRollMemberParam,
@@ -44,7 +41,6 @@ export class ElectoralRollController {
     private readonly addMemberHandler: AddElectoralRollMemberHandler,
     private readonly updateMemberHandler: UpdateElectoralRollMemberHandler,
     private readonly removeMemberHandler: RemoveElectoralRollMemberHandler,
-    private readonly createSnapshotHandler: CreateElectoralRollSnapshotHandler,
   ) {}
 
   @Post()
@@ -121,26 +117,6 @@ export class ElectoralRollController {
           RemoveElectoralRollMemberCommand.of({
             ...params,
             changedAt: new Date(),
-          }),
-        ),
-      );
-    } catch (error) {
-      throwMappedElectoralRollError(error);
-    }
-  }
-
-  @Post(':electoralRollId/snapshots')
-  @ApiCreatedResponse({ type: CreateElectoralRollSnapshotResponse })
-  async createSnapshot(
-    @User() user: UserPrincipal,
-    @Param() params: ElectoralRollParam,
-  ): Promise<CreateElectoralRollSnapshotResponse> {
-    try {
-      return CreateElectoralRollSnapshotResponse.of(
-        await this.createSnapshotHandler.execute(
-          CreateElectoralRollSnapshotCommand.of({
-            ...params,
-            createdAt: new Date(),
           }),
         ),
       );

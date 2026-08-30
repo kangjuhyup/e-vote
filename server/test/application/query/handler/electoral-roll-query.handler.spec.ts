@@ -1,7 +1,12 @@
 import type { ElectoralRollReadRepositoryPort } from '../../../../src/modules/electoral-roll/application/port/persistence/query/electoral-roll-read-repository.port';
 import { GetElectoralRollQuery } from '../../../../src/modules/electoral-roll/application/query/dto/request/get-electoral-roll.query';
+import { GetElectoralRollPageQuery } from '../../../../src/modules/electoral-roll/application/query/dto/request/get-electoral-roll-page.query';
 import { GetElectoralRollHandler } from '../../../../src/modules/electoral-roll/application/query/handler/get-electoral-roll.handler';
-import { ElectoralRollView } from '../../../../src/modules/electoral-roll/application/query/dto/response/electoral-roll.view';
+import { GetElectoralRollPageHandler } from '../../../../src/modules/electoral-roll/application/query/handler/get-electoral-roll-page.handler';
+import {
+  ElectoralRollPageView,
+  ElectoralRollView,
+} from '../../../../src/modules/electoral-roll/application/query/dto/response/electoral-roll.view';
 
 describe('GetElectoralRollHandler', () => {
   it('returns the dedicated electoral roll read model', async () => {
@@ -35,5 +40,40 @@ describe('GetElectoralRollHandler', () => {
         GetElectoralRollQuery.of({ electoralRollId: 'missing' }),
       ),
     ).rejects.toThrow('electoral roll not found');
+  });
+});
+
+describe('GetElectoralRollPageHandler', () => {
+  it('normalizes filters and delegates an authorized page request', async () => {
+    const page = ElectoralRollPageView.of({
+      items: [],
+      page: 1,
+      pageSize: 100,
+      totalItems: 0,
+      totalPages: 0,
+    });
+    const findPage = jest.fn().mockResolvedValue(page);
+    const repository: ElectoralRollReadRepositoryPort = {
+      findDetailById: jest.fn(),
+      findPage,
+    };
+    const query = GetElectoralRollPageQuery.of({
+      userPrincipalId: 'user-1',
+      commissionId: '  commission-1  ',
+      query: '  상반기  ',
+      page: 0,
+      pageSize: 101,
+    });
+
+    await expect(
+      new GetElectoralRollPageHandler(repository).execute(query),
+    ).resolves.toBe(page);
+    expect(findPage).toHaveBeenCalledWith({
+      userPrincipalId: 'user-1',
+      commissionId: 'commission-1',
+      query: '상반기',
+      page: 1,
+      pageSize: 100,
+    });
   });
 });

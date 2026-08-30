@@ -69,3 +69,60 @@ export class ElectoralRollView {
     );
   }
 }
+
+type ElectoralRollPageItemViewProps = {
+  readonly id: string;
+  readonly commissionId: string;
+  readonly name: string;
+  readonly revision: number;
+  readonly memberCount: number;
+  readonly updatedAt: Date;
+};
+
+export class ElectoralRollPageItemView {
+  private constructor(
+    readonly id: string,
+    readonly commissionId: string,
+    readonly name: string,
+    readonly revision: number,
+    readonly memberCount: number,
+    readonly updatedAt: Date,
+  ) {}
+
+  static of(params: ElectoralRollPageItemViewProps): ElectoralRollPageItemView {
+    return new ElectoralRollPageItemView(
+      params.id,
+      params.commissionId,
+      params.name,
+      params.revision,
+      params.memberCount,
+      params.updatedAt,
+    );
+  }
+}
+
+export class ElectoralRollPageView {
+  private constructor(
+    readonly items: readonly ElectoralRollPageItemView[],
+    readonly page: number,
+    readonly pageSize: number,
+    readonly totalItems: number,
+    readonly totalPages: number,
+  ) {}
+
+  static of(params: {
+    readonly items: readonly ElectoralRollPageItemView[];
+    readonly page: number;
+    readonly pageSize: number;
+    readonly totalItems: number;
+    readonly totalPages: number;
+  }): ElectoralRollPageView {
+    return new ElectoralRollPageView(
+      params.items,
+      params.page,
+      params.pageSize,
+      params.totalItems,
+      params.totalPages,
+    );
+  }
+}

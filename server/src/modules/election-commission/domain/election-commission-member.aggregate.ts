@@ -8,17 +8,24 @@ import {
 import { ElectionCommissionMemberRole } from './type/election-commission-member-role.type';
 import { ElectionCommissionMemberStatus } from './type/election-commission-member-status.type';
 
-interface CreateElectionCommissionMemberParams {
+interface ElectionCommissionMemberParams {
   readonly id: string;
   readonly commissionId: string;
+  readonly userPrincipalId?: string;
   readonly name: string;
   readonly role: ElectionCommissionMemberRole;
   readonly registeredAt: Date;
   readonly status?: ElectionCommissionMemberStatus;
 }
 
+type CreateElectionCommissionMemberParams = ElectionCommissionMemberParams & {
+  readonly userPrincipalId: string;
+};
+
 type ReconstituteElectionCommissionMemberParams =
-  Required<CreateElectionCommissionMemberParams>;
+  ElectionCommissionMemberParams & {
+    readonly status: ElectionCommissionMemberStatus;
+  };
 
 export class ElectionCommissionMemberAggregate {
   private readonly events: ElectionCommissionDomainEvent[] = [];
@@ -26,6 +33,7 @@ export class ElectionCommissionMemberAggregate {
   private constructor(
     readonly id: string,
     readonly commissionId: string,
+    readonly userPrincipalId: string | undefined,
     readonly name: string,
     readonly role: ElectionCommissionMemberRole,
     public status: ElectionCommissionMemberStatus,
@@ -34,6 +42,13 @@ export class ElectionCommissionMemberAggregate {
   static create(
     params: CreateElectionCommissionMemberParams,
   ): ElectionCommissionMemberAggregate {
+    if (
+      typeof params.userPrincipalId !== 'string' ||
+      params.userPrincipalId.trim().length === 0
+    ) {
+      throw new DomainError('user principal id must not be empty');
+    }
+
     const member = ElectionCommissionMemberAggregate.build(params);
 
     member.events.push(
@@ -82,11 +97,16 @@ export class ElectionCommissionMemberAggregate {
   }
 
   private static build(
-    params: CreateElectionCommissionMemberParams,
+    params: ElectionCommissionMemberParams,
   ): ElectionCommissionMemberAggregate {
     const id = createId(params.id);
     const commissionId = createId(params.commissionId);
+    const userPrincipalId = params.userPrincipalId?.trim();
     const name = params.name.trim();
+
+    if (params.userPrincipalId !== undefined && !userPrincipalId) {
+      throw new DomainError('user principal id must not be empty');
+    }
 
     if (name.length === 0) {
       throw new DomainError(
@@ -97,6 +117,7 @@ export class ElectionCommissionMemberAggregate {
     return new ElectionCommissionMemberAggregate(
       id,
       commissionId,
+      userPrincipalId,
       name,
       params.role,
       params.status ?? ElectionCommissionMemberStatus.Active,

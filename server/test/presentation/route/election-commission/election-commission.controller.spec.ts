@@ -70,6 +70,7 @@ describe('ElectionCommissionController', () => {
       TEST_USER_PRINCIPAL,
       { commissionId: 'commission-1' },
       {
+        userPrincipalId: 'user-1',
         name: 'Kim Manager',
         role: 'FIELD_MANAGER',
       },
@@ -83,6 +84,7 @@ describe('ElectionCommissionController', () => {
     expect(registerMemberExecute).toHaveBeenCalledTimes(1);
     expect(registerMemberExecute.mock.calls[0][0]).toMatchObject({
       commissionId: 'commission-1',
+      userPrincipalId: 'user-1',
       name: 'Kim Manager',
       role: 'FIELD_MANAGER',
     });

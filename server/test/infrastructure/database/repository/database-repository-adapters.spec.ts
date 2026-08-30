@@ -5,6 +5,8 @@ import { VoteRepositoryAdapter } from '../../../../src/modules/vote/infrastructu
 import { VoteDetailRepositoryAdapter } from '../../../../src/modules/vote/infrastructure/database/repository/command/vote-detail-repository.adapter';
 import { ElectorRepositoryAdapter } from '../../../../src/modules/elector/infrastructure/database/repository/command/elector-repository.adapter';
 import { ElectionCommissionMemberRepositoryAdapter } from '../../../../src/modules/election-commission/infrastructure/database/repository/command/election-commission-member-repository.adapter';
+import { ElectionCommissionMemberAggregate } from '../../../../src/modules/election-commission/domain/election-commission-member.aggregate';
+import { ElectionCommissionMemberRole } from '../../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
 import { FieldVotingSessionRepositoryAdapter } from '../../../../src/modules/field-voting/infrastructure/database/repository/command/field-voting-session-repository.adapter';
 import { CandidateRepositoryAdapter } from '../../../../src/modules/vote/infrastructure/database/repository/command/candidate-repository.adapter';
 import { ParticipationAggregate } from '../../../../src/modules/participation/domain/participation.aggregate';
@@ -54,6 +56,26 @@ type MockEntityManager = {
 };
 
 describe('database repository adapters', () => {
+  it('persists the user principal binding for a commission member', async () => {
+    const em = createMockEntityManager();
+    const member = ElectionCommissionMemberAggregate.create({
+      id: 'member-1',
+      commissionId: 'commission-1',
+      userPrincipalId: 'user-1',
+      name: 'Kim Manager',
+      role: ElectionCommissionMemberRole.FieldManager,
+      registeredAt: new Date('2026-08-30T00:00:00.000Z'),
+    });
+
+    await new ElectionCommissionMemberRepositoryAdapter(em as any).save(member);
+
+    expect(createdData(em, 0)).toMatchObject({
+      userPrincipalId: 'user-1',
+      commission: { id: 'commission-1' },
+      status: 'ACTIVE',
+    });
+  });
+
   it('uses explicit joined relation loading for aggregate reconstitution', async () => {
     const em = createMockEntityManager();
 

@@ -59,6 +59,7 @@ describe('election commission domain', () => {
     const member = ElectionCommissionMemberAggregate.create({
       id: 'member-1',
       commissionId: 'commission-1',
+      userPrincipalId: 'user-1',
       name: 'Kim Manager',
       role: ElectionCommissionMemberRole.FieldManager,
       registeredAt: new Date('2026-08-13T00:00:00.000Z'),
@@ -67,6 +68,7 @@ describe('election commission domain', () => {
     expect(member).toMatchObject({
       id: 'member-1',
       commissionId: 'commission-1',
+      userPrincipalId: 'user-1',
       name: 'Kim Manager',
       role: ElectionCommissionMemberRole.FieldManager,
       status: ElectionCommissionMemberStatus.Active,
@@ -80,5 +82,18 @@ describe('election commission domain', () => {
 
   it('exposes voting channel runtime constants', () => {
     expect(Object.values(VotingChannel)).toEqual(['ONLINE', 'ONSITE', 'VISIT']);
+  });
+
+  it('rejects a blank user principal binding for a new member', () => {
+    expect(() =>
+      ElectionCommissionMemberAggregate.create({
+        id: 'member-2',
+        commissionId: 'commission-1',
+        userPrincipalId: '   ',
+        name: 'Kim Manager',
+        role: ElectionCommissionMemberRole.FieldManager,
+        registeredAt: new Date('2026-08-13T00:00:00.000Z'),
+      }),
+    ).toThrow('user principal id must not be empty');
   });
 });

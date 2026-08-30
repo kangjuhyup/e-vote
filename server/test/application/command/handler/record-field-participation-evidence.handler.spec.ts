@@ -37,6 +37,7 @@ function createManagerFixture(): ElectionCommissionMemberAggregate {
   return ElectionCommissionMemberAggregate.create({
     id: 'member-1',
     commissionId: 'commission-1',
+    userPrincipalId: 'user-1',
     name: 'Kim Manager',
     role: ElectionCommissionMemberRole.FieldManager,
     registeredAt: new Date('2026-08-13T00:00:00.000Z'),

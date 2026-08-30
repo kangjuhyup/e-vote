@@ -10,6 +10,10 @@ import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/shared/presentation/common/filter/http-exception.filter';
 import { ResponseInterceptor } from '../src/shared/presentation/common/interceptor/response.interceptor';
+import { Public } from '../src/shared/presentation/common/decorator/public.decorator';
+import { User } from '../src/shared/presentation/common/decorator/user.decorator';
+import { UserPrincipal } from '../src/shared/application/security/user-principal';
+import { ACCESS_TOKEN_VERIFIER_PORT } from '../src/shared/application/port/security/access-token-verifier.port';
 
 type HttpTestResponse = {
   readonly body: unknown;
@@ -27,6 +31,7 @@ function expectBodyWithTimestamp(
 }
 
 @Controller()
+@Public()
 class TestErrorController {
   @Get('error/http')
   getHttpError(): never {
@@ -39,14 +44,33 @@ class TestErrorController {
   }
 }
 
+@Controller()
+class TestAuthenticatedController {
+  @Get('authenticated-user')
+  getAuthenticatedUser(@User() user: UserPrincipal): { id: string } {
+    return { id: user.id };
+  }
+}
+
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-      controllers: [TestErrorController],
-    }).compile();
+      controllers: [TestErrorController, TestAuthenticatedController],
+    })
+      .overrideProvider(ACCESS_TOKEN_VERIFIER_PORT)
+      .useValue({
+        verify: (accessToken: string): Promise<UserPrincipal> => {
+          if (accessToken !== 'valid-test-token') {
+            return Promise.reject(new Error('invalid token'));
+          }
+
+          return Promise.resolve(UserPrincipal.of({ id: 'verified-user-1' }));
+        },
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalInterceptors(new ResponseInterceptor());
@@ -117,6 +141,37 @@ describe('AppController (e2e)', () => {
         path: '/readiness',
       },
       requestId: 'request-readiness',
+    });
+  });
+
+  it('/votes (GET) requires a verified bearer access token', async () => {
+    const response = (await request(app.getHttpServer())
+      .get('/votes')
+      .set('x-request-id', 'request-protected')
+      .expect(401)) as HttpTestResponse;
+
+    expectBodyWithTimestamp(response.body, {
+      success: false,
+      error: {
+        statusCode: 401,
+        message: 'bearer access token is required',
+        path: '/votes',
+      },
+      requestId: 'request-protected',
+    });
+  });
+
+  it('creates request.user from a verified bearer access token', async () => {
+    const response = (await request(app.getHttpServer())
+      .get('/authenticated-user')
+      .set('authorization', 'Bearer valid-test-token')
+      .set('x-request-id', 'request-authenticated')
+      .expect(200)) as HttpTestResponse;
+
+    expectBodyWithTimestamp(response.body, {
+      success: true,
+      data: { id: 'verified-user-1' },
+      requestId: 'request-authenticated',
     });
   });
 

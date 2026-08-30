@@ -24,6 +24,12 @@ export function createElectoralRollEntities(
       revision: p.integer().default(1),
       createdAt: p.datetime().fieldName('created_at'),
       updatedAt: p.datetime().fieldName('updated_at'),
+      memberCount: p
+        .integer()
+        .formula(
+          (columns) =>
+            `(select count(*) from electoral_roll_members member where member.electoral_roll_id = ${columns.id})`,
+        ),
       members: () =>
         p
           .oneToMany(getEntity(context, 'ElectoralRollMemberEntity'))

@@ -1,9 +1,12 @@
 import { AddElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/add-electoral-roll-member.command';
 import { AttachElectoralRollSnapshotCommand } from '../../../../src/modules/vote/application/command/dto/request/attach-electoral-roll-snapshot.command';
-import { CreateElectoralRollSnapshotCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/create-electoral-roll-snapshot.command';
+import { RemoveElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/remove-electoral-roll-member.command';
+import { UpdateElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/update-electoral-roll-member.command';
+import { ElectoralRollSnapshotCreator } from '../../../../src/modules/electoral-roll/application/command/electoral-roll-snapshot.creator';
 import { AddElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
 import { AttachElectoralRollSnapshotHandler } from '../../../../src/modules/vote/application/command/handler/attach-electoral-roll-snapshot.handler';
-import { CreateElectoralRollSnapshotHandler } from '../../../../src/modules/electoral-roll/application/command/handler/create-electoral-roll-snapshot.handler';
+import { RemoveElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/remove-electoral-roll-member.handler';
+import { UpdateElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/update-electoral-roll-member.handler';
 import type { ElectoralRollRepositoryPort } from '../../../../src/modules/electoral-roll/application/port/persistence/command/electoral-roll-repository.port';
 import type { ElectoralRollSnapshotRepositoryPort } from '../../../../src/modules/electoral-roll/application/port/persistence/command/electoral-roll-snapshot-repository.port';
 import type { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
@@ -25,13 +28,15 @@ import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.
 describe('electoral roll command handlers', () => {
   const now = new Date('2026-08-30T00:00:00.000Z');
 
-  it('adds a member and increments the source revision transactionally', async () => {
+  it('adds a member and snapshots the new source revision transactionally', async () => {
     const roll = createRoll();
     const rollRepository = createRollRepository(roll, []);
+    const snapshotRepository = createSnapshotRepository();
     const transactionManager = immediateTransactionManager();
 
     const result = await new AddElectoralRollMemberHandler(
       rollRepository,
+      new ElectoralRollSnapshotCreator(rollRepository, snapshotRepository),
       transactionManager,
     ).execute(
       AddElectoralRollMemberCommand.of({
@@ -46,12 +51,24 @@ describe('electoral roll command handlers', () => {
     expect(result).toMatchObject({ identifier: 'member-1', revision: 2 });
     expect(rollRepository.saveMember.mock.calls).toHaveLength(1);
     expect(rollRepository.save.mock.calls).toEqual([[roll]]);
+    expect(snapshotRepository.save.mock.calls[0]?.[0]).toMatchObject({
+      electoralRollId: roll.id,
+      sourceRevision: 2,
+      memberCount: 1,
+      members: [
+        {
+          identifier: 'member-1',
+          groupKey: 'group-1',
+          voteWeight: 2,
+        },
+      ],
+    });
     expect(transactionManager.runInTransaction.mock.calls[0]?.[1]).toEqual({
       isolationLevel: 'serializable',
     });
   });
 
-  it('creates one immutable snapshot per source revision', async () => {
+  it('snapshots updated member values for the new source revision', async () => {
     const roll = createRoll();
     const sourceMember = ElectoralRollMemberAggregate.create({
       id: 'member-1',
@@ -61,41 +78,101 @@ describe('electoral roll command handlers', () => {
       createdAt: now,
     });
     const rollRepository = createRollRepository(roll, [sourceMember]);
-    let savedSnapshot: ElectoralRollSnapshotAggregate | undefined;
     const snapshotRepository = createSnapshotRepository();
-    snapshotRepository.findBySourceRevision.mockImplementation(() =>
-      Promise.resolve(savedSnapshot),
-    );
-    snapshotRepository.save.mockImplementation((snapshot) => {
-      savedSnapshot = snapshot;
-      return Promise.resolve();
-    });
-    const handler = new CreateElectoralRollSnapshotHandler(
+    const result = await new UpdateElectoralRollMemberHandler(
       rollRepository,
-      snapshotRepository,
+      new ElectoralRollSnapshotCreator(rollRepository, snapshotRepository),
       immediateTransactionManager(),
-    );
-
-    const first = await handler.execute(
-      CreateElectoralRollSnapshotCommand.of({
+    ).execute(
+      UpdateElectoralRollMemberCommand.of({
         electoralRollId: roll.id,
-        createdAt: now,
+        memberId: sourceMember.id,
+        identifier: 'updated-member',
+        groupKey: 'updated-group',
+        voteWeight: 3,
+        changedAt: now,
       }),
     );
+
+    expect(result).toMatchObject({
+      identifier: 'updated-member',
+      revision: 2,
+    });
+    expect(snapshotRepository.save.mock.calls[0]?.[0]).toMatchObject({
+      sourceRevision: 2,
+      members: [
+        {
+          identifier: 'updated-member',
+          groupKey: 'updated-group',
+          voteWeight: 3,
+        },
+      ],
+    });
+  });
+
+  it('snapshots the remaining members after a member is removed', async () => {
+    const roll = createRoll();
+    const sourceMember = ElectoralRollMemberAggregate.create({
+      id: 'member-1',
+      electoralRollId: roll.id,
+      identifier: 'member-1',
+      createdAt: now,
+    });
+    const rollRepository = createRollRepository(roll, [sourceMember]);
+    const snapshotRepository = createSnapshotRepository();
+
+    const result = await new RemoveElectoralRollMemberHandler(
+      rollRepository,
+      new ElectoralRollSnapshotCreator(rollRepository, snapshotRepository),
+      immediateTransactionManager(),
+    ).execute(
+      RemoveElectoralRollMemberCommand.of({
+        electoralRollId: roll.id,
+        memberId: sourceMember.id,
+        changedAt: now,
+      }),
+    );
+
+    expect(result).toMatchObject({
+      memberId: sourceMember.id,
+      revision: 2,
+    });
+    expect(snapshotRepository.save.mock.calls[0]?.[0]).toMatchObject({
+      sourceRevision: 2,
+      memberCount: 0,
+      members: [],
+    });
+  });
+
+  it('creates at most one immutable snapshot per source revision', async () => {
+    const roll = createRoll();
+    const sourceMember = ElectoralRollMemberAggregate.create({
+      id: 'member-1',
+      electoralRollId: roll.id,
+      identifier: 'member-1',
+      voteWeight: 2,
+      createdAt: now,
+    });
+    const rollRepository = createRollRepository(roll, [sourceMember]);
+    const snapshotRepository = createSnapshotRepository();
+    const creator = new ElectoralRollSnapshotCreator(
+      rollRepository,
+      snapshotRepository,
+    );
+
+    const first = await creator.createForCurrentRevision(roll, now);
     sourceMember.update(
       { identifier: 'changed-after-snapshot', voteWeight: 3 },
       new Date('2026-08-30T01:00:00.000Z'),
     );
-    const second = await handler.execute(
-      CreateElectoralRollSnapshotCommand.of({
-        electoralRollId: roll.id,
-        createdAt: new Date('2026-08-30T02:00:00.000Z'),
-      }),
+    const second = await creator.createForCurrentRevision(
+      roll,
+      new Date('2026-08-30T02:00:00.000Z'),
     );
 
     expect(second.id).toBe(first.id);
     expect(snapshotRepository.save.mock.calls).toHaveLength(1);
-    expect(savedSnapshot?.members[0]).toMatchObject({
+    expect(first.members[0]).toMatchObject({
       identifier: 'member-1',
       voteWeight: 2,
     });
@@ -166,15 +243,40 @@ function createRollRepository(
   roll: ElectoralRollAggregate,
   members: readonly ElectoralRollMemberAggregate[],
 ): jest.Mocked<ElectoralRollRepositoryPort> {
+  const storedMembers = [...members];
+
   return {
     nextId: jest.fn().mockReturnValue('roll-2'),
     nextMemberId: jest.fn().mockReturnValue('member-2'),
     findById: jest.fn().mockResolvedValue(roll),
-    findMemberById: jest.fn(),
-    findMembersByRollId: jest.fn().mockResolvedValue(members),
+    findMemberById: jest
+      .fn()
+      .mockImplementation((_rollId: string, memberId: string) =>
+        Promise.resolve(storedMembers.find((member) => member.id === memberId)),
+      ),
+    findMembersByRollId: jest
+      .fn()
+      .mockImplementation(() => Promise.resolve([...storedMembers])),
     save: jest.fn(),
-    saveMember: jest.fn(),
-    removeMember: jest.fn(),
+    saveMember: jest
+      .fn()
+      .mockImplementation((member: ElectoralRollMemberAggregate) => {
+        const existingIndex = storedMembers.findIndex(
+          (storedMember) => storedMember.id === member.id,
+        );
+        if (existingIndex >= 0) storedMembers[existingIndex] = member;
+        else storedMembers.push(member);
+        return Promise.resolve();
+      }),
+    removeMember: jest
+      .fn()
+      .mockImplementation((_rollId: string, memberId: string) => {
+        const existingIndex = storedMembers.findIndex(
+          (member) => member.id === memberId,
+        );
+        if (existingIndex >= 0) storedMembers.splice(existingIndex, 1);
+        return Promise.resolve();
+      }),
   };
 }
 
@@ -182,14 +284,31 @@ function createSnapshotRepository(
   snapshot?: ElectoralRollSnapshotAggregate,
 ): jest.Mocked<ElectoralRollSnapshotRepositoryPort> {
   let memberSequence = 0;
+  const snapshots = snapshot ? [snapshot] : [];
+
   return {
     nextId: jest.fn().mockReturnValue('snapshot-1'),
     nextMemberId: jest
       .fn()
       .mockImplementation(() => `snapshot-member-${++memberSequence}`),
     findById: jest.fn().mockResolvedValue(snapshot),
-    findBySourceRevision: jest.fn().mockResolvedValue(undefined),
-    save: jest.fn(),
+    findBySourceRevision: jest
+      .fn()
+      .mockImplementation((electoralRollId: string, sourceRevision: number) =>
+        Promise.resolve(
+          snapshots.find(
+            (candidate) =>
+              candidate.electoralRollId === electoralRollId &&
+              candidate.sourceRevision === sourceRevision,
+          ),
+        ),
+      ),
+    save: jest
+      .fn()
+      .mockImplementation((savedSnapshot: ElectoralRollSnapshotAggregate) => {
+        snapshots.push(savedSnapshot);
+        return Promise.resolve();
+      }),
     hasVoteElectors: jest.fn().mockResolvedValue(false),
     materializeVoteElectors: jest.fn(),
   };

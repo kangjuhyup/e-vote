@@ -46,6 +46,7 @@ export class RegisterElectionCommissionMemberHandler {
     const member = ElectionCommissionMemberAggregate.create({
       id: this.electionCommissionMemberRepository.nextId(),
       commissionId: command.commissionId,
+      userPrincipalId: command.userPrincipalId,
       name: command.name,
       role: command.role,
       registeredAt: command.registeredAt,

@@ -38,6 +38,7 @@ describe('database mappers', () => {
     const member = ElectionCommissionMemberMapper.toDomain({
       id: 'member-1',
       commission: { id: 'commission-1' },
+      userPrincipalId: 'user-1',
       name: 'Kim Manager',
       role: ElectionCommissionMemberRole.FieldManager,
       status: ElectionCommissionMemberStatus.Active,
@@ -47,6 +48,7 @@ describe('database mappers', () => {
     expect(commission.canRunVote()).toBe(true);
     expect(commission.pullEvents()).toEqual([]);
     expect(member.canManageFieldVoting('commission-1')).toBe(true);
+    expect(member.userPrincipalId).toBe('user-1');
     expect(member.pullEvents()).toEqual([]);
   });
 

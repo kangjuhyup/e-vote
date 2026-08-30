@@ -3,6 +3,70 @@ import { ElectoralRollSnapshotRepositoryAdapter } from '../../../../src/modules/
 import { ElectoralRollReadRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/query/electoral-roll-read-repository.adapter';
 
 describe('electoral roll repository adapters', () => {
+  it('pages only metadata from rolls in actively authorized commissions', async () => {
+    const findAndCount = jest
+      .fn<Promise<[unknown[], number]>, [unknown, unknown, unknown?]>()
+      .mockResolvedValue([
+        [
+          {
+            id: 'roll-1',
+            commission: { id: 'commission-1' },
+            name: '2026 상반기 선거인명부',
+            revision: 2,
+            memberCount: 120,
+            createdAt: new Date('2026-08-30T00:00:00.000Z'),
+            updatedAt: new Date('2026-08-30T10:00:00.000Z'),
+          },
+        ],
+        1,
+      ]);
+    const adapter = new ElectoralRollReadRepositoryAdapter({
+      findAndCount,
+    } as any);
+
+    const result = await adapter.findPage({
+      userPrincipalId: 'user-1',
+      commissionId: 'commission-1',
+      query: '상반기',
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(findAndCount.mock.calls[0]?.[1]).toEqual({
+      commission: {
+        id: 'commission-1',
+        members: {
+          userPrincipalId: 'user-1',
+          status: 'ACTIVE',
+        },
+      },
+      name: { $ilike: '%상반기%' },
+    });
+    expect(findAndCount.mock.calls[0]?.[2]).toMatchObject({
+      populate: ['commission'],
+      limit: 20,
+      offset: 0,
+      orderBy: { updatedAt: 'desc', id: 'desc' },
+    });
+    expect(result).toMatchObject({
+      items: [
+        {
+          id: 'roll-1',
+          name: '2026 상반기 선거인명부',
+          commissionId: 'commission-1',
+          revision: 2,
+          memberCount: 120,
+          updatedAt: new Date('2026-08-30T10:00:00.000Z'),
+        },
+      ],
+      page: 1,
+      pageSize: 20,
+      totalItems: 1,
+      totalPages: 1,
+    });
+    expect(result.items[0]).not.toHaveProperty('members');
+  });
+
   it('maps an electoral roll and its editable members into a read view', async () => {
     const findOne = jest
       .fn<Promise<unknown>, [unknown, unknown, unknown?]>()

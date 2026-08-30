@@ -18,6 +18,7 @@ import {
 } from '../../../../../shared/application/persistence/transaction/transactional.decorator';
 import { toMemberResult } from './add-electoral-roll-member.handler';
 import { ManageElectoralRollMemberResult } from '../dto/response/manage-electoral-roll-member-result.dto';
+import { ElectoralRollSnapshotCreator } from '../electoral-roll-snapshot.creator';
 
 @Injectable()
 export class UpdateElectoralRollMemberHandler {
@@ -26,6 +27,7 @@ export class UpdateElectoralRollMemberHandler {
   constructor(
     @Inject(ELECTORAL_ROLL_REPOSITORY_PORT)
     private readonly electoralRollRepository: ElectoralRollRepositoryPort,
+    private readonly snapshotCreator: ElectoralRollSnapshotCreator,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
   ) {
@@ -59,6 +61,10 @@ export class UpdateElectoralRollMemberHandler {
 
     await this.electoralRollRepository.saveMember(member);
     await this.electoralRollRepository.save(electoralRoll);
+    await this.snapshotCreator.createForCurrentRevision(
+      electoralRoll,
+      command.changedAt,
+    );
 
     return toMemberResult(member, electoralRoll.revision);
   }

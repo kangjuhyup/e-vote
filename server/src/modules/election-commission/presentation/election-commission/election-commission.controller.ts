@@ -81,6 +81,7 @@ export class ElectionCommissionController {
     const result = await this.registerElectionCommissionMemberHandler.execute(
       RegisterElectionCommissionMemberCommand.of({
         commissionId: params.commissionId,
+        userPrincipalId: body.userPrincipalId,
         name: body.name,
         role: body.role,
         registeredAt: new Date(),

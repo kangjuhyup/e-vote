@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
-import type { ElectoralRollReadRepositoryPort } from '../../../../application/port/persistence/query/electoral-roll-read-repository.port';
+import type {
+  ElectoralRollPageRequest,
+  ElectoralRollReadRepositoryPort,
+} from '../../../../application/port/persistence/query/electoral-roll-read-repository.port';
 import {
   ElectoralRollMemberView,
+  ElectoralRollPageItemView,
+  ElectoralRollPageView,
   ElectoralRollView,
 } from '../../../../application/query/dto/response/electoral-roll.view';
 import {
@@ -26,6 +31,7 @@ type ElectoralRollReadPersistence = {
   readonly commission: { readonly id: string };
   readonly name: string;
   readonly revision: number;
+  readonly memberCount: number | string;
   readonly members: LoadedCollectionLike<ElectoralRollMemberReadPersistence>;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -74,6 +80,55 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
         ),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+    });
+  }
+
+  async findPage(
+    request: ElectoralRollPageRequest,
+  ): Promise<ElectoralRollPageView> {
+    const { ElectoralRollEntity } = await getDatabaseEntities();
+    const commissionFilter: Record<string, unknown> = {
+      members: {
+        userPrincipalId: request.userPrincipalId,
+        status: 'ACTIVE',
+      },
+    };
+    if (request.commissionId !== undefined) {
+      commissionFilter.id = request.commissionId;
+    }
+
+    const where: Record<string, unknown> = { commission: commissionFilter };
+    if (request.query !== undefined) {
+      where.name = { $ilike: `%${request.query}%` };
+    }
+
+    const [entities, totalItems] = (await this.em.findAndCount(
+      ElectoralRollEntity as any,
+      where,
+      {
+        populate: ['commission'],
+        limit: request.pageSize,
+        offset: (request.page - 1) * request.pageSize,
+        orderBy: { updatedAt: 'desc', id: 'desc' },
+        ...JOINED_RELATION_LOAD_OPTIONS,
+      } as any,
+    )) as unknown as [ElectoralRollReadPersistence[], number];
+
+    return ElectoralRollPageView.of({
+      items: entities.map((entity) =>
+        ElectoralRollPageItemView.of({
+          id: entity.id,
+          commissionId: entity.commission.id,
+          name: entity.name,
+          revision: entity.revision,
+          memberCount: Number(entity.memberCount),
+          updatedAt: entity.updatedAt,
+        }),
+      ),
+      page: request.page,
+      pageSize: request.pageSize,
+      totalItems,
+      totalPages: Math.ceil(totalItems / request.pageSize),
     });
   }
 }
