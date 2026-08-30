@@ -16,8 +16,8 @@ import {
   FieldVotingSessionReadNotFoundError,
   GetFieldVotingSessionHandler,
 } from '../../../application/query/handler/get-field-voting-session.handler';
-import { GetFieldVotingSessionPageQuery as ApplicationPageQuery } from '../../../application/query/get-field-voting-session-page.query';
-import { GetFieldVotingSessionQuery } from '../../../application/query/get-field-voting-session.query';
+import { GetFieldVotingSessionPageQuery as ApplicationPageQuery } from '../../../application/query/dto/request/get-field-voting-session-page.query';
+import { GetFieldVotingSessionQuery } from '../../../application/query/dto/request/get-field-voting-session.query';
 import { GetFieldVotingSessionPageResponse } from './dto/get-field-voting-session-page-response.dto';
 import {
   GetFieldVotingSessionPageParam,

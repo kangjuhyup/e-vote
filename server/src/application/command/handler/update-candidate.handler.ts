@@ -12,7 +12,8 @@ import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
 } from '../../port/persistence/command/vote-repository.port';
-import { UpdateCandidateCommand } from '../update-candidate.command';
+import { UpdateCandidateCommand } from '../dto/request/update-candidate.command';
+import { ManageCandidateResult } from '../dto/response/manage-candidate-result.dto';
 import {
   ManagedResourceNotFoundError,
   ManagedResourceScopeMismatchError,
@@ -28,7 +29,9 @@ export class UpdateCandidateHandler {
     private readonly candidates: CandidateRepositoryPort,
   ) {}
 
-  async execute(command: UpdateCandidateCommand) {
+  async execute(
+    command: UpdateCandidateCommand,
+  ): Promise<ManageCandidateResult> {
     const [vote, detail, candidate] = await Promise.all([
       this.votes.findById(command.voteId),
       this.details.findById(command.voteDetailId),
@@ -45,10 +48,10 @@ export class UpdateCandidateHandler {
     }
     candidate.update(command);
     await this.candidates.save(candidate);
-    return {
+    return ManageCandidateResult.of({
       id: candidate.id,
       voteDetailId: candidate.voteDetailId,
       status: candidate.status,
-    };
+    });
   }
 }

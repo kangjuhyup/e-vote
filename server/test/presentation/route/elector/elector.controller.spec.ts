@@ -1,6 +1,6 @@
-import { AuthenticateElectorCommand } from '../../../../src/application/command/authenticate-elector.command';
+import { AuthenticateElectorCommand } from '../../../../src/application/command/dto/request/authenticate-elector.command';
 import { AuthenticateElectorHandler } from '../../../../src/application/command/handler/authenticate-elector.handler';
-import { CreateElectorCommand } from '../../../../src/application/command/create-elector.command';
+import { CreateElectorCommand } from '../../../../src/application/command/dto/request/create-elector.command';
 import { CreateElectorHandler } from '../../../../src/application/command/handler/create-elector.handler';
 import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
 import { DomainError } from '../../../../src/domain/shared/domain-error';

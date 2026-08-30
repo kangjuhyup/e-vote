@@ -1,7 +1,7 @@
 import type {
   FieldVotingSessionPageView,
   FieldVotingSessionView,
-} from '../../../query/view/field-voting-session.view';
+} from '../../../query/dto/response/field-voting-session.view';
 
 export const FIELD_VOTING_SESSION_READ_REPOSITORY_PORT = Symbol(
   'FIELD_VOTING_SESSION_READ_REPOSITORY_PORT',

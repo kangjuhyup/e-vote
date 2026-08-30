@@ -2,14 +2,14 @@ import { NotFoundException } from '@nestjs/common';
 import {
   ElectorPageView,
   ElectorView,
-} from '../../../../src/application/query/view/elector.view';
+} from '../../../../src/application/query/dto/response/elector.view';
 import {
   ElectorNotFoundError,
   GetElectorHandler,
 } from '../../../../src/application/query/handler/get-elector.handler';
-import { GetElectorQuery } from '../../../../src/application/query/get-elector.query';
+import { GetElectorQuery } from '../../../../src/application/query/dto/request/get-elector.query';
 import { GetElectorPageHandler } from '../../../../src/application/query/handler/get-elector-page.handler';
-import { GetElectorPageQuery } from '../../../../src/application/query/get-elector-page.query';
+import { GetElectorPageQuery } from '../../../../src/application/query/dto/request/get-elector-page.query';
 import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
 import { ElectorReadController } from '../../../../src/presentation/route/elector/elector-read.controller';
 

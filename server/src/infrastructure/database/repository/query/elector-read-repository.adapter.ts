@@ -7,7 +7,7 @@ import type {
 import {
   ElectorPageView,
   ElectorView,
-} from '../../../../application/query/view/elector.view';
+} from '../../../../application/query/dto/response/elector.view';
 import type { ElectorStatus } from '../../../../domain/elector/type/elector-status.type';
 import { ParticipationStatus } from '../../../../domain/participation/type/participation-status.type';
 import { isPersonalDataCiphertext } from '../../../security/personal-data-cipher';

@@ -1,9 +1,9 @@
-import { CastParticipationCommand } from '../../../../src/application/command/cast-participation.command';
+import { CastParticipationCommand } from '../../../../src/application/command/dto/request/cast-participation.command';
 import {
   CandidateNotFoundError,
   CastParticipationHandler,
 } from '../../../../src/application/command/handler/cast-participation.handler';
-import { RecordFieldParticipationEvidenceCommand } from '../../../../src/application/command/record-field-participation-evidence.command';
+import { RecordFieldParticipationEvidenceCommand } from '../../../../src/application/command/dto/request/record-field-participation-evidence.command';
 import { RecordFieldParticipationEvidenceHandler } from '../../../../src/application/command/handler/record-field-participation-evidence.handler';
 import { ParticipationStatus } from '../../../../src/domain/participation/type/participation-status.type';
 import { DomainError } from '../../../../src/domain/shared/domain-error';

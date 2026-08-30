@@ -1,18 +1,18 @@
 import { NotFoundException } from '@nestjs/common';
-import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/confirm-attachment-upload.command';
+import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/dto/request/confirm-attachment-upload.command';
 import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
-import { CreateVoteCommand } from '../../../../src/application/command/create-vote.command';
+import { CreateVoteCommand } from '../../../../src/application/command/dto/request/create-vote.command';
 import { CreateVoteHandler } from '../../../../src/application/command/handler/create-vote.handler';
-import { RequestAttachmentUploadCommand } from '../../../../src/application/command/request-attachment-upload.command';
+import { RequestAttachmentUploadCommand } from '../../../../src/application/command/dto/request/request-attachment-upload.command';
 import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
 import { AttachmentTargetType } from '../../../../src/application/port/persistence/command/attachment-repository.port';
 import { GetVotePageHandler } from '../../../../src/application/query/handler/get-vote-page.handler';
-import { GetVotePageQuery } from '../../../../src/application/query/get-vote-page.query';
+import { GetVotePageQuery } from '../../../../src/application/query/dto/request/get-vote-page.query';
 import {
   GetVoteHandler,
   VoteNotFoundError,
 } from '../../../../src/application/query/handler/get-vote.handler';
-import { GetVoteQuery } from '../../../../src/application/query/get-vote.query';
+import { GetVoteQuery } from '../../../../src/application/query/dto/request/get-vote.query';
 import {
   CandidateView,
   IdentityVerificationPolicyView,
@@ -22,7 +22,7 @@ import {
   VotePolicyView,
   VoteSummaryView,
   VoteView,
-} from '../../../../src/application/query/view/vote.view';
+} from '../../../../src/application/query/dto/response/vote.view';
 import {
   ParticipationUnit,
   PrivacyMode,

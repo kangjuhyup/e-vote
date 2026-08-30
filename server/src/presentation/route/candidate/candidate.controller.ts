@@ -14,15 +14,15 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateCandidateCommand } from '../../../application/command/create-candidate.command';
+import { CreateCandidateCommand } from '../../../application/command/dto/request/create-candidate.command';
 import { CreateCandidateHandler } from '../../../application/command/handler/create-candidate.handler';
 import {
   CreateCandidateBody,
   CreateCandidateParam,
 } from './dto/create-candidate-request.dto';
 import { CreateCandidateResponse } from './dto/create-candidate-response.dto';
-import { UpdateCandidateCommand } from '../../../application/command/update-candidate.command';
-import { WithdrawCandidateCommand } from '../../../application/command/withdraw-candidate.command';
+import { UpdateCandidateCommand } from '../../../application/command/dto/request/update-candidate.command';
+import { WithdrawCandidateCommand } from '../../../application/command/dto/request/withdraw-candidate.command';
 import { UpdateCandidateHandler } from '../../../application/command/handler/update-candidate.handler';
 import { WithdrawCandidateHandler } from '../../../application/command/handler/withdraw-candidate.handler';
 import {

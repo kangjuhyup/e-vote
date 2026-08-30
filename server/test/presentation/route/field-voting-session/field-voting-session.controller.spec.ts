@@ -1,10 +1,10 @@
-import { CancelFieldVotingSessionCommand } from '../../../../src/application/command/cancel-field-voting-session.command';
+import { CancelFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/cancel-field-voting-session.command';
 import { CancelFieldVotingSessionHandler } from '../../../../src/application/command/handler/cancel-field-voting-session.handler';
-import { CloseFieldVotingSessionCommand } from '../../../../src/application/command/close-field-voting-session.command';
+import { CloseFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/close-field-voting-session.command';
 import { CloseFieldVotingSessionHandler } from '../../../../src/application/command/handler/close-field-voting-session.handler';
-import { CreateFieldVotingSessionCommand } from '../../../../src/application/command/create-field-voting-session.command';
+import { CreateFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/create-field-voting-session.command';
 import { CreateFieldVotingSessionHandler } from '../../../../src/application/command/handler/create-field-voting-session.handler';
-import { OpenFieldVotingSessionCommand } from '../../../../src/application/command/open-field-voting-session.command';
+import { OpenFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/open-field-voting-session.command';
 import { OpenFieldVotingSessionHandler } from '../../../../src/application/command/handler/open-field-voting-session.handler';
 import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
 import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';

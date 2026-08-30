@@ -8,7 +8,8 @@ import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
 } from '../../port/persistence/command/vote-repository.port';
-import { UpdateVoteDetailCommand } from '../update-vote-detail.command';
+import { UpdateVoteDetailCommand } from '../dto/request/update-vote-detail.command';
+import { ManageVoteDetailResult } from '../dto/response/manage-vote-detail-result.dto';
 import {
   ManagedResourceNotFoundError,
   ManagedResourceScopeMismatchError,
@@ -22,7 +23,9 @@ export class UpdateVoteDetailHandler {
     private readonly details: VoteDetailRepositoryPort,
   ) {}
 
-  async execute(command: UpdateVoteDetailCommand) {
+  async execute(
+    command: UpdateVoteDetailCommand,
+  ): Promise<ManageVoteDetailResult> {
     const [vote, detail] = await Promise.all([
       this.votes.findById(command.voteId),
       this.details.findById(command.voteDetailId),
@@ -35,6 +38,10 @@ export class UpdateVoteDetailHandler {
       throw new DomainError('only draft vote resources can be updated');
     detail.updateSettings(command);
     await this.details.save(detail);
-    return { id: detail.id, voteId: detail.voteId, status: detail.status };
+    return ManageVoteDetailResult.of({
+      id: detail.id,
+      voteId: detail.voteId,
+      status: detail.status,
+    });
   }
 }

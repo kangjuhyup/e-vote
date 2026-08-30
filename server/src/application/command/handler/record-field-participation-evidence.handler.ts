@@ -10,12 +10,8 @@ import { FILE_REPOSITORY_PORT } from '../../port/persistence/command/file-reposi
 import type { FileRepositoryPort } from '../../port/persistence/command/file-repository.port';
 import { PARTICIPATION_REPOSITORY_PORT } from '../../port/persistence/command/participation-repository.port';
 import type { ParticipationRepositoryPort } from '../../port/persistence/command/participation-repository.port';
-import { RecordFieldParticipationEvidenceCommand } from '../record-field-participation-evidence.command';
-
-export type RecordFieldParticipationEvidenceResult = {
-  id: string;
-  participationId: string;
-};
+import { RecordFieldParticipationEvidenceCommand } from '../dto/request/record-field-participation-evidence.command';
+import { RecordFieldParticipationEvidenceResult } from '../dto/response/record-field-participation-evidence-result.dto';
 
 export class ParticipationNotFoundError extends Error {
   constructor() {
@@ -101,9 +97,9 @@ export class RecordFieldParticipationEvidenceHandler {
 
     await this.fieldParticipationEvidenceRepository.save(evidence);
 
-    return {
+    return RecordFieldParticipationEvidenceResult.of({
       id: evidence.id,
       participationId: evidence.participationId,
-    };
+    });
   }
 }

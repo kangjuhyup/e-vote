@@ -17,7 +17,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { CastParticipationCommand } from '../../../application/command/cast-participation.command';
+import { CastParticipationCommand } from '../../../application/command/dto/request/cast-participation.command';
 import {
   CandidateNotFoundError,
   CastParticipationHandler,
@@ -26,7 +26,7 @@ import {
   VoteDetailNotFoundError,
   VoteNotFoundError,
 } from '../../../application/command/handler/cast-participation.handler';
-import { RecordFieldParticipationEvidenceCommand } from '../../../application/command/record-field-participation-evidence.command';
+import { RecordFieldParticipationEvidenceCommand } from '../../../application/command/dto/request/record-field-participation-evidence.command';
 import { RecordFieldParticipationEvidenceHandler } from '../../../application/command/handler/record-field-participation-evidence.handler';
 import { DomainError } from '../../../domain/shared/domain-error';
 import { CastParticipationBody } from './dto/cast-participation-request.dto';

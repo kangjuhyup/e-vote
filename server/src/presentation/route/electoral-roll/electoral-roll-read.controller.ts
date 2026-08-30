@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { GetElectoralRollQuery } from '../../../application/query/get-electoral-roll.query';
+import { GetElectoralRollQuery } from '../../../application/query/dto/request/get-electoral-roll.query';
 import { GetElectoralRollHandler } from '../../../application/query/handler/get-electoral-roll.handler';
 import { throwMappedElectoralRollError } from './electoral-roll-error.mapper';
 import { GetElectoralRollResponse } from './dto/get-electoral-roll-response.dto';

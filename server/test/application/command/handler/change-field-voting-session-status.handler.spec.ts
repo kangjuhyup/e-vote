@@ -1,8 +1,8 @@
-import { CancelFieldVotingSessionCommand } from '../../../../src/application/command/cancel-field-voting-session.command';
+import { CancelFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/cancel-field-voting-session.command';
 import { CancelFieldVotingSessionHandler } from '../../../../src/application/command/handler/cancel-field-voting-session.handler';
-import { CloseFieldVotingSessionCommand } from '../../../../src/application/command/close-field-voting-session.command';
+import { CloseFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/close-field-voting-session.command';
 import { CloseFieldVotingSessionHandler } from '../../../../src/application/command/handler/close-field-voting-session.handler';
-import { OpenFieldVotingSessionCommand } from '../../../../src/application/command/open-field-voting-session.command';
+import { OpenFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/open-field-voting-session.command';
 import { OpenFieldVotingSessionHandler } from '../../../../src/application/command/handler/open-field-voting-session.handler';
 import { FieldVotingSessionRepositoryPort } from '../../../../src/application/port/persistence/command/field-voting-session-repository.port';
 import { ElectionCommissionAggregate } from '../../../../src/domain/election-commission/election-commission.aggregate';

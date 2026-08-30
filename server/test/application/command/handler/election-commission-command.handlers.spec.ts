@@ -1,6 +1,6 @@
-import { CreateElectionCommissionCommand } from '../../../../src/application/command/create-election-commission.command';
+import { CreateElectionCommissionCommand } from '../../../../src/application/command/dto/request/create-election-commission.command';
 import { CreateElectionCommissionHandler } from '../../../../src/application/command/handler/create-election-commission.handler';
-import { RegisterElectionCommissionMemberCommand } from '../../../../src/application/command/register-election-commission-member.command';
+import { RegisterElectionCommissionMemberCommand } from '../../../../src/application/command/dto/request/register-election-commission-member.command';
 import { RegisterElectionCommissionMemberHandler } from '../../../../src/application/command/handler/register-election-commission-member.handler';
 import { ElectionCommissionRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-repository.port';
 import { ElectionCommissionMemberRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-member-repository.port';

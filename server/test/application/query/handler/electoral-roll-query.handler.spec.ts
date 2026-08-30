@@ -1,7 +1,7 @@
 import type { ElectoralRollReadRepositoryPort } from '../../../../src/application/port/persistence/query/electoral-roll-read-repository.port';
-import { GetElectoralRollQuery } from '../../../../src/application/query/get-electoral-roll.query';
+import { GetElectoralRollQuery } from '../../../../src/application/query/dto/request/get-electoral-roll.query';
 import { GetElectoralRollHandler } from '../../../../src/application/query/handler/get-electoral-roll.handler';
-import { ElectoralRollView } from '../../../../src/application/query/view/electoral-roll.view';
+import { ElectoralRollView } from '../../../../src/application/query/dto/response/electoral-roll.view';
 
 describe('GetElectoralRollHandler', () => {
   it('returns the dedicated electoral roll read model', async () => {

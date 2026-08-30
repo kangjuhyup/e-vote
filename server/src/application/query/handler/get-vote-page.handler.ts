@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { VOTE_READ_REPOSITORY_PORT } from '../../port/persistence/query/vote-read-repository.port';
 import type { VoteReadRepositoryPort } from '../../port/persistence/query/vote-read-repository.port';
-import { GetVotePageQuery } from '../get-vote-page.query';
-import type { VotePageView } from '../view/vote.view';
+import { GetVotePageQuery } from '../dto/request/get-vote-page.query';
+import type { VotePageView } from '../dto/response/vote.view';
 
 @Injectable()
 export class GetVotePageHandler {

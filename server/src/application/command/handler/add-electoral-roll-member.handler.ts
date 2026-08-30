@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ElectoralRollMemberAggregate } from '../../../domain/electoral-roll/electoral-roll-member.aggregate';
-import { AddElectoralRollMemberCommand } from '../add-electoral-roll-member.command';
+import { AddElectoralRollMemberCommand } from '../dto/request/add-electoral-roll-member.command';
+import { ManageElectoralRollMemberResult } from '../dto/response/manage-electoral-roll-member-result.dto';
 import { ElectoralRollNotFoundError } from '../electoral-roll.error';
 import {
   ELECTORAL_ROLL_REPOSITORY_PORT,
@@ -14,15 +15,6 @@ import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
 } from '../../persistence/transaction/transactional.decorator';
-
-export type ManageElectoralRollMemberResult = {
-  readonly id: string;
-  readonly electoralRollId: string;
-  readonly identifier: string;
-  readonly groupKey?: string;
-  readonly voteWeight: number;
-  readonly revision: number;
-};
 
 @Injectable()
 export class AddElectoralRollMemberHandler {
@@ -67,12 +59,12 @@ export function toMemberResult(
   member: ElectoralRollMemberAggregate,
   revision: number,
 ): ManageElectoralRollMemberResult {
-  return {
+  return ManageElectoralRollMemberResult.of({
     id: member.id,
     electoralRollId: member.electoralRollId,
     identifier: member.identifier,
     groupKey: member.groupKey,
     voteWeight: member.voteWeight,
     revision,
-  };
+  });
 }

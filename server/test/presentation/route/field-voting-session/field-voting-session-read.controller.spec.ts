@@ -7,7 +7,7 @@ import {
 import {
   FieldVotingSessionPageView,
   FieldVotingSessionView,
-} from '../../../../src/application/query/view/field-voting-session.view';
+} from '../../../../src/application/query/dto/response/field-voting-session.view';
 import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
 import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
 import { FieldVotingSessionReadController } from '../../../../src/presentation/route/field-voting-session/field-voting-session-read.controller';

@@ -1,16 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ElectorIdentityVerificationEvidence } from '../../../domain/elector/vo/elector-identity-verification.vo';
-import { AuthenticateElectorCommand } from '../authenticate-elector.command';
+import { AuthenticateElectorCommand } from '../dto/request/authenticate-elector.command';
+import { AuthenticateElectorResult } from '../dto/response/authenticate-elector-result.dto';
 import { ELECTOR_IDENTITY_VERIFICATION_PORT } from '../../port/gateway/elector-identity-verification.port';
 import type { ElectorIdentityVerificationPort } from '../../port/gateway/elector-identity-verification.port';
 import { ELECTOR_REPOSITORY_PORT } from '../../port/persistence/command/elector-repository.port';
 import type { ElectorRepositoryPort } from '../../port/persistence/command/elector-repository.port';
-
-export type AuthenticateElectorResult = {
-  id: string;
-  voteId: string;
-  identityVerified: boolean;
-};
 
 export class ElectorNotFoundError extends Error {
   constructor() {
@@ -55,10 +50,10 @@ export class AuthenticateElectorHandler {
       await this.electorRepository.save(elector);
     }
 
-    return {
+    return AuthenticateElectorResult.of({
       id: elector.id,
       voteId: elector.voteId,
       identityVerified: elector.isIdentityVerified(),
-    };
+    });
   }
 }

@@ -1,5 +1,5 @@
-import type { VoteResultView } from '../../../query/view/vote-result.view';
-import type { VoteTurnoutView } from '../../../query/view/vote-turnout.view';
+import type { VoteResultView } from '../../../query/dto/response/vote-result.view';
+import type { VoteTurnoutView } from '../../../query/dto/response/vote-turnout.view';
 
 export const VOTE_STATISTICS_READ_REPOSITORY_PORT = Symbol(
   'VOTE_STATISTICS_READ_REPOSITORY_PORT',

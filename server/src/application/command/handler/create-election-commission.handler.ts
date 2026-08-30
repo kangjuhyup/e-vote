@@ -1,14 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ElectionCommissionAggregate } from '../../../domain/election-commission/election-commission.aggregate';
-import { ElectionCommissionStatus } from '../../../domain/election-commission/type/election-commission-status.type';
-import { CreateElectionCommissionCommand } from '../create-election-commission.command';
+import { CreateElectionCommissionCommand } from '../dto/request/create-election-commission.command';
+import { CreateElectionCommissionResult } from '../dto/response/create-election-commission-result.dto';
 import { ELECTION_COMMISSION_REPOSITORY_PORT } from '../../port/persistence/command/election-commission-repository.port';
 import type { ElectionCommissionRepositoryPort } from '../../port/persistence/command/election-commission-repository.port';
-
-export type CreateElectionCommissionResult = {
-  id: string;
-  status: ElectionCommissionStatus;
-};
 
 @Injectable()
 export class CreateElectionCommissionHandler {
@@ -28,9 +23,9 @@ export class CreateElectionCommissionHandler {
 
     await this.electionCommissionRepository.save(commission);
 
-    return {
+    return CreateElectionCommissionResult.of({
       id: commission.id,
       status: commission.status,
-    };
+    });
   }
 }

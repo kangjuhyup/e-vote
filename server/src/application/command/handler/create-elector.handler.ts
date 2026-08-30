@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ElectorAggregate } from '../../../domain/elector/elector.aggregate';
 import { ElectorStatus } from '../../../domain/elector/type/elector-status.type';
-import { CreateElectorCommand } from '../create-elector.command';
+import { CreateElectorCommand } from '../dto/request/create-elector.command';
+import { CreateElectorResult } from '../dto/response/create-elector-result.dto';
 import { ELECTOR_REPOSITORY_PORT } from '../../port/persistence/command/elector-repository.port';
 import type { ElectorRepositoryPort } from '../../port/persistence/command/elector-repository.port';
 import {
@@ -10,15 +11,6 @@ import {
 } from '../../port/persistence/command/vote-repository.port';
 import { DomainError } from '../../../domain/shared/domain-error';
 import { ManagedResourceNotFoundError } from '../vote-management.error';
-
-export type CreateElectorResult = {
-  id: string;
-  voteId: string;
-  name: string;
-  phoneNumber?: string;
-  birthDate?: string;
-  status: ElectorStatus;
-};
 
 @Injectable()
 export class CreateElectorHandler {
@@ -55,13 +47,13 @@ export class CreateElectorHandler {
 
     await this.electorRepository.save(elector);
 
-    return {
+    return CreateElectorResult.of({
       id: elector.id,
       voteId: elector.voteId,
       name: elector.name,
       phoneNumber: elector.phoneNumber,
       birthDate: elector.birthDate,
       status: elector.status,
-    };
+    });
   }
 }

@@ -1,4 +1,4 @@
-import { CreateElectorCommand } from '../../../../src/application/command/create-elector.command';
+import { CreateElectorCommand } from '../../../../src/application/command/dto/request/create-elector.command';
 import { CreateElectorHandler } from '../../../../src/application/command/handler/create-elector.handler';
 import { ElectorRepositoryPort } from '../../../../src/application/port/persistence/command/elector-repository.port';
 import { ElectorAggregate } from '../../../../src/domain/elector/elector.aggregate';

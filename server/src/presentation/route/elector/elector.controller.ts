@@ -17,9 +17,9 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { AuthenticateElectorCommand } from '../../../application/command/authenticate-elector.command';
+import { AuthenticateElectorCommand } from '../../../application/command/dto/request/authenticate-elector.command';
 import { AuthenticateElectorHandler } from '../../../application/command/handler/authenticate-elector.handler';
-import { CreateElectorCommand } from '../../../application/command/create-elector.command';
+import { CreateElectorCommand } from '../../../application/command/dto/request/create-elector.command';
 import { CreateElectorHandler } from '../../../application/command/handler/create-elector.handler';
 import { DomainError } from '../../../domain/shared/domain-error';
 import {
@@ -32,8 +32,8 @@ import {
   CreateElectorParam,
 } from './dto/create-elector-request.dto';
 import { CreateElectorResponse } from './dto/create-elector-response.dto';
-import { UpdateElectorCommand } from '../../../application/command/update-elector.command';
-import { BlockElectorCommand } from '../../../application/command/block-elector.command';
+import { UpdateElectorCommand } from '../../../application/command/dto/request/update-elector.command';
+import { BlockElectorCommand } from '../../../application/command/dto/request/block-elector.command';
 import { UpdateElectorHandler } from '../../../application/command/handler/update-elector.handler';
 import { BlockElectorHandler } from '../../../application/command/handler/block-elector.handler';
 import {

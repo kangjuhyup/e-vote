@@ -18,8 +18,8 @@ import {
   ElectionCommissionNotFoundError,
   GetElectionCommissionHandler,
 } from '../../../application/query/handler/get-election-commission.handler';
-import { GetElectionCommissionPageQuery as GetElectionCommissionPageApplicationQuery } from '../../../application/query/get-election-commission-page.query';
-import { GetElectionCommissionQuery } from '../../../application/query/get-election-commission.query';
+import { GetElectionCommissionPageQuery as GetElectionCommissionPageApplicationQuery } from '../../../application/query/dto/request/get-election-commission-page.query';
+import { GetElectionCommissionQuery } from '../../../application/query/dto/request/get-election-commission.query';
 import { GetElectionCommissionPageQuery as GetElectionCommissionPageRequestQuery } from './dto/get-election-commission-page-request.dto';
 import { GetElectionCommissionPageResponse } from './dto/get-election-commission-page-response.dto';
 import { GetElectionCommissionParam } from './dto/get-election-commission-request.dto';

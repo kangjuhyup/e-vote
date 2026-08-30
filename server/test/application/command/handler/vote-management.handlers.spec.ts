@@ -1,6 +1,6 @@
-import { ChangeVoteStatusCommand } from '../../../../src/application/command/change-vote-status.command';
-import { UpdateCandidateCommand } from '../../../../src/application/command/update-candidate.command';
-import { UpdateVoteCommand } from '../../../../src/application/command/update-vote.command';
+import { ChangeVoteStatusCommand } from '../../../../src/application/command/dto/request/change-vote-status.command';
+import { UpdateCandidateCommand } from '../../../../src/application/command/dto/request/update-candidate.command';
+import { UpdateVoteCommand } from '../../../../src/application/command/dto/request/update-vote.command';
 import { ChangeVoteStatusHandler } from '../../../../src/application/command/handler/change-vote-status.handler';
 import { UpdateCandidateHandler } from '../../../../src/application/command/handler/update-candidate.handler';
 import { UpdateVoteHandler } from '../../../../src/application/command/handler/update-vote.handler';

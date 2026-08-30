@@ -6,34 +6,34 @@ import {
   GetCandidateHandler,
 } from '../../../../src/application/query/handler/get-candidate.handler';
 import { GetCandidatePageHandler } from '../../../../src/application/query/handler/get-candidate-page.handler';
-import { GetCandidatePageQuery } from '../../../../src/application/query/get-candidate-page.query';
-import { GetCandidateQuery } from '../../../../src/application/query/get-candidate.query';
+import { GetCandidatePageQuery } from '../../../../src/application/query/dto/request/get-candidate-page.query';
+import { GetCandidateQuery } from '../../../../src/application/query/dto/request/get-candidate.query';
 import {
   ElectorNotFoundError,
   GetElectorHandler,
 } from '../../../../src/application/query/handler/get-elector.handler';
 import { GetElectorPageHandler } from '../../../../src/application/query/handler/get-elector-page.handler';
-import { GetElectorPageQuery } from '../../../../src/application/query/get-elector-page.query';
-import { GetElectorQuery } from '../../../../src/application/query/get-elector.query';
+import { GetElectorPageQuery } from '../../../../src/application/query/dto/request/get-elector-page.query';
+import { GetElectorQuery } from '../../../../src/application/query/dto/request/get-elector.query';
 import {
   GetVoteDetailHandler,
   VoteDetailNotFoundError,
 } from '../../../../src/application/query/handler/get-vote-detail.handler';
 import { GetVoteDetailPageHandler } from '../../../../src/application/query/handler/get-vote-detail-page.handler';
-import { GetVoteDetailPageQuery } from '../../../../src/application/query/get-vote-detail-page.query';
-import { GetVoteDetailQuery } from '../../../../src/application/query/get-vote-detail.query';
+import { GetVoteDetailPageQuery } from '../../../../src/application/query/dto/request/get-vote-detail-page.query';
+import { GetVoteDetailQuery } from '../../../../src/application/query/dto/request/get-vote-detail.query';
 import {
   CandidatePageReadView,
   CandidateReadView,
-} from '../../../../src/application/query/view/candidate-read.view';
+} from '../../../../src/application/query/dto/response/candidate-read.view';
 import {
   ElectorPageView,
   ElectorView,
-} from '../../../../src/application/query/view/elector.view';
+} from '../../../../src/application/query/dto/response/elector.view';
 import {
   VoteDetailPageReadView,
   VoteDetailReadView,
-} from '../../../../src/application/query/view/vote-detail-read.view';
+} from '../../../../src/application/query/dto/response/vote-detail-read.view';
 import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
 import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
 import { VoteDetailStatus } from '../../../../src/domain/vote/type/vote-status.type';

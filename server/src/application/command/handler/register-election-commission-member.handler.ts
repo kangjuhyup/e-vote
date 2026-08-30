@@ -1,17 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ElectionCommissionMemberAggregate } from '../../../domain/election-commission/election-commission-member.aggregate';
-import { ElectionCommissionMemberStatus } from '../../../domain/election-commission/type/election-commission-member-status.type';
 import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from '../../port/persistence/command/election-commission-member-repository.port';
 import type { ElectionCommissionMemberRepositoryPort } from '../../port/persistence/command/election-commission-member-repository.port';
 import { ELECTION_COMMISSION_REPOSITORY_PORT } from '../../port/persistence/command/election-commission-repository.port';
 import type { ElectionCommissionRepositoryPort } from '../../port/persistence/command/election-commission-repository.port';
-import { RegisterElectionCommissionMemberCommand } from '../register-election-commission-member.command';
-
-export type RegisterElectionCommissionMemberResult = {
-  id: string;
-  commissionId: string;
-  status: ElectionCommissionMemberStatus;
-};
+import { RegisterElectionCommissionMemberCommand } from '../dto/request/register-election-commission-member.command';
+import { RegisterElectionCommissionMemberResult } from '../dto/response/register-election-commission-member-result.dto';
 
 export class ElectionCommissionNotFoundError extends Error {
   constructor() {
@@ -59,10 +53,10 @@ export class RegisterElectionCommissionMemberHandler {
 
     await this.electionCommissionMemberRepository.save(member);
 
-    return {
+    return RegisterElectionCommissionMemberResult.of({
       id: member.id,
       commissionId: member.commissionId,
       status: member.status,
-    };
+    });
   }
 }

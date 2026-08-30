@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ElectoralRollNotFoundError } from '../../command/electoral-roll.error';
-import { GetElectoralRollQuery } from '../get-electoral-roll.query';
-import type { ElectoralRollView } from '../view/electoral-roll.view';
+import { GetElectoralRollQuery } from '../dto/request/get-electoral-roll.query';
+import type { ElectoralRollView } from '../dto/response/electoral-roll.view';
 import {
   ELECTORAL_ROLL_READ_REPOSITORY_PORT,
   type ElectoralRollReadRepositoryPort,

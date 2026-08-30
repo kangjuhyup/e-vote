@@ -9,11 +9,11 @@ import {
   Put,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AddElectoralRollMemberCommand } from '../../../application/command/add-electoral-roll-member.command';
-import { CreateElectoralRollCommand } from '../../../application/command/create-electoral-roll.command';
-import { CreateElectoralRollSnapshotCommand } from '../../../application/command/create-electoral-roll-snapshot.command';
-import { RemoveElectoralRollMemberCommand } from '../../../application/command/remove-electoral-roll-member.command';
-import { UpdateElectoralRollMemberCommand } from '../../../application/command/update-electoral-roll-member.command';
+import { AddElectoralRollMemberCommand } from '../../../application/command/dto/request/add-electoral-roll-member.command';
+import { CreateElectoralRollCommand } from '../../../application/command/dto/request/create-electoral-roll.command';
+import { CreateElectoralRollSnapshotCommand } from '../../../application/command/dto/request/create-electoral-roll-snapshot.command';
+import { RemoveElectoralRollMemberCommand } from '../../../application/command/dto/request/remove-electoral-roll-member.command';
+import { UpdateElectoralRollMemberCommand } from '../../../application/command/dto/request/update-electoral-roll-member.command';
 import { AddElectoralRollMemberHandler } from '../../../application/command/handler/add-electoral-roll-member.handler';
 import { CreateElectoralRollHandler } from '../../../application/command/handler/create-electoral-roll.handler';
 import { CreateElectoralRollSnapshotHandler } from '../../../application/command/handler/create-electoral-roll-snapshot.handler';

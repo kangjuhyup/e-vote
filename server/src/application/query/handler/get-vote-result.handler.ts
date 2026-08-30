@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from '../../port/persistence/query/vote-statistics-read-repository.port';
 import type { VoteStatisticsReadRepositoryPort } from '../../port/persistence/query/vote-statistics-read-repository.port';
-import { GetVoteResultQuery } from '../get-vote-result.query';
-import { VoteResultView } from '../view/vote-result.view';
+import { GetVoteResultQuery } from '../dto/request/get-vote-result.query';
+import { VoteResultView } from '../dto/response/vote-result.view';
 import { VoteStatisticsNotFoundError } from '../vote-statistics.error';
 import { VoteResultUnavailableError } from '../vote-statistics.error';
 import { VoteStatisticsInconsistentError } from '../vote-statistics.error';

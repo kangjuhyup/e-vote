@@ -7,7 +7,7 @@ import type {
 import {
   CandidatePageReadView,
   CandidateReadView,
-} from '../../../../application/query/view/candidate-read.view';
+} from '../../../../application/query/dto/response/candidate-read.view';
 import type { CandidateStatus } from '../../../../domain/candidate/type/candidate-status.type';
 import {
   JOINED_RELATION_LOAD_OPTIONS,

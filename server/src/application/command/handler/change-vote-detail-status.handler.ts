@@ -8,7 +8,8 @@ import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
 } from '../../port/persistence/command/vote-repository.port';
-import { ChangeVoteDetailStatusCommand } from '../change-vote-detail-status.command';
+import { ChangeVoteDetailStatusCommand } from '../dto/request/change-vote-detail-status.command';
+import { ManageVoteDetailResult } from '../dto/response/manage-vote-detail-result.dto';
 import {
   ManagedResourceNotFoundError,
   ManagedResourceScopeMismatchError,
@@ -22,7 +23,9 @@ export class ChangeVoteDetailStatusHandler {
     private readonly details: VoteDetailRepositoryPort,
   ) {}
 
-  async execute(command: ChangeVoteDetailStatusCommand) {
+  async execute(
+    command: ChangeVoteDetailStatusCommand,
+  ): Promise<ManageVoteDetailResult> {
     const [vote, detail] = await Promise.all([
       this.votes.findById(command.voteId),
       this.details.findById(command.voteDetailId),
@@ -43,6 +46,10 @@ export class ChangeVoteDetailStatusHandler {
       detail.cancel();
     }
     await this.details.save(detail);
-    return { id: detail.id, voteId: detail.voteId, status: detail.status };
+    return ManageVoteDetailResult.of({
+      id: detail.id,
+      voteId: detail.voteId,
+      status: detail.status,
+    });
   }
 }

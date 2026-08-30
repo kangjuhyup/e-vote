@@ -5,8 +5,8 @@ import {
   CandidateVoteResultView,
   VoteResultView,
   VotingChannelResultView,
-} from '../../../../application/query/view/vote-result.view';
-import { VoteTurnoutView } from '../../../../application/query/view/vote-turnout.view';
+} from '../../../../application/query/dto/response/vote-result.view';
+import { VoteTurnoutView } from '../../../../application/query/dto/response/vote-turnout.view';
 import type { CandidateStatus } from '../../../../domain/candidate/type/candidate-status.type';
 import type {
   ParticipationUnit,

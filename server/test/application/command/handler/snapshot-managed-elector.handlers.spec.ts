@@ -1,5 +1,5 @@
-import { BlockElectorCommand } from '../../../../src/application/command/block-elector.command';
-import { UpdateElectorCommand } from '../../../../src/application/command/update-elector.command';
+import { BlockElectorCommand } from '../../../../src/application/command/dto/request/block-elector.command';
+import { UpdateElectorCommand } from '../../../../src/application/command/dto/request/update-elector.command';
 import { BlockElectorHandler } from '../../../../src/application/command/handler/block-elector.handler';
 import { UpdateElectorHandler } from '../../../../src/application/command/handler/update-elector.handler';
 import type { ElectorRepositoryPort } from '../../../../src/application/port/persistence/command/elector-repository.port';

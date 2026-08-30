@@ -1,8 +1,8 @@
 import { MikroORM, type EntityManager } from '@mikro-orm/postgresql';
 import { GetVoteResultHandler } from '../src/application/query/handler/get-vote-result.handler';
-import { GetVoteResultQuery } from '../src/application/query/get-vote-result.query';
+import { GetVoteResultQuery } from '../src/application/query/dto/request/get-vote-result.query';
 import { VoteStatisticsInconsistentError } from '../src/application/query/vote-statistics.error';
-import { CastParticipationCommand } from '../src/application/command/cast-participation.command';
+import { CastParticipationCommand } from '../src/application/command/dto/request/cast-participation.command';
 import { CastParticipationHandler } from '../src/application/command/handler/cast-participation.handler';
 import { ParticipationAggregate } from '../src/domain/participation/participation.aggregate';
 import { ElectorAggregate } from '../src/domain/elector/elector.aggregate';

@@ -5,7 +5,8 @@ import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
 } from '../../port/persistence/command/vote-repository.port';
-import { UpdateVoteCommand } from '../update-vote.command';
+import { UpdateVoteCommand } from '../dto/request/update-vote.command';
+import { ManageVoteResult } from '../dto/response/manage-vote-result.dto';
 import { ManagedResourceNotFoundError } from '../vote-management.error';
 
 @Injectable()
@@ -15,7 +16,7 @@ export class UpdateVoteHandler {
     private readonly repository: VoteRepositoryPort,
   ) {}
 
-  async execute(command: UpdateVoteCommand) {
+  async execute(command: UpdateVoteCommand): Promise<ManageVoteResult> {
     const vote = await this.repository.findById(command.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
     vote.updateSettings({
@@ -27,6 +28,6 @@ export class UpdateVoteHandler {
       ),
     });
     await this.repository.save(vote);
-    return { id: vote.id, status: vote.status };
+    return ManageVoteResult.of({ id: vote.id, status: vote.status });
   }
 }

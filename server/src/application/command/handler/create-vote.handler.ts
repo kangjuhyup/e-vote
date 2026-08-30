@@ -3,17 +3,12 @@ import { VoteAggregate } from '../../../domain/vote/vote.aggregate';
 import { VoteStatus } from '../../../domain/vote/type/vote-status.type';
 import { IdentityVerificationPolicy } from '../../../domain/vote/vo/identity-verification-policy.vo';
 import { VotePolicy } from '../../../domain/vote/vo/vote-policy.vo';
-import { CreateVoteCommand } from '../create-vote.command';
+import { CreateVoteCommand } from '../dto/request/create-vote.command';
+import { CreateVoteResult } from '../dto/response/create-vote-result.dto';
 import { ELECTION_COMMISSION_REPOSITORY_PORT } from '../../port/persistence/command/election-commission-repository.port';
 import type { ElectionCommissionRepositoryPort } from '../../port/persistence/command/election-commission-repository.port';
 import { VOTE_REPOSITORY_PORT } from '../../port/persistence/command/vote-repository.port';
 import type { VoteRepositoryPort } from '../../port/persistence/command/vote-repository.port';
-
-export type CreateVoteResult = {
-  id: string;
-  commissionId: string;
-  status: VoteStatus;
-};
 
 export class ElectionCommissionNotFoundError extends Error {
   constructor() {
@@ -63,10 +58,10 @@ export class CreateVoteHandler {
 
     await this.voteRepository.save(vote);
 
-    return {
+    return CreateVoteResult.of({
       id: vote.id,
       commissionId: vote.commissionId,
       status: vote.status,
-    };
+    });
   }
 }

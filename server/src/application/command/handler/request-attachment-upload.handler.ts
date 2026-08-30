@@ -6,13 +6,8 @@ import {
   assertAttachmentType,
   assertAttachmentUploadMetadata,
 } from '../attachment-upload.policy';
-import { RequestAttachmentUploadCommand } from '../request-attachment-upload.command';
-
-export type RequestAttachmentUploadResult = {
-  readonly storageKey: string;
-  readonly uploadUrl: string;
-  readonly expiresAt: Date;
-};
+import { RequestAttachmentUploadCommand } from '../dto/request/request-attachment-upload.command';
+import { RequestAttachmentUploadResult } from '../dto/response/request-attachment-upload-result.dto';
 
 @Injectable()
 export class RequestAttachmentUploadHandler {
@@ -35,11 +30,11 @@ export class RequestAttachmentUploadHandler {
       metadata: this.createUploadMetadata(command),
     });
 
-    return {
+    return RequestAttachmentUploadResult.of({
       storageKey: presignedUrl.storageKey,
       uploadUrl: presignedUrl.url,
       expiresAt: presignedUrl.expiresAt,
-    };
+    });
   }
 
   private createUploadMetadata(

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { UpdateElectoralRollMemberCommand } from '../update-electoral-roll-member.command';
+import { UpdateElectoralRollMemberCommand } from '../dto/request/update-electoral-roll-member.command';
 import {
   ElectoralRollMemberNotFoundError,
   ElectoralRollNotFoundError,
@@ -16,10 +16,8 @@ import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
 } from '../../persistence/transaction/transactional.decorator';
-import {
-  type ManageElectoralRollMemberResult,
-  toMemberResult,
-} from './add-electoral-roll-member.handler';
+import { toMemberResult } from './add-electoral-roll-member.handler';
+import { ManageElectoralRollMemberResult } from '../dto/response/manage-electoral-roll-member-result.dto';
 
 @Injectable()
 export class UpdateElectoralRollMemberHandler {

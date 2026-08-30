@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ElectoralRollAggregate } from '../../../domain/electoral-roll/electoral-roll.aggregate';
-import { CreateElectoralRollCommand } from '../create-electoral-roll.command';
+import { CreateElectoralRollCommand } from '../dto/request/create-electoral-roll.command';
+import { CreateElectoralRollResult } from '../dto/response/create-electoral-roll-result.dto';
 import {
   ElectionCommissionNotFoundError,
   ElectionCommissionUnavailableError,
@@ -13,13 +14,6 @@ import {
   ELECTORAL_ROLL_REPOSITORY_PORT,
   type ElectoralRollRepositoryPort,
 } from '../../port/persistence/command/electoral-roll-repository.port';
-
-export type CreateElectoralRollResult = {
-  readonly id: string;
-  readonly commissionId: string;
-  readonly name: string;
-  readonly revision: number;
-};
 
 @Injectable()
 export class CreateElectoralRollHandler {
@@ -48,11 +42,11 @@ export class CreateElectoralRollHandler {
     });
     await this.electoralRollRepository.save(electoralRoll);
 
-    return {
+    return CreateElectoralRollResult.of({
       id: electoralRoll.id,
       commissionId: electoralRoll.commissionId,
       name: electoralRoll.name,
       revision: electoralRoll.revision,
-    };
+    });
   }
 }

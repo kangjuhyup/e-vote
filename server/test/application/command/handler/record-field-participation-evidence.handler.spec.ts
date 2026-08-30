@@ -1,4 +1,4 @@
-import { RecordFieldParticipationEvidenceCommand } from '../../../../src/application/command/record-field-participation-evidence.command';
+import { RecordFieldParticipationEvidenceCommand } from '../../../../src/application/command/dto/request/record-field-participation-evidence.command';
 import { RecordFieldParticipationEvidenceHandler } from '../../../../src/application/command/handler/record-field-participation-evidence.handler';
 import { ElectionCommissionMemberRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-member-repository.port';
 import { FieldParticipationEvidenceRepositoryPort } from '../../../../src/application/port/persistence/command/field-participation-evidence-repository.port';

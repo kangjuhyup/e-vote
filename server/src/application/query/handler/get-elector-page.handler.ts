@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ELECTOR_READ_REPOSITORY_PORT } from '../../port/persistence/query/elector-read-repository.port';
 import type { ElectorReadRepositoryPort } from '../../port/persistence/query/elector-read-repository.port';
-import { GetElectorPageQuery } from '../get-elector-page.query';
-import type { ElectorPageView } from '../view/elector.view';
+import { GetElectorPageQuery } from '../dto/request/get-elector-page.query';
+import type { ElectorPageView } from '../dto/response/elector.view';
 
 @Injectable()
 export class GetElectorPageHandler {

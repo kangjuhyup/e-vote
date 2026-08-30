@@ -1,6 +1,6 @@
-import { AddElectoralRollMemberCommand } from '../../../../src/application/command/add-electoral-roll-member.command';
-import { AttachElectoralRollSnapshotCommand } from '../../../../src/application/command/attach-electoral-roll-snapshot.command';
-import { CreateElectoralRollSnapshotCommand } from '../../../../src/application/command/create-electoral-roll-snapshot.command';
+import { AddElectoralRollMemberCommand } from '../../../../src/application/command/dto/request/add-electoral-roll-member.command';
+import { AttachElectoralRollSnapshotCommand } from '../../../../src/application/command/dto/request/attach-electoral-roll-snapshot.command';
+import { CreateElectoralRollSnapshotCommand } from '../../../../src/application/command/dto/request/create-electoral-roll-snapshot.command';
 import { AddElectoralRollMemberHandler } from '../../../../src/application/command/handler/add-electoral-roll-member.handler';
 import { AttachElectoralRollSnapshotHandler } from '../../../../src/application/command/handler/attach-electoral-roll-snapshot.handler';
 import { CreateElectoralRollSnapshotHandler } from '../../../../src/application/command/handler/create-electoral-roll-snapshot.handler';

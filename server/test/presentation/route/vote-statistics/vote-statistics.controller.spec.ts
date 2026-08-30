@@ -1,19 +1,19 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { GetVoteResultHandler } from '../../../../src/application/query/handler/get-vote-result.handler';
-import { GetVoteResultQuery } from '../../../../src/application/query/get-vote-result.query';
+import { GetVoteResultQuery } from '../../../../src/application/query/dto/request/get-vote-result.query';
 import { GetVoteTurnoutHandler } from '../../../../src/application/query/handler/get-vote-turnout.handler';
-import { GetVoteTurnoutQuery } from '../../../../src/application/query/get-vote-turnout.query';
+import { GetVoteTurnoutQuery } from '../../../../src/application/query/dto/request/get-vote-turnout.query';
 import {
   CandidateVoteResultView,
   VoteResultView,
   VotingChannelResultView,
-} from '../../../../src/application/query/view/vote-result.view';
+} from '../../../../src/application/query/dto/response/vote-result.view';
 import {
   VoteResultUnavailableError,
   VoteStatisticsInconsistentError,
   VoteStatisticsNotFoundError,
 } from '../../../../src/application/query/vote-statistics.error';
-import { VoteTurnoutView } from '../../../../src/application/query/view/vote-turnout.view';
+import { VoteTurnoutView } from '../../../../src/application/query/dto/response/vote-turnout.view';
 import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
 import {
   ParticipationUnit,

@@ -12,7 +12,8 @@ import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
 } from '../../port/persistence/command/vote-repository.port';
-import { WithdrawCandidateCommand } from '../withdraw-candidate.command';
+import { WithdrawCandidateCommand } from '../dto/request/withdraw-candidate.command';
+import { ManageCandidateResult } from '../dto/response/manage-candidate-result.dto';
 import {
   ManagedResourceNotFoundError,
   ManagedResourceScopeMismatchError,
@@ -28,7 +29,9 @@ export class WithdrawCandidateHandler {
     private readonly candidates: CandidateRepositoryPort,
   ) {}
 
-  async execute(command: WithdrawCandidateCommand) {
+  async execute(
+    command: WithdrawCandidateCommand,
+  ): Promise<ManageCandidateResult> {
     const [vote, detail, candidate] = await Promise.all([
       this.votes.findById(command.voteId),
       this.details.findById(command.voteDetailId),
@@ -43,10 +46,10 @@ export class WithdrawCandidateHandler {
       throw new DomainError('only draft vote resources can be deleted');
     candidate.withdraw();
     await this.candidates.save(candidate);
-    return {
+    return ManageCandidateResult.of({
       id: candidate.id,
       voteDetailId: candidate.voteDetailId,
       status: candidate.status,
-    };
+    });
   }
 }

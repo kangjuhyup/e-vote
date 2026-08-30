@@ -4,12 +4,12 @@ import {
   GetElectionCommissionHandler,
 } from '../../../../src/application/query/handler/get-election-commission.handler';
 import { GetElectionCommissionPageHandler } from '../../../../src/application/query/handler/get-election-commission-page.handler';
-import { GetElectionCommissionPageQuery } from '../../../../src/application/query/get-election-commission-page.query';
-import { GetElectionCommissionQuery } from '../../../../src/application/query/get-election-commission.query';
+import { GetElectionCommissionPageQuery } from '../../../../src/application/query/dto/request/get-election-commission-page.query';
+import { GetElectionCommissionQuery } from '../../../../src/application/query/dto/request/get-election-commission.query';
 import {
   ElectionCommissionPageView,
   ElectionCommissionView,
-} from '../../../../src/application/query/view/election-commission.view';
+} from '../../../../src/application/query/dto/response/election-commission.view';
 import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
 
 describe('election commission query handlers', () => {

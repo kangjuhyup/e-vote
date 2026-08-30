@@ -1,4 +1,4 @@
-import { CreateVoteDetailCommand } from '../../../../src/application/command/create-vote-detail.command';
+import { CreateVoteDetailCommand } from '../../../../src/application/command/dto/request/create-vote-detail.command';
 import { CreateVoteDetailHandler } from '../../../../src/application/command/handler/create-vote-detail.handler';
 import { VoteDetailRepositoryPort } from '../../../../src/application/port/persistence/command/vote-detail-repository.port';
 import { VoteDetailAggregate } from '../../../../src/domain/vote/vote-detail.aggregate';

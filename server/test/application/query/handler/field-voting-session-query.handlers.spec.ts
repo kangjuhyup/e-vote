@@ -4,12 +4,12 @@ import {
   FieldVotingSessionReadNotFoundError,
   GetFieldVotingSessionHandler,
 } from '../../../../src/application/query/handler/get-field-voting-session.handler';
-import { GetFieldVotingSessionPageQuery } from '../../../../src/application/query/get-field-voting-session-page.query';
-import { GetFieldVotingSessionQuery } from '../../../../src/application/query/get-field-voting-session.query';
+import { GetFieldVotingSessionPageQuery } from '../../../../src/application/query/dto/request/get-field-voting-session-page.query';
+import { GetFieldVotingSessionQuery } from '../../../../src/application/query/dto/request/get-field-voting-session.query';
 import {
   FieldVotingSessionPageView,
   FieldVotingSessionView,
-} from '../../../../src/application/query/view/field-voting-session.view';
+} from '../../../../src/application/query/dto/response/field-voting-session.view';
 import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
 import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
 

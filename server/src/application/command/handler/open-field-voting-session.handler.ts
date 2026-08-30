@@ -1,13 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { FieldVotingSessionStatus } from '../../../domain/field-voting/type/field-voting-session-status.type';
 import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from '../../port/persistence/command/field-voting-session-repository.port';
 import type { FieldVotingSessionRepositoryPort } from '../../port/persistence/command/field-voting-session-repository.port';
-import { OpenFieldVotingSessionCommand } from '../open-field-voting-session.command';
-
-export type ChangeFieldVotingSessionStatusResult = {
-  id: string;
-  status: FieldVotingSessionStatus;
-};
+import { OpenFieldVotingSessionCommand } from '../dto/request/open-field-voting-session.command';
+import { ChangeFieldVotingSessionStatusResult } from '../dto/response/change-field-voting-session-status-result.dto';
 
 export class FieldVotingSessionNotFoundError extends Error {
   constructor() {
@@ -36,9 +31,9 @@ export class OpenFieldVotingSessionHandler {
     session.open(command.openedAt);
     await this.fieldVotingSessionRepository.save(session);
 
-    return {
+    return ChangeFieldVotingSessionStatusResult.of({
       id: session.id,
       status: session.status,
-    };
+    });
   }
 }

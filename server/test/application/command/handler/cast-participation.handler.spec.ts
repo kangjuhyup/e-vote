@@ -1,4 +1,4 @@
-import { CastParticipationCommand } from '../../../../src/application/command/cast-participation.command';
+import { CastParticipationCommand } from '../../../../src/application/command/dto/request/cast-participation.command';
 import { CastParticipationHandler } from '../../../../src/application/command/handler/cast-participation.handler';
 import { CandidateRepositoryPort } from '../../../../src/application/port/persistence/command/candidate-repository.port';
 import { ElectorRepositoryPort } from '../../../../src/application/port/persistence/command/elector-repository.port';

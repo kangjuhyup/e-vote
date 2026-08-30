@@ -1,7 +1,7 @@
 import type {
   ElectionCommissionPageView,
   ElectionCommissionView,
-} from '../../../query/view/election-commission.view';
+} from '../../../query/dto/response/election-commission.view';
 
 export const ELECTION_COMMISSION_READ_REPOSITORY_PORT = Symbol(
   'ELECTION_COMMISSION_READ_REPOSITORY_PORT',

@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { RemoveElectoralRollMemberCommand } from '../remove-electoral-roll-member.command';
+import { RemoveElectoralRollMemberCommand } from '../dto/request/remove-electoral-roll-member.command';
+import { RemoveElectoralRollMemberResult } from '../dto/response/remove-electoral-roll-member-result.dto';
 import {
   ElectoralRollMemberNotFoundError,
   ElectoralRollNotFoundError,
@@ -16,12 +17,6 @@ import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
 } from '../../persistence/transaction/transactional.decorator';
-
-export type RemoveElectoralRollMemberResult = {
-  readonly electoralRollId: string;
-  readonly memberId: string;
-  readonly revision: number;
-};
 
 @Injectable()
 export class RemoveElectoralRollMemberHandler {
@@ -58,10 +53,10 @@ export class RemoveElectoralRollMemberHandler {
     );
     await this.electoralRollRepository.save(electoralRoll);
 
-    return {
+    return RemoveElectoralRollMemberResult.of({
       electoralRollId: electoralRoll.id,
       memberId: member.id,
       revision: electoralRoll.revision,
-    };
+    });
   }
 }

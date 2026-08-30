@@ -1,4 +1,7 @@
-import type { VotePageView, VoteView } from '../../../query/view/vote.view';
+import type {
+  VotePageView,
+  VoteView,
+} from '../../../query/dto/response/vote.view';
 
 export const VOTE_READ_REPOSITORY_PORT = Symbol('VOTE_READ_REPOSITORY_PORT');
 

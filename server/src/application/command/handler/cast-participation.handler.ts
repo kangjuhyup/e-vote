@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ParticipationAggregate } from '../../../domain/participation/participation.aggregate';
 import { ParticipationEligibilityPolicy } from '../../../domain/participation/participation-eligibility.policy';
-import { ParticipationStatus } from '../../../domain/participation/type/participation-status.type';
 import { CandidateStatus } from '../../../domain/candidate/type/candidate-status.type';
 import {
   VoteDetailStatus,
@@ -20,13 +19,8 @@ import { VOTE_DETAIL_REPOSITORY_PORT } from '../../port/persistence/command/vote
 import type { VoteDetailRepositoryPort } from '../../port/persistence/command/vote-detail-repository.port';
 import { VOTE_REPOSITORY_PORT } from '../../port/persistence/command/vote-repository.port';
 import type { VoteRepositoryPort } from '../../port/persistence/command/vote-repository.port';
-import { CastParticipationCommand } from '../cast-participation.command';
-
-export type CastParticipationResult = {
-  id: string;
-  voteDetailId: string;
-  status: ParticipationStatus;
-};
+import { CastParticipationCommand } from '../dto/request/cast-participation.command';
+import { CastParticipationResult } from '../dto/response/cast-participation-result.dto';
 
 export class VoteNotFoundError extends Error {
   constructor() {
@@ -171,11 +165,11 @@ export class CastParticipationHandler {
       candidate.id,
     );
 
-    return {
+    return CastParticipationResult.of({
       id: participation.id,
       voteDetailId: participation.voteDetailId,
       status: participation.status,
-    };
+    });
   }
 
   private async findFieldVotingSession(command: CastParticipationCommand) {

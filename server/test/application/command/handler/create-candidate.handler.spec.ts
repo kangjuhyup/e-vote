@@ -1,4 +1,4 @@
-import { CreateCandidateCommand } from '../../../../src/application/command/create-candidate.command';
+import { CreateCandidateCommand } from '../../../../src/application/command/dto/request/create-candidate.command';
 import { CreateCandidateHandler } from '../../../../src/application/command/handler/create-candidate.handler';
 import { CandidateRepositoryPort } from '../../../../src/application/port/persistence/command/candidate-repository.port';
 import { CandidateAggregate } from '../../../../src/domain/candidate/candidate.aggregate';

@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from '../../port/persistence/query/vote-statistics-read-repository.port';
 import type { VoteStatisticsReadRepositoryPort } from '../../port/persistence/query/vote-statistics-read-repository.port';
-import { GetVoteTurnoutQuery } from '../get-vote-turnout.query';
+import { GetVoteTurnoutQuery } from '../dto/request/get-vote-turnout.query';
 import {
   VoteStatisticsInconsistentError,
   VoteStatisticsNotFoundError,
 } from '../vote-statistics.error';
-import type { VoteTurnoutView } from '../view/vote-turnout.view';
+import type { VoteTurnoutView } from '../dto/response/vote-turnout.view';
 
 @Injectable()
 export class GetVoteTurnoutHandler {

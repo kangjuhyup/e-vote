@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { FieldVotingSessionAggregate } from '../../../domain/field-voting/field-voting-session.aggregate';
-import { FieldVotingSessionStatus } from '../../../domain/field-voting/type/field-voting-session-status.type';
 import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from '../../port/persistence/command/election-commission-member-repository.port';
 import type { ElectionCommissionMemberRepositoryPort } from '../../port/persistence/command/election-commission-member-repository.port';
 import { ELECTION_COMMISSION_REPOSITORY_PORT } from '../../port/persistence/command/election-commission-repository.port';
@@ -9,13 +8,8 @@ import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from '../../port/persistence/com
 import type { FieldVotingSessionRepositoryPort } from '../../port/persistence/command/field-voting-session-repository.port';
 import { VOTE_REPOSITORY_PORT } from '../../port/persistence/command/vote-repository.port';
 import type { VoteRepositoryPort } from '../../port/persistence/command/vote-repository.port';
-import { CreateFieldVotingSessionCommand } from '../create-field-voting-session.command';
-
-export type CreateFieldVotingSessionResult = {
-  id: string;
-  voteId: string;
-  status: FieldVotingSessionStatus;
-};
+import { CreateFieldVotingSessionCommand } from '../dto/request/create-field-voting-session.command';
+import { CreateFieldVotingSessionResult } from '../dto/response/create-field-voting-session-result.dto';
 
 export class ElectionCommissionNotFoundError extends Error {
   constructor() {
@@ -88,10 +82,10 @@ export class CreateFieldVotingSessionHandler {
 
     await this.fieldVotingSessionRepository.save(session);
 
-    return {
+    return CreateFieldVotingSessionResult.of({
       id: session.id,
       voteId: session.voteId,
       status: session.status,
-    };
+    });
   }
 }

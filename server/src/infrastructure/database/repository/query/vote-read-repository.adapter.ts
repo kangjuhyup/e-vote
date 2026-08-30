@@ -13,7 +13,7 @@ import {
   VotePolicyView,
   VoteSummaryView,
   VoteView,
-} from '../../../../application/query/view/vote.view';
+} from '../../../../application/query/dto/response/vote.view';
 import type { CandidateStatus } from '../../../../domain/candidate/type/candidate-status.type';
 import type { VoteDetailType } from '../../../../domain/vote/type/vote-detail.type';
 import type {

@@ -14,12 +14,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { GetCandidatePageHandler } from '../../../application/query/handler/get-candidate-page.handler';
-import { GetCandidatePageQuery as GetCandidatePageApplicationQuery } from '../../../application/query/get-candidate-page.query';
+import { GetCandidatePageQuery as GetCandidatePageApplicationQuery } from '../../../application/query/dto/request/get-candidate-page.query';
 import {
   CandidateNotFoundError,
   GetCandidateHandler,
 } from '../../../application/query/handler/get-candidate.handler';
-import { GetCandidateQuery } from '../../../application/query/get-candidate.query';
+import { GetCandidateQuery } from '../../../application/query/dto/request/get-candidate.query';
 import { CreateCandidateParam } from './dto/create-candidate-request.dto';
 import { GetCandidatePageQuery as GetCandidatePageRequestQuery } from './dto/get-candidate-page-request.dto';
 import { GetCandidatePageResponse } from './dto/get-candidate-page-response.dto';

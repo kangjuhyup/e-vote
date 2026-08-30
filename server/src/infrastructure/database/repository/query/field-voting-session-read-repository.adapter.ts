@@ -4,7 +4,7 @@ import type { FieldVotingSessionReadRepositoryPort } from '../../../../applicati
 import {
   FieldVotingSessionPageView,
   FieldVotingSessionView,
-} from '../../../../application/query/view/field-voting-session.view';
+} from '../../../../application/query/dto/response/field-voting-session.view';
 import type { FieldVotingSessionStatus } from '../../../../domain/field-voting/type/field-voting-session-status.type';
 import type { VotingChannel } from '../../../../domain/vote/type/voting-channel.type';
 import {

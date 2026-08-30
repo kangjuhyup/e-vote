@@ -1,4 +1,4 @@
-import { CreateVoteCommand } from '../../../../src/application/command/create-vote.command';
+import { CreateVoteCommand } from '../../../../src/application/command/dto/request/create-vote.command';
 import { CreateVoteHandler } from '../../../../src/application/command/handler/create-vote.handler';
 import { ElectionCommissionRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-repository.port';
 import { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';

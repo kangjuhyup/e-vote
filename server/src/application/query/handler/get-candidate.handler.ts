@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CANDIDATE_READ_REPOSITORY_PORT } from '../../port/persistence/query/candidate-read-repository.port';
 import type { CandidateReadRepositoryPort } from '../../port/persistence/query/candidate-read-repository.port';
-import { GetCandidateQuery } from '../get-candidate.query';
-import type { CandidateReadView } from '../view/candidate-read.view';
+import { GetCandidateQuery } from '../dto/request/get-candidate.query';
+import type { CandidateReadView } from '../dto/response/candidate-read.view';
 
 export class CandidateNotFoundError extends Error {
   constructor() {

@@ -1,15 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CandidateAggregate } from '../../../domain/candidate/candidate.aggregate';
 import { CandidateStatus } from '../../../domain/candidate/type/candidate-status.type';
-import { CreateCandidateCommand } from '../create-candidate.command';
+import { CreateCandidateCommand } from '../dto/request/create-candidate.command';
+import { CreateCandidateResult } from '../dto/response/create-candidate-result.dto';
 import { CANDIDATE_REPOSITORY_PORT } from '../../port/persistence/command/candidate-repository.port';
 import type { CandidateRepositoryPort } from '../../port/persistence/command/candidate-repository.port';
-
-export type CreateCandidateResult = {
-  id: string;
-  voteDetailId: string;
-  status: CandidateStatus;
-};
 
 @Injectable()
 export class CreateCandidateHandler {
@@ -31,10 +26,10 @@ export class CreateCandidateHandler {
 
     await this.candidateRepository.save(candidate);
 
-    return {
+    return CreateCandidateResult.of({
       id: candidate.id,
       voteDetailId: candidate.voteDetailId,
       status: candidate.status,
-    };
+    });
   }
 }

@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AttachElectoralRollSnapshotCommand } from '../attach-electoral-roll-snapshot.command';
+import { AttachElectoralRollSnapshotCommand } from '../dto/request/attach-electoral-roll-snapshot.command';
+import { AttachElectoralRollSnapshotResult } from '../dto/response/attach-electoral-roll-snapshot-result.dto';
 import {
   ElectoralRollCommissionMismatchError,
   ElectoralRollSnapshotNotFoundError,
@@ -22,12 +23,6 @@ import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
 } from '../../persistence/transaction/transactional.decorator';
-
-export type AttachElectoralRollSnapshotResult = {
-  readonly voteId: string;
-  readonly snapshotId: string;
-  readonly memberCount: number;
-};
 
 @Injectable()
 export class AttachElectoralRollSnapshotHandler {
@@ -58,11 +53,11 @@ export class AttachElectoralRollSnapshotHandler {
     }
 
     if (vote.electoralRollSnapshotId === snapshot.id) {
-      return {
+      return AttachElectoralRollSnapshotResult.of({
         voteId: vote.id,
         snapshotId: snapshot.id,
         memberCount: snapshot.memberCount,
-      };
+      });
     }
 
     if (
@@ -76,10 +71,10 @@ export class AttachElectoralRollSnapshotHandler {
     await this.voteRepository.save(vote);
     await this.snapshotRepository.materializeVoteElectors(vote.id, snapshot.id);
 
-    return {
+    return AttachElectoralRollSnapshotResult.of({
       voteId: vote.id,
       snapshotId: snapshot.id,
       memberCount: snapshot.memberCount,
-    };
+    });
   }
 }

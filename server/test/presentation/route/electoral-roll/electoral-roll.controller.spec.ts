@@ -6,7 +6,7 @@ import type { CreateElectoralRollSnapshotHandler } from '../../../../src/applica
 import type { RemoveElectoralRollMemberHandler } from '../../../../src/application/command/handler/remove-electoral-roll-member.handler';
 import type { UpdateElectoralRollMemberHandler } from '../../../../src/application/command/handler/update-electoral-roll-member.handler';
 import type { GetElectoralRollHandler } from '../../../../src/application/query/handler/get-electoral-roll.handler';
-import { ElectoralRollView } from '../../../../src/application/query/view/electoral-roll.view';
+import { ElectoralRollView } from '../../../../src/application/query/dto/response/electoral-roll.view';
 import { ElectoralRollController } from '../../../../src/presentation/route/electoral-roll/electoral-roll.controller';
 import { ElectoralRollReadController } from '../../../../src/presentation/route/electoral-roll/electoral-roll-read.controller';
 import { throwMappedElectoralRollError } from '../../../../src/presentation/route/electoral-roll/electoral-roll-error.mapper';

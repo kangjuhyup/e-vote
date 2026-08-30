@@ -8,7 +8,8 @@ import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
 } from '../../port/persistence/command/vote-repository.port';
-import { UpdateElectorCommand } from '../update-elector.command';
+import { UpdateElectorCommand } from '../dto/request/update-elector.command';
+import { ManageElectorResult } from '../dto/response/manage-elector-result.dto';
 import { ManagedResourceNotFoundError } from '../vote-management.error';
 
 @Injectable()
@@ -19,7 +20,7 @@ export class UpdateElectorHandler {
     private readonly electors: ElectorRepositoryPort,
   ) {}
 
-  async execute(command: UpdateElectorCommand) {
+  async execute(command: UpdateElectorCommand): Promise<ManageElectorResult> {
     const [vote, elector] = await Promise.all([
       this.votes.findById(command.voteId),
       this.electors.findById(command.voteId, command.electorId),
@@ -41,6 +42,10 @@ export class UpdateElectorHandler {
       voteWeight: command.voteWeight,
     });
     await this.electors.save(elector);
-    return { id: elector.id, voteId: elector.voteId, status: elector.status };
+    return ManageElectorResult.of({
+      id: elector.id,
+      voteId: elector.voteId,
+      status: elector.status,
+    });
   }
 }

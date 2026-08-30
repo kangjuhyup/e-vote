@@ -1,4 +1,4 @@
-import { AuthenticateElectorCommand } from '../../../../src/application/command/authenticate-elector.command';
+import { AuthenticateElectorCommand } from '../../../../src/application/command/dto/request/authenticate-elector.command';
 import { AuthenticateElectorHandler } from '../../../../src/application/command/handler/authenticate-elector.handler';
 import { ElectorIdentityVerificationPort } from '../../../../src/application/port/gateway/elector-identity-verification.port';
 import { ElectorRepositoryPort } from '../../../../src/application/port/persistence/command/elector-repository.port';

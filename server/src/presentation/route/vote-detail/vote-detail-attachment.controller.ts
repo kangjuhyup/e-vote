@@ -7,9 +7,9 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { ConfirmAttachmentUploadCommand } from '../../../application/command/confirm-attachment-upload.command';
+import { ConfirmAttachmentUploadCommand } from '../../../application/command/dto/request/confirm-attachment-upload.command';
 import { ConfirmAttachmentUploadHandler } from '../../../application/command/handler/confirm-attachment-upload.handler';
-import { RequestAttachmentUploadCommand } from '../../../application/command/request-attachment-upload.command';
+import { RequestAttachmentUploadCommand } from '../../../application/command/dto/request/request-attachment-upload.command';
 import { RequestAttachmentUploadHandler } from '../../../application/command/handler/request-attachment-upload.handler';
 import { AttachmentTargetType } from '../../../application/port/persistence/command/attachment-repository.port';
 import { throwAttachmentUploadHttpError } from '../attachment/attachment-upload-error.mapper';

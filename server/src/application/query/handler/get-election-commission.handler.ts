@@ -3,8 +3,8 @@ import {
   ELECTION_COMMISSION_READ_REPOSITORY_PORT,
   type ElectionCommissionReadRepositoryPort,
 } from '../../port/persistence/query/election-commission-read-repository.port';
-import { GetElectionCommissionQuery } from '../get-election-commission.query';
-import type { ElectionCommissionView } from '../view/election-commission.view';
+import { GetElectionCommissionQuery } from '../dto/request/get-election-commission.query';
+import type { ElectionCommissionView } from '../dto/response/election-commission.view';
 
 export class ElectionCommissionNotFoundError extends Error {
   constructor() {

@@ -1,7 +1,7 @@
 import type {
   ElectorPageView,
   ElectorView,
-} from '../../../query/view/elector.view';
+} from '../../../query/dto/response/elector.view';
 
 export const ELECTOR_READ_REPOSITORY_PORT = Symbol(
   'ELECTOR_READ_REPOSITORY_PORT',

@@ -9,13 +9,8 @@ import {
   assertAttachmentUploadMetadata,
   normalizeMimeType,
 } from '../attachment-upload.policy';
-import { ConfirmAttachmentUploadCommand } from '../confirm-attachment-upload.command';
-
-export type ConfirmAttachmentUploadResult = {
-  readonly attachmentId: string;
-  readonly fileId: string;
-  readonly storageKey: string;
-};
+import { ConfirmAttachmentUploadCommand } from '../dto/request/confirm-attachment-upload.command';
+import { ConfirmAttachmentUploadResult } from '../dto/response/confirm-attachment-upload-result.dto';
 
 export class UploadedAttachmentObjectNotFoundError extends Error {
   constructor() {
@@ -60,7 +55,7 @@ export class ConfirmAttachmentUploadHandler {
       throw new UploadedAttachmentMetadataMismatchError();
     }
 
-    return this.attachmentRepository.saveAttachedFile({
+    const attachment = await this.attachmentRepository.saveAttachedFile({
       target: command.target,
       attachmentType: command.attachmentType,
       sortOrder: command.sortOrder,
@@ -72,5 +67,7 @@ export class ConfirmAttachmentUploadHandler {
         checksum: command.checksum,
       },
     });
+
+    return ConfirmAttachmentUploadResult.of(attachment);
   }
 }

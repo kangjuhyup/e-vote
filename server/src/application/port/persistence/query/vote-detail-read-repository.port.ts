@@ -1,7 +1,7 @@
 import type {
   VoteDetailPageReadView,
   VoteDetailReadView,
-} from '../../../query/view/vote-detail-read.view';
+} from '../../../query/dto/response/vote-detail-read.view';
 
 export const VOTE_DETAIL_READ_REPOSITORY_PORT = Symbol(
   'VOTE_DETAIL_READ_REPOSITORY_PORT',

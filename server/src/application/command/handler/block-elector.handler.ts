@@ -8,7 +8,8 @@ import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
 } from '../../port/persistence/command/vote-repository.port';
-import { BlockElectorCommand } from '../block-elector.command';
+import { BlockElectorCommand } from '../dto/request/block-elector.command';
+import { ManageElectorResult } from '../dto/response/manage-elector-result.dto';
 import { ManagedResourceNotFoundError } from '../vote-management.error';
 
 @Injectable()
@@ -19,7 +20,7 @@ export class BlockElectorHandler {
     private readonly electors: ElectorRepositoryPort,
   ) {}
 
-  async execute(command: BlockElectorCommand) {
+  async execute(command: BlockElectorCommand): Promise<ManageElectorResult> {
     const [vote, elector] = await Promise.all([
       this.votes.findById(command.voteId),
       this.electors.findById(command.voteId, command.electorId),
@@ -34,6 +35,10 @@ export class BlockElectorHandler {
       );
     elector.block();
     await this.electors.save(elector);
-    return { id: elector.id, voteId: elector.voteId, status: elector.status };
+    return ManageElectorResult.of({
+      id: elector.id,
+      voteId: elector.voteId,
+      status: elector.status,
+    });
   }
 }

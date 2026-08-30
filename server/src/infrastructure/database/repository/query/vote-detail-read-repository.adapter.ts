@@ -8,7 +8,7 @@ import {
   VoteDetailPageReadView,
   VoteDetailPolicyOverridesReadView,
   VoteDetailReadView,
-} from '../../../../application/query/view/vote-detail-read.view';
+} from '../../../../application/query/dto/response/vote-detail-read.view';
 import type { VoteDetailType } from '../../../../domain/vote/type/vote-detail.type';
 import type {
   ParticipationUnit,

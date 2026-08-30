@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { VOTE_DETAIL_READ_REPOSITORY_PORT } from '../../port/persistence/query/vote-detail-read-repository.port';
 import type { VoteDetailReadRepositoryPort } from '../../port/persistence/query/vote-detail-read-repository.port';
-import { GetVoteDetailQuery } from '../get-vote-detail.query';
-import type { VoteDetailReadView } from '../view/vote-detail-read.view';
+import { GetVoteDetailQuery } from '../dto/request/get-vote-detail.query';
+import type { VoteDetailReadView } from '../dto/response/vote-detail-read.view';
 
 export class VoteDetailNotFoundError extends Error {
   constructor() {

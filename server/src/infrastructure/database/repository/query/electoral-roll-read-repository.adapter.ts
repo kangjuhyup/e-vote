@@ -4,7 +4,7 @@ import type { ElectoralRollReadRepositoryPort } from '../../../../application/po
 import {
   ElectoralRollMemberView,
   ElectoralRollView,
-} from '../../../../application/query/view/electoral-roll.view';
+} from '../../../../application/query/dto/response/electoral-roll.view';
 import {
   JOINED_RELATION_LOAD_OPTIONS,
   getDatabaseEntities,

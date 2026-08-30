@@ -3,8 +3,8 @@ import {
   FIELD_VOTING_SESSION_READ_REPOSITORY_PORT,
   type FieldVotingSessionReadRepositoryPort,
 } from '../../port/persistence/query/field-voting-session-read-repository.port';
-import { GetFieldVotingSessionQuery } from '../get-field-voting-session.query';
-import type { FieldVotingSessionView } from '../view/field-voting-session.view';
+import { GetFieldVotingSessionQuery } from '../dto/request/get-field-voting-session.query';
+import type { FieldVotingSessionView } from '../dto/response/field-voting-session.view';
 
 export class FieldVotingSessionReadNotFoundError extends Error {
   constructor() {

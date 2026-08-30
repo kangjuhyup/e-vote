@@ -4,13 +4,13 @@ import {
   GetElectionCommissionHandler,
 } from '../../../../src/application/query/handler/get-election-commission.handler';
 import { GetElectionCommissionPageHandler } from '../../../../src/application/query/handler/get-election-commission-page.handler';
-import { GetElectionCommissionPageQuery } from '../../../../src/application/query/get-election-commission-page.query';
-import { GetElectionCommissionQuery } from '../../../../src/application/query/get-election-commission.query';
+import { GetElectionCommissionPageQuery } from '../../../../src/application/query/dto/request/get-election-commission-page.query';
+import { GetElectionCommissionQuery } from '../../../../src/application/query/dto/request/get-election-commission.query';
 import {
   ElectionCommissionMemberView,
   ElectionCommissionPageView,
   ElectionCommissionView,
-} from '../../../../src/application/query/view/election-commission.view';
+} from '../../../../src/application/query/dto/response/election-commission.view';
 import { ElectionCommissionMemberRole } from '../../../../src/domain/election-commission/type/election-commission-member-role.type';
 import { ElectionCommissionMemberStatus } from '../../../../src/domain/election-commission/type/election-commission-member-status.type';
 import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';

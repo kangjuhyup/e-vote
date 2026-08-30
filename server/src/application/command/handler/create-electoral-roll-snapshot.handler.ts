@@ -4,7 +4,8 @@ import {
   ElectoralRollSnapshotAggregate,
   ElectoralRollSnapshotMember,
 } from '../../../domain/electoral-roll/electoral-roll-snapshot.aggregate';
-import { CreateElectoralRollSnapshotCommand } from '../create-electoral-roll-snapshot.command';
+import { CreateElectoralRollSnapshotCommand } from '../dto/request/create-electoral-roll-snapshot.command';
+import { CreateElectoralRollSnapshotResult } from '../dto/response/create-electoral-roll-snapshot-result.dto';
 import { ElectoralRollNotFoundError } from '../electoral-roll.error';
 import {
   ELECTORAL_ROLL_REPOSITORY_PORT,
@@ -22,15 +23,6 @@ import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
 } from '../../persistence/transaction/transactional.decorator';
-
-export type CreateElectoralRollSnapshotResult = {
-  readonly id: string;
-  readonly electoralRollId: string;
-  readonly sourceRevision: number;
-  readonly memberCount: number;
-  readonly contentHash: string;
-  readonly createdAt: Date;
-};
 
 @Injectable()
 export class CreateElectoralRollSnapshotHandler {
@@ -115,12 +107,12 @@ function compareCanonical(left: string, right: string): number {
 function toSnapshotResult(
   snapshot: ElectoralRollSnapshotAggregate,
 ): CreateElectoralRollSnapshotResult {
-  return {
+  return CreateElectoralRollSnapshotResult.of({
     id: snapshot.id,
     electoralRollId: snapshot.electoralRollId,
     sourceRevision: snapshot.sourceRevision,
     memberCount: snapshot.memberCount,
     contentHash: snapshot.contentHash,
     createdAt: snapshot.createdAt,
-  };
+  });
 }

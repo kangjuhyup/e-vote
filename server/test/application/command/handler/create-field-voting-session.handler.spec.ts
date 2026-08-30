@@ -1,4 +1,4 @@
-import { CreateFieldVotingSessionCommand } from '../../../../src/application/command/create-field-voting-session.command';
+import { CreateFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/create-field-voting-session.command';
 import { CreateFieldVotingSessionHandler } from '../../../../src/application/command/handler/create-field-voting-session.handler';
 import { ElectionCommissionMemberRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-member-repository.port';
 import { ElectionCommissionRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-repository.port';

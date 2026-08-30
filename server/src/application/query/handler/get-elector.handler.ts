@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ELECTOR_READ_REPOSITORY_PORT } from '../../port/persistence/query/elector-read-repository.port';
 import type { ElectorReadRepositoryPort } from '../../port/persistence/query/elector-read-repository.port';
-import { GetElectorQuery } from '../get-elector.query';
-import type { ElectorView } from '../view/elector.view';
+import { GetElectorQuery } from '../dto/request/get-elector.query';
+import type { ElectorView } from '../dto/response/elector.view';
 
 export class ElectorNotFoundError extends Error {
   constructor() {

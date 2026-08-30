@@ -14,9 +14,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { GetVoteResultHandler } from '../../../application/query/handler/get-vote-result.handler';
-import { GetVoteResultQuery } from '../../../application/query/get-vote-result.query';
+import { GetVoteResultQuery } from '../../../application/query/dto/request/get-vote-result.query';
 import { GetVoteTurnoutHandler } from '../../../application/query/handler/get-vote-turnout.handler';
-import { GetVoteTurnoutQuery } from '../../../application/query/get-vote-turnout.query';
+import { GetVoteTurnoutQuery } from '../../../application/query/dto/request/get-vote-turnout.query';
 import {
   VoteResultUnavailableError,
   VoteStatisticsInconsistentError,

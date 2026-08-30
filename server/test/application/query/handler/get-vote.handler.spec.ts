@@ -2,14 +2,14 @@ import {
   GetVoteHandler,
   VoteNotFoundError,
 } from '../../../../src/application/query/handler/get-vote.handler';
-import { GetVoteQuery } from '../../../../src/application/query/get-vote.query';
+import { GetVoteQuery } from '../../../../src/application/query/dto/request/get-vote.query';
 import {
   IdentityVerificationPolicyView,
   VotePageView,
   VotePolicyView,
   VoteSummaryView,
   VoteView,
-} from '../../../../src/application/query/view/vote.view';
+} from '../../../../src/application/query/dto/response/vote.view';
 import type { VoteReadRepositoryPort } from '../../../../src/application/port/persistence/query/vote-read-repository.port';
 import {
   ParticipationUnit,
@@ -20,7 +20,7 @@ import {
 import { VoteStatus } from '../../../../src/domain/vote/type/vote-status.type';
 import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
 import { GetVotePageHandler } from '../../../../src/application/query/handler/get-vote-page.handler';
-import { GetVotePageQuery } from '../../../../src/application/query/get-vote-page.query';
+import { GetVotePageQuery } from '../../../../src/application/query/dto/request/get-vote-page.query';
 
 describe('vote query handlers', () => {
   it('loads a vote detail through the read repository', async () => {

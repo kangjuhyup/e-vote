@@ -14,12 +14,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { GetVotePageHandler } from '../../../application/query/handler/get-vote-page.handler';
-import { GetVotePageQuery as GetVotePageApplicationQuery } from '../../../application/query/get-vote-page.query';
+import { GetVotePageQuery as GetVotePageApplicationQuery } from '../../../application/query/dto/request/get-vote-page.query';
 import {
   GetVoteHandler,
   VoteNotFoundError,
 } from '../../../application/query/handler/get-vote.handler';
-import { GetVoteQuery } from '../../../application/query/get-vote.query';
+import { GetVoteQuery } from '../../../application/query/dto/request/get-vote.query';
 import { GetVotePageQuery as GetVotePageRequestQuery } from './dto/get-vote-page-request.dto';
 import { GetVotePageResponse } from './dto/get-vote-page-response.dto';
 import { GetVoteParam } from './dto/get-vote-request.dto';

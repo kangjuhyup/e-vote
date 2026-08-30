@@ -15,12 +15,12 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateVoteCommand } from '../../../application/command/create-vote.command';
+import { CreateVoteCommand } from '../../../application/command/dto/request/create-vote.command';
 import { CreateVoteHandler } from '../../../application/command/handler/create-vote.handler';
 import { CreateVoteBody } from './dto/create-vote-request.dto';
 import { CreateVoteResponse } from './dto/create-vote-response.dto';
-import { ChangeVoteStatusCommand } from '../../../application/command/change-vote-status.command';
-import { UpdateVoteCommand } from '../../../application/command/update-vote.command';
+import { ChangeVoteStatusCommand } from '../../../application/command/dto/request/change-vote-status.command';
+import { UpdateVoteCommand } from '../../../application/command/dto/request/update-vote.command';
 import { ChangeVoteStatusHandler } from '../../../application/command/handler/change-vote-status.handler';
 import { UpdateVoteHandler } from '../../../application/command/handler/update-vote.handler';
 import { VoteParam } from './dto/create-vote-request.dto';
@@ -29,7 +29,7 @@ import {
   UpdateVoteBody,
 } from './dto/manage-vote-request.dto';
 import { ManageVoteResponse } from './dto/manage-vote-response.dto';
-import { AttachElectoralRollSnapshotCommand } from '../../../application/command/attach-electoral-roll-snapshot.command';
+import { AttachElectoralRollSnapshotCommand } from '../../../application/command/dto/request/attach-electoral-roll-snapshot.command';
 import { AttachElectoralRollSnapshotHandler } from '../../../application/command/handler/attach-electoral-roll-snapshot.handler';
 import { throwMappedElectoralRollError } from '../electoral-roll/electoral-roll-error.mapper';
 import { AttachElectoralRollSnapshotBody } from './dto/attach-electoral-roll-snapshot-request.dto';

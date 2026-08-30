@@ -1,7 +1,7 @@
 import type {
   CandidatePageReadView,
   CandidateReadView,
-} from '../../../query/view/candidate-read.view';
+} from '../../../query/dto/response/candidate-read.view';
 
 export const CANDIDATE_READ_REPOSITORY_PORT = Symbol(
   'CANDIDATE_READ_REPOSITORY_PORT',

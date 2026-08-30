@@ -1,11 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  ChangeFieldVotingSessionStatusResult,
-  FieldVotingSessionNotFoundError,
-} from './open-field-voting-session.handler';
+import { FieldVotingSessionNotFoundError } from './open-field-voting-session.handler';
 import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from '../../port/persistence/command/field-voting-session-repository.port';
 import type { FieldVotingSessionRepositoryPort } from '../../port/persistence/command/field-voting-session-repository.port';
-import { CloseFieldVotingSessionCommand } from '../close-field-voting-session.command';
+import { CloseFieldVotingSessionCommand } from '../dto/request/close-field-voting-session.command';
+import { ChangeFieldVotingSessionStatusResult } from '../dto/response/change-field-voting-session-status-result.dto';
 
 @Injectable()
 export class CloseFieldVotingSessionHandler {
@@ -28,9 +26,9 @@ export class CloseFieldVotingSessionHandler {
     session.close(command.closedAt);
     await this.fieldVotingSessionRepository.save(session);
 
-    return {
+    return ChangeFieldVotingSessionStatusResult.of({
       id: session.id,
       status: session.status,
-    };
+    });
   }
 }

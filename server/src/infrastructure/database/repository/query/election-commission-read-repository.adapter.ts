@@ -6,7 +6,7 @@ import {
   ElectionCommissionPageView,
   ElectionCommissionSummaryView,
   ElectionCommissionView,
-} from '../../../../application/query/view/election-commission.view';
+} from '../../../../application/query/dto/response/election-commission.view';
 import type { ElectionCommissionMemberRole } from '../../../../domain/election-commission/type/election-commission-member-role.type';
 import type { ElectionCommissionMemberStatus } from '../../../../domain/election-commission/type/election-commission-member-status.type';
 import type { ElectionCommissionStatus } from '../../../../domain/election-commission/type/election-commission-status.type';

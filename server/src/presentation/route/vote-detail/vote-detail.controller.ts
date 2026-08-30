@@ -15,15 +15,15 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateVoteDetailCommand } from '../../../application/command/create-vote-detail.command';
+import { CreateVoteDetailCommand } from '../../../application/command/dto/request/create-vote-detail.command';
 import { CreateVoteDetailHandler } from '../../../application/command/handler/create-vote-detail.handler';
 import {
   CreateVoteDetailBody,
   CreateVoteDetailParam,
 } from './dto/create-vote-detail-request.dto';
 import { CreateVoteDetailResponse } from './dto/create-vote-detail-response.dto';
-import { ChangeVoteDetailStatusCommand } from '../../../application/command/change-vote-detail-status.command';
-import { UpdateVoteDetailCommand } from '../../../application/command/update-vote-detail.command';
+import { ChangeVoteDetailStatusCommand } from '../../../application/command/dto/request/change-vote-detail-status.command';
+import { UpdateVoteDetailCommand } from '../../../application/command/dto/request/update-vote-detail.command';
 import { ChangeVoteDetailStatusHandler } from '../../../application/command/handler/change-vote-detail-status.handler';
 import { UpdateVoteDetailHandler } from '../../../application/command/handler/update-vote-detail.handler';
 import {

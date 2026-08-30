@@ -13,12 +13,12 @@ import {
   AttachmentTargetValidator,
 } from '../../../../src/application/command/attachment-target.validator';
 import { UnsupportedAttachmentTypeError } from '../../../../src/application/command/attachment-upload.policy';
-import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/confirm-attachment-upload.command';
+import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/dto/request/confirm-attachment-upload.command';
 import {
   ConfirmAttachmentUploadHandler,
   UploadedAttachmentObjectNotFoundError,
 } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
-import { RequestAttachmentUploadCommand } from '../../../../src/application/command/request-attachment-upload.command';
+import { RequestAttachmentUploadCommand } from '../../../../src/application/command/dto/request/request-attachment-upload.command';
 import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
 
 describe('attachment upload handlers', () => {
