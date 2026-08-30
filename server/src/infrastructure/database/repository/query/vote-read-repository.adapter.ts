@@ -36,14 +36,20 @@ import {
 
 const VOTE_DETAIL_READ_RELATIONS = [
   'commission',
+  'electoralRollSnapshot',
   'votingChannels',
   'voteDetails.candidates',
 ] as const;
-const VOTE_PAGE_READ_RELATIONS = ['commission', 'votingChannels'] as const;
+const VOTE_PAGE_READ_RELATIONS = [
+  'commission',
+  'electoralRollSnapshot',
+  'votingChannels',
+] as const;
 
 type VoteReadPersistence = {
   readonly id: string;
   readonly commission: { readonly id: string };
+  readonly electoralRollSnapshot: { readonly id: string } | null;
   readonly title: string;
   readonly description: string;
   readonly votingChannels: LoadedCollectionLike<{
@@ -163,6 +169,7 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
         provider: entity.identityVerificationProvider ?? undefined,
         method: entity.identityVerificationMethod ?? undefined,
       }),
+      electoralRollSnapshotId: entity.electoralRollSnapshot?.id,
       status: entity.status,
       startedAt: entity.startedAt,
       endedAt: entity.endedAt,

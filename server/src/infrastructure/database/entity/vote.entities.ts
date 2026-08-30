@@ -31,6 +31,13 @@ export function createVoteEntities(
           .fieldName('commission_id')
           .inversedBy('votes')
           .deleteRule('restrict'),
+      electoralRollSnapshot: () =>
+        p
+          .manyToOne(getEntity(context, 'ElectoralRollSnapshotEntity'))
+          .fieldName('electoral_roll_snapshot_id')
+          .inversedBy('votes')
+          .deleteRule('restrict')
+          .nullable(),
       title: p.string(),
       description: p.text(),
       defaultPrivacyMode: p

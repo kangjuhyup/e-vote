@@ -28,6 +28,10 @@ export class UpdateElectorHandler {
     if (!elector) throw new ManagedResourceNotFoundError('elector');
     if (vote.status !== 'DRAFT')
       throw new DomainError('only draft vote resources can be updated');
+    if (vote.electoralRollSnapshotId !== undefined)
+      throw new DomainError(
+        'electors are managed by the attached electoral roll snapshot',
+      );
     elector.update({
       name: elector.name,
       identifier: command.identifier,

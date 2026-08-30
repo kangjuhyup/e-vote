@@ -14,7 +14,11 @@ import {
   type LoadedCollectionLike,
 } from '../database-repository.util';
 
-const VOTE_RELATIONS = ['commission', 'votingChannels'] as const;
+const VOTE_RELATIONS = [
+  'commission',
+  'electoralRollSnapshot',
+  'votingChannels',
+] as const;
 type VoteEntityPersistence = Omit<VotePersistence, 'votingChannels'> & {
   readonly votingChannels: LoadedCollectionLike<
     VotePersistence['votingChannels'][number]
@@ -44,8 +48,12 @@ export class VoteRepositoryAdapter implements VoteRepositoryPort {
   }
 
   async save(vote: VoteAggregate): Promise<void> {
-    const { ElectionCommissionEntity, VoteEntity, VoteVotingChannelEntity } =
-      await getDatabaseEntities();
+    const {
+      ElectionCommissionEntity,
+      ElectoralRollSnapshotEntity,
+      VoteEntity,
+      VoteVotingChannelEntity,
+    } = await getDatabaseEntities();
     const now = new Date();
     const savedVote = await prepareEntityForSave(
       this.em,
@@ -63,6 +71,13 @@ export class VoteRepositoryAdapter implements VoteRepositoryPort {
           ElectionCommissionEntity,
           vote.commissionId,
         ),
+        electoralRollSnapshot: vote.electoralRollSnapshotId
+          ? entityReference(
+              this.em,
+              ElectoralRollSnapshotEntity,
+              vote.electoralRollSnapshotId,
+            )
+          : null,
         title: vote.title,
         defaultPrivacyMode: vote.defaultPolicy.privacyMode,
         defaultParticipationUnit: vote.defaultPolicy.participationUnit,
@@ -102,6 +117,7 @@ export class VoteRepositoryAdapter implements VoteRepositoryPort {
     return VoteMapper.toDomain({
       id: entity.id,
       commission: entity.commission,
+      electoralRollSnapshot: entity.electoralRollSnapshot,
       title: entity.title,
       votingChannels: loadedItems<VotePersistence['votingChannels'][number]>(
         entity.votingChannels,

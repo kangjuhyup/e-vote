@@ -28,6 +28,10 @@ export class BlockElectorHandler {
     if (!elector) throw new ManagedResourceNotFoundError('elector');
     if (vote.status !== 'DRAFT')
       throw new DomainError('only draft vote resources can be deleted');
+    if (vote.electoralRollSnapshotId !== undefined)
+      throw new DomainError(
+        'electors are managed by the attached electoral roll snapshot',
+      );
     elector.block();
     await this.electors.save(elector);
     return { id: elector.id, voteId: elector.voteId, status: elector.status };

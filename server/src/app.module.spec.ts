@@ -5,11 +5,15 @@ import { CANDIDATE_READ_REPOSITORY_PORT } from './application/port/persistence/q
 import { CANDIDATE_REPOSITORY_PORT } from './application/port/persistence/command/candidate-repository.port';
 import { ELECTION_COMMISSION_REPOSITORY_PORT } from './application/port/persistence/command/election-commission-repository.port';
 import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from './application/port/persistence/command/election-commission-member-repository.port';
+import { ELECTORAL_ROLL_REPOSITORY_PORT } from './application/port/persistence/command/electoral-roll-repository.port';
+import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './application/port/persistence/command/electoral-roll-snapshot-repository.port';
 import { ELECTOR_REPOSITORY_PORT } from './application/port/persistence/command/elector-repository.port';
 import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from './application/port/persistence/command/field-voting-session-repository.port';
 import { ELECTION_COMMISSION_READ_REPOSITORY_PORT } from './application/port/persistence/query/election-commission-read-repository.port';
+import { ELECTORAL_ROLL_READ_REPOSITORY_PORT } from './application/port/persistence/query/electoral-roll-read-repository.port';
 import { FIELD_VOTING_SESSION_READ_REPOSITORY_PORT } from './application/port/persistence/query/field-voting-session-read-repository.port';
 import { ELECTOR_READ_REPOSITORY_PORT } from './application/port/persistence/query/elector-read-repository.port';
+import { DATABASE_TRANSACTION_MANAGER } from './application/port/persistence/transaction/database-transaction-manager.port';
 import { REDIS_HEALTH_PORT } from './application/port/health/redis-health.port';
 import { STORAGE_PORT } from './application/port/gateway/storage.port';
 import { STORAGE_HEALTH_PORT } from './application/port/health/storage-health.port';
@@ -86,6 +90,31 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
       },
     },
     {
+      provide: ELECTORAL_ROLL_REPOSITORY_PORT,
+      useValue: {
+        nextId: jest.fn(),
+        nextMemberId: jest.fn(),
+        findById: jest.fn(),
+        findMemberById: jest.fn(),
+        findMembersByRollId: jest.fn(),
+        save: jest.fn(),
+        saveMember: jest.fn(),
+        removeMember: jest.fn(),
+      },
+    },
+    {
+      provide: ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT,
+      useValue: {
+        nextId: jest.fn(),
+        nextMemberId: jest.fn(),
+        findById: jest.fn(),
+        findBySourceRevision: jest.fn(),
+        save: jest.fn(),
+        hasVoteElectors: jest.fn(),
+        materializeVoteElectors: jest.fn(),
+      },
+    },
+    {
       provide: ELECTOR_REPOSITORY_PORT,
       useValue: { nextId: jest.fn(), findById: jest.fn(), save: jest.fn() },
     },
@@ -96,6 +125,14 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
     {
       provide: ELECTION_COMMISSION_READ_REPOSITORY_PORT,
       useValue: {},
+    },
+    {
+      provide: ELECTORAL_ROLL_READ_REPOSITORY_PORT,
+      useValue: {},
+    },
+    {
+      provide: DATABASE_TRANSACTION_MANAGER,
+      useValue: { runInTransaction: jest.fn() },
     },
     {
       provide: FIELD_VOTING_SESSION_READ_REPOSITORY_PORT,
@@ -137,9 +174,13 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
     CANDIDATE_REPOSITORY_PORT,
     ELECTION_COMMISSION_REPOSITORY_PORT,
     ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
+    ELECTORAL_ROLL_REPOSITORY_PORT,
+    ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT,
     ELECTOR_REPOSITORY_PORT,
     FIELD_VOTING_SESSION_REPOSITORY_PORT,
     ELECTION_COMMISSION_READ_REPOSITORY_PORT,
+    ELECTORAL_ROLL_READ_REPOSITORY_PORT,
+    DATABASE_TRANSACTION_MANAGER,
     FIELD_VOTING_SESSION_READ_REPOSITORY_PORT,
     VOTE_READ_REPOSITORY_PORT,
     VOTE_DETAIL_READ_REPOSITORY_PORT,

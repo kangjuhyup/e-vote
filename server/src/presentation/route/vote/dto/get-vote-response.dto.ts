@@ -65,6 +65,7 @@ type VoteSummarySource = {
   readonly votingChannels: readonly string[];
   readonly defaultPolicy: VotePolicySource;
   readonly identityVerificationPolicy: IdentityVerificationPolicySource;
+  readonly electoralRollSnapshotId?: string;
   readonly status: string;
   readonly startedAt: Date;
   readonly endedAt: Date;
@@ -266,6 +267,13 @@ export class VoteSummaryResponse {
   readonly commissionId: string;
 
   @ApiProperty({
+    required: false,
+    example: 'snapshot-1',
+    description: '투표에 고정된 선거인명부 스냅샷 ID입니다.',
+  })
+  readonly electoralRollSnapshotId?: string;
+
+  @ApiProperty({
     example: 'Board election',
     description: '부모 투표 제목입니다.',
   })
@@ -329,6 +337,9 @@ export class VoteSummaryResponse {
   protected constructor(source: VoteSummarySource) {
     this.id = source.id;
     this.commissionId = source.commissionId;
+    if (source.electoralRollSnapshotId !== undefined) {
+      this.electoralRollSnapshotId = source.electoralRollSnapshotId;
+    }
     this.title = source.title;
     this.votingChannels = source.votingChannels;
     this.defaultPolicy = VotePolicyResponse.of(source.defaultPolicy);

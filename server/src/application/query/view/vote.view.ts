@@ -195,6 +195,7 @@ export type VoteSummaryViewProps = {
   readonly votingChannels: readonly VotingChannel[];
   readonly defaultPolicy: VotePolicyView;
   readonly identityVerificationPolicy: IdentityVerificationPolicyView;
+  readonly electoralRollSnapshotId?: string;
   readonly status: VoteStatus;
   readonly startedAt: Date;
   readonly endedAt: Date;
@@ -203,6 +204,8 @@ export type VoteSummaryViewProps = {
 };
 
 export class VoteSummaryView {
+  readonly electoralRollSnapshotId?: string;
+
   private constructor(
     readonly id: string,
     readonly commissionId: string,
@@ -210,12 +213,17 @@ export class VoteSummaryView {
     readonly votingChannels: readonly VotingChannel[],
     readonly defaultPolicy: VotePolicyView,
     readonly identityVerificationPolicy: IdentityVerificationPolicyView,
+    electoralRollSnapshotId: string | undefined,
     readonly status: VoteStatus,
     readonly startedAt: Date,
     readonly endedAt: Date,
     readonly createdAt: Date,
     readonly updatedAt: Date,
-  ) {}
+  ) {
+    if (electoralRollSnapshotId !== undefined) {
+      this.electoralRollSnapshotId = electoralRollSnapshotId;
+    }
+  }
 
   static of(params: VoteSummaryViewProps): VoteSummaryView {
     return new VoteSummaryView(
@@ -225,6 +233,7 @@ export class VoteSummaryView {
       params.votingChannels,
       params.defaultPolicy,
       params.identityVerificationPolicy,
+      params.electoralRollSnapshotId,
       params.status,
       params.startedAt,
       params.endedAt,
@@ -240,6 +249,8 @@ export type VoteViewProps = VoteSummaryViewProps & {
 };
 
 export class VoteView {
+  readonly electoralRollSnapshotId?: string;
+
   private constructor(
     readonly id: string,
     readonly commissionId: string,
@@ -248,13 +259,18 @@ export class VoteView {
     readonly votingChannels: readonly VotingChannel[],
     readonly defaultPolicy: VotePolicyView,
     readonly identityVerificationPolicy: IdentityVerificationPolicyView,
+    electoralRollSnapshotId: string | undefined,
     readonly status: VoteStatus,
     readonly voteDetails: readonly VoteDetailView[],
     readonly startedAt: Date,
     readonly endedAt: Date,
     readonly createdAt: Date,
     readonly updatedAt: Date,
-  ) {}
+  ) {
+    if (electoralRollSnapshotId !== undefined) {
+      this.electoralRollSnapshotId = electoralRollSnapshotId;
+    }
+  }
 
   static of(params: VoteViewProps): VoteView {
     return new VoteView(
@@ -265,6 +281,7 @@ export class VoteView {
       params.votingChannels,
       params.defaultPolicy,
       params.identityVerificationPolicy,
+      params.electoralRollSnapshotId,
       params.status,
       params.voteDetails,
       params.startedAt,
