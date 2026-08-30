@@ -70,6 +70,8 @@ describe('ElectorReadController', () => {
           name: 'Kim Min Su',
           identifier: 'member-1',
           identityVerified: true,
+          participated: true,
+          participatedAt: '2026-08-13T00:30:00.000Z',
           createdAt: '2026-08-13T00:00:00.000Z',
         },
       ],
@@ -100,6 +102,8 @@ describe('ElectorReadController', () => {
       voteWeight: 2,
       status: ElectorStatus.Eligible,
       identityVerified: true,
+      participated: true,
+      participatedAt: '2026-08-13T00:30:00.000Z',
       createdAt: '2026-08-13T00:00:00.000Z',
       updatedAt: '2026-08-13T01:00:00.000Z',
     });
@@ -134,6 +138,8 @@ function createElectorView(): ElectorView {
     voteWeight: 2,
     status: ElectorStatus.Eligible,
     identityVerified: true,
+    participated: true,
+    participatedAt: new Date('2026-08-13T00:30:00.000Z'),
     createdAt: new Date('2026-08-13T00:00:00.000Z'),
     updatedAt: new Date('2026-08-13T01:00:00.000Z'),
   });
