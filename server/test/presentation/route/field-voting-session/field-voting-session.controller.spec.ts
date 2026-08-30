@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { CancelFieldVotingSessionCommand } from '../../../../src/modules/field-voting/application/command/dto/request/cancel-field-voting-session.command';
 import { CancelFieldVotingSessionHandler } from '../../../../src/modules/field-voting/application/command/handler/cancel-field-voting-session.handler';
 import { CloseFieldVotingSessionCommand } from '../../../../src/modules/field-voting/application/command/dto/request/close-field-voting-session.command';
@@ -60,6 +61,7 @@ describe('FieldVotingSessionController', () => {
     });
 
     const response = await controller.createFieldVotingSession(
+      TEST_USER_PRINCIPAL,
       { voteId: 'vote-1' },
       {
         commissionId: 'commission-1',
@@ -107,6 +109,7 @@ describe('FieldVotingSessionController', () => {
 
     await expect(
       controller.openFieldVotingSession(
+        TEST_USER_PRINCIPAL,
         { fieldVotingSessionId: 'session-1' },
         { changedAt: '2026-08-20T00:00:00.000Z' },
       ),
@@ -116,6 +119,7 @@ describe('FieldVotingSessionController', () => {
     });
     await expect(
       controller.closeFieldVotingSession(
+        TEST_USER_PRINCIPAL,
         { fieldVotingSessionId: 'session-1' },
         { changedAt: '2026-08-20T09:00:00.000Z' },
       ),
@@ -125,6 +129,7 @@ describe('FieldVotingSessionController', () => {
     });
     await expect(
       controller.cancelFieldVotingSession(
+        TEST_USER_PRINCIPAL,
         { fieldVotingSessionId: 'session-1' },
         { changedAt: '2026-08-20T03:00:00.000Z' },
       ),

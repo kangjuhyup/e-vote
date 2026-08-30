@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { NotFoundException } from '@nestjs/common';
 import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/confirm-attachment-upload.command';
 import { ConfirmAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
@@ -89,7 +90,7 @@ describe('VoteController', () => {
   it('maps GET /votes to vote page query handler', async () => {
     getVotePageExecute.mockResolvedValue(createVotePageView());
 
-    const response = await readController.getVotePage({
+    const response = await readController.getVotePage(TEST_USER_PRINCIPAL, {
       page: '2',
       pageSize: '10',
     });
@@ -132,7 +133,9 @@ describe('VoteController', () => {
   it('maps GET /votes/:voteId to vote detail query handler', async () => {
     getVoteExecute.mockResolvedValue(createVoteView());
 
-    const response = await readController.getVote({ voteId: 'vote-1' });
+    const response = await readController.getVote(TEST_USER_PRINCIPAL, {
+      voteId: 'vote-1',
+    });
 
     expect(response).toEqual({
       id: 'vote-1',
@@ -193,7 +196,7 @@ describe('VoteController', () => {
     getVoteExecute.mockRejectedValue(new VoteNotFoundError());
 
     await expect(
-      readController.getVote({ voteId: 'missing-vote' }),
+      readController.getVote(TEST_USER_PRINCIPAL, { voteId: 'missing-vote' }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -204,7 +207,7 @@ describe('VoteController', () => {
       status: VoteStatus.Draft,
     });
 
-    const response = await controller.createVote({
+    const response = await controller.createVote(TEST_USER_PRINCIPAL, {
       commissionId: 'commission-1',
       title: 'Board election',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
@@ -240,6 +243,7 @@ describe('VoteController', () => {
     });
 
     const response = await attachmentController.requestVoteAttachmentUpload(
+      TEST_USER_PRINCIPAL,
       { voteId: 'vote-1' },
       {
         attachmentType: 'NOTICE',
@@ -277,6 +281,7 @@ describe('VoteController', () => {
     });
 
     const response = await attachmentController.confirmVoteAttachmentUpload(
+      TEST_USER_PRINCIPAL,
       { voteId: 'vote-1' },
       {
         storageKey: 'attachments/vote-key',

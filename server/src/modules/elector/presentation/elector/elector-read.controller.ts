@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
   Get,
@@ -60,6 +62,7 @@ export class ElectorReadController {
     description: '선거인 페이지 조회 결과입니다.',
   })
   async getElectorPage(
+    @User() user: UserPrincipal,
     @Param() params: Pick<GetElectorParam, 'voteId'>,
     @Query() query: GetElectorPageRequestQuery,
   ): Promise<GetElectorPageResponse> {
@@ -97,6 +100,7 @@ export class ElectorReadController {
     description: '선거인을 찾을 수 없습니다.',
   })
   async getElector(
+    @User() user: UserPrincipal,
     @Param() params: GetElectorParam,
   ): Promise<GetElectorResponse> {
     try {

@@ -63,7 +63,7 @@
 
 - Produces: a buildable, formatted, committed change on both `서버` and `master`
 
-- [ ] Run the complete Jest suite.
-- [ ] Run Nest build, ESLint, Prettier check, and `git diff --check`.
+- [x] Run the complete Jest suite.
+- [x] Run Nest build, ESLint, Prettier check, and `git diff --check`.
 - [x] Commit the plan separately from implementation.
-- [ ] Commit the implementation and fast-forward `master` without changing unrelated local files.
+- [x] Commit the implementation and fast-forward `master` without changing unrelated local files.

@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
   Get,
@@ -66,6 +68,7 @@ export class CandidateReadController {
     description: '후보 페이지 조회 결과입니다.',
   })
   async getCandidatePage(
+    @User() user: UserPrincipal,
     @Param() params: CreateCandidateParam,
     @Query() query: GetCandidatePageRequestQuery,
   ): Promise<GetCandidatePageResponse> {
@@ -109,6 +112,7 @@ export class CandidateReadController {
     description: '후보를 찾을 수 없습니다.',
   })
   async getCandidate(
+    @User() user: UserPrincipal,
     @Param() params: GetCandidateParam,
   ): Promise<GetCandidateResponse> {
     try {

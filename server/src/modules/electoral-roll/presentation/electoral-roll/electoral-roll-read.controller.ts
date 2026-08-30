@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { GetElectoralRollQuery } from '../../application/query/dto/request/get-electoral-roll.query';
@@ -14,6 +16,7 @@ export class ElectoralRollReadController {
   @Get(':electoralRollId')
   @ApiOkResponse({ type: GetElectoralRollResponse })
   async getElectoralRoll(
+    @User() user: UserPrincipal,
     @Param() params: ElectoralRollParam,
   ): Promise<GetElectoralRollResponse> {
     try {

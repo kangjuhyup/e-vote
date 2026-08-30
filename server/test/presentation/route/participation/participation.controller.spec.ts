@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import {
   BadRequestException,
   ConflictException,
@@ -36,7 +37,7 @@ describe('ParticipationController', () => {
       status: ParticipationStatus.Cast,
     });
 
-    const response = await controller.castParticipation({
+    const response = await controller.castParticipation(TEST_USER_PRINCIPAL, {
       voteId: 'vote-1',
       voteDetailId: 'detail-1',
       electorId: 'elector-1',
@@ -65,7 +66,7 @@ describe('ParticipationController', () => {
 
   it('rejects a missing selected candidate as bad request', async () => {
     await expect(
-      controller.castParticipation({
+      controller.castParticipation(TEST_USER_PRINCIPAL, {
         voteId: 'vote-1',
         voteDetailId: 'detail-1',
         electorId: 'elector-1',
@@ -81,7 +82,7 @@ describe('ParticipationController', () => {
     castParticipationExecute.mockRejectedValue(new CandidateNotFoundError());
 
     await expect(
-      controller.castParticipation({
+      controller.castParticipation(TEST_USER_PRINCIPAL, {
         voteId: 'vote-1',
         voteDetailId: 'detail-1',
         electorId: 'elector-1',
@@ -99,7 +100,7 @@ describe('ParticipationController', () => {
     castParticipationExecute.mockRejectedValue(error);
 
     await expect(
-      controller.castParticipation({
+      controller.castParticipation(TEST_USER_PRINCIPAL, {
         voteId: 'vote-1',
         voteDetailId: 'detail-1',
         electorId: 'elector-1',

@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
   Get,
@@ -38,6 +40,7 @@ export class FieldVotingSessionReadController {
   @ApiOperation({ summary: '현장 투표 세션 목록 조회' })
   @ApiOkResponse({ type: GetFieldVotingSessionPageResponse })
   async getFieldVotingSessionPage(
+    @User() user: UserPrincipal,
     @Param() params: GetFieldVotingSessionPageParam,
     @Query() query: GetFieldVotingSessionPageQuery,
   ): Promise<GetFieldVotingSessionPageResponse> {
@@ -57,6 +60,7 @@ export class FieldVotingSessionReadController {
   @ApiOkResponse({ type: GetFieldVotingSessionResponse })
   @ApiNotFoundResponse({ description: '현장 투표 세션을 찾을 수 없습니다.' })
   async getFieldVotingSession(
+    @User() user: UserPrincipal,
     @Param() params: GetFieldVotingSessionParam,
   ): Promise<GetFieldVotingSessionResponse> {
     try {

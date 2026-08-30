@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
   Get,
@@ -55,6 +57,7 @@ export class VoteReadController {
     description: '부모 투표 페이지 조회 결과입니다.',
   })
   async getVotePage(
+    @User() user: UserPrincipal,
     @Query() query: GetVotePageRequestQuery,
   ): Promise<GetVotePageResponse> {
     const result = await this.getVotePageHandler.execute(
@@ -84,7 +87,10 @@ export class VoteReadController {
   @ApiNotFoundResponse({
     description: '부모 투표를 찾을 수 없습니다.',
   })
-  async getVote(@Param() params: GetVoteParam): Promise<GetVoteResponse> {
+  async getVote(
+    @User() user: UserPrincipal,
+    @Param() params: GetVoteParam,
+  ): Promise<GetVoteResponse> {
     try {
       const result = await this.getVoteHandler.execute(
         GetVoteQuery.of({ voteId: params.voteId }),

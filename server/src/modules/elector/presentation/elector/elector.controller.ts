@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Body,
   ConflictException,
@@ -75,6 +77,7 @@ export class ElectorController {
     description: '같은 그룹 선거인의 지분이 기존 그룹 지분과 다릅니다.',
   })
   async createElector(
+    @User() user: UserPrincipal,
     @Param() params: CreateElectorParam,
     @Body() body: CreateElectorBody,
   ): Promise<CreateElectorResponse> {
@@ -103,6 +106,7 @@ export class ElectorController {
 
   @Patch(':electorId')
   async updateElector(
+    @User() user: UserPrincipal,
     @Param() params: ManageElectorParam,
     @Body() body: UpdateElectorBody,
   ) {
@@ -114,7 +118,10 @@ export class ElectorController {
   }
 
   @Delete(':electorId')
-  async deleteElector(@Param() params: ManageElectorParam) {
+  async deleteElector(
+    @User() user: UserPrincipal,
+    @Param() params: ManageElectorParam,
+  ) {
     return ManageElectorResponse.of(
       await this.blockElectorHandler!.execute(BlockElectorCommand.of(params)),
     );
@@ -145,6 +152,7 @@ export class ElectorController {
     description: '선거인 본인인증 결과입니다.',
   })
   async authenticateElector(
+    @User() user: UserPrincipal,
     @Param() params: AuthenticateElectorParam,
     @Body() body: AuthenticateElectorBody,
   ): Promise<AuthenticateElectorResponse> {

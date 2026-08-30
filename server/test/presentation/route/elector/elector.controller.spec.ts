@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { AuthenticateElectorCommand } from '../../../../src/modules/elector/application/command/dto/request/authenticate-elector.command';
 import { AuthenticateElectorHandler } from '../../../../src/modules/elector/application/command/handler/authenticate-elector.handler';
 import { CreateElectorCommand } from '../../../../src/modules/elector/application/command/dto/request/create-elector.command';
@@ -43,6 +44,7 @@ describe('ElectorController', () => {
     });
 
     const response = await controller.createElector(
+      TEST_USER_PRINCIPAL,
       { voteId: 'vote-1' },
       {
         name: 'Kim Min Su',
@@ -83,6 +85,7 @@ describe('ElectorController', () => {
 
     await expect(
       controller.createElector(
+        TEST_USER_PRINCIPAL,
         { voteId: 'vote-1' },
         {
           name: 'Kim Min Su',
@@ -102,6 +105,7 @@ describe('ElectorController', () => {
     });
 
     const response = await controller.authenticateElector(
+      TEST_USER_PRINCIPAL,
       {
         voteId: 'vote-1',
         electorId: 'elector-1',

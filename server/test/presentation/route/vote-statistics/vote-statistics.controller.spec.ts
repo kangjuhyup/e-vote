@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { GetVoteResultHandler } from '../../../../src/modules/participation/application/query/handler/get-vote-result.handler';
 import { GetVoteResultQuery } from '../../../../src/modules/participation/application/query/dto/request/get-vote-result.query';
@@ -55,7 +56,7 @@ describe('VoteStatisticsController', () => {
   it('maps GET turnout to the query handler', async () => {
     getTurnoutExecute.mockResolvedValue(createTurnoutView());
 
-    const response = await controller.getTurnout({
+    const response = await controller.getTurnout(TEST_USER_PRINCIPAL, {
       voteId: 'vote-1',
       voteDetailId: 'vote-detail-1',
     });
@@ -83,7 +84,7 @@ describe('VoteStatisticsController', () => {
   it('maps GET results to aggregate candidate and channel responses', async () => {
     getResultExecute.mockResolvedValue(createResultView());
 
-    const response = await controller.getResult({
+    const response = await controller.getResult(TEST_USER_PRINCIPAL, {
       voteId: 'vote-1',
       voteDetailId: 'vote-detail-1',
     });
@@ -126,11 +127,11 @@ describe('VoteStatisticsController', () => {
 
       const action =
         resource === 'turnout'
-          ? controller.getTurnout({
+          ? controller.getTurnout(TEST_USER_PRINCIPAL, {
               voteId: 'vote-1',
               voteDetailId: 'missing',
             })
-          : controller.getResult({
+          : controller.getResult(TEST_USER_PRINCIPAL, {
               voteId: 'vote-1',
               voteDetailId: 'missing',
             });
@@ -143,7 +144,7 @@ describe('VoteStatisticsController', () => {
     getResultExecute.mockRejectedValue(new VoteResultUnavailableError());
 
     await expect(
-      controller.getResult({
+      controller.getResult(TEST_USER_PRINCIPAL, {
         voteId: 'vote-1',
         voteDetailId: 'vote-detail-1',
       }),
@@ -154,7 +155,7 @@ describe('VoteStatisticsController', () => {
     getTurnoutExecute.mockRejectedValue(new VoteStatisticsInconsistentError());
 
     await expect(
-      controller.getTurnout({
+      controller.getTurnout(TEST_USER_PRINCIPAL, {
         voteId: 'vote-1',
         voteDetailId: 'vote-detail-1',
       }),

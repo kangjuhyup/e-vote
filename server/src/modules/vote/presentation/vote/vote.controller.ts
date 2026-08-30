@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Body,
   Controller,
@@ -58,7 +60,10 @@ export class VoteController {
     type: CreateVoteResponse,
     description: '부모 투표 생성 결과입니다.',
   })
-  async createVote(@Body() body: CreateVoteBody): Promise<CreateVoteResponse> {
+  async createVote(
+    @User() user: UserPrincipal,
+    @Body() body: CreateVoteBody,
+  ): Promise<CreateVoteResponse> {
     const result = await this.createVoteHandler.execute(
       CreateVoteCommand.of({
         commissionId: body.commissionId,
@@ -75,6 +80,7 @@ export class VoteController {
   @Put(':voteId/electoral-roll-snapshot')
   @ApiOkResponse({ type: AttachElectoralRollSnapshotResponse })
   async attachElectoralRollSnapshot(
+    @User() user: UserPrincipal,
     @Param() params: VoteParam,
     @Body() body: AttachElectoralRollSnapshotBody,
   ): Promise<AttachElectoralRollSnapshotResponse> {
@@ -93,7 +99,11 @@ export class VoteController {
   }
 
   @Patch(':voteId')
-  async updateVote(@Param() params: VoteParam, @Body() body: UpdateVoteBody) {
+  async updateVote(
+    @User() user: UserPrincipal,
+    @Param() params: VoteParam,
+    @Body() body: UpdateVoteBody,
+  ) {
     return ManageVoteResponse.of(
       await this.updateVoteHandler!.execute(
         UpdateVoteCommand.of({ voteId: params.voteId, ...body }),
@@ -104,6 +114,7 @@ export class VoteController {
   @Post(':voteId/open')
   @HttpCode(200)
   async openVote(
+    @User() user: UserPrincipal,
     @Param() params: VoteParam,
     @Body() body: ChangeVoteStatusBody,
   ) {
@@ -121,6 +132,7 @@ export class VoteController {
   @Post(':voteId/close')
   @HttpCode(200)
   async closeVote(
+    @User() user: UserPrincipal,
     @Param() params: VoteParam,
     @Body() body: ChangeVoteStatusBody,
   ) {
@@ -136,7 +148,7 @@ export class VoteController {
   }
 
   @Delete(':voteId')
-  async deleteVote(@Param() params: VoteParam) {
+  async deleteVote(@User() user: UserPrincipal, @Param() params: VoteParam) {
     return ManageVoteResponse.of(
       await this.changeVoteStatusHandler!.execute(
         ChangeVoteStatusCommand.of({

@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { Body, Controller, HttpCode, Param, Post } from '@nestjs/common';
 import {
   ApiBody,
@@ -57,6 +59,7 @@ export class CandidateAttachmentController {
     description: '첨부파일 업로드 주소입니다.',
   })
   async requestCandidateAttachmentUpload(
+    @User() user: UserPrincipal,
     @Param() params: CandidateAttachmentParam,
     @Body() body: RequestAttachmentUploadBody,
   ): Promise<RequestAttachmentUploadResponse> {
@@ -113,6 +116,7 @@ export class CandidateAttachmentController {
     description: '저장된 후보자 첨부파일 정보입니다.',
   })
   async confirmCandidateAttachmentUpload(
+    @User() user: UserPrincipal,
     @Param() params: CandidateAttachmentParam,
     @Body() body: ConfirmAttachmentUploadBody,
   ): Promise<ConfirmAttachmentUploadResponse> {

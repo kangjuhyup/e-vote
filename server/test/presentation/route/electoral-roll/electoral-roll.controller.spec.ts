@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ElectoralRollNotFoundError } from '../../../../src/modules/electoral-roll/application/command/electoral-roll.error';
 import type { AddElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
@@ -36,13 +37,15 @@ describe('electoral roll controllers', () => {
     );
 
     await expect(
-      controller.createElectoralRoll({
+      controller.createElectoralRoll(TEST_USER_PRINCIPAL, {
         commissionId: 'commission-1',
         name: 'Members',
       }),
     ).resolves.toMatchObject({ id: 'roll-1', revision: 1 });
     await expect(
-      controller.createSnapshot({ electoralRollId: 'roll-1' }),
+      controller.createSnapshot(TEST_USER_PRINCIPAL, {
+        electoralRollId: 'roll-1',
+      }),
     ).resolves.toMatchObject({
       id: 'snapshot-1',
       sourceRevision: 1,
@@ -56,9 +59,12 @@ describe('electoral roll controllers', () => {
     } as unknown as GetElectoralRollHandler;
 
     await expect(
-      new ElectoralRollReadController(getHandler).getElectoralRoll({
-        electoralRollId: 'missing',
-      }),
+      new ElectoralRollReadController(getHandler).getElectoralRoll(
+        TEST_USER_PRINCIPAL,
+        {
+          electoralRollId: 'missing',
+        },
+      ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -85,7 +91,9 @@ describe('electoral roll controllers', () => {
     await expect(
       new ElectoralRollReadController(
         handler(view) as unknown as GetElectoralRollHandler,
-      ).getElectoralRoll({ electoralRollId: 'roll-1' }),
+      ).getElectoralRoll(TEST_USER_PRINCIPAL, {
+        electoralRollId: 'roll-1',
+      }),
     ).resolves.toMatchObject({
       id: 'roll-1',
       revision: 2,

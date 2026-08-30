@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
   Get,
@@ -56,6 +58,7 @@ export class ElectionCommissionReadController {
     description: '선거관리위원회 페이지 조회 결과입니다.',
   })
   async getElectionCommissionPage(
+    @User() user: UserPrincipal,
     @Query() query: GetElectionCommissionPageRequestQuery,
   ): Promise<GetElectionCommissionPageResponse> {
     const result = await this.getElectionCommissionPageHandler.execute(
@@ -86,6 +89,7 @@ export class ElectionCommissionReadController {
     description: '선거관리위원회를 찾을 수 없습니다.',
   })
   async getElectionCommission(
+    @User() user: UserPrincipal,
     @Param() params: GetElectionCommissionParam,
   ): Promise<GetElectionCommissionResponse> {
     try {

@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { NotFoundException } from '@nestjs/common';
 import { AttachmentTargetType } from '../../../../src/modules/vote/application/port/persistence/command/attachment-repository.port';
 import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/confirm-attachment-upload.command';
@@ -90,6 +91,7 @@ describe('VoteDetailController', () => {
     );
 
     const response = await readController.getVoteDetailPage(
+      TEST_USER_PRINCIPAL,
       { voteId: 'vote-1' },
       {
         page: '2',
@@ -123,7 +125,7 @@ describe('VoteDetailController', () => {
   it('maps GET /votes/:voteId/sub-votes/:voteDetailId to get vote detail handler', async () => {
     getVoteDetailExecute.mockResolvedValue(createVoteDetailReadView());
 
-    const response = await readController.getVoteDetail({
+    const response = await readController.getVoteDetail(TEST_USER_PRINCIPAL, {
       voteId: 'vote-1',
       voteDetailId: 'vote-detail-1',
     });
@@ -148,7 +150,7 @@ describe('VoteDetailController', () => {
     getVoteDetailExecute.mockRejectedValue(new VoteDetailNotFoundError());
 
     await expect(
-      readController.getVoteDetail({
+      readController.getVoteDetail(TEST_USER_PRINCIPAL, {
         voteId: 'vote-1',
         voteDetailId: 'missing',
       }),
@@ -163,6 +165,7 @@ describe('VoteDetailController', () => {
     });
 
     const response = await controller.createVoteDetail(
+      TEST_USER_PRINCIPAL,
       { voteId: 'vote-1' },
       {
         title: 'President',
@@ -193,6 +196,7 @@ describe('VoteDetailController', () => {
 
     const response =
       await attachmentController.requestVoteDetailAttachmentUpload(
+        TEST_USER_PRINCIPAL,
         {
           voteId: 'vote-1',
           voteDetailId: 'vote-detail-1',
@@ -233,6 +237,7 @@ describe('VoteDetailController', () => {
 
     const response =
       await attachmentController.confirmVoteDetailAttachmentUpload(
+        TEST_USER_PRINCIPAL,
         {
           voteId: 'vote-1',
           voteDetailId: 'vote-detail-1',

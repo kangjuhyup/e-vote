@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { RecordFieldParticipationEvidenceCommand } from '../../../../src/modules/field-voting/application/command/dto/request/record-field-participation-evidence.command';
 import { RecordFieldParticipationEvidenceHandler } from '../../../../src/modules/field-voting/application/command/handler/record-field-participation-evidence.handler';
 import { FieldParticipationEvidenceController } from '../../../../src/modules/field-voting/presentation/participation/field-participation-evidence.controller';
@@ -24,6 +25,7 @@ describe('FieldParticipationEvidenceController', () => {
     });
 
     const response = await controller.recordFieldParticipationEvidence(
+      TEST_USER_PRINCIPAL,
       { participationId: 'participation-1' },
       {
         fieldVotingSessionId: 'session-1',

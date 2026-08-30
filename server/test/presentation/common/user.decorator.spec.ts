@@ -1,5 +1,7 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { UserPrincipal } from '../../../src/shared/application/security/user-principal';
 import {
   getUserPrincipal,
@@ -44,6 +46,18 @@ function createHttpContext(user?: unknown): ExecutionContext {
   } as ExecutionContext;
 }
 
+function collectControllerFiles(directory: string): string[] {
+  return readdirSync(directory).flatMap((entry) => {
+    const path = join(directory, entry);
+
+    if (statSync(path).isDirectory()) {
+      return collectControllerFiles(path);
+    }
+
+    return path.endsWith('.controller.ts') ? [path] : [];
+  });
+}
+
 describe('User decorator', () => {
   it('returns the authenticated user principal from the HTTP request', () => {
     const principal = UserPrincipal.of({
@@ -70,6 +84,34 @@ describe('User decorator', () => {
       );
     },
   );
+
+  it('requires a validated principal on every business route', () => {
+    const controllerFiles = collectControllerFiles(
+      join(process.cwd(), 'src', 'modules'),
+    );
+    let routeCount = 0;
+
+    for (const file of controllerFiles) {
+      const source = readFileSync(file, 'utf8');
+      const fileRouteCount = (
+        source.match(/@(Get|Post|Put|Patch|Delete)\b/g) ?? []
+      ).length;
+      const principalCount = (
+        source.match(/@User\(\) user: UserPrincipal/g) ?? []
+      ).length;
+
+      expect({
+        controller: relative(process.cwd(), file),
+        principalCount,
+      }).toEqual({
+        controller: relative(process.cwd(), file),
+        principalCount: fileRouteCount,
+      });
+      routeCount += fileRouteCount;
+    }
+
+    expect(routeCount).toBeGreaterThan(0);
+  });
 });
 
 describe('UserPrincipal', () => {

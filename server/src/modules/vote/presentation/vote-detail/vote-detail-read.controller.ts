@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
   Get,
@@ -61,6 +63,7 @@ export class VoteDetailReadController {
     description: '자식 투표 페이지 조회 결과입니다.',
   })
   async getVoteDetailPage(
+    @User() user: UserPrincipal,
     @Param() params: CreateVoteDetailParam,
     @Query() query: GetVoteDetailPageRequestQuery,
   ): Promise<GetVoteDetailPageResponse> {
@@ -98,6 +101,7 @@ export class VoteDetailReadController {
     description: '자식 투표를 찾을 수 없습니다.',
   })
   async getVoteDetail(
+    @User() user: UserPrincipal,
     @Param() params: GetVoteDetailParam,
   ): Promise<GetVoteDetailResponse> {
     try {

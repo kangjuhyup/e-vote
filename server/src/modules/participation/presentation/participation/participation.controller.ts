@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   BadRequestException,
   Body,
@@ -59,6 +61,7 @@ export class ParticipationController {
       '투표 상태, 채널, 자격 또는 중복 참여 조건을 충족하지 않습니다.',
   })
   async castParticipation(
+    @User() user: UserPrincipal,
     @Body() body: CastParticipationBody,
   ): Promise<CastParticipationResponse> {
     if (!body.selectedCandidateId?.trim()) {

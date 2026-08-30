@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { Body, Controller, HttpCode, Param, Post } from '@nestjs/common';
 import {
   ApiBody,
@@ -55,6 +57,7 @@ export class FieldVotingSessionController {
     description: '현장 투표 세션 생성 결과입니다.',
   })
   async createFieldVotingSession(
+    @User() user: UserPrincipal,
     @Param() params: CreateFieldVotingSessionParam,
     @Body() body: CreateFieldVotingSessionBody,
   ): Promise<CreateFieldVotingSessionResponse> {
@@ -96,6 +99,7 @@ export class FieldVotingSessionController {
     description: '현장 투표 세션 상태 변경 결과입니다.',
   })
   async openFieldVotingSession(
+    @User() user: UserPrincipal,
     @Param() params: ChangeFieldVotingSessionStatusParam,
     @Body() body: ChangeFieldVotingSessionStatusBody,
   ): Promise<ChangeFieldVotingSessionStatusResponse> {
@@ -129,6 +133,7 @@ export class FieldVotingSessionController {
     description: '현장 투표 세션 상태 변경 결과입니다.',
   })
   async closeFieldVotingSession(
+    @User() user: UserPrincipal,
     @Param() params: ChangeFieldVotingSessionStatusParam,
     @Body() body: ChangeFieldVotingSessionStatusBody,
   ): Promise<ChangeFieldVotingSessionStatusResponse> {
@@ -162,6 +167,7 @@ export class FieldVotingSessionController {
     description: '현장 투표 세션 상태 변경 결과입니다.',
   })
   async cancelFieldVotingSession(
+    @User() user: UserPrincipal,
     @Param() params: ChangeFieldVotingSessionStatusParam,
     @Body() body: ChangeFieldVotingSessionStatusBody,
   ): Promise<ChangeFieldVotingSessionStatusResponse> {

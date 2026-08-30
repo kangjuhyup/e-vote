@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Body,
   Controller,
@@ -48,6 +50,7 @@ export class ElectoralRollController {
   @Post()
   @ApiCreatedResponse({ type: CreateElectoralRollResponse })
   async createElectoralRoll(
+    @User() user: UserPrincipal,
     @Body() body: CreateElectoralRollBody,
   ): Promise<CreateElectoralRollResponse> {
     try {
@@ -65,6 +68,7 @@ export class ElectoralRollController {
   @HttpCode(201)
   @ApiCreatedResponse({ type: ManageElectoralRollMemberResponse })
   async addMember(
+    @User() user: UserPrincipal,
     @Param() params: ElectoralRollParam,
     @Body() body: AddElectoralRollMemberBody,
   ): Promise<ManageElectoralRollMemberResponse> {
@@ -86,6 +90,7 @@ export class ElectoralRollController {
   @Patch(':electoralRollId/members/:memberId')
   @ApiOkResponse({ type: ManageElectoralRollMemberResponse })
   async updateMember(
+    @User() user: UserPrincipal,
     @Param() params: ElectoralRollMemberParam,
     @Body() body: UpdateElectoralRollMemberBody,
   ): Promise<ManageElectoralRollMemberResponse> {
@@ -107,6 +112,7 @@ export class ElectoralRollController {
   @Delete(':electoralRollId/members/:memberId')
   @ApiOkResponse({ type: RemoveElectoralRollMemberResponse })
   async removeMember(
+    @User() user: UserPrincipal,
     @Param() params: ElectoralRollMemberParam,
   ): Promise<RemoveElectoralRollMemberResponse> {
     try {
@@ -126,6 +132,7 @@ export class ElectoralRollController {
   @Post(':electoralRollId/snapshots')
   @ApiCreatedResponse({ type: CreateElectoralRollSnapshotResponse })
   async createSnapshot(
+    @User() user: UserPrincipal,
     @Param() params: ElectoralRollParam,
   ): Promise<CreateElectoralRollSnapshotResponse> {
     try {

@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import {
   ApiBody,
@@ -40,6 +42,7 @@ export class FieldParticipationEvidenceController {
     description: '현장 투표 참여 증빙 기록 결과입니다.',
   })
   async recordFieldParticipationEvidence(
+    @User() user: UserPrincipal,
     @Param() params: RecordFieldParticipationEvidenceParam,
     @Body() body: RecordFieldParticipationEvidenceBody,
   ): Promise<RecordFieldParticipationEvidenceResponse> {

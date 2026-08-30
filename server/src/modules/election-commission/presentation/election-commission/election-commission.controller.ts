@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import {
   ApiBody,
@@ -40,6 +42,7 @@ export class ElectionCommissionController {
     description: '선거관리위원회 생성 결과입니다.',
   })
   async createElectionCommission(
+    @User() user: UserPrincipal,
     @Body() body: CreateElectionCommissionBody,
   ): Promise<CreateElectionCommissionResponse> {
     const result = await this.createElectionCommissionHandler.execute(
@@ -71,6 +74,7 @@ export class ElectionCommissionController {
     description: '선거관리위원 등록 결과입니다.',
   })
   async registerElectionCommissionMember(
+    @User() user: UserPrincipal,
     @Param() params: RegisterElectionCommissionMemberParam,
     @Body() body: RegisterElectionCommissionMemberBody,
   ): Promise<RegisterElectionCommissionMemberResponse> {

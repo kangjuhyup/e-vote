@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   ConflictException,
   Controller,
@@ -58,6 +60,7 @@ export class VoteStatisticsController {
     description: '선거인 그룹의 지분 데이터가 일관되지 않습니다.',
   })
   async getTurnout(
+    @User() user: UserPrincipal,
     @Param() params: GetVoteStatisticsParam,
   ): Promise<GetVoteTurnoutResponse> {
     try {
@@ -96,6 +99,7 @@ export class VoteStatisticsController {
       '부모 투표와 자식 투표가 모두 종료된 후 결과를 조회할 수 있습니다.',
   })
   async getResult(
+    @User() user: UserPrincipal,
     @Param() params: GetVoteStatisticsParam,
   ): Promise<GetVoteResultResponse> {
     try {

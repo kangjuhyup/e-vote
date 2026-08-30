@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { NotFoundException } from '@nestjs/common';
 import { AttachmentTargetType } from '../../../../src/modules/vote/application/port/persistence/command/attachment-repository.port';
 import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/confirm-attachment-upload.command';
@@ -88,6 +89,7 @@ describe('CandidateController', () => {
     );
 
     const response = await readController.getCandidatePage(
+      TEST_USER_PRINCIPAL,
       {
         voteId: 'vote-1',
         voteDetailId: 'vote-detail-1',
@@ -120,7 +122,7 @@ describe('CandidateController', () => {
   it('maps GET /votes/:voteId/sub-votes/:voteDetailId/candidates/:candidateId to get candidate handler', async () => {
     getCandidateExecute.mockResolvedValue(createCandidateReadView());
 
-    const response = await readController.getCandidate({
+    const response = await readController.getCandidate(TEST_USER_PRINCIPAL, {
       voteId: 'vote-1',
       voteDetailId: 'vote-detail-1',
       candidateId: 'candidate-1',
@@ -147,7 +149,7 @@ describe('CandidateController', () => {
     getCandidateExecute.mockRejectedValue(new CandidateNotFoundError());
 
     await expect(
-      readController.getCandidate({
+      readController.getCandidate(TEST_USER_PRINCIPAL, {
         voteId: 'vote-1',
         voteDetailId: 'vote-detail-1',
         candidateId: 'missing',
@@ -163,6 +165,7 @@ describe('CandidateController', () => {
     });
 
     const response = await controller.createCandidate(
+      TEST_USER_PRINCIPAL,
       {
         voteId: 'vote-1',
         voteDetailId: 'vote-detail-1',
@@ -195,6 +198,7 @@ describe('CandidateController', () => {
 
     const response =
       await attachmentController.requestCandidateAttachmentUpload(
+        TEST_USER_PRINCIPAL,
         {
           voteId: 'vote-1',
           voteDetailId: 'vote-detail-1',
@@ -237,6 +241,7 @@ describe('CandidateController', () => {
 
     const response =
       await attachmentController.confirmCandidateAttachmentUpload(
+        TEST_USER_PRINCIPAL,
         {
           voteId: 'vote-1',
           voteDetailId: 'vote-detail-1',

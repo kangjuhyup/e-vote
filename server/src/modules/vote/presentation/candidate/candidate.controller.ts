@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Body,
   Controller,
@@ -65,6 +67,7 @@ export class CandidateController {
     description: '후보 생성 결과입니다.',
   })
   async createCandidate(
+    @User() user: UserPrincipal,
     @Param() params: CreateCandidateParam,
     @Body() body: CreateCandidateBody,
   ): Promise<CreateCandidateResponse> {
@@ -81,6 +84,7 @@ export class CandidateController {
 
   @Patch(':candidateId')
   async updateCandidate(
+    @User() user: UserPrincipal,
     @Param() params: ManageCandidateParam,
     @Body() body: UpdateCandidateBody,
   ) {
@@ -92,7 +96,10 @@ export class CandidateController {
   }
 
   @Delete(':candidateId')
-  async deleteCandidate(@Param() params: ManageCandidateParam) {
+  async deleteCandidate(
+    @User() user: UserPrincipal,
+    @Param() params: ManageCandidateParam,
+  ) {
     return ManageCandidateResponse.of(
       await this.withdrawCandidateHandler!.execute(
         WithdrawCandidateCommand.of(params),

@@ -1,3 +1,5 @@
+import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Body,
   Controller,
@@ -62,6 +64,7 @@ export class VoteDetailController {
     description: '자식 투표 생성 결과입니다.',
   })
   async createVoteDetail(
+    @User() user: UserPrincipal,
     @Param() params: CreateVoteDetailParam,
     @Body() body: CreateVoteDetailBody,
   ): Promise<CreateVoteDetailResponse> {
@@ -80,6 +83,7 @@ export class VoteDetailController {
 
   @Patch(':voteDetailId')
   async updateVoteDetail(
+    @User() user: UserPrincipal,
     @Param() params: ManageVoteDetailParam,
     @Body() body: UpdateVoteDetailBody,
   ) {
@@ -93,6 +97,7 @@ export class VoteDetailController {
   @Post(':voteDetailId/open')
   @HttpCode(200)
   async openVoteDetail(
+    @User() user: UserPrincipal,
     @Param() params: ManageVoteDetailParam,
     @Body() body: ChangeVoteDetailStatusBody,
   ) {
@@ -110,6 +115,7 @@ export class VoteDetailController {
   @Post(':voteDetailId/close')
   @HttpCode(200)
   async closeVoteDetail(
+    @User() user: UserPrincipal,
     @Param() params: ManageVoteDetailParam,
     @Body() body: ChangeVoteDetailStatusBody,
   ) {
@@ -125,7 +131,10 @@ export class VoteDetailController {
   }
 
   @Delete(':voteDetailId')
-  async deleteVoteDetail(@Param() params: ManageVoteDetailParam) {
+  async deleteVoteDetail(
+    @User() user: UserPrincipal,
+    @Param() params: ManageVoteDetailParam,
+  ) {
     return ManageVoteDetailResponse.of(
       await this.changeVoteDetailStatusHandler!.execute(
         ChangeVoteDetailStatusCommand.of({

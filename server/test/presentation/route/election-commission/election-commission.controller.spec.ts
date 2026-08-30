@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { CreateElectionCommissionCommand } from '../../../../src/modules/election-commission/application/command/dto/request/create-election-commission.command';
 import { CreateElectionCommissionHandler } from '../../../../src/modules/election-commission/application/command/handler/create-election-commission.handler';
 import { RegisterElectionCommissionMemberCommand } from '../../../../src/modules/election-commission/application/command/dto/request/register-election-commission-member.command';
@@ -38,9 +39,12 @@ describe('ElectionCommissionController', () => {
       status: ElectionCommissionStatus.Active,
     });
 
-    const response = await controller.createElectionCommission({
-      name: 'Main Commission',
-    });
+    const response = await controller.createElectionCommission(
+      TEST_USER_PRINCIPAL,
+      {
+        name: 'Main Commission',
+      },
+    );
 
     expect(response).toEqual({
       id: 'commission-1',
@@ -63,6 +67,7 @@ describe('ElectionCommissionController', () => {
     });
 
     const response = await controller.registerElectionCommissionMember(
+      TEST_USER_PRINCIPAL,
       { commissionId: 'commission-1' },
       {
         name: 'Kim Manager',

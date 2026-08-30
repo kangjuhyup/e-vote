@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { NotFoundException } from '@nestjs/common';
 import {
   ElectorPageView,
@@ -51,6 +52,7 @@ describe('ElectorReadController', () => {
     );
 
     const response = await controller.getElectorPage(
+      TEST_USER_PRINCIPAL,
       { voteId: 'vote-1' },
       {
         page: '2',
@@ -86,7 +88,7 @@ describe('ElectorReadController', () => {
   it('maps GET /votes/:voteId/electors/:electorId to get elector handler', async () => {
     getElectorExecute.mockResolvedValue(createElectorView());
 
-    const response = await controller.getElector({
+    const response = await controller.getElector(TEST_USER_PRINCIPAL, {
       voteId: 'vote-1',
       electorId: 'elector-1',
     });
@@ -118,7 +120,7 @@ describe('ElectorReadController', () => {
     getElectorExecute.mockRejectedValue(new ElectorNotFoundError());
 
     await expect(
-      controller.getElector({
+      controller.getElector(TEST_USER_PRINCIPAL, {
         voteId: 'vote-1',
         electorId: 'missing',
       }),

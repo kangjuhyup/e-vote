@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { NotFoundException } from '@nestjs/common';
 import {
   ElectionCommissionNotFoundError,
@@ -54,10 +55,13 @@ describe('ElectionCommissionReadController', () => {
       }),
     );
 
-    const response = await controller.getElectionCommissionPage({
-      page: '2',
-      pageSize: '10',
-    });
+    const response = await controller.getElectionCommissionPage(
+      TEST_USER_PRINCIPAL,
+      {
+        page: '2',
+        pageSize: '10',
+      },
+    );
 
     expect(response).toMatchObject({
       items: [
@@ -86,9 +90,12 @@ describe('ElectionCommissionReadController', () => {
       createElectionCommissionView(),
     );
 
-    const response = await controller.getElectionCommission({
-      commissionId: 'commission-1',
-    });
+    const response = await controller.getElectionCommission(
+      TEST_USER_PRINCIPAL,
+      {
+        commissionId: 'commission-1',
+      },
+    );
 
     expect(response).toMatchObject({
       id: 'commission-1',
@@ -120,7 +127,9 @@ describe('ElectionCommissionReadController', () => {
     );
 
     await expect(
-      controller.getElectionCommission({ commissionId: 'missing' }),
+      controller.getElectionCommission(TEST_USER_PRINCIPAL, {
+        commissionId: 'missing',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

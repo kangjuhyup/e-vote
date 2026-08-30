@@ -1,3 +1,4 @@
+import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import { NotFoundException } from '@nestjs/common';
 import { GetFieldVotingSessionPageHandler } from '../../../../src/modules/field-voting/application/query/handler/get-field-voting-session-page.handler';
 import {
@@ -36,10 +37,11 @@ describe('FieldVotingSessionReadController', () => {
       }),
     );
 
-    const detail = await controller.getFieldVotingSession({
+    const detail = await controller.getFieldVotingSession(TEST_USER_PRINCIPAL, {
       fieldVotingSessionId: 'session-1',
     });
     const page = await controller.getFieldVotingSessionPage(
+      TEST_USER_PRINCIPAL,
       { voteId: 'vote-1' },
       {},
     );
@@ -53,7 +55,9 @@ describe('FieldVotingSessionReadController', () => {
   it('maps missing detail to 404', async () => {
     get.execute.mockRejectedValue(new FieldVotingSessionReadNotFoundError());
     await expect(
-      controller.getFieldVotingSession({ fieldVotingSessionId: 'missing' }),
+      controller.getFieldVotingSession(TEST_USER_PRINCIPAL, {
+        fieldVotingSessionId: 'missing',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
