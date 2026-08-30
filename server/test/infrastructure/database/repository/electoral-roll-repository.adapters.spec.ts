@@ -1,8 +1,43 @@
 import { LoadStrategy } from '@mikro-orm/core';
 import { ElectoralRollSnapshotRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/command/electoral-roll-snapshot-repository.adapter';
+import { ElectoralRollRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/command/electoral-roll-repository.adapter';
 import { ElectoralRollReadRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/query/electoral-roll-read-repository.adapter';
+import { ElectoralRollMemberAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll-member.aggregate';
 
 describe('electoral roll repository adapters', () => {
+  it('persists a member batch with one unit-of-work flush', async () => {
+    const persist = jest.fn();
+    const flush = jest.fn().mockResolvedValue(undefined);
+    const em = {
+      create: jest.fn((_entity: unknown, data: object) => data),
+      persist,
+      flush,
+      getReference: jest.fn((_entity: unknown, id: string) => ({ id })),
+    };
+    const createdAt = new Date('2026-08-30T00:00:00.000Z');
+    const members = [
+      ElectoralRollMemberAggregate.create({
+        id: 'member-1',
+        electoralRollId: 'roll-1',
+        identifier: 'member-1',
+        createdAt,
+      }),
+      ElectoralRollMemberAggregate.create({
+        id: 'member-2',
+        electoralRollId: 'roll-1',
+        identifier: 'member-2',
+        voteWeight: 2,
+        createdAt,
+      }),
+    ];
+
+    await new ElectoralRollRepositoryAdapter(em as any).saveMembers(members);
+
+    expect(em.create).toHaveBeenCalledTimes(2);
+    expect(persist).toHaveBeenCalledTimes(2);
+    expect(flush).toHaveBeenCalledTimes(1);
+  });
+
   it('pages only metadata from rolls in actively authorized commissions', async () => {
     const findAndCount = jest
       .fn<Promise<[unknown[], number]>, [unknown, unknown, unknown?]>()

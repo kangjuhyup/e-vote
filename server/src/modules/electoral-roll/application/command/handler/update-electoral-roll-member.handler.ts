@@ -16,7 +16,6 @@ import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
 } from '../../../../../shared/application/persistence/transaction/transactional.decorator';
-import { toMemberResult } from './add-electoral-roll-member.handler';
 import { ManageElectoralRollMemberResult } from '../dto/response/manage-electoral-roll-member-result.dto';
 import { ElectoralRollSnapshotCreator } from '../electoral-roll-snapshot.creator';
 
@@ -66,6 +65,13 @@ export class UpdateElectoralRollMemberHandler {
       command.changedAt,
     );
 
-    return toMemberResult(member, electoralRoll.revision);
+    return ManageElectoralRollMemberResult.of({
+      id: member.id,
+      electoralRollId: member.electoralRollId,
+      identifier: member.identifier,
+      groupKey: member.groupKey,
+      voteWeight: member.voteWeight,
+      revision: electoralRoll.revision,
+    });
   }
 }

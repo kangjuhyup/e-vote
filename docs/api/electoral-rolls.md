@@ -116,6 +116,67 @@ GET /electoral-rolls?commissionId={id}&q={검색어}&page=1&pageSize=20
 | `401` | Bearer 토큰이 없거나 JWT 검증에 실패했습니다.                        |
 | `500` | 예상하지 못한 서버 오류입니다.                                       |
 
+## 선거인 다건 등록
+
+선거인은 한 명씩 등록하지 않고 한 요청의 `members` 배열로 등록합니다.
+
+```http
+PUT /electoral-rolls/{electoralRollId}/members
+Authorization: Bearer {OIDC access token}
+Content-Type: application/json
+```
+
+```json
+{
+  "members": [
+    {
+      "identifier": "member-1",
+      "groupKey": "group-1",
+      "voteWeight": 2
+    },
+    {
+      "identifier": "member-2"
+    }
+  ]
+}
+```
+
+- 한 요청에는 1명 이상 50,000명 이하를 전달할 수 있습니다.
+- `groupKey`는 선택값이며, `voteWeight`를 생략하면 `1`이 적용됩니다.
+- 요청 전체를 하나의 serializable 트랜잭션으로 처리합니다. 한 건이라도 유효하지 않거나 식별자가 중복되면 전체 등록을 롤백합니다.
+- 정상 등록 시 명부 revision은 구성원 수와 관계없이 한 번만 증가합니다.
+- 변경된 revision에 대한 불변 스냅샷은 별도 API 호출 없이 한 번 자동 생성됩니다.
+- 대량 요청을 받을 수 있도록 서버의 HTTP 요청 본문 크기는 최대 32 MB로 제한합니다.
+
+### 성공 응답
+
+대량 응답을 피하기 위해 등록된 구성원 전체를 반환하지 않고 처리 요약만 반환합니다. 구성원 ID가 필요하면 상세 조회 API를 사용합니다.
+
+```json
+{
+  "success": true,
+  "data": {
+    "electoralRollId": "electoral-roll-1",
+    "revision": 2,
+    "addedMemberCount": 2
+  },
+  "timestamp": "2026-08-30T10:00:00.000Z",
+  "requestId": "request-id"
+}
+```
+
+### 상태 코드
+
+| 상태  | 조건                                                                                 |
+| ----- | ------------------------------------------------------------------------------------ |
+| `201` | 모든 선거인 등록과 자동 스냅샷 생성이 완료됐습니다.                                 |
+| `400` | `members`가 배열이 아니거나 1~50,000건 범위를 벗어났습니다.                          |
+| `401` | Bearer 토큰이 없거나 JWT 검증에 실패했습니다.                                        |
+| `404` | 선거인명부가 없습니다.                                                               |
+| `409` | 요청 내부 또는 기존 명부에 같은 `identifier`가 있거나 구성원 값이 유효하지 않습니다. |
+| `413` | 요청 본문이 32 MB를 초과했습니다.                                                    |
+| `500` | 예상하지 못한 서버 오류입니다.                                                       |
+
 ## 목록 선택 후 상세 조회
 
 목록에서 선택한 `id`는 기존 상세 조회 경로에 사용합니다.

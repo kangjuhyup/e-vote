@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
 import { ConfirmAttachmentUploadHandler } from './modules/vote/application/command/handler/confirm-attachment-upload.handler';
-import { AddElectoralRollMemberHandler } from './modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
+import { AddElectoralRollMembersHandler } from './modules/electoral-roll/application/command/handler/add-electoral-roll-members.handler';
 import { AttachElectoralRollSnapshotHandler } from './modules/vote/application/command/handler/attach-electoral-roll-snapshot.handler';
 import { AuthenticateElectorHandler } from './modules/elector/application/command/handler/authenticate-elector.handler';
 import { BlockElectorHandler } from './modules/elector/application/command/handler/block-elector.handler';
@@ -173,7 +173,7 @@ import { AuthenticatedUserGuard } from './shared/presentation/common/guard/authe
     CreateElectionCommissionHandler,
     RegisterElectionCommissionMemberHandler,
     CreateElectoralRollHandler,
-    AddElectoralRollMemberHandler,
+    AddElectoralRollMembersHandler,
     UpdateElectoralRollMemberHandler,
     RemoveElectoralRollMemberHandler,
     ElectoralRollSnapshotCreator,

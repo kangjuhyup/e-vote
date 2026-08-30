@@ -1,7 +1,14 @@
 import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { ElectoralRollNotFoundError } from '../../../../src/modules/electoral-roll/application/command/electoral-roll.error';
-import type { AddElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  ElectoralRollNotFoundError,
+  InvalidElectoralRollMemberBatchError,
+} from '../../../../src/modules/electoral-roll/application/command/electoral-roll.error';
+import type { AddElectoralRollMembersHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-members.handler';
 import type { CreateElectoralRollHandler } from '../../../../src/modules/electoral-roll/application/command/handler/create-electoral-roll.handler';
 import type { RemoveElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/remove-electoral-roll-member.handler';
 import type { UpdateElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/update-electoral-roll-member.handler';
@@ -26,7 +33,7 @@ describe('electoral roll controllers', () => {
     });
     const controller = new ElectoralRollController(
       createRoll as unknown as CreateElectoralRollHandler,
-      handler() as unknown as AddElectoralRollMemberHandler,
+      handler() as unknown as AddElectoralRollMembersHandler,
       handler() as unknown as UpdateElectoralRollMemberHandler,
       handler() as unknown as RemoveElectoralRollMemberHandler,
     );
@@ -37,6 +44,46 @@ describe('electoral roll controllers', () => {
         name: 'Members',
       }),
     ).resolves.toMatchObject({ id: 'roll-1', revision: 1 });
+  });
+
+  it('maps one bulk request to one add-members command', async () => {
+    const addMembers = handler({
+      electoralRollId: 'roll-1',
+      revision: 2,
+      addedMemberCount: 2,
+    });
+    const controller = new ElectoralRollController(
+      handler() as unknown as CreateElectoralRollHandler,
+      addMembers as unknown as AddElectoralRollMembersHandler,
+      handler() as unknown as UpdateElectoralRollMemberHandler,
+      handler() as unknown as RemoveElectoralRollMemberHandler,
+    );
+
+    await expect(
+      controller.addMembers(
+        TEST_USER_PRINCIPAL,
+        { electoralRollId: 'roll-1' },
+        {
+          members: [
+            { identifier: 'member-1', voteWeight: 2 },
+            { identifier: 'member-2', groupKey: 'group-1' },
+          ],
+        },
+      ),
+    ).resolves.toEqual({
+      electoralRollId: 'roll-1',
+      revision: 2,
+      addedMemberCount: 2,
+    });
+    expect(addMembers.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        electoralRollId: 'roll-1',
+        members: [
+          { identifier: 'member-1', voteWeight: 2 },
+          { identifier: 'member-2', groupKey: 'group-1' },
+        ],
+      }),
+    );
   });
 
   it('maps a missing source roll to HTTP 404', async () => {
@@ -61,6 +108,14 @@ describe('electoral roll controllers', () => {
         message: 'duplicate member identifier',
       }),
     ).toThrow(ConflictException);
+  });
+
+  it('maps invalid member batch sizes to HTTP 400', () => {
+    expect(() =>
+      throwMappedElectoralRollError(
+        new InvalidElectoralRollMemberBatchError(50_000),
+      ),
+    ).toThrow(BadRequestException);
   });
 
   it('maps a roll view to an ISO-timestamped response', async () => {
