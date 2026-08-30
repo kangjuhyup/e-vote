@@ -1,0 +1,69 @@
+import { ApiProperty } from '@nestjs/swagger';
+type GetBillingOrderResponseSource = {
+  readonly id: string;
+  readonly voteId: string;
+  readonly commissionId: string;
+  readonly orderedByUserPrincipalId: string;
+  readonly productCode: string;
+  readonly productName: string;
+  readonly electorCount: number;
+  readonly pricingUnitSize: number;
+  readonly pricingUnitCount: number;
+  readonly unitPrice: number;
+  readonly amount: number;
+  readonly currency: string;
+  readonly status: string;
+  readonly paymentId?: string;
+  readonly issuedAt: Date;
+  readonly paidAt?: Date;
+  readonly refundedAt?: Date;
+};
+
+export class GetBillingOrderResponse {
+  @ApiProperty() readonly id: string;
+  @ApiProperty() readonly voteId: string;
+  @ApiProperty() readonly commissionId: string;
+  @ApiProperty() readonly orderedByUserPrincipalId: string;
+  @ApiProperty() readonly productCode: string;
+  @ApiProperty() readonly productName: string;
+  @ApiProperty() readonly electorCount: number;
+  @ApiProperty() readonly pricingUnitSize: number;
+  @ApiProperty() readonly pricingUnitCount: number;
+  @ApiProperty() readonly unitPrice: number;
+  @ApiProperty() readonly amount: number;
+  @ApiProperty() readonly currency: string;
+  @ApiProperty({ enum: ['PENDING_PAYMENT', 'PAID', 'REFUNDED'] })
+  readonly status: string;
+  @ApiProperty({ required: false }) readonly paymentId?: string;
+  @ApiProperty({ format: 'date-time' }) readonly issuedAt: string;
+  @ApiProperty({ format: 'date-time', required: false })
+  readonly paidAt?: string;
+  @ApiProperty({ format: 'date-time', required: false })
+  readonly refundedAt?: string;
+
+  private constructor(source: GetBillingOrderResponseSource) {
+    this.id = source.id;
+    this.voteId = source.voteId;
+    this.commissionId = source.commissionId;
+    this.orderedByUserPrincipalId = source.orderedByUserPrincipalId;
+    this.productCode = source.productCode;
+    this.productName = source.productName;
+    this.electorCount = source.electorCount;
+    this.pricingUnitSize = source.pricingUnitSize;
+    this.pricingUnitCount = source.pricingUnitCount;
+    this.unitPrice = source.unitPrice;
+    this.amount = source.amount;
+    this.currency = source.currency;
+    this.status = source.status;
+    if (source.paymentId !== undefined) this.paymentId = source.paymentId;
+    this.issuedAt = source.issuedAt.toISOString();
+    if (source.paidAt !== undefined) this.paidAt = source.paidAt.toISOString();
+    if (source.refundedAt !== undefined) {
+      this.refundedAt = source.refundedAt.toISOString();
+    }
+  }
+
+  static of(source: GetBillingOrderResponseSource): GetBillingOrderResponse {
+    return new GetBillingOrderResponse(source);
+  }
+}

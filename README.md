@@ -56,6 +56,7 @@ pnpm start:prod
 ### API Interface
 
 - [선거인명부 목록 API](docs/api/electoral-rolls.md)
+- [투표 이용료 Billing API](docs/api/billing.md)
 
 ## UI
 

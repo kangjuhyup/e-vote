@@ -101,6 +101,10 @@ import { PARTICIPATION_REPOSITORY_PORT } from './modules/participation/applicati
 import { FILE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/file-repository.port';
 import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-roll/application/port/persistence/command/electoral-roll-snapshot-repository.port';
 import { AuthenticatedUserGuard } from './shared/presentation/common/guard/authenticated-user.guard';
+import { BillingOrderController } from './modules/billing/presentation/billing-order/billing-order.controller';
+import { CreateVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/create-vote-usage-billing-order.handler';
+import { MarkBillingOrderPaidHandler } from './modules/billing/application/command/handler/mark-billing-order-paid.handler';
+import { GetBillingOrderHandler } from './modules/billing/application/query/handler/get-billing-order.handler';
 
 @Module({
   imports: [
@@ -131,6 +135,7 @@ import { AuthenticatedUserGuard } from './shared/presentation/common/guard/authe
     ElectorReadController,
     VoteStatisticsController,
     FieldParticipationEvidenceController,
+    BillingOrderController,
   ],
   providers: [
     AppService,
@@ -211,6 +216,9 @@ import { AuthenticatedUserGuard } from './shared/presentation/common/guard/authe
     GetElectorPageHandler,
     GetVoteTurnoutHandler,
     GetVoteResultHandler,
+    CreateVoteUsageBillingOrderHandler,
+    MarkBillingOrderPaidHandler,
+    GetBillingOrderHandler,
     {
       provide: DATABASE_HEALTH_PORT,
       useClass: NotConfiguredDatabaseHealthAdapter,
