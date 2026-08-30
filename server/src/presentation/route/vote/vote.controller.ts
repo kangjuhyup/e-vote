@@ -1,4 +1,12 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -9,11 +17,25 @@ import { CreateVoteCommand } from '../../../application/command/create-vote.comm
 import { CreateVoteHandler } from '../../../application/command/handler/create-vote.handler';
 import { CreateVoteBody } from './dto/create-vote-request.dto';
 import { CreateVoteResponse } from './dto/create-vote-response.dto';
+import { ChangeVoteStatusCommand } from '../../../application/command/change-vote-status.command';
+import { UpdateVoteCommand } from '../../../application/command/update-vote.command';
+import { ChangeVoteStatusHandler } from '../../../application/command/handler/change-vote-status.handler';
+import { UpdateVoteHandler } from '../../../application/command/handler/update-vote.handler';
+import { VoteParam } from './dto/create-vote-request.dto';
+import {
+  ChangeVoteStatusBody,
+  UpdateVoteBody,
+} from './dto/manage-vote-request.dto';
+import { ManageVoteResponse } from './dto/manage-vote-response.dto';
 
 @ApiTags('votes')
 @Controller('votes')
 export class VoteController {
-  constructor(private readonly createVoteHandler: CreateVoteHandler) {}
+  constructor(
+    private readonly createVoteHandler: CreateVoteHandler,
+    private readonly updateVoteHandler?: UpdateVoteHandler,
+    private readonly changeVoteStatusHandler?: ChangeVoteStatusHandler,
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -40,5 +62,61 @@ export class VoteController {
     );
 
     return CreateVoteResponse.of(result);
+  }
+
+  @Patch(':voteId')
+  async updateVote(@Param() params: VoteParam, @Body() body: UpdateVoteBody) {
+    return ManageVoteResponse.of(
+      await this.updateVoteHandler!.execute(
+        UpdateVoteCommand.of({ voteId: params.voteId, ...body }),
+      ),
+    );
+  }
+
+  @Post(':voteId/open')
+  @HttpCode(200)
+  async openVote(
+    @Param() params: VoteParam,
+    @Body() body: ChangeVoteStatusBody,
+  ) {
+    return ManageVoteResponse.of(
+      await this.changeVoteStatusHandler!.execute(
+        ChangeVoteStatusCommand.of({
+          voteId: params.voteId,
+          action: 'open',
+          changedAt: new Date(body.changedAt),
+        }),
+      ),
+    );
+  }
+
+  @Post(':voteId/close')
+  @HttpCode(200)
+  async closeVote(
+    @Param() params: VoteParam,
+    @Body() body: ChangeVoteStatusBody,
+  ) {
+    return ManageVoteResponse.of(
+      await this.changeVoteStatusHandler!.execute(
+        ChangeVoteStatusCommand.of({
+          voteId: params.voteId,
+          action: 'close',
+          changedAt: new Date(body.changedAt),
+        }),
+      ),
+    );
+  }
+
+  @Delete(':voteId')
+  async deleteVote(@Param() params: VoteParam) {
+    return ManageVoteResponse.of(
+      await this.changeVoteStatusHandler!.execute(
+        ChangeVoteStatusCommand.of({
+          voteId: params.voteId,
+          action: 'cancel',
+          changedAt: new Date(),
+        }),
+      ),
+    );
   }
 }

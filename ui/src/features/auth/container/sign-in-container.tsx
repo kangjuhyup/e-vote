@@ -1,10 +1,12 @@
 import { ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -40,6 +42,12 @@ export function SignInContainer() {
             </Button>
           </form>
         </CardContent>
+        <CardFooter className="justify-center border-t text-sm text-muted-foreground">
+          아직 계정이 없나요?
+          <Button asChild variant="link" className="h-auto px-2 py-0">
+            <Link href="/signup">회원가입</Link>
+          </Button>
+        </CardFooter>
       </Card>
     </main>
   );

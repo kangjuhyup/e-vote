@@ -11,6 +11,8 @@ export type ElectorViewProps = {
   readonly voteWeight: number;
   readonly status: ElectorStatus;
   readonly identityVerified: boolean;
+  readonly participated: boolean;
+  readonly participatedAt?: Date;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -19,6 +21,7 @@ export class ElectorView {
   readonly phoneNumber?: string;
   readonly birthDate?: string;
   readonly groupKey?: string;
+  readonly participatedAt?: Date;
 
   private constructor(
     readonly id: string,
@@ -31,6 +34,8 @@ export class ElectorView {
     readonly voteWeight: number,
     readonly status: ElectorStatus,
     readonly identityVerified: boolean,
+    readonly participated: boolean,
+    participatedAt: Date | undefined,
     readonly createdAt: Date,
     readonly updatedAt: Date,
   ) {
@@ -42,6 +47,9 @@ export class ElectorView {
     }
     if (groupKey !== undefined) {
       this.groupKey = groupKey;
+    }
+    if (participatedAt !== undefined) {
+      this.participatedAt = participatedAt;
     }
   }
 
@@ -57,6 +65,8 @@ export class ElectorView {
       params.voteWeight,
       params.status,
       params.identityVerified,
+      params.participated,
+      params.participatedAt,
       params.createdAt,
       params.updatedAt,
     );

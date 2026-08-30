@@ -89,7 +89,7 @@ describe('resource read repository adapters', () => {
       vote: { id: 'vote-1' },
     });
     expect(em.findOne.mock.calls[0][2]).toMatchObject({
-      populate: ['vote', 'identityVerifications'],
+      populate: ['vote', 'identityVerifications', 'participations'],
       strategy: LoadStrategy.JOINED,
     });
     expect(detail).toMatchObject({
@@ -101,6 +101,8 @@ describe('resource read repository adapters', () => {
       voteWeight: 2,
       status: ElectorStatus.Eligible,
       identityVerified: true,
+      participated: true,
+      participatedAt: new Date('2026-08-13T02:00:00.000Z'),
     });
     expect(detail.phoneNumber).toBeUndefined();
     expect(detail.birthDate).toBeUndefined();
@@ -110,6 +112,27 @@ describe('resource read repository adapters', () => {
       totalItems: 2,
       totalPages: 1,
     });
+  });
+
+  it('does not count canceled elector participations', async () => {
+    const em = createMockEntityManager();
+    em.findOne.mockResolvedValue({
+      ...createElectorEntity(),
+      participations: [
+        {
+          status: 'CANCELED',
+          participatedAt: new Date('2026-08-13T03:00:00.000Z'),
+        },
+      ],
+    });
+    const adapter = new ElectorReadRepositoryAdapter(em as any);
+
+    const detail = await adapter.findDetailById('vote-1', 'elector-1');
+
+    expect(detail).toMatchObject({
+      participated: false,
+    });
+    expect(detail.participatedAt).toBeUndefined();
   });
 
   it('maps candidate detail and page read models inside parent vote detail scope', async () => {
@@ -223,6 +246,20 @@ function createElectorEntity(): Record<string, unknown> {
       },
       {
         status: 'SUCCESS',
+      },
+    ],
+    participations: [
+      {
+        status: 'CAST',
+        participatedAt: new Date('2026-08-13T01:00:00.000Z'),
+      },
+      {
+        status: 'CANCELED',
+        participatedAt: new Date('2026-08-13T03:00:00.000Z'),
+      },
+      {
+        status: 'CAST',
+        participatedAt: new Date('2026-08-13T02:00:00.000Z'),
       },
     ],
   };

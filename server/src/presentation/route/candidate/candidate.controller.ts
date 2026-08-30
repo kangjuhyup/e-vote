@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, Param, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  Param,
+  Patch,
+  Put,
+} from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -13,12 +21,23 @@ import {
   CreateCandidateParam,
 } from './dto/create-candidate-request.dto';
 import { CreateCandidateResponse } from './dto/create-candidate-response.dto';
+import { UpdateCandidateCommand } from '../../../application/command/update-candidate.command';
+import { WithdrawCandidateCommand } from '../../../application/command/withdraw-candidate.command';
+import { UpdateCandidateHandler } from '../../../application/command/handler/update-candidate.handler';
+import { WithdrawCandidateHandler } from '../../../application/command/handler/withdraw-candidate.handler';
+import {
+  ManageCandidateParam,
+  UpdateCandidateBody,
+} from './dto/manage-candidate-request.dto';
+import { ManageCandidateResponse } from './dto/manage-candidate-response.dto';
 
 @ApiTags('candidates')
 @Controller('votes/:voteId/sub-votes/:voteDetailId/candidates')
 export class CandidateController {
   constructor(
     private readonly createCandidateHandler: CreateCandidateHandler,
+    private readonly updateCandidateHandler?: UpdateCandidateHandler,
+    private readonly withdrawCandidateHandler?: WithdrawCandidateHandler,
   ) {}
 
   @Put()
@@ -58,5 +77,26 @@ export class CandidateController {
     );
 
     return CreateCandidateResponse.of(result);
+  }
+
+  @Patch(':candidateId')
+  async updateCandidate(
+    @Param() params: ManageCandidateParam,
+    @Body() body: UpdateCandidateBody,
+  ) {
+    return ManageCandidateResponse.of(
+      await this.updateCandidateHandler!.execute(
+        UpdateCandidateCommand.of({ ...params, ...body }),
+      ),
+    );
+  }
+
+  @Delete(':candidateId')
+  async deleteCandidate(@Param() params: ManageCandidateParam) {
+    return ManageCandidateResponse.of(
+      await this.withdrawCandidateHandler!.execute(
+        WithdrawCandidateCommand.of(params),
+      ),
+    );
   }
 }

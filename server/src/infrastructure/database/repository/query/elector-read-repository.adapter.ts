@@ -9,6 +9,7 @@ import {
   ElectorView,
 } from '../../../../application/query/view/elector.view';
 import type { ElectorStatus } from '../../../../domain/elector/type/elector-status.type';
+import { ParticipationStatus } from '../../../../domain/participation/type/participation-status.type';
 import { isPersonalDataCiphertext } from '../../../security/personal-data-cipher';
 import {
   JOINED_RELATION_LOAD_OPTIONS,
@@ -18,7 +19,11 @@ import {
   type LoadedCollectionLike,
 } from '../database-repository.util';
 
-const ELECTOR_READ_RELATIONS = ['vote', 'identityVerifications'] as const;
+const ELECTOR_READ_RELATIONS = [
+  'vote',
+  'identityVerifications',
+  'participations',
+] as const;
 const SUCCESSFUL_IDENTITY_VERIFICATION_STATUS = 'SUCCESS';
 
 type ElectorReadPersistence = {
@@ -34,6 +39,7 @@ type ElectorReadPersistence = {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly identityVerifications: LoadedCollectionLike<DatabaseEntity>;
+  readonly participations: LoadedCollectionLike<DatabaseEntity>;
 };
 
 @Injectable()
@@ -87,6 +93,8 @@ export class ElectorReadRepositoryAdapter implements ElectorReadRepositoryPort {
   }
 
   private toView(entity: ElectorReadPersistence): ElectorView {
+    const participatedAt = this.findLatestParticipatedAt(entity);
+
     return ElectorView.of({
       id: entity.id,
       voteId: entity.vote.id,
@@ -98,6 +106,8 @@ export class ElectorReadRepositoryAdapter implements ElectorReadRepositoryPort {
       voteWeight: Number(entity.voteWeight),
       status: entity.status,
       identityVerified: this.hasSuccessfulIdentityVerification(entity),
+      participated: participatedAt !== undefined,
+      participatedAt,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });
@@ -124,5 +134,24 @@ export class ElectorReadRepositoryAdapter implements ElectorReadRepositoryPort {
       (verification) =>
         verification.status === SUCCESSFUL_IDENTITY_VERIFICATION_STATUS,
     );
+  }
+
+  private findLatestParticipatedAt(
+    entity: ElectorReadPersistence,
+  ): Date | undefined {
+    return loadedItems<DatabaseEntity>(entity.participations).reduce<
+      Date | undefined
+    >((latest, participation) => {
+      if (
+        participation.status !== ParticipationStatus.Cast ||
+        !(participation.participatedAt instanceof Date)
+      ) {
+        return latest;
+      }
+
+      return latest === undefined || participation.participatedAt > latest
+        ? participation.participatedAt
+        : latest;
+    }, undefined);
   }
 }

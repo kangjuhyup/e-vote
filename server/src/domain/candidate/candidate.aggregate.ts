@@ -16,8 +16,8 @@ export class CandidateAggregate {
   private constructor(
     readonly id: string,
     readonly voteDetailId: string,
-    readonly candidateNo: number,
-    readonly name: string,
+    public candidateNo: number,
+    public name: string,
     public status: CandidateStatus,
   ) {}
 
@@ -47,6 +47,25 @@ export class CandidateAggregate {
 
   static reconstitute(params: ReconstituteCandidateParams): CandidateAggregate {
     return CandidateAggregate.create(params);
+  }
+
+  update(params: {
+    readonly candidateNo: number;
+    readonly name: string;
+  }): void {
+    if (this.status !== CandidateStatus.Active) {
+      throw new DomainError('only active candidates can be updated');
+    }
+    const name = params.name.trim();
+    if (name.length === 0) {
+      throw new DomainError('candidate name must not be empty');
+    }
+    assertPositiveNumber(params.candidateNo, 'candidateNo');
+    if (!Number.isInteger(params.candidateNo)) {
+      throw new DomainError('candidateNo must be an integer');
+    }
+    this.candidateNo = params.candidateNo;
+    this.name = name;
   }
 
   withdraw(): void {

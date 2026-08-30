@@ -4,10 +4,12 @@ import { CANDIDATE_READ_REPOSITORY_PORT } from '../../application/port/persisten
 import { CANDIDATE_REPOSITORY_PORT } from '../../application/port/persistence/command/candidate-repository.port';
 import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from '../../application/port/persistence/command/election-commission-member-repository.port';
 import { ELECTION_COMMISSION_REPOSITORY_PORT } from '../../application/port/persistence/command/election-commission-repository.port';
+import { ELECTION_COMMISSION_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/election-commission-read-repository.port';
 import { ELECTOR_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/elector-read-repository.port';
 import { ELECTOR_REPOSITORY_PORT } from '../../application/port/persistence/command/elector-repository.port';
 import { FIELD_PARTICIPATION_EVIDENCE_REPOSITORY_PORT } from '../../application/port/persistence/command/field-participation-evidence-repository.port';
 import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from '../../application/port/persistence/command/field-voting-session-repository.port';
+import { FIELD_VOTING_SESSION_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/field-voting-session-read-repository.port';
 import { FILE_REPOSITORY_PORT } from '../../application/port/persistence/command/file-repository.port';
 import { PARTICIPATION_REPOSITORY_PORT } from '../../application/port/persistence/command/participation-repository.port';
 import { VOTE_DETAIL_READ_REPOSITORY_PORT } from '../../application/port/persistence/query/vote-detail-read-repository.port';
@@ -20,10 +22,12 @@ import { CandidateReadRepositoryAdapter } from './repository/query/candidate-rea
 import { CandidateRepositoryAdapter } from './repository/command/candidate-repository.adapter';
 import { ElectionCommissionMemberRepositoryAdapter } from './repository/command/election-commission-member-repository.adapter';
 import { ElectionCommissionRepositoryAdapter } from './repository/command/election-commission-repository.adapter';
+import { ElectionCommissionReadRepositoryAdapter } from './repository/query/election-commission-read-repository.adapter';
 import { ElectorReadRepositoryAdapter } from './repository/query/elector-read-repository.adapter';
 import { ElectorRepositoryAdapter } from './repository/command/elector-repository.adapter';
 import { FieldParticipationEvidenceRepositoryAdapter } from './repository/command/field-participation-evidence-repository.adapter';
 import { FieldVotingSessionRepositoryAdapter } from './repository/command/field-voting-session-repository.adapter';
+import { FieldVotingSessionReadRepositoryAdapter } from './repository/query/field-voting-session-read-repository.adapter';
 import { FileRepositoryAdapter } from './repository/command/file-repository.adapter';
 import { ParticipationRepositoryAdapter } from './repository/command/participation-repository.adapter';
 import { VoteDetailReadRepositoryAdapter } from './repository/query/vote-detail-read-repository.adapter';
@@ -40,6 +44,10 @@ export const databaseRepositoryProviders: Provider[] = [
   {
     provide: ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
     useClass: ElectionCommissionMemberRepositoryAdapter,
+  },
+  {
+    provide: ELECTION_COMMISSION_READ_REPOSITORY_PORT,
+    useClass: ElectionCommissionReadRepositoryAdapter,
   },
   {
     provide: VOTE_REPOSITORY_PORT,
@@ -86,6 +94,10 @@ export const databaseRepositoryProviders: Provider[] = [
     useClass: FieldVotingSessionRepositoryAdapter,
   },
   {
+    provide: FIELD_VOTING_SESSION_READ_REPOSITORY_PORT,
+    useClass: FieldVotingSessionReadRepositoryAdapter,
+  },
+  {
     provide: FIELD_PARTICIPATION_EVIDENCE_REPOSITORY_PORT,
     useClass: FieldParticipationEvidenceRepositoryAdapter,
   },
@@ -102,6 +114,7 @@ export const databaseRepositoryProviders: Provider[] = [
 export const databaseRepositoryPortTokens = [
   ELECTION_COMMISSION_REPOSITORY_PORT,
   ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
+  ELECTION_COMMISSION_READ_REPOSITORY_PORT,
   VOTE_REPOSITORY_PORT,
   VOTE_DETAIL_REPOSITORY_PORT,
   VOTE_DETAIL_READ_REPOSITORY_PORT,
@@ -113,6 +126,7 @@ export const databaseRepositoryPortTokens = [
   CANDIDATE_READ_REPOSITORY_PORT,
   PARTICIPATION_REPOSITORY_PORT,
   FIELD_VOTING_SESSION_REPOSITORY_PORT,
+  FIELD_VOTING_SESSION_READ_REPOSITORY_PORT,
   FIELD_PARTICIPATION_EVIDENCE_REPOSITORY_PORT,
   FILE_REPOSITORY_PORT,
   ATTACHMENT_REPOSITORY_PORT,

@@ -17,6 +17,8 @@ type ElectorSource = {
   readonly voteWeight: number;
   readonly status: string;
   readonly identityVerified: boolean;
+  readonly participated: boolean;
+  readonly participatedAt?: Date;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -90,6 +92,20 @@ export class GetElectorResponse {
   readonly identityVerified: boolean;
 
   @ApiProperty({
+    example: true,
+    description: '선거인의 투표 참여 여부입니다.',
+  })
+  readonly participated: boolean;
+
+  @ApiProperty({
+    required: false,
+    example: '2026-08-20T01:00:00.000Z',
+    format: 'date-time',
+    description: '선거인의 가장 최근 투표 참여 시각입니다.',
+  })
+  readonly participatedAt?: string;
+
+  @ApiProperty({
     example: '2026-08-12T00:00:00.000Z',
     format: 'date-time',
     description: '생성 시각입니다.',
@@ -120,6 +136,10 @@ export class GetElectorResponse {
     this.voteWeight = source.voteWeight;
     this.status = source.status;
     this.identityVerified = source.identityVerified;
+    this.participated = source.participated;
+    if (source.participatedAt !== undefined) {
+      this.participatedAt = source.participatedAt.toISOString();
+    }
     this.createdAt = source.createdAt.toISOString();
     this.updatedAt = source.updatedAt.toISOString();
   }

@@ -267,6 +267,8 @@ function createElectorView(): ElectorView {
     voteWeight: 1,
     status: ElectorStatus.Eligible,
     identityVerified: true,
+    participated: true,
+    participatedAt: new Date('2026-08-13T00:30:00.000Z'),
     createdAt: now,
     updatedAt: now,
   });
