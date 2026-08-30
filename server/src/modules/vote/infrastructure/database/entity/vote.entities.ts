@@ -92,6 +92,8 @@ export function createVoteEntities(
         p
           .oneToMany(getEntity(context, 'VoteContentChangeHistoryEntity'))
           .mappedBy('vote'),
+      smsDispatches: () =>
+        p.oneToMany(getEntity(context, 'SmsDispatchEntity')).mappedBy('vote'),
     },
   });
   class VoteEntity extends VoteSchema.class {}

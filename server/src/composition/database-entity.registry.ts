@@ -11,6 +11,7 @@ import {
 import { createParticipationEntities } from '../modules/participation/infrastructure/database/entity/participation.entities';
 import { createResultEntities } from '../modules/participation/infrastructure/database/entity/result.entities';
 import { createVoteEntities } from '../modules/vote/infrastructure/database/entity/vote.entities';
+import { createSmsDispatchEntities } from '../shared/infrastructure/database/entity/sms-dispatch.entities';
 
 export interface DatabaseEntityRegistry extends DatabaseEntityClasses {
   readonly databaseEntities: EntityClass<AnyEntity>[];
@@ -37,6 +38,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   registerEntities(context, createParticipationEntities(context));
   registerEntities(context, createAttachmentEntities(context));
   registerEntities(context, createResultEntities(context));
+  registerEntities(context, createSmsDispatchEntities(context));
 
   const entities = context.entities as DatabaseEntityClasses;
   const databaseEntities = [
@@ -64,6 +66,8 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
     entities.ElectorIdentityVerificationEntity,
     entities.VoteContentChangeHistoryEntity,
     entities.VoteResultStorageRecordEntity,
+    entities.SmsDispatchEntity,
+    entities.SmsDeliveryEntity,
   ];
 
   cachedRegistry = {
