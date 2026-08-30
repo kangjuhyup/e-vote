@@ -1,26 +1,26 @@
-import { AddElectoralRollMemberCommand } from '../../../../src/application/command/dto/request/add-electoral-roll-member.command';
-import { AttachElectoralRollSnapshotCommand } from '../../../../src/application/command/dto/request/attach-electoral-roll-snapshot.command';
-import { CreateElectoralRollSnapshotCommand } from '../../../../src/application/command/dto/request/create-electoral-roll-snapshot.command';
-import { AddElectoralRollMemberHandler } from '../../../../src/application/command/handler/add-electoral-roll-member.handler';
-import { AttachElectoralRollSnapshotHandler } from '../../../../src/application/command/handler/attach-electoral-roll-snapshot.handler';
-import { CreateElectoralRollSnapshotHandler } from '../../../../src/application/command/handler/create-electoral-roll-snapshot.handler';
-import type { ElectoralRollRepositoryPort } from '../../../../src/application/port/persistence/command/electoral-roll-repository.port';
-import type { ElectoralRollSnapshotRepositoryPort } from '../../../../src/application/port/persistence/command/electoral-roll-snapshot-repository.port';
-import type { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';
-import type { DatabaseTransactionManager } from '../../../../src/application/port/persistence/transaction/database-transaction-manager.port';
-import { ElectoralRollAggregate } from '../../../../src/domain/electoral-roll/electoral-roll.aggregate';
-import { ElectoralRollMemberAggregate } from '../../../../src/domain/electoral-roll/electoral-roll-member.aggregate';
-import { ElectoralRollSnapshotAggregate } from '../../../../src/domain/electoral-roll/electoral-roll-snapshot.aggregate';
-import { VoteAggregate } from '../../../../src/domain/vote/vote.aggregate';
+import { AddElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/add-electoral-roll-member.command';
+import { AttachElectoralRollSnapshotCommand } from '../../../../src/modules/vote/application/command/dto/request/attach-electoral-roll-snapshot.command';
+import { CreateElectoralRollSnapshotCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/create-electoral-roll-snapshot.command';
+import { AddElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
+import { AttachElectoralRollSnapshotHandler } from '../../../../src/modules/vote/application/command/handler/attach-electoral-roll-snapshot.handler';
+import { CreateElectoralRollSnapshotHandler } from '../../../../src/modules/electoral-roll/application/command/handler/create-electoral-roll-snapshot.handler';
+import type { ElectoralRollRepositoryPort } from '../../../../src/modules/electoral-roll/application/port/persistence/command/electoral-roll-repository.port';
+import type { ElectoralRollSnapshotRepositoryPort } from '../../../../src/modules/electoral-roll/application/port/persistence/command/electoral-roll-snapshot-repository.port';
+import type { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
+import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
+import { ElectoralRollAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll.aggregate';
+import { ElectoralRollMemberAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll-member.aggregate';
+import { ElectoralRollSnapshotAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll-snapshot.aggregate';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { IdentityVerificationPolicy } from '../../../../src/domain/vote/vo/identity-verification-policy.vo';
-import { VotePolicy } from '../../../../src/domain/vote/vo/vote-policy.vo';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 
 describe('electoral roll command handlers', () => {
   const now = new Date('2026-08-30T00:00:00.000Z');

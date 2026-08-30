@@ -1,26 +1,26 @@
 import { NotFoundException } from '@nestjs/common';
-import { AttachmentTargetType } from '../../../../src/application/port/persistence/command/attachment-repository.port';
-import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/dto/request/confirm-attachment-upload.command';
-import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
-import { CreateCandidateCommand } from '../../../../src/application/command/dto/request/create-candidate.command';
-import { CreateCandidateHandler } from '../../../../src/application/command/handler/create-candidate.handler';
-import { RequestAttachmentUploadCommand } from '../../../../src/application/command/dto/request/request-attachment-upload.command';
-import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
+import { AttachmentTargetType } from '../../../../src/modules/vote/application/port/persistence/command/attachment-repository.port';
+import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/confirm-attachment-upload.command';
+import { ConfirmAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
+import { CreateCandidateCommand } from '../../../../src/modules/vote/application/command/dto/request/create-candidate.command';
+import { CreateCandidateHandler } from '../../../../src/modules/vote/application/command/handler/create-candidate.handler';
+import { RequestAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/request-attachment-upload.command';
+import { RequestAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/request-attachment-upload.handler';
 import {
   CandidatePageReadView,
   CandidateReadView,
-} from '../../../../src/application/query/dto/response/candidate-read.view';
+} from '../../../../src/modules/vote/application/query/dto/response/candidate-read.view';
 import {
   CandidateNotFoundError,
   GetCandidateHandler,
-} from '../../../../src/application/query/handler/get-candidate.handler';
-import { GetCandidateQuery } from '../../../../src/application/query/dto/request/get-candidate.query';
-import { GetCandidatePageHandler } from '../../../../src/application/query/handler/get-candidate-page.handler';
-import { GetCandidatePageQuery } from '../../../../src/application/query/dto/request/get-candidate-page.query';
-import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
-import { CandidateAttachmentController } from '../../../../src/presentation/route/candidate/candidate-attachment.controller';
-import { CandidateReadController } from '../../../../src/presentation/route/candidate/candidate-read.controller';
-import { CandidateController } from '../../../../src/presentation/route/candidate/candidate.controller';
+} from '../../../../src/modules/vote/application/query/handler/get-candidate.handler';
+import { GetCandidateQuery } from '../../../../src/modules/vote/application/query/dto/request/get-candidate.query';
+import { GetCandidatePageHandler } from '../../../../src/modules/vote/application/query/handler/get-candidate-page.handler';
+import { GetCandidatePageQuery } from '../../../../src/modules/vote/application/query/dto/request/get-candidate-page.query';
+import { CandidateStatus } from '../../../../src/shared/domain/voting/type/candidate-status.type';
+import { CandidateAttachmentController } from '../../../../src/modules/vote/presentation/candidate/candidate-attachment.controller';
+import { CandidateReadController } from '../../../../src/modules/vote/presentation/candidate/candidate-read.controller';
+import { CandidateController } from '../../../../src/modules/vote/presentation/candidate/candidate.controller';
 
 describe('CandidateController', () => {
   const createCandidateExecute = jest.fn<

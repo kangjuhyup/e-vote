@@ -1,5 +1,5 @@
 import { HeadBucketCommand } from '@aws-sdk/client-s3';
-import { WasabiStorageHealthAdapter } from '../../../src/infrastructure/storage/wasabi-storage-health.adapter';
+import { WasabiStorageHealthAdapter } from '../../../src/platform/storage/wasabi-storage-health.adapter';
 
 type SendHeadBucketCommand = (command: HeadBucketCommand) => Promise<unknown>;
 

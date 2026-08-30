@@ -91,6 +91,9 @@
     "testPathIgnorePatterns": [
       "<rootDir>/test/.*\\.e2e-spec\\.ts$"
     ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/jest.setup.ts"
+    ],
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },

@@ -1,26 +1,26 @@
 import {
   GetVoteHandler,
   VoteNotFoundError,
-} from '../../../../src/application/query/handler/get-vote.handler';
-import { GetVoteQuery } from '../../../../src/application/query/dto/request/get-vote.query';
+} from '../../../../src/modules/vote/application/query/handler/get-vote.handler';
+import { GetVoteQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote.query';
 import {
   IdentityVerificationPolicyView,
   VotePageView,
   VotePolicyView,
   VoteSummaryView,
   VoteView,
-} from '../../../../src/application/query/dto/response/vote.view';
-import type { VoteReadRepositoryPort } from '../../../../src/application/port/persistence/query/vote-read-repository.port';
+} from '../../../../src/modules/vote/application/query/dto/response/vote.view';
+import type { VoteReadRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/query/vote-read-repository.port';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VoteStatus } from '../../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { GetVotePageHandler } from '../../../../src/application/query/handler/get-vote-page.handler';
-import { GetVotePageQuery } from '../../../../src/application/query/dto/request/get-vote-page.query';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { GetVotePageHandler } from '../../../../src/modules/vote/application/query/handler/get-vote-page.handler';
+import { GetVotePageQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote-page.query';
 
 describe('vote query handlers', () => {
   it('loads a vote detail through the read repository', async () => {

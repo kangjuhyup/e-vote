@@ -1,7 +1,7 @@
 import { ExecutionContext, HttpException } from '@nestjs/common';
 import { Logger, LogLevel } from '@kangjuhyup/rvlog';
 import { firstValueFrom, of, throwError } from 'rxjs';
-import { RvlogHttpLoggingInterceptor } from '../../../src/infrastructure/logging/rvlog-http-logging.interceptor';
+import { RvlogHttpLoggingInterceptor } from '../../../src/platform/logging/rvlog-http-logging.interceptor';
 
 function createHttpContext(statusCode = 200): ExecutionContext {
   return {

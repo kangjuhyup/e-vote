@@ -1,25 +1,25 @@
-import { CreateFieldVotingSessionCommand } from '../../../../src/application/command/dto/request/create-field-voting-session.command';
-import { CreateFieldVotingSessionHandler } from '../../../../src/application/command/handler/create-field-voting-session.handler';
-import { ElectionCommissionMemberRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-member-repository.port';
-import { ElectionCommissionRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-repository.port';
-import { FieldVotingSessionRepositoryPort } from '../../../../src/application/port/persistence/command/field-voting-session-repository.port';
-import { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';
-import { ElectionCommissionAggregate } from '../../../../src/domain/election-commission/election-commission.aggregate';
-import { ElectionCommissionMemberAggregate } from '../../../../src/domain/election-commission/election-commission-member.aggregate';
-import { ElectionCommissionMemberRole } from '../../../../src/domain/election-commission/type/election-commission-member-role.type';
-import { FieldVotingSessionAggregate } from '../../../../src/domain/field-voting/field-voting-session.aggregate';
-import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
+import { CreateFieldVotingSessionCommand } from '../../../../src/modules/field-voting/application/command/dto/request/create-field-voting-session.command';
+import { CreateFieldVotingSessionHandler } from '../../../../src/modules/field-voting/application/command/handler/create-field-voting-session.handler';
+import { ElectionCommissionMemberRepositoryPort } from '../../../../src/modules/election-commission/application/port/persistence/command/election-commission-member-repository.port';
+import { ElectionCommissionRepositoryPort } from '../../../../src/modules/election-commission/application/port/persistence/command/election-commission-repository.port';
+import { FieldVotingSessionRepositoryPort } from '../../../../src/modules/field-voting/application/port/persistence/command/field-voting-session-repository.port';
+import { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
+import { ElectionCommissionAggregate } from '../../../../src/modules/election-commission/domain/election-commission.aggregate';
+import { ElectionCommissionMemberAggregate } from '../../../../src/modules/election-commission/domain/election-commission-member.aggregate';
+import { ElectionCommissionMemberRole } from '../../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
+import { FieldVotingSessionAggregate } from '../../../../src/modules/field-voting/domain/field-voting-session.aggregate';
+import { FieldVotingSessionStatus } from '../../../../src/shared/domain/voting/type/field-voting-session-status.type';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VoteStatus } from '../../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { IdentityVerificationPolicy } from '../../../../src/domain/vote/vo/identity-verification-policy.vo';
-import { VotePolicy } from '../../../../src/domain/vote/vo/vote-policy.vo';
-import { VoteAggregate } from '../../../../src/domain/vote/vote.aggregate';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
 
 function createCommissionFixture(): ElectionCommissionAggregate {
   return ElectionCommissionAggregate.create({

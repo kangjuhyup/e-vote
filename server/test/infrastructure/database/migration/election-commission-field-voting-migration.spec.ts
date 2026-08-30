@@ -5,7 +5,7 @@ describe('election commission field voting migration', () => {
   const migrationSource = readFileSync(
     join(
       process.cwd(),
-      'src/infrastructure/database/migration/Migration20260813000000.ts',
+      'src/platform/database/migration/Migration20260813000000.ts',
     ),
     'utf8',
   );

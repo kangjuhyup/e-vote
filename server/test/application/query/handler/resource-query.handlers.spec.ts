@@ -1,42 +1,42 @@
-import { CandidateReadRepositoryPort } from '../../../../src/application/port/persistence/query/candidate-read-repository.port';
-import { ElectorReadRepositoryPort } from '../../../../src/application/port/persistence/query/elector-read-repository.port';
-import { VoteDetailReadRepositoryPort } from '../../../../src/application/port/persistence/query/vote-detail-read-repository.port';
+import { CandidateReadRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/query/candidate-read-repository.port';
+import { ElectorReadRepositoryPort } from '../../../../src/modules/elector/application/port/persistence/query/elector-read-repository.port';
+import { VoteDetailReadRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/query/vote-detail-read-repository.port';
 import {
   CandidateNotFoundError,
   GetCandidateHandler,
-} from '../../../../src/application/query/handler/get-candidate.handler';
-import { GetCandidatePageHandler } from '../../../../src/application/query/handler/get-candidate-page.handler';
-import { GetCandidatePageQuery } from '../../../../src/application/query/dto/request/get-candidate-page.query';
-import { GetCandidateQuery } from '../../../../src/application/query/dto/request/get-candidate.query';
+} from '../../../../src/modules/vote/application/query/handler/get-candidate.handler';
+import { GetCandidatePageHandler } from '../../../../src/modules/vote/application/query/handler/get-candidate-page.handler';
+import { GetCandidatePageQuery } from '../../../../src/modules/vote/application/query/dto/request/get-candidate-page.query';
+import { GetCandidateQuery } from '../../../../src/modules/vote/application/query/dto/request/get-candidate.query';
 import {
   ElectorNotFoundError,
   GetElectorHandler,
-} from '../../../../src/application/query/handler/get-elector.handler';
-import { GetElectorPageHandler } from '../../../../src/application/query/handler/get-elector-page.handler';
-import { GetElectorPageQuery } from '../../../../src/application/query/dto/request/get-elector-page.query';
-import { GetElectorQuery } from '../../../../src/application/query/dto/request/get-elector.query';
+} from '../../../../src/modules/elector/application/query/handler/get-elector.handler';
+import { GetElectorPageHandler } from '../../../../src/modules/elector/application/query/handler/get-elector-page.handler';
+import { GetElectorPageQuery } from '../../../../src/modules/elector/application/query/dto/request/get-elector-page.query';
+import { GetElectorQuery } from '../../../../src/modules/elector/application/query/dto/request/get-elector.query';
 import {
   GetVoteDetailHandler,
   VoteDetailNotFoundError,
-} from '../../../../src/application/query/handler/get-vote-detail.handler';
-import { GetVoteDetailPageHandler } from '../../../../src/application/query/handler/get-vote-detail-page.handler';
-import { GetVoteDetailPageQuery } from '../../../../src/application/query/dto/request/get-vote-detail-page.query';
-import { GetVoteDetailQuery } from '../../../../src/application/query/dto/request/get-vote-detail.query';
+} from '../../../../src/modules/vote/application/query/handler/get-vote-detail.handler';
+import { GetVoteDetailPageHandler } from '../../../../src/modules/vote/application/query/handler/get-vote-detail-page.handler';
+import { GetVoteDetailPageQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote-detail-page.query';
+import { GetVoteDetailQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote-detail.query';
 import {
   CandidatePageReadView,
   CandidateReadView,
-} from '../../../../src/application/query/dto/response/candidate-read.view';
+} from '../../../../src/modules/vote/application/query/dto/response/candidate-read.view';
 import {
   ElectorPageView,
   ElectorView,
-} from '../../../../src/application/query/dto/response/elector.view';
+} from '../../../../src/modules/elector/application/query/dto/response/elector.view';
 import {
   VoteDetailPageReadView,
   VoteDetailReadView,
-} from '../../../../src/application/query/dto/response/vote-detail-read.view';
-import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
-import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
-import { VoteDetailStatus } from '../../../../src/domain/vote/type/vote-status.type';
+} from '../../../../src/modules/vote/application/query/dto/response/vote-detail-read.view';
+import { CandidateStatus } from '../../../../src/shared/domain/voting/type/candidate-status.type';
+import { ElectorStatus } from '../../../../src/shared/domain/voting/type/elector-status.type';
+import { VoteDetailStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
 
 describe('remaining resource query handlers', () => {
   it('loads vote detail detail and page read models', async () => {

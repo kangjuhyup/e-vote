@@ -4,8 +4,8 @@ import {
   type EntityManager,
   type TransactionOptions,
 } from '@mikro-orm/postgresql';
-import type { DatabaseTransactionOptions } from '../../../../src/application/port/persistence/transaction/database-transaction-manager.port';
-import { MikroOrmDatabaseTransactionManagerAdapter } from '../../../../src/infrastructure/database/transaction/mikro-orm-database-transaction-manager.adapter';
+import type { DatabaseTransactionOptions } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
+import { MikroOrmDatabaseTransactionManagerAdapter } from '../../../../src/platform/database/transaction/mikro-orm-database-transaction-manager.adapter';
 
 describe('MikroOrmDatabaseTransactionManagerAdapter', () => {
   it('delegates transaction execution to MikroORM EntityManager with join-existing as the default propagation', async () => {

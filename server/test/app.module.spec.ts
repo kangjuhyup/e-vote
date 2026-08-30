@@ -1,8 +1,8 @@
 import { MODULE_METADATA } from '@nestjs/common/constants';
-import { GetVoteResultHandler } from '../src/application/query/handler/get-vote-result.handler';
-import { GetVoteTurnoutHandler } from '../src/application/query/handler/get-vote-turnout.handler';
+import { GetVoteResultHandler } from '../src/modules/participation/application/query/handler/get-vote-result.handler';
+import { GetVoteTurnoutHandler } from '../src/modules/participation/application/query/handler/get-vote-turnout.handler';
 import { AppModule } from '../src/app.module';
-import { VoteStatisticsController } from '../src/presentation/route/vote-statistics/vote-statistics.controller';
+import { VoteStatisticsController } from '../src/modules/participation/presentation/vote-statistics/vote-statistics.controller';
 
 describe('AppModule', () => {
   it('registers vote statistics query endpoints and handlers', () => {

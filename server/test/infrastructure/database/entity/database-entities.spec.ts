@@ -1,5 +1,5 @@
-import { createDatabaseConfig } from '../../../../src/infrastructure/database/database.config';
-import { createDatabaseEntityRegistry } from '../../../../src/infrastructure/database/entity';
+import { createDatabaseConfig } from '../../../../src/platform/database/database.config';
+import { createDatabaseEntityRegistry } from '../../../../src/composition/database-entity.registry';
 
 describe('database entities registry', () => {
   it('registers all ERD entity classes', async () => {
@@ -36,7 +36,7 @@ describe('database entities registry', () => {
   it('uses the entity registry in database config', async () => {
     const [{ databaseEntities }, config] = await Promise.all([
       createDatabaseEntityRegistry(),
-      createDatabaseConfig({}),
+      createDatabaseConfig({}, createDatabaseEntityRegistry),
     ]);
 
     expect(config.entities).toBe(databaseEntities);

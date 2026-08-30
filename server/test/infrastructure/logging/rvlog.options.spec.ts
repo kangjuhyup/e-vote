@@ -2,7 +2,7 @@ import { LogLevel } from '@kangjuhyup/rvlog';
 import {
   createRvlogLoggerOptions,
   RVLOG_HTTP_OPTIONS,
-} from '../../../src/infrastructure/logging/rvlog.options';
+} from '../../../src/platform/logging/rvlog.options';
 
 describe('rvlog options', () => {
   it('uses structured info logs in production', () => {

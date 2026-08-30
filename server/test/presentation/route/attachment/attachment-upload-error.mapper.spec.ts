@@ -3,11 +3,11 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { AttachmentTargetNotFoundError } from '../../../../src/application/command/attachment-target.validator';
-import { UnsupportedAttachmentMimeTypeError } from '../../../../src/application/command/attachment-upload.policy';
-import { UploadedAttachmentObjectNotFoundError } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
-import { StorageNotConfiguredError } from '../../../../src/application/port/gateway/storage.port';
-import { throwAttachmentUploadHttpError } from '../../../../src/presentation/route/attachment/attachment-upload-error.mapper';
+import { AttachmentTargetNotFoundError } from '../../../../src/modules/vote/application/command/attachment-target.validator';
+import { UnsupportedAttachmentMimeTypeError } from '../../../../src/modules/vote/application/command/attachment-upload.policy';
+import { UploadedAttachmentObjectNotFoundError } from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
+import { StorageNotConfiguredError } from '../../../../src/shared/application/port/gateway/storage.port';
+import { throwAttachmentUploadHttpError } from '../../../../src/modules/vote/presentation/attachment/attachment-upload-error.mapper';
 
 describe('throwAttachmentUploadHttpError', () => {
   it('maps validation errors to bad request', () => {

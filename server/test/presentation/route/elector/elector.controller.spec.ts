@@ -1,10 +1,10 @@
-import { AuthenticateElectorCommand } from '../../../../src/application/command/dto/request/authenticate-elector.command';
-import { AuthenticateElectorHandler } from '../../../../src/application/command/handler/authenticate-elector.handler';
-import { CreateElectorCommand } from '../../../../src/application/command/dto/request/create-elector.command';
-import { CreateElectorHandler } from '../../../../src/application/command/handler/create-elector.handler';
-import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
-import { DomainError } from '../../../../src/domain/shared/domain-error';
-import { ElectorController } from '../../../../src/presentation/route/elector/elector.controller';
+import { AuthenticateElectorCommand } from '../../../../src/modules/elector/application/command/dto/request/authenticate-elector.command';
+import { AuthenticateElectorHandler } from '../../../../src/modules/elector/application/command/handler/authenticate-elector.handler';
+import { CreateElectorCommand } from '../../../../src/modules/elector/application/command/dto/request/create-elector.command';
+import { CreateElectorHandler } from '../../../../src/modules/elector/application/command/handler/create-elector.handler';
+import { ElectorStatus } from '../../../../src/shared/domain/voting/type/elector-status.type';
+import { DomainError } from '../../../../src/shared/domain/domain-error';
+import { ElectorController } from '../../../../src/modules/elector/presentation/elector/elector.controller';
 
 describe('ElectorController', () => {
   const createElectorExecute = jest.fn<

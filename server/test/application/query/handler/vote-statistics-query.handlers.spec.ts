@@ -1,30 +1,30 @@
-import type { VoteStatisticsReadRepositoryPort } from '../../../../src/application/port/persistence/query/vote-statistics-read-repository.port';
-import { GetVoteResultHandler } from '../../../../src/application/query/handler/get-vote-result.handler';
-import { GetVoteResultQuery } from '../../../../src/application/query/dto/request/get-vote-result.query';
-import { GetVoteTurnoutHandler } from '../../../../src/application/query/handler/get-vote-turnout.handler';
-import { GetVoteTurnoutQuery } from '../../../../src/application/query/dto/request/get-vote-turnout.query';
+import type { VoteStatisticsReadRepositoryPort } from '../../../../src/modules/participation/application/port/persistence/query/vote-statistics-read-repository.port';
+import { GetVoteResultHandler } from '../../../../src/modules/participation/application/query/handler/get-vote-result.handler';
+import { GetVoteResultQuery } from '../../../../src/modules/participation/application/query/dto/request/get-vote-result.query';
+import { GetVoteTurnoutHandler } from '../../../../src/modules/participation/application/query/handler/get-vote-turnout.handler';
+import { GetVoteTurnoutQuery } from '../../../../src/modules/participation/application/query/dto/request/get-vote-turnout.query';
 import {
   CandidateVoteResultView,
   VoteResultView,
   VotingChannelResultView,
-} from '../../../../src/application/query/dto/response/vote-result.view';
-import { VoteTurnoutView } from '../../../../src/application/query/dto/response/vote-turnout.view';
+} from '../../../../src/modules/participation/application/query/dto/response/vote-result.view';
+import { VoteTurnoutView } from '../../../../src/modules/participation/application/query/dto/response/vote-turnout.view';
 import {
   VoteResultUnavailableError,
   VoteStatisticsInconsistentError,
   VoteStatisticsNotFoundError,
-} from '../../../../src/application/query/vote-statistics.error';
-import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
+} from '../../../../src/modules/participation/application/query/vote-statistics.error';
+import { CandidateStatus } from '../../../../src/shared/domain/voting/type/candidate-status.type';
 import {
   ParticipationUnit,
   PrivacyMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import {
   VoteDetailStatus,
   VoteStatus,
-} from '../../../../src/domain/vote/type/vote-status.type';
+} from '../../../../src/shared/domain/voting/type/vote-status.type';
 
 describe('vote statistics query handlers', () => {
   const turnout = VoteTurnoutView.of({

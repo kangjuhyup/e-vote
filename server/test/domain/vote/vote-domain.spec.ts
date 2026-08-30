@@ -1,24 +1,27 @@
-import { CandidateAggregate } from '../../../src/domain/candidate/candidate.aggregate';
-import { CandidateStatus } from '../../../src/domain/candidate/type/candidate-status.type';
-import { ElectorAggregate } from '../../../src/domain/elector/elector.aggregate';
-import { ElectorStatus } from '../../../src/domain/elector/type/elector-status.type';
-import { DomainError } from '../../../src/domain/shared/domain-error';
-import { VoteAggregate } from '../../../src/domain/vote/vote.aggregate';
-import { VoteDetailAggregate } from '../../../src/domain/vote/vote-detail.aggregate';
-import { VoteClosed, VoteOpened } from '../../../src/domain/vote/vote.events';
+import { CandidateAggregate } from '../../../src/modules/vote/domain/candidate/candidate.aggregate';
+import { CandidateStatus } from '../../../src/shared/domain/voting/type/candidate-status.type';
+import { ElectorAggregate } from '../../../src/modules/elector/domain/elector.aggregate';
+import { ElectorStatus } from '../../../src/shared/domain/voting/type/elector-status.type';
+import { DomainError } from '../../../src/shared/domain/domain-error';
+import { VoteAggregate } from '../../../src/modules/vote/domain/vote/vote.aggregate';
+import { VoteDetailAggregate } from '../../../src/modules/vote/domain/vote/vote-detail.aggregate';
+import {
+  VoteClosed,
+  VoteOpened,
+} from '../../../src/modules/vote/domain/vote/vote.events';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../src/domain/vote/type/vote-policy.type';
-import { VotePolicy } from '../../../src/domain/vote/vo/vote-policy.vo';
-import { IdentityVerificationPolicy } from '../../../src/domain/vote/vo/identity-verification-policy.vo';
+} from '../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotePolicy } from '../../../src/shared/domain/voting/vo/vote-policy.vo';
+import { IdentityVerificationPolicy } from '../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
 import {
   VoteDetailStatus,
   VoteStatus,
-} from '../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../src/domain/vote/type/voting-channel.type';
+} from '../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../src/shared/domain/voting/type/voting-channel.type';
 
 describe('vote domain aggregates', () => {
   it('calculates effective vote detail policy from parent defaults and overrides', () => {

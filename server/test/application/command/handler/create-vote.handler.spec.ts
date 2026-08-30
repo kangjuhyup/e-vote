@@ -1,17 +1,17 @@
-import { CreateVoteCommand } from '../../../../src/application/command/dto/request/create-vote.command';
-import { CreateVoteHandler } from '../../../../src/application/command/handler/create-vote.handler';
-import { ElectionCommissionRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-repository.port';
-import { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';
-import { ElectionCommissionAggregate } from '../../../../src/domain/election-commission/election-commission.aggregate';
-import { VoteAggregate } from '../../../../src/domain/vote/vote.aggregate';
+import { CreateVoteCommand } from '../../../../src/modules/vote/application/command/dto/request/create-vote.command';
+import { CreateVoteHandler } from '../../../../src/modules/vote/application/command/handler/create-vote.handler';
+import { ElectionCommissionRepositoryPort } from '../../../../src/modules/election-commission/application/port/persistence/command/election-commission-repository.port';
+import { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
+import { ElectionCommissionAggregate } from '../../../../src/modules/election-commission/domain/election-commission.aggregate';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VoteStatus } from '../../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 
 describe('CreateVoteHandler', () => {
   it('creates a draft vote and saves it through the repository', async () => {

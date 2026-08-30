@@ -5,7 +5,7 @@ describe('electoral roll snapshot migration', () => {
   const source = readFileSync(
     join(
       process.cwd(),
-      'src/infrastructure/database/migration/Migration20260830000000.ts',
+      'src/platform/database/migration/Migration20260830000000.ts',
     ),
     'utf8',
   );

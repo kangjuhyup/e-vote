@@ -1,20 +1,20 @@
-import { BlockElectorCommand } from '../../../../src/application/command/dto/request/block-elector.command';
-import { UpdateElectorCommand } from '../../../../src/application/command/dto/request/update-elector.command';
-import { BlockElectorHandler } from '../../../../src/application/command/handler/block-elector.handler';
-import { UpdateElectorHandler } from '../../../../src/application/command/handler/update-elector.handler';
-import type { ElectorRepositoryPort } from '../../../../src/application/port/persistence/command/elector-repository.port';
-import type { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';
-import { ElectorAggregate } from '../../../../src/domain/elector/elector.aggregate';
-import { VoteAggregate } from '../../../../src/domain/vote/vote.aggregate';
+import { BlockElectorCommand } from '../../../../src/modules/elector/application/command/dto/request/block-elector.command';
+import { UpdateElectorCommand } from '../../../../src/modules/elector/application/command/dto/request/update-elector.command';
+import { BlockElectorHandler } from '../../../../src/modules/elector/application/command/handler/block-elector.handler';
+import { UpdateElectorHandler } from '../../../../src/modules/elector/application/command/handler/update-elector.handler';
+import type { ElectorRepositoryPort } from '../../../../src/modules/elector/application/port/persistence/command/elector-repository.port';
+import type { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
+import { ElectorAggregate } from '../../../../src/modules/elector/domain/elector.aggregate';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { IdentityVerificationPolicy } from '../../../../src/domain/vote/vo/identity-verification-policy.vo';
-import { VotePolicy } from '../../../../src/domain/vote/vo/vote-policy.vo';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 
 describe('snapshot-managed elector commands', () => {
   it('rejects direct updates and blocks for snapshot-derived electors', async () => {

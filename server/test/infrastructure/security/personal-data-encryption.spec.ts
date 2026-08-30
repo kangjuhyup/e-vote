@@ -1,12 +1,12 @@
-import { EncryptedPersonalData } from '../../../src/infrastructure/security/encrypted-personal-data.decorator';
+import { EncryptedPersonalData } from '../../../src/platform/security/encrypted-personal-data.decorator';
 import {
   decryptDecoratedPersonalData,
   encryptDecoratedPersonalData,
-} from '../../../src/infrastructure/security/encrypted-personal-data-transformer';
+} from '../../../src/platform/security/encrypted-personal-data-transformer';
 import {
   AesGcmPersonalDataCipher,
   PersonalDataCipher,
-} from '../../../src/infrastructure/security/personal-data-cipher';
+} from '../../../src/platform/security/personal-data-cipher';
 
 class ElectorPersonalDataFixture {
   @EncryptedPersonalData()

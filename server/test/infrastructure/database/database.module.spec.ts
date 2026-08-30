@@ -1,16 +1,21 @@
-import { DatabaseModule } from '../../../src/infrastructure/database/database.module';
+import { DatabaseModule } from '../../../src/platform/database/database.module';
 import {
   databaseRepositoryPortTokens,
   databaseRepositoryProviders,
-} from '../../../src/infrastructure/database/database-repository.providers';
+} from '../../../src/composition/database-repository.providers';
 import {
   databaseTransactionPortTokens,
   databaseTransactionProviders,
-} from '../../../src/infrastructure/database/database-transaction.providers';
+} from '../../../src/platform/database/database-transaction.providers';
+import { createDatabaseEntityRegistry } from '../../../src/composition/database-entity.registry';
 
 describe('DatabaseModule', () => {
   it('provides and exports repository port adapters', async () => {
-    const moduleDefinition = await DatabaseModule.register();
+    const moduleDefinition = await DatabaseModule.register({
+      entityRegistryFactory: createDatabaseEntityRegistry,
+      repositoryProviders: databaseRepositoryProviders,
+      repositoryPortTokens: databaseRepositoryPortTokens,
+    });
 
     expect(moduleDefinition.providers).toEqual(
       expect.arrayContaining(databaseRepositoryProviders),

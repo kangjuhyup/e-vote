@@ -1,15 +1,15 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { ElectoralRollNotFoundError } from '../../../../src/application/command/electoral-roll.error';
-import type { AddElectoralRollMemberHandler } from '../../../../src/application/command/handler/add-electoral-roll-member.handler';
-import type { CreateElectoralRollHandler } from '../../../../src/application/command/handler/create-electoral-roll.handler';
-import type { CreateElectoralRollSnapshotHandler } from '../../../../src/application/command/handler/create-electoral-roll-snapshot.handler';
-import type { RemoveElectoralRollMemberHandler } from '../../../../src/application/command/handler/remove-electoral-roll-member.handler';
-import type { UpdateElectoralRollMemberHandler } from '../../../../src/application/command/handler/update-electoral-roll-member.handler';
-import type { GetElectoralRollHandler } from '../../../../src/application/query/handler/get-electoral-roll.handler';
-import { ElectoralRollView } from '../../../../src/application/query/dto/response/electoral-roll.view';
-import { ElectoralRollController } from '../../../../src/presentation/route/electoral-roll/electoral-roll.controller';
-import { ElectoralRollReadController } from '../../../../src/presentation/route/electoral-roll/electoral-roll-read.controller';
-import { throwMappedElectoralRollError } from '../../../../src/presentation/route/electoral-roll/electoral-roll-error.mapper';
+import { ElectoralRollNotFoundError } from '../../../../src/modules/electoral-roll/application/command/electoral-roll.error';
+import type { AddElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
+import type { CreateElectoralRollHandler } from '../../../../src/modules/electoral-roll/application/command/handler/create-electoral-roll.handler';
+import type { CreateElectoralRollSnapshotHandler } from '../../../../src/modules/electoral-roll/application/command/handler/create-electoral-roll-snapshot.handler';
+import type { RemoveElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/remove-electoral-roll-member.handler';
+import type { UpdateElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/update-electoral-roll-member.handler';
+import type { GetElectoralRollHandler } from '../../../../src/modules/electoral-roll/application/query/handler/get-electoral-roll.handler';
+import { ElectoralRollView } from '../../../../src/modules/electoral-roll/application/query/dto/response/electoral-roll.view';
+import { ElectoralRollController } from '../../../../src/modules/electoral-roll/presentation/electoral-roll/electoral-roll.controller';
+import { ElectoralRollReadController } from '../../../../src/modules/electoral-roll/presentation/electoral-roll/electoral-roll-read.controller';
+import { throwMappedElectoralRollError } from '../../../../src/modules/electoral-roll/presentation/electoral-roll/electoral-roll-error.mapper';
 
 describe('electoral roll controllers', () => {
   it('maps source-roll creation and snapshot creation to command handlers', async () => {

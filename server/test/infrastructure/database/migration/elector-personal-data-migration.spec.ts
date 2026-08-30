@@ -5,7 +5,7 @@ describe('elector personal data migration', () => {
   const migrationSource = readFileSync(
     join(
       process.cwd(),
-      'src/infrastructure/database/migration/Migration20260813010000.ts',
+      'src/platform/database/migration/Migration20260813010000.ts',
     ),
     'utf8',
   );

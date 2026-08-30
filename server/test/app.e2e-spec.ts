@@ -7,9 +7,9 @@ import {
 } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
-import { HttpExceptionFilter } from '../src/presentation/common/filter/http-exception.filter';
-import { ResponseInterceptor } from '../src/presentation/common/interceptor/response.interceptor';
+import { AppModule } from '../src/app.module';
+import { HttpExceptionFilter } from '../src/shared/presentation/common/filter/http-exception.filter';
+import { ResponseInterceptor } from '../src/shared/presentation/common/interceptor/response.interceptor';
 
 type HttpTestResponse = {
   readonly body: unknown;

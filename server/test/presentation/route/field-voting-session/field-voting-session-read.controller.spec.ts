@@ -1,16 +1,16 @@
 import { NotFoundException } from '@nestjs/common';
-import { GetFieldVotingSessionPageHandler } from '../../../../src/application/query/handler/get-field-voting-session-page.handler';
+import { GetFieldVotingSessionPageHandler } from '../../../../src/modules/field-voting/application/query/handler/get-field-voting-session-page.handler';
 import {
   FieldVotingSessionReadNotFoundError,
   GetFieldVotingSessionHandler,
-} from '../../../../src/application/query/handler/get-field-voting-session.handler';
+} from '../../../../src/modules/field-voting/application/query/handler/get-field-voting-session.handler';
 import {
   FieldVotingSessionPageView,
   FieldVotingSessionView,
-} from '../../../../src/application/query/dto/response/field-voting-session.view';
-import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { FieldVotingSessionReadController } from '../../../../src/presentation/route/field-voting-session/field-voting-session-read.controller';
+} from '../../../../src/modules/field-voting/application/query/dto/response/field-voting-session.view';
+import { FieldVotingSessionStatus } from '../../../../src/shared/domain/voting/type/field-voting-session-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { FieldVotingSessionReadController } from '../../../../src/modules/field-voting/presentation/field-voting-session/field-voting-session-read.controller';
 
 describe('FieldVotingSessionReadController', () => {
   const get = {

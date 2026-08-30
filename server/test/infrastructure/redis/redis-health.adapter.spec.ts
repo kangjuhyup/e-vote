@@ -1,5 +1,5 @@
-import { RedisHealthAdapter } from '../../../src/infrastructure/redis/redis-health.adapter';
-import { type RedisClient } from '../../../src/infrastructure/redis/redis.constants';
+import { RedisHealthAdapter } from '../../../src/platform/redis/redis-health.adapter';
+import { type RedisClient } from '../../../src/platform/redis/redis.constants';
 
 describe('RedisHealthAdapter', () => {
   it('returns up when Redis replies with PONG', async () => {

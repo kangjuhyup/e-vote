@@ -1,20 +1,20 @@
-import { ElectoralRollAggregate } from '../../../src/domain/electoral-roll/electoral-roll.aggregate';
-import { ElectoralRollMemberAggregate } from '../../../src/domain/electoral-roll/electoral-roll-member.aggregate';
+import { ElectoralRollAggregate } from '../../../src/modules/electoral-roll/domain/electoral-roll.aggregate';
+import { ElectoralRollMemberAggregate } from '../../../src/modules/electoral-roll/domain/electoral-roll-member.aggregate';
 import {
   ElectoralRollSnapshotAggregate,
   ElectoralRollSnapshotMember,
-} from '../../../src/domain/electoral-roll/electoral-roll-snapshot.aggregate';
-import { VoteAggregate } from '../../../src/domain/vote/vote.aggregate';
+} from '../../../src/modules/electoral-roll/domain/electoral-roll-snapshot.aggregate';
+import { VoteAggregate } from '../../../src/modules/vote/domain/vote/vote.aggregate';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../src/domain/vote/type/vote-policy.type';
-import { VoteStatus } from '../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../src/domain/vote/type/voting-channel.type';
-import { IdentityVerificationPolicy } from '../../../src/domain/vote/vo/identity-verification-policy.vo';
-import { VotePolicy } from '../../../src/domain/vote/vo/vote-policy.vo';
+} from '../../../src/shared/domain/voting/type/vote-policy.type';
+import { VoteStatus } from '../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../src/shared/domain/voting/vo/vote-policy.vo';
 
 describe('electoral roll domain', () => {
   const now = new Date('2026-08-30T00:00:00.000Z');

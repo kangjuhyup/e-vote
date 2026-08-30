@@ -3,23 +3,23 @@ import {
   AttachmentTargetType,
   CandidateAttachmentType,
   VoteAttachmentType,
-} from '../../../../src/application/port/persistence/command/attachment-repository.port';
-import { CandidateRepositoryPort } from '../../../../src/application/port/persistence/command/candidate-repository.port';
-import { StoragePort } from '../../../../src/application/port/gateway/storage.port';
-import { VoteDetailRepositoryPort } from '../../../../src/application/port/persistence/command/vote-detail-repository.port';
-import { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';
+} from '../../../../src/modules/vote/application/port/persistence/command/attachment-repository.port';
+import { CandidateRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/candidate-repository.port';
+import { StoragePort } from '../../../../src/shared/application/port/gateway/storage.port';
+import { VoteDetailRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-detail-repository.port';
+import { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
 import {
   AttachmentTargetNotFoundError,
   AttachmentTargetValidator,
-} from '../../../../src/application/command/attachment-target.validator';
-import { UnsupportedAttachmentTypeError } from '../../../../src/application/command/attachment-upload.policy';
-import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/dto/request/confirm-attachment-upload.command';
+} from '../../../../src/modules/vote/application/command/attachment-target.validator';
+import { UnsupportedAttachmentTypeError } from '../../../../src/modules/vote/application/command/attachment-upload.policy';
+import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/confirm-attachment-upload.command';
 import {
   ConfirmAttachmentUploadHandler,
   UploadedAttachmentObjectNotFoundError,
-} from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
-import { RequestAttachmentUploadCommand } from '../../../../src/application/command/dto/request/request-attachment-upload.command';
-import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
+} from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
+import { RequestAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/request-attachment-upload.command';
+import { RequestAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/request-attachment-upload.handler';
 
 describe('attachment upload handlers', () => {
   it('creates a presigned upload URL after validating target and upload metadata', async () => {

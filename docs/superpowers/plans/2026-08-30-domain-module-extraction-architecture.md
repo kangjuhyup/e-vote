@@ -110,6 +110,6 @@
 
 - [x] Run DTO and architecture convention tests.
 - [x] Run all domain, application, presentation, persistence, and module tests with Node from `.nvmrc`.
-- [ ] Run server build and ESLint.
-- [ ] Run `git diff --check` and inspect the final dependency graph.
+- [x] Run server build and ESLint.
+- [x] Run `git diff --check` and inspect the final dependency graph.
 - [x] Commit the plan separately from implementation.

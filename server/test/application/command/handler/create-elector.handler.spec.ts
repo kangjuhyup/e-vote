@@ -1,19 +1,19 @@
-import { CreateElectorCommand } from '../../../../src/application/command/dto/request/create-elector.command';
-import { CreateElectorHandler } from '../../../../src/application/command/handler/create-elector.handler';
-import { ElectorRepositoryPort } from '../../../../src/application/port/persistence/command/elector-repository.port';
-import { ElectorAggregate } from '../../../../src/domain/elector/elector.aggregate';
-import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
-import { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';
-import { VoteAggregate } from '../../../../src/domain/vote/vote.aggregate';
+import { CreateElectorCommand } from '../../../../src/modules/elector/application/command/dto/request/create-elector.command';
+import { CreateElectorHandler } from '../../../../src/modules/elector/application/command/handler/create-elector.handler';
+import { ElectorRepositoryPort } from '../../../../src/modules/elector/application/port/persistence/command/elector-repository.port';
+import { ElectorAggregate } from '../../../../src/modules/elector/domain/elector.aggregate';
+import { ElectorStatus } from '../../../../src/shared/domain/voting/type/elector-status.type';
+import { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { IdentityVerificationPolicy } from '../../../../src/domain/vote/vo/identity-verification-policy.vo';
-import { VotePolicy } from '../../../../src/domain/vote/vo/vote-policy.vo';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 
 describe('CreateElectorHandler', () => {
   it('creates an eligible elector and saves it through the repository', async () => {

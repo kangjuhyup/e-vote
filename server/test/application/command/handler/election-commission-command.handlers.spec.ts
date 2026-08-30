@@ -1,14 +1,14 @@
-import { CreateElectionCommissionCommand } from '../../../../src/application/command/dto/request/create-election-commission.command';
-import { CreateElectionCommissionHandler } from '../../../../src/application/command/handler/create-election-commission.handler';
-import { RegisterElectionCommissionMemberCommand } from '../../../../src/application/command/dto/request/register-election-commission-member.command';
-import { RegisterElectionCommissionMemberHandler } from '../../../../src/application/command/handler/register-election-commission-member.handler';
-import { ElectionCommissionRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-repository.port';
-import { ElectionCommissionMemberRepositoryPort } from '../../../../src/application/port/persistence/command/election-commission-member-repository.port';
-import { ElectionCommissionAggregate } from '../../../../src/domain/election-commission/election-commission.aggregate';
-import { ElectionCommissionMemberAggregate } from '../../../../src/domain/election-commission/election-commission-member.aggregate';
-import { ElectionCommissionMemberRole } from '../../../../src/domain/election-commission/type/election-commission-member-role.type';
-import { ElectionCommissionMemberStatus } from '../../../../src/domain/election-commission/type/election-commission-member-status.type';
-import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
+import { CreateElectionCommissionCommand } from '../../../../src/modules/election-commission/application/command/dto/request/create-election-commission.command';
+import { CreateElectionCommissionHandler } from '../../../../src/modules/election-commission/application/command/handler/create-election-commission.handler';
+import { RegisterElectionCommissionMemberCommand } from '../../../../src/modules/election-commission/application/command/dto/request/register-election-commission-member.command';
+import { RegisterElectionCommissionMemberHandler } from '../../../../src/modules/election-commission/application/command/handler/register-election-commission-member.handler';
+import { ElectionCommissionRepositoryPort } from '../../../../src/modules/election-commission/application/port/persistence/command/election-commission-repository.port';
+import { ElectionCommissionMemberRepositoryPort } from '../../../../src/modules/election-commission/application/port/persistence/command/election-commission-member-repository.port';
+import { ElectionCommissionAggregate } from '../../../../src/modules/election-commission/domain/election-commission.aggregate';
+import { ElectionCommissionMemberAggregate } from '../../../../src/modules/election-commission/domain/election-commission-member.aggregate';
+import { ElectionCommissionMemberRole } from '../../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
+import { ElectionCommissionMemberStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-member-status.type';
+import { ElectionCommissionStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-status.type';
 
 describe('election commission command handlers', () => {
   it('creates an active election commission', async () => {

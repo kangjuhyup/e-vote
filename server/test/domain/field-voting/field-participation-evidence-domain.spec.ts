@@ -1,24 +1,24 @@
-import { ElectionCommissionAggregate } from '../../../src/domain/election-commission/election-commission.aggregate';
-import { ElectionCommissionMemberAggregate } from '../../../src/domain/election-commission/election-commission-member.aggregate';
-import { ElectionCommissionMemberRole } from '../../../src/domain/election-commission/type/election-commission-member-role.type';
-import { FieldParticipationEvidenceRecorded } from '../../../src/domain/field-voting/field-voting.events';
-import { FieldParticipationEvidenceAggregate } from '../../../src/domain/field-voting/field-participation-evidence.aggregate';
-import { FieldVotingSessionAggregate } from '../../../src/domain/field-voting/field-voting-session.aggregate';
-import { ParticipationAggregate } from '../../../src/domain/participation/participation.aggregate';
-import { DomainError } from '../../../src/domain/shared/domain-error';
+import { ElectionCommissionAggregate } from '../../../src/modules/election-commission/domain/election-commission.aggregate';
+import { ElectionCommissionMemberAggregate } from '../../../src/modules/election-commission/domain/election-commission-member.aggregate';
+import { ElectionCommissionMemberRole } from '../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
+import { FieldParticipationEvidenceRecorded } from '../../../src/modules/field-voting/domain/field-voting.events';
+import { FieldParticipationEvidenceAggregate } from '../../../src/modules/field-voting/domain/field-participation-evidence.aggregate';
+import { FieldVotingSessionAggregate } from '../../../src/modules/field-voting/domain/field-voting-session.aggregate';
+import { ParticipationAggregate } from '../../../src/modules/participation/domain/participation.aggregate';
+import { DomainError } from '../../../src/shared/domain/domain-error';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../src/domain/vote/type/vote-policy.type';
-import { VoteStatus } from '../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../src/domain/vote/type/voting-channel.type';
-import { IdentityVerificationPolicy } from '../../../src/domain/vote/vo/identity-verification-policy.vo';
-import { VotePolicy } from '../../../src/domain/vote/vo/vote-policy.vo';
-import { VoteAggregate } from '../../../src/domain/vote/vote.aggregate';
-import { ElectorAggregate } from '../../../src/domain/elector/elector.aggregate';
-import { ElectorStatus } from '../../../src/domain/elector/type/elector-status.type';
+} from '../../../src/shared/domain/voting/type/vote-policy.type';
+import { VoteStatus } from '../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../src/shared/domain/voting/vo/vote-policy.vo';
+import { VoteAggregate } from '../../../src/modules/vote/domain/vote/vote.aggregate';
+import { ElectorAggregate } from '../../../src/modules/elector/domain/elector.aggregate';
+import { ElectorStatus } from '../../../src/shared/domain/voting/type/elector-status.type';
 
 const secretPolicy = VotePolicy.of({
   privacyMode: PrivacyMode.Secret,

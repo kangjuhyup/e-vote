@@ -3,14 +3,14 @@ import {
   STORAGE_PORT,
   StorageNotConfiguredError,
   StoragePort,
-} from '../../../src/application/port/gateway/storage.port';
+} from '../../../src/shared/application/port/gateway/storage.port';
 import {
   STORAGE_HEALTH_PORT,
   StorageHealthPort,
-} from '../../../src/application/port/health/storage-health.port';
-import { StorageModule } from '../../../src/infrastructure/storage/storage.module';
-import { WasabiStorageAdapter } from '../../../src/infrastructure/storage/wasabi-storage.adapter';
-import { WasabiStorageHealthAdapter } from '../../../src/infrastructure/storage/wasabi-storage-health.adapter';
+} from '../../../src/shared/application/port/health/storage-health.port';
+import { StorageModule } from '../../../src/platform/storage/storage.module';
+import { WasabiStorageAdapter } from '../../../src/platform/storage/wasabi-storage.adapter';
+import { WasabiStorageHealthAdapter } from '../../../src/platform/storage/wasabi-storage-health.adapter';
 
 const WASABI_ENV_KEYS = [
   'WASABI_ENDPOINT',

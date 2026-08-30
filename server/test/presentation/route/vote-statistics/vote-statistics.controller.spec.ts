@@ -1,31 +1,31 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { GetVoteResultHandler } from '../../../../src/application/query/handler/get-vote-result.handler';
-import { GetVoteResultQuery } from '../../../../src/application/query/dto/request/get-vote-result.query';
-import { GetVoteTurnoutHandler } from '../../../../src/application/query/handler/get-vote-turnout.handler';
-import { GetVoteTurnoutQuery } from '../../../../src/application/query/dto/request/get-vote-turnout.query';
+import { GetVoteResultHandler } from '../../../../src/modules/participation/application/query/handler/get-vote-result.handler';
+import { GetVoteResultQuery } from '../../../../src/modules/participation/application/query/dto/request/get-vote-result.query';
+import { GetVoteTurnoutHandler } from '../../../../src/modules/participation/application/query/handler/get-vote-turnout.handler';
+import { GetVoteTurnoutQuery } from '../../../../src/modules/participation/application/query/dto/request/get-vote-turnout.query';
 import {
   CandidateVoteResultView,
   VoteResultView,
   VotingChannelResultView,
-} from '../../../../src/application/query/dto/response/vote-result.view';
+} from '../../../../src/modules/participation/application/query/dto/response/vote-result.view';
 import {
   VoteResultUnavailableError,
   VoteStatisticsInconsistentError,
   VoteStatisticsNotFoundError,
-} from '../../../../src/application/query/vote-statistics.error';
-import { VoteTurnoutView } from '../../../../src/application/query/dto/response/vote-turnout.view';
-import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
+} from '../../../../src/modules/participation/application/query/vote-statistics.error';
+import { VoteTurnoutView } from '../../../../src/modules/participation/application/query/dto/response/vote-turnout.view';
+import { CandidateStatus } from '../../../../src/shared/domain/voting/type/candidate-status.type';
 import {
   ParticipationUnit,
   PrivacyMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import {
   VoteDetailStatus,
   VoteStatus,
-} from '../../../../src/domain/vote/type/vote-status.type';
-import { VoteStatisticsController } from '../../../../src/presentation/route/vote-statistics/vote-statistics.controller';
+} from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VoteStatisticsController } from '../../../../src/modules/participation/presentation/vote-statistics/vote-statistics.controller';
 
 describe('VoteStatisticsController', () => {
   const getTurnoutExecute = jest.fn<

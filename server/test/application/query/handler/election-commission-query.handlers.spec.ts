@@ -1,16 +1,16 @@
-import type { ElectionCommissionReadRepositoryPort } from '../../../../src/application/port/persistence/query/election-commission-read-repository.port';
+import type { ElectionCommissionReadRepositoryPort } from '../../../../src/modules/election-commission/application/port/persistence/query/election-commission-read-repository.port';
 import {
   ElectionCommissionNotFoundError,
   GetElectionCommissionHandler,
-} from '../../../../src/application/query/handler/get-election-commission.handler';
-import { GetElectionCommissionPageHandler } from '../../../../src/application/query/handler/get-election-commission-page.handler';
-import { GetElectionCommissionPageQuery } from '../../../../src/application/query/dto/request/get-election-commission-page.query';
-import { GetElectionCommissionQuery } from '../../../../src/application/query/dto/request/get-election-commission.query';
+} from '../../../../src/modules/election-commission/application/query/handler/get-election-commission.handler';
+import { GetElectionCommissionPageHandler } from '../../../../src/modules/election-commission/application/query/handler/get-election-commission-page.handler';
+import { GetElectionCommissionPageQuery } from '../../../../src/modules/election-commission/application/query/dto/request/get-election-commission-page.query';
+import { GetElectionCommissionQuery } from '../../../../src/modules/election-commission/application/query/dto/request/get-election-commission.query';
 import {
   ElectionCommissionPageView,
   ElectionCommissionView,
-} from '../../../../src/application/query/dto/response/election-commission.view';
-import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
+} from '../../../../src/modules/election-commission/application/query/dto/response/election-commission.view';
+import { ElectionCommissionStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-status.type';
 
 describe('election commission query handlers', () => {
   it('loads an election commission detail through the read repository', async () => {

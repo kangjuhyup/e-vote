@@ -1,28 +1,28 @@
 import { NotFoundException } from '@nestjs/common';
-import { AttachmentTargetType } from '../../../../src/application/port/persistence/command/attachment-repository.port';
-import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/dto/request/confirm-attachment-upload.command';
-import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
-import { CreateVoteDetailCommand } from '../../../../src/application/command/dto/request/create-vote-detail.command';
-import { CreateVoteDetailHandler } from '../../../../src/application/command/handler/create-vote-detail.handler';
-import { RequestAttachmentUploadCommand } from '../../../../src/application/command/dto/request/request-attachment-upload.command';
-import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
+import { AttachmentTargetType } from '../../../../src/modules/vote/application/port/persistence/command/attachment-repository.port';
+import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/confirm-attachment-upload.command';
+import { ConfirmAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
+import { CreateVoteDetailCommand } from '../../../../src/modules/vote/application/command/dto/request/create-vote-detail.command';
+import { CreateVoteDetailHandler } from '../../../../src/modules/vote/application/command/handler/create-vote-detail.handler';
+import { RequestAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/request-attachment-upload.command';
+import { RequestAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/request-attachment-upload.handler';
 import {
   GetVoteDetailHandler,
   VoteDetailNotFoundError,
-} from '../../../../src/application/query/handler/get-vote-detail.handler';
-import { GetVoteDetailQuery } from '../../../../src/application/query/dto/request/get-vote-detail.query';
-import { GetVoteDetailPageHandler } from '../../../../src/application/query/handler/get-vote-detail-page.handler';
-import { GetVoteDetailPageQuery } from '../../../../src/application/query/dto/request/get-vote-detail-page.query';
+} from '../../../../src/modules/vote/application/query/handler/get-vote-detail.handler';
+import { GetVoteDetailQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote-detail.query';
+import { GetVoteDetailPageHandler } from '../../../../src/modules/vote/application/query/handler/get-vote-detail-page.handler';
+import { GetVoteDetailPageQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote-detail-page.query';
 import {
   VoteDetailPageReadView,
   VoteDetailPolicyOverridesReadView,
   VoteDetailReadView,
-} from '../../../../src/application/query/dto/response/vote-detail-read.view';
-import { PrivacyMode } from '../../../../src/domain/vote/type/vote-policy.type';
-import { VoteDetailStatus } from '../../../../src/domain/vote/type/vote-status.type';
-import { VoteDetailAttachmentController } from '../../../../src/presentation/route/vote-detail/vote-detail-attachment.controller';
-import { VoteDetailReadController } from '../../../../src/presentation/route/vote-detail/vote-detail-read.controller';
-import { VoteDetailController } from '../../../../src/presentation/route/vote-detail/vote-detail.controller';
+} from '../../../../src/modules/vote/application/query/dto/response/vote-detail-read.view';
+import { PrivacyMode } from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VoteDetailStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VoteDetailAttachmentController } from '../../../../src/modules/vote/presentation/vote-detail/vote-detail-attachment.controller';
+import { VoteDetailReadController } from '../../../../src/modules/vote/presentation/vote-detail/vote-detail-read.controller';
+import { VoteDetailController } from '../../../../src/modules/vote/presentation/vote-detail/vote-detail.controller';
 
 describe('VoteDetailController', () => {
   const createVoteDetailExecute = jest.fn<

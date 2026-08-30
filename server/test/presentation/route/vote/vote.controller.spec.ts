@@ -1,18 +1,18 @@
 import { NotFoundException } from '@nestjs/common';
-import { ConfirmAttachmentUploadCommand } from '../../../../src/application/command/dto/request/confirm-attachment-upload.command';
-import { ConfirmAttachmentUploadHandler } from '../../../../src/application/command/handler/confirm-attachment-upload.handler';
-import { CreateVoteCommand } from '../../../../src/application/command/dto/request/create-vote.command';
-import { CreateVoteHandler } from '../../../../src/application/command/handler/create-vote.handler';
-import { RequestAttachmentUploadCommand } from '../../../../src/application/command/dto/request/request-attachment-upload.command';
-import { RequestAttachmentUploadHandler } from '../../../../src/application/command/handler/request-attachment-upload.handler';
-import { AttachmentTargetType } from '../../../../src/application/port/persistence/command/attachment-repository.port';
-import { GetVotePageHandler } from '../../../../src/application/query/handler/get-vote-page.handler';
-import { GetVotePageQuery } from '../../../../src/application/query/dto/request/get-vote-page.query';
+import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/confirm-attachment-upload.command';
+import { ConfirmAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
+import { CreateVoteCommand } from '../../../../src/modules/vote/application/command/dto/request/create-vote.command';
+import { CreateVoteHandler } from '../../../../src/modules/vote/application/command/handler/create-vote.handler';
+import { RequestAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/request-attachment-upload.command';
+import { RequestAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/request-attachment-upload.handler';
+import { AttachmentTargetType } from '../../../../src/modules/vote/application/port/persistence/command/attachment-repository.port';
+import { GetVotePageHandler } from '../../../../src/modules/vote/application/query/handler/get-vote-page.handler';
+import { GetVotePageQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote-page.query';
 import {
   GetVoteHandler,
   VoteNotFoundError,
-} from '../../../../src/application/query/handler/get-vote.handler';
-import { GetVoteQuery } from '../../../../src/application/query/dto/request/get-vote.query';
+} from '../../../../src/modules/vote/application/query/handler/get-vote.handler';
+import { GetVoteQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote.query';
 import {
   CandidateView,
   IdentityVerificationPolicyView,
@@ -22,18 +22,18 @@ import {
   VotePolicyView,
   VoteSummaryView,
   VoteView,
-} from '../../../../src/application/query/dto/response/vote.view';
+} from '../../../../src/modules/vote/application/query/dto/response/vote.view';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VoteStatus } from '../../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { VoteAttachmentController } from '../../../../src/presentation/route/vote/vote-attachment.controller';
-import { VoteReadController } from '../../../../src/presentation/route/vote/vote-read.controller';
-import { VoteController } from '../../../../src/presentation/route/vote/vote.controller';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { VoteAttachmentController } from '../../../../src/modules/vote/presentation/vote/vote-attachment.controller';
+import { VoteReadController } from '../../../../src/modules/vote/presentation/vote/vote-read.controller';
+import { VoteController } from '../../../../src/modules/vote/presentation/vote/vote.controller';
 
 describe('VoteController', () => {
   const createVoteExecute = jest.fn<

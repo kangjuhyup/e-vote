@@ -1,29 +1,29 @@
 import { Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ATTACHMENT_REPOSITORY_PORT } from './application/port/persistence/command/attachment-repository.port';
-import { CANDIDATE_READ_REPOSITORY_PORT } from './application/port/persistence/query/candidate-read-repository.port';
-import { CANDIDATE_REPOSITORY_PORT } from './application/port/persistence/command/candidate-repository.port';
-import { ELECTION_COMMISSION_REPOSITORY_PORT } from './application/port/persistence/command/election-commission-repository.port';
-import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from './application/port/persistence/command/election-commission-member-repository.port';
-import { ELECTORAL_ROLL_REPOSITORY_PORT } from './application/port/persistence/command/electoral-roll-repository.port';
-import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './application/port/persistence/command/electoral-roll-snapshot-repository.port';
-import { ELECTOR_REPOSITORY_PORT } from './application/port/persistence/command/elector-repository.port';
-import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from './application/port/persistence/command/field-voting-session-repository.port';
-import { ELECTION_COMMISSION_READ_REPOSITORY_PORT } from './application/port/persistence/query/election-commission-read-repository.port';
-import { ELECTORAL_ROLL_READ_REPOSITORY_PORT } from './application/port/persistence/query/electoral-roll-read-repository.port';
-import { FIELD_VOTING_SESSION_READ_REPOSITORY_PORT } from './application/port/persistence/query/field-voting-session-read-repository.port';
-import { ELECTOR_READ_REPOSITORY_PORT } from './application/port/persistence/query/elector-read-repository.port';
-import { DATABASE_TRANSACTION_MANAGER } from './application/port/persistence/transaction/database-transaction-manager.port';
-import { REDIS_HEALTH_PORT } from './application/port/health/redis-health.port';
-import { STORAGE_PORT } from './application/port/gateway/storage.port';
-import { STORAGE_HEALTH_PORT } from './application/port/health/storage-health.port';
-import { VOTE_DETAIL_READ_REPOSITORY_PORT } from './application/port/persistence/query/vote-detail-read-repository.port';
-import { VOTE_DETAIL_REPOSITORY_PORT } from './application/port/persistence/command/vote-detail-repository.port';
-import { VOTE_READ_REPOSITORY_PORT } from './application/port/persistence/query/vote-read-repository.port';
-import { VOTE_REPOSITORY_PORT } from './application/port/persistence/command/vote-repository.port';
-import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from './application/port/persistence/query/vote-statistics-read-repository.port';
+import { ATTACHMENT_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/attachment-repository.port';
+import { CANDIDATE_READ_REPOSITORY_PORT } from './modules/vote/application/port/persistence/query/candidate-read-repository.port';
+import { CANDIDATE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/candidate-repository.port';
+import { ELECTION_COMMISSION_REPOSITORY_PORT } from './modules/election-commission/application/port/persistence/command/election-commission-repository.port';
+import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from './modules/election-commission/application/port/persistence/command/election-commission-member-repository.port';
+import { ELECTORAL_ROLL_REPOSITORY_PORT } from './modules/electoral-roll/application/port/persistence/command/electoral-roll-repository.port';
+import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-roll/application/port/persistence/command/electoral-roll-snapshot-repository.port';
+import { ELECTOR_REPOSITORY_PORT } from './modules/elector/application/port/persistence/command/elector-repository.port';
+import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from './modules/field-voting/application/port/persistence/command/field-voting-session-repository.port';
+import { ELECTION_COMMISSION_READ_REPOSITORY_PORT } from './modules/election-commission/application/port/persistence/query/election-commission-read-repository.port';
+import { ELECTORAL_ROLL_READ_REPOSITORY_PORT } from './modules/electoral-roll/application/port/persistence/query/electoral-roll-read-repository.port';
+import { FIELD_VOTING_SESSION_READ_REPOSITORY_PORT } from './modules/field-voting/application/port/persistence/query/field-voting-session-read-repository.port';
+import { ELECTOR_READ_REPOSITORY_PORT } from './modules/elector/application/port/persistence/query/elector-read-repository.port';
+import { DATABASE_TRANSACTION_MANAGER } from './shared/application/port/persistence/transaction/database-transaction-manager.port';
+import { REDIS_HEALTH_PORT } from './shared/application/port/health/redis-health.port';
+import { STORAGE_PORT } from './shared/application/port/gateway/storage.port';
+import { STORAGE_HEALTH_PORT } from './shared/application/port/health/storage-health.port';
+import { VOTE_DETAIL_READ_REPOSITORY_PORT } from './modules/vote/application/port/persistence/query/vote-detail-read-repository.port';
+import { VOTE_DETAIL_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-detail-repository.port';
+import { VOTE_READ_REPOSITORY_PORT } from './modules/vote/application/port/persistence/query/vote-read-repository.port';
+import { VOTE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-repository.port';
+import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from './modules/participation/application/port/persistence/query/vote-statistics-read-repository.port';
 import { AppModule } from './app.module';
-import { InfrastructureModule } from './infrastructure/infrastructure.module';
+import { PlatformModule } from './platform/platform.module';
 
 @Module({
   providers: [
@@ -190,15 +190,15 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
     ATTACHMENT_REPOSITORY_PORT,
   ],
 })
-class InfrastructureModuleStub {}
+class PlatformModuleStub {}
 
 describe('AppModule', () => {
-  it('imports the infrastructure module', async () => {
+  it('imports the platform module', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideModule(InfrastructureModule)
-      .useModule(InfrastructureModuleStub)
+      .overrideModule(PlatformModule)
+      .useModule(PlatformModuleStub)
       .compile();
 
     expect(moduleRef.get(AppModule)).toBeInstanceOf(AppModule);

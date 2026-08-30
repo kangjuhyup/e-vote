@@ -1,25 +1,25 @@
-import { ChangeVoteStatusCommand } from '../../../../src/application/command/dto/request/change-vote-status.command';
-import { UpdateCandidateCommand } from '../../../../src/application/command/dto/request/update-candidate.command';
-import { UpdateVoteCommand } from '../../../../src/application/command/dto/request/update-vote.command';
-import { ChangeVoteStatusHandler } from '../../../../src/application/command/handler/change-vote-status.handler';
-import { UpdateCandidateHandler } from '../../../../src/application/command/handler/update-candidate.handler';
-import { UpdateVoteHandler } from '../../../../src/application/command/handler/update-vote.handler';
-import type { CandidateRepositoryPort } from '../../../../src/application/port/persistence/command/candidate-repository.port';
-import type { VoteDetailRepositoryPort } from '../../../../src/application/port/persistence/command/vote-detail-repository.port';
-import type { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';
-import { CandidateAggregate } from '../../../../src/domain/candidate/candidate.aggregate';
+import { ChangeVoteStatusCommand } from '../../../../src/modules/vote/application/command/dto/request/change-vote-status.command';
+import { UpdateCandidateCommand } from '../../../../src/modules/vote/application/command/dto/request/update-candidate.command';
+import { UpdateVoteCommand } from '../../../../src/modules/vote/application/command/dto/request/update-vote.command';
+import { ChangeVoteStatusHandler } from '../../../../src/modules/vote/application/command/handler/change-vote-status.handler';
+import { UpdateCandidateHandler } from '../../../../src/modules/vote/application/command/handler/update-candidate.handler';
+import { UpdateVoteHandler } from '../../../../src/modules/vote/application/command/handler/update-vote.handler';
+import type { CandidateRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/candidate-repository.port';
+import type { VoteDetailRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-detail-repository.port';
+import type { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
+import { CandidateAggregate } from '../../../../src/modules/vote/domain/candidate/candidate.aggregate';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VoteStatus } from '../../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { IdentityVerificationPolicy } from '../../../../src/domain/vote/vo/identity-verification-policy.vo';
-import { VotePolicy } from '../../../../src/domain/vote/vo/vote-policy.vo';
-import { VoteDetailAggregate } from '../../../../src/domain/vote/vote-detail.aggregate';
-import { VoteAggregate } from '../../../../src/domain/vote/vote.aggregate';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
+import { VoteDetailAggregate } from '../../../../src/modules/vote/domain/vote/vote-detail.aggregate';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
 
 describe('vote management command handlers', () => {
   it('updates and opens a vote through the authoritative repository', async () => {

@@ -1,8 +1,8 @@
 import { LoadStrategy } from '@mikro-orm/core';
-import { ElectionCommissionMemberRole } from '../../../../src/domain/election-commission/type/election-commission-member-role.type';
-import { ElectionCommissionMemberStatus } from '../../../../src/domain/election-commission/type/election-commission-member-status.type';
-import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
-import { ElectionCommissionReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/election-commission-read-repository.adapter';
+import { ElectionCommissionMemberRole } from '../../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
+import { ElectionCommissionMemberStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-member-status.type';
+import { ElectionCommissionStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-status.type';
+import { ElectionCommissionReadRepositoryAdapter } from '../../../../src/modules/election-commission/infrastructure/database/repository/query/election-commission-read-repository.adapter';
 
 type MockEntityManager = {
   readonly findAndCount: jest.Mock<

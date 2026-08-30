@@ -1,17 +1,17 @@
-import type { FieldVotingSessionReadRepositoryPort } from '../../../../src/application/port/persistence/query/field-voting-session-read-repository.port';
-import { GetFieldVotingSessionPageHandler } from '../../../../src/application/query/handler/get-field-voting-session-page.handler';
+import type { FieldVotingSessionReadRepositoryPort } from '../../../../src/modules/field-voting/application/port/persistence/query/field-voting-session-read-repository.port';
+import { GetFieldVotingSessionPageHandler } from '../../../../src/modules/field-voting/application/query/handler/get-field-voting-session-page.handler';
 import {
   FieldVotingSessionReadNotFoundError,
   GetFieldVotingSessionHandler,
-} from '../../../../src/application/query/handler/get-field-voting-session.handler';
-import { GetFieldVotingSessionPageQuery } from '../../../../src/application/query/dto/request/get-field-voting-session-page.query';
-import { GetFieldVotingSessionQuery } from '../../../../src/application/query/dto/request/get-field-voting-session.query';
+} from '../../../../src/modules/field-voting/application/query/handler/get-field-voting-session.handler';
+import { GetFieldVotingSessionPageQuery } from '../../../../src/modules/field-voting/application/query/dto/request/get-field-voting-session-page.query';
+import { GetFieldVotingSessionQuery } from '../../../../src/modules/field-voting/application/query/dto/request/get-field-voting-session.query';
 import {
   FieldVotingSessionPageView,
   FieldVotingSessionView,
-} from '../../../../src/application/query/dto/response/field-voting-session.view';
-import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
+} from '../../../../src/modules/field-voting/application/query/dto/response/field-voting-session.view';
+import { FieldVotingSessionStatus } from '../../../../src/shared/domain/voting/type/field-voting-session-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 
 describe('field voting session query handlers', () => {
   it('loads detail and a normalized vote-scoped page', async () => {

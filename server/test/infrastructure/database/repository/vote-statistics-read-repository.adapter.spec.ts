@@ -1,15 +1,15 @@
-import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
+import { CandidateStatus } from '../../../../src/shared/domain/voting/type/candidate-status.type';
 import {
   ParticipationUnit,
   PrivacyMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import {
   VoteDetailStatus,
   VoteStatus,
-} from '../../../../src/domain/vote/type/vote-status.type';
-import { VoteStatisticsReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/vote-statistics-read-repository.adapter';
+} from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VoteStatisticsReadRepositoryAdapter } from '../../../../src/modules/participation/infrastructure/database/repository/query/vote-statistics-read-repository.adapter';
 
 describe('VoteStatisticsReadRepositoryAdapter', () => {
   it('maps share-weighted turnout and rounds rates to two decimal places', async () => {

@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext } from '@nestjs/common';
 import { firstValueFrom, of } from 'rxjs';
-import { MaskedPersonalData } from '../../../src/presentation/common/decorator/masked-personal-data.decorator';
-import { ResponseInterceptor } from '../../../src/presentation/common/interceptor/response.interceptor';
+import { MaskedPersonalData } from '../../../src/shared/presentation/common/decorator/masked-personal-data.decorator';
+import { ResponseInterceptor } from '../../../src/shared/presentation/common/interceptor/response.interceptor';
 
 class ElectorItemResponse {
   @MaskedPersonalData('name')

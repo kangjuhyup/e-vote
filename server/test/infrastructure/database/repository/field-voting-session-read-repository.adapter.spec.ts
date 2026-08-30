@@ -1,7 +1,7 @@
 import { LoadStrategy } from '@mikro-orm/core';
-import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { FieldVotingSessionReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/field-voting-session-read-repository.adapter';
+import { FieldVotingSessionStatus } from '../../../../src/shared/domain/voting/type/field-voting-session-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { FieldVotingSessionReadRepositoryAdapter } from '../../../../src/modules/field-voting/infrastructure/database/repository/query/field-voting-session-read-repository.adapter';
 
 describe('FieldVotingSessionReadRepositoryAdapter', () => {
   it('maps detail and filters pages by vote', async () => {

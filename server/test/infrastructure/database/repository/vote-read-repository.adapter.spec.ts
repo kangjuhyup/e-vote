@@ -1,16 +1,16 @@
 import { LoadStrategy } from '@mikro-orm/core';
-import { VoteReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/vote-read-repository.adapter';
+import { VoteReadRepositoryAdapter } from '../../../../src/modules/vote/infrastructure/database/repository/query/vote-read-repository.adapter';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import {
   VoteDetailStatus,
   VoteStatus,
-} from '../../../../src/domain/vote/type/vote-status.type';
+} from '../../../../src/shared/domain/voting/type/vote-status.type';
 
 type MockEntityManager = {
   readonly findAndCount: jest.Mock<

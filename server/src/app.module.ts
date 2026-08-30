@@ -1,75 +1,112 @@
 import { Module } from '@nestjs/common';
-import { AttachmentTargetValidator } from './application/command/attachment-target.validator';
-import { ConfirmAttachmentUploadHandler } from './application/command/handler/confirm-attachment-upload.handler';
-import { AddElectoralRollMemberHandler } from './application/command/handler/add-electoral-roll-member.handler';
-import { AttachElectoralRollSnapshotHandler } from './application/command/handler/attach-electoral-roll-snapshot.handler';
-import { AuthenticateElectorHandler } from './application/command/handler/authenticate-elector.handler';
-import { BlockElectorHandler } from './application/command/handler/block-elector.handler';
-import { CancelFieldVotingSessionHandler } from './application/command/handler/cancel-field-voting-session.handler';
-import { ChangeVoteDetailStatusHandler } from './application/command/handler/change-vote-detail-status.handler';
-import { ChangeVoteStatusHandler } from './application/command/handler/change-vote-status.handler';
-import { CloseFieldVotingSessionHandler } from './application/command/handler/close-field-voting-session.handler';
-import { CreateCandidateHandler } from './application/command/handler/create-candidate.handler';
-import { CreateElectionCommissionHandler } from './application/command/handler/create-election-commission.handler';
-import { CreateElectoralRollHandler } from './application/command/handler/create-electoral-roll.handler';
-import { CreateElectoralRollSnapshotHandler } from './application/command/handler/create-electoral-roll-snapshot.handler';
-import { CreateElectorHandler } from './application/command/handler/create-elector.handler';
-import { CreateFieldVotingSessionHandler } from './application/command/handler/create-field-voting-session.handler';
-import { CreateVoteDetailHandler } from './application/command/handler/create-vote-detail.handler';
-import { CreateVoteHandler } from './application/command/handler/create-vote.handler';
-import { OpenFieldVotingSessionHandler } from './application/command/handler/open-field-voting-session.handler';
-import { RegisterElectionCommissionMemberHandler } from './application/command/handler/register-election-commission-member.handler';
-import { RemoveElectoralRollMemberHandler } from './application/command/handler/remove-electoral-roll-member.handler';
-import { RequestAttachmentUploadHandler } from './application/command/handler/request-attachment-upload.handler';
-import { UpdateCandidateHandler } from './application/command/handler/update-candidate.handler';
-import { UpdateElectoralRollMemberHandler } from './application/command/handler/update-electoral-roll-member.handler';
-import { UpdateElectorHandler } from './application/command/handler/update-elector.handler';
-import { UpdateVoteDetailHandler } from './application/command/handler/update-vote-detail.handler';
-import { UpdateVoteHandler } from './application/command/handler/update-vote.handler';
-import { WithdrawCandidateHandler } from './application/command/handler/withdraw-candidate.handler';
-import { ELECTOR_IDENTITY_VERIFICATION_PORT } from './application/port/gateway/elector-identity-verification.port';
-import { DATABASE_HEALTH_PORT } from './application/port/health/database-health.port';
-import { GetCandidatePageHandler } from './application/query/handler/get-candidate-page.handler';
-import { GetCandidateHandler } from './application/query/handler/get-candidate.handler';
-import { GetElectionCommissionHandler } from './application/query/handler/get-election-commission.handler';
-import { GetElectionCommissionPageHandler } from './application/query/handler/get-election-commission-page.handler';
-import { GetElectoralRollHandler } from './application/query/handler/get-electoral-roll.handler';
-import { GetFieldVotingSessionHandler } from './application/query/handler/get-field-voting-session.handler';
-import { GetFieldVotingSessionPageHandler } from './application/query/handler/get-field-voting-session-page.handler';
-import { GetElectorPageHandler } from './application/query/handler/get-elector-page.handler';
-import { GetElectorHandler } from './application/query/handler/get-elector.handler';
-import { GetVoteDetailPageHandler } from './application/query/handler/get-vote-detail-page.handler';
-import { GetVoteDetailHandler } from './application/query/handler/get-vote-detail.handler';
-import { GetVotePageHandler } from './application/query/handler/get-vote-page.handler';
-import { GetVoteHandler } from './application/query/handler/get-vote.handler';
-import { GetVoteResultHandler } from './application/query/handler/get-vote-result.handler';
-import { GetVoteTurnoutHandler } from './application/query/handler/get-vote-turnout.handler';
+import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
+import { ConfirmAttachmentUploadHandler } from './modules/vote/application/command/handler/confirm-attachment-upload.handler';
+import { AddElectoralRollMemberHandler } from './modules/electoral-roll/application/command/handler/add-electoral-roll-member.handler';
+import { AttachElectoralRollSnapshotHandler } from './modules/vote/application/command/handler/attach-electoral-roll-snapshot.handler';
+import { AuthenticateElectorHandler } from './modules/elector/application/command/handler/authenticate-elector.handler';
+import { BlockElectorHandler } from './modules/elector/application/command/handler/block-elector.handler';
+import { CancelFieldVotingSessionHandler } from './modules/field-voting/application/command/handler/cancel-field-voting-session.handler';
+import { ChangeVoteDetailStatusHandler } from './modules/vote/application/command/handler/change-vote-detail-status.handler';
+import { ChangeVoteStatusHandler } from './modules/vote/application/command/handler/change-vote-status.handler';
+import { CloseFieldVotingSessionHandler } from './modules/field-voting/application/command/handler/close-field-voting-session.handler';
+import { CreateCandidateHandler } from './modules/vote/application/command/handler/create-candidate.handler';
+import { CreateElectionCommissionHandler } from './modules/election-commission/application/command/handler/create-election-commission.handler';
+import { CreateElectoralRollHandler } from './modules/electoral-roll/application/command/handler/create-electoral-roll.handler';
+import { CreateElectoralRollSnapshotHandler } from './modules/electoral-roll/application/command/handler/create-electoral-roll-snapshot.handler';
+import { CreateElectorHandler } from './modules/elector/application/command/handler/create-elector.handler';
+import { CreateFieldVotingSessionHandler } from './modules/field-voting/application/command/handler/create-field-voting-session.handler';
+import { CreateVoteDetailHandler } from './modules/vote/application/command/handler/create-vote-detail.handler';
+import { CreateVoteHandler } from './modules/vote/application/command/handler/create-vote.handler';
+import { OpenFieldVotingSessionHandler } from './modules/field-voting/application/command/handler/open-field-voting-session.handler';
+import { RecordFieldParticipationEvidenceHandler } from './modules/field-voting/application/command/handler/record-field-participation-evidence.handler';
+import { RegisterElectionCommissionMemberHandler } from './modules/election-commission/application/command/handler/register-election-commission-member.handler';
+import { RemoveElectoralRollMemberHandler } from './modules/electoral-roll/application/command/handler/remove-electoral-roll-member.handler';
+import { RequestAttachmentUploadHandler } from './modules/vote/application/command/handler/request-attachment-upload.handler';
+import { UpdateCandidateHandler } from './modules/vote/application/command/handler/update-candidate.handler';
+import { UpdateElectoralRollMemberHandler } from './modules/electoral-roll/application/command/handler/update-electoral-roll-member.handler';
+import { UpdateElectorHandler } from './modules/elector/application/command/handler/update-elector.handler';
+import { UpdateVoteDetailHandler } from './modules/vote/application/command/handler/update-vote-detail.handler';
+import { UpdateVoteHandler } from './modules/vote/application/command/handler/update-vote.handler';
+import { WithdrawCandidateHandler } from './modules/vote/application/command/handler/withdraw-candidate.handler';
+import { ELECTOR_IDENTITY_VERIFICATION_PORT } from './modules/elector/application/port/gateway/elector-identity-verification.port';
+import { DATABASE_HEALTH_PORT } from './shared/application/port/health/database-health.port';
+import { GetCandidatePageHandler } from './modules/vote/application/query/handler/get-candidate-page.handler';
+import { GetCandidateHandler } from './modules/vote/application/query/handler/get-candidate.handler';
+import { GetElectionCommissionHandler } from './modules/election-commission/application/query/handler/get-election-commission.handler';
+import { GetElectionCommissionPageHandler } from './modules/election-commission/application/query/handler/get-election-commission-page.handler';
+import { GetElectoralRollHandler } from './modules/electoral-roll/application/query/handler/get-electoral-roll.handler';
+import { GetFieldVotingSessionHandler } from './modules/field-voting/application/query/handler/get-field-voting-session.handler';
+import { GetFieldVotingSessionPageHandler } from './modules/field-voting/application/query/handler/get-field-voting-session-page.handler';
+import { GetElectorPageHandler } from './modules/elector/application/query/handler/get-elector-page.handler';
+import { GetElectorHandler } from './modules/elector/application/query/handler/get-elector.handler';
+import { GetVoteDetailPageHandler } from './modules/vote/application/query/handler/get-vote-detail-page.handler';
+import { GetVoteDetailHandler } from './modules/vote/application/query/handler/get-vote-detail.handler';
+import { GetVotePageHandler } from './modules/vote/application/query/handler/get-vote-page.handler';
+import { GetVoteHandler } from './modules/vote/application/query/handler/get-vote.handler';
+import { GetVoteResultHandler } from './modules/participation/application/query/handler/get-vote-result.handler';
+import { GetVoteTurnoutHandler } from './modules/participation/application/query/handler/get-vote-turnout.handler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { InfrastructureModule } from './infrastructure/infrastructure.module';
-import { NotConfiguredDatabaseHealthAdapter } from './infrastructure/database/not-configured-database-health.adapter';
-import { NotConfiguredElectorIdentityVerificationAdapter } from './infrastructure/security/not-configured-elector-identity-verification.adapter';
-import { CandidateAttachmentController } from './presentation/route/candidate/candidate-attachment.controller';
-import { CandidateReadController } from './presentation/route/candidate/candidate-read.controller';
-import { CandidateController } from './presentation/route/candidate/candidate.controller';
-import { ElectionCommissionReadController } from './presentation/route/election-commission/election-commission-read.controller';
-import { ElectionCommissionController } from './presentation/route/election-commission/election-commission.controller';
-import { ElectoralRollController } from './presentation/route/electoral-roll/electoral-roll.controller';
-import { ElectoralRollReadController } from './presentation/route/electoral-roll/electoral-roll-read.controller';
-import { ElectorController } from './presentation/route/elector/elector.controller';
-import { FieldVotingSessionReadController } from './presentation/route/field-voting-session/field-voting-session-read.controller';
-import { FieldVotingSessionController } from './presentation/route/field-voting-session/field-voting-session.controller';
-import { ElectorReadController } from './presentation/route/elector/elector-read.controller';
-import { VoteDetailAttachmentController } from './presentation/route/vote-detail/vote-detail-attachment.controller';
-import { VoteDetailReadController } from './presentation/route/vote-detail/vote-detail-read.controller';
-import { VoteDetailController } from './presentation/route/vote-detail/vote-detail.controller';
-import { VoteAttachmentController } from './presentation/route/vote/vote-attachment.controller';
-import { VoteReadController } from './presentation/route/vote/vote-read.controller';
-import { VoteController } from './presentation/route/vote/vote.controller';
-import { VoteStatisticsController } from './presentation/route/vote-statistics/vote-statistics.controller';
+import { PlatformModule } from './platform/platform.module';
+import { createDatabaseEntityRegistry } from './composition/database-entity.registry';
+import {
+  databaseRepositoryPortTokens,
+  databaseRepositoryProviders,
+} from './composition/database-repository.providers';
+import { NotConfiguredDatabaseHealthAdapter } from './platform/database/not-configured-database-health.adapter';
+import { NotConfiguredElectorIdentityVerificationAdapter } from './modules/elector/infrastructure/security/not-configured-elector-identity-verification.adapter';
+import { CandidateAttachmentController } from './modules/vote/presentation/candidate/candidate-attachment.controller';
+import { CandidateReadController } from './modules/vote/presentation/candidate/candidate-read.controller';
+import { CandidateController } from './modules/vote/presentation/candidate/candidate.controller';
+import { ElectionCommissionReadController } from './modules/election-commission/presentation/election-commission/election-commission-read.controller';
+import { ElectionCommissionController } from './modules/election-commission/presentation/election-commission/election-commission.controller';
+import { ElectoralRollController } from './modules/electoral-roll/presentation/electoral-roll/electoral-roll.controller';
+import { ElectoralRollReadController } from './modules/electoral-roll/presentation/electoral-roll/electoral-roll-read.controller';
+import { ElectorController } from './modules/elector/presentation/elector/elector.controller';
+import { FieldVotingSessionReadController } from './modules/field-voting/presentation/field-voting-session/field-voting-session-read.controller';
+import { FieldVotingSessionController } from './modules/field-voting/presentation/field-voting-session/field-voting-session.controller';
+import { ElectorReadController } from './modules/elector/presentation/elector/elector-read.controller';
+import { VoteDetailAttachmentController } from './modules/vote/presentation/vote-detail/vote-detail-attachment.controller';
+import { VoteDetailReadController } from './modules/vote/presentation/vote-detail/vote-detail-read.controller';
+import { VoteDetailController } from './modules/vote/presentation/vote-detail/vote-detail.controller';
+import { VoteAttachmentController } from './modules/vote/presentation/vote/vote-attachment.controller';
+import { VoteReadController } from './modules/vote/presentation/vote/vote-read.controller';
+import { VoteController } from './modules/vote/presentation/vote/vote.controller';
+import { VoteStatisticsController } from './modules/participation/presentation/vote-statistics/vote-statistics.controller';
+import { FieldParticipationEvidenceController } from './modules/field-voting/presentation/participation/field-participation-evidence.controller';
+import {
+  ELECTION_COMMISSION_ACCESS_PORT,
+  ELECTION_COMMISSION_MEMBER_ACCESS_PORT,
+} from './shared/application/port/capability/election-commission-access.port';
+import {
+  CANDIDATE_ACCESS_PORT,
+  VOTE_ACCESS_PORT,
+  VOTE_DETAIL_ACCESS_PORT,
+} from './shared/application/port/capability/vote-access.port';
+import { ELECTOR_ACCESS_PORT } from './shared/application/port/capability/elector-access.port';
+import { FIELD_VOTING_SESSION_ACCESS_PORT } from './shared/application/port/capability/field-voting-access.port';
+import { PARTICIPATION_ACCESS_PORT } from './shared/application/port/capability/participation-access.port';
+import { FILE_ACCESS_PORT } from './shared/application/port/capability/file-access.port';
+import { ELECTORAL_ROLL_SNAPSHOT_ACCESS_PORT } from './shared/application/port/capability/electoral-roll-snapshot-access.port';
+import { ELECTION_COMMISSION_REPOSITORY_PORT } from './modules/election-commission/application/port/persistence/command/election-commission-repository.port';
+import { ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT } from './modules/election-commission/application/port/persistence/command/election-commission-member-repository.port';
+import { VOTE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-repository.port';
+import { VOTE_DETAIL_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-detail-repository.port';
+import { CANDIDATE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/candidate-repository.port';
+import { ELECTOR_REPOSITORY_PORT } from './modules/elector/application/port/persistence/command/elector-repository.port';
+import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from './modules/field-voting/application/port/persistence/command/field-voting-session-repository.port';
+import { PARTICIPATION_REPOSITORY_PORT } from './modules/participation/application/port/persistence/command/participation-repository.port';
+import { FILE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/file-repository.port';
+import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-roll/application/port/persistence/command/electoral-roll-snapshot-repository.port';
 
 @Module({
-  imports: [InfrastructureModule],
+  imports: [
+    PlatformModule.register({
+      entityRegistryFactory: createDatabaseEntityRegistry,
+      repositoryProviders: databaseRepositoryProviders,
+      repositoryPortTokens: databaseRepositoryPortTokens,
+    }),
+  ],
   controllers: [
     AppController,
     VoteController,
@@ -90,9 +127,38 @@ import { VoteStatisticsController } from './presentation/route/vote-statistics/v
     FieldVotingSessionController,
     ElectorReadController,
     VoteStatisticsController,
+    FieldParticipationEvidenceController,
   ],
   providers: [
     AppService,
+    {
+      provide: ELECTION_COMMISSION_ACCESS_PORT,
+      useExisting: ELECTION_COMMISSION_REPOSITORY_PORT,
+    },
+    {
+      provide: ELECTION_COMMISSION_MEMBER_ACCESS_PORT,
+      useExisting: ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
+    },
+    { provide: VOTE_ACCESS_PORT, useExisting: VOTE_REPOSITORY_PORT },
+    {
+      provide: VOTE_DETAIL_ACCESS_PORT,
+      useExisting: VOTE_DETAIL_REPOSITORY_PORT,
+    },
+    { provide: CANDIDATE_ACCESS_PORT, useExisting: CANDIDATE_REPOSITORY_PORT },
+    { provide: ELECTOR_ACCESS_PORT, useExisting: ELECTOR_REPOSITORY_PORT },
+    {
+      provide: FIELD_VOTING_SESSION_ACCESS_PORT,
+      useExisting: FIELD_VOTING_SESSION_REPOSITORY_PORT,
+    },
+    {
+      provide: PARTICIPATION_ACCESS_PORT,
+      useExisting: PARTICIPATION_REPOSITORY_PORT,
+    },
+    { provide: FILE_ACCESS_PORT, useExisting: FILE_REPOSITORY_PORT },
+    {
+      provide: ELECTORAL_ROLL_SNAPSHOT_ACCESS_PORT,
+      useExisting: ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT,
+    },
     AttachmentTargetValidator,
     CreateVoteHandler,
     CreateVoteDetailHandler,
@@ -111,6 +177,7 @@ import { VoteStatisticsController } from './presentation/route/vote-statistics/v
     OpenFieldVotingSessionHandler,
     CloseFieldVotingSessionHandler,
     CancelFieldVotingSessionHandler,
+    RecordFieldParticipationEvidenceHandler,
     UpdateVoteHandler,
     ChangeVoteStatusHandler,
     UpdateVoteDetailHandler,

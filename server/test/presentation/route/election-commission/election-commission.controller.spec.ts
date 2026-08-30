@@ -1,10 +1,10 @@
-import { CreateElectionCommissionCommand } from '../../../../src/application/command/dto/request/create-election-commission.command';
-import { CreateElectionCommissionHandler } from '../../../../src/application/command/handler/create-election-commission.handler';
-import { RegisterElectionCommissionMemberCommand } from '../../../../src/application/command/dto/request/register-election-commission-member.command';
-import { RegisterElectionCommissionMemberHandler } from '../../../../src/application/command/handler/register-election-commission-member.handler';
-import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
-import { ElectionCommissionMemberStatus } from '../../../../src/domain/election-commission/type/election-commission-member-status.type';
-import { ElectionCommissionController } from '../../../../src/presentation/route/election-commission/election-commission.controller';
+import { CreateElectionCommissionCommand } from '../../../../src/modules/election-commission/application/command/dto/request/create-election-commission.command';
+import { CreateElectionCommissionHandler } from '../../../../src/modules/election-commission/application/command/handler/create-election-commission.handler';
+import { RegisterElectionCommissionMemberCommand } from '../../../../src/modules/election-commission/application/command/dto/request/register-election-commission-member.command';
+import { RegisterElectionCommissionMemberHandler } from '../../../../src/modules/election-commission/application/command/handler/register-election-commission-member.handler';
+import { ElectionCommissionStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-status.type';
+import { ElectionCommissionMemberStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-member-status.type';
+import { ElectionCommissionController } from '../../../../src/modules/election-commission/presentation/election-commission/election-commission.controller';
 
 describe('ElectionCommissionController', () => {
   const createElectionCommissionExecute = jest.fn<

@@ -1,6 +1,6 @@
 import { LoadStrategy } from '@mikro-orm/core';
-import { ElectoralRollSnapshotRepositoryAdapter } from '../../../../src/infrastructure/database/repository/command/electoral-roll-snapshot-repository.adapter';
-import { ElectoralRollReadRepositoryAdapter } from '../../../../src/infrastructure/database/repository/query/electoral-roll-read-repository.adapter';
+import { ElectoralRollSnapshotRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/command/electoral-roll-snapshot-repository.adapter';
+import { ElectoralRollReadRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/query/electoral-roll-read-repository.adapter';
 
 describe('electoral roll repository adapters', () => {
   it('maps an electoral roll and its editable members into a read view', async () => {

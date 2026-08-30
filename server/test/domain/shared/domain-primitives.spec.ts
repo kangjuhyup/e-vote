@@ -1,5 +1,5 @@
-import { DomainError } from '../../../src/domain/shared/domain-error';
-import { assertPositiveNumber, createId } from '../../../src/domain/shared/id';
+import { DomainError } from '../../../src/shared/domain/domain-error';
+import { assertPositiveNumber, createId } from '../../../src/shared/domain/id';
 
 describe('shared domain primitives', () => {
   it('rejects empty ids', () => {

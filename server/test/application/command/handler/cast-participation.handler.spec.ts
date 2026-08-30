@@ -1,37 +1,37 @@
-import { CastParticipationCommand } from '../../../../src/application/command/dto/request/cast-participation.command';
-import { CastParticipationHandler } from '../../../../src/application/command/handler/cast-participation.handler';
-import { CandidateRepositoryPort } from '../../../../src/application/port/persistence/command/candidate-repository.port';
-import { ElectorRepositoryPort } from '../../../../src/application/port/persistence/command/elector-repository.port';
-import { FieldVotingSessionRepositoryPort } from '../../../../src/application/port/persistence/command/field-voting-session-repository.port';
-import { ParticipationRepositoryPort } from '../../../../src/application/port/persistence/command/participation-repository.port';
-import { CastParticipationTransactionResources } from '../../../../src/application/port/persistence/command/participation-repository.port';
-import { VoteDetailRepositoryPort } from '../../../../src/application/port/persistence/command/vote-detail-repository.port';
-import { VoteRepositoryPort } from '../../../../src/application/port/persistence/command/vote-repository.port';
-import { CandidateAggregate } from '../../../../src/domain/candidate/candidate.aggregate';
-import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
-import { ElectionCommissionAggregate } from '../../../../src/domain/election-commission/election-commission.aggregate';
-import { ElectionCommissionMemberAggregate } from '../../../../src/domain/election-commission/election-commission-member.aggregate';
-import { ElectionCommissionMemberRole } from '../../../../src/domain/election-commission/type/election-commission-member-role.type';
-import { ElectorAggregate } from '../../../../src/domain/elector/elector.aggregate';
-import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
-import { FieldVotingSessionAggregate } from '../../../../src/domain/field-voting/field-voting-session.aggregate';
-import { ParticipationAggregate } from '../../../../src/domain/participation/participation.aggregate';
-import { ParticipationStatus } from '../../../../src/domain/participation/type/participation-status.type';
+import { CastParticipationCommand } from '../../../../src/modules/participation/application/command/dto/request/cast-participation.command';
+import { CastParticipationHandler } from '../../../../src/modules/participation/application/command/handler/cast-participation.handler';
+import { CandidateRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/candidate-repository.port';
+import { ElectorRepositoryPort } from '../../../../src/modules/elector/application/port/persistence/command/elector-repository.port';
+import { FieldVotingSessionRepositoryPort } from '../../../../src/modules/field-voting/application/port/persistence/command/field-voting-session-repository.port';
+import { ParticipationRepositoryPort } from '../../../../src/modules/participation/application/port/persistence/command/participation-repository.port';
+import { CastParticipationTransactionResources } from '../../../../src/modules/participation/application/port/persistence/command/participation-repository.port';
+import { VoteDetailRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-detail-repository.port';
+import { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
+import { CandidateAggregate } from '../../../../src/modules/vote/domain/candidate/candidate.aggregate';
+import { CandidateStatus } from '../../../../src/shared/domain/voting/type/candidate-status.type';
+import { ElectionCommissionAggregate } from '../../../../src/modules/election-commission/domain/election-commission.aggregate';
+import { ElectionCommissionMemberAggregate } from '../../../../src/modules/election-commission/domain/election-commission-member.aggregate';
+import { ElectionCommissionMemberRole } from '../../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
+import { ElectorAggregate } from '../../../../src/modules/elector/domain/elector.aggregate';
+import { ElectorStatus } from '../../../../src/shared/domain/voting/type/elector-status.type';
+import { FieldVotingSessionAggregate } from '../../../../src/modules/field-voting/domain/field-voting-session.aggregate';
+import { ParticipationAggregate } from '../../../../src/modules/participation/domain/participation.aggregate';
+import { ParticipationStatus } from '../../../../src/shared/domain/voting/type/participation-status.type';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
 import {
   VoteDetailStatus,
   VoteStatus,
-} from '../../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { IdentityVerificationPolicy } from '../../../../src/domain/vote/vo/identity-verification-policy.vo';
-import { VotePolicy } from '../../../../src/domain/vote/vo/vote-policy.vo';
-import { VoteAggregate } from '../../../../src/domain/vote/vote.aggregate';
-import { VoteDetailAggregate } from '../../../../src/domain/vote/vote-detail.aggregate';
+} from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
+import { VoteDetailAggregate } from '../../../../src/modules/vote/domain/vote/vote-detail.aggregate';
 
 function createVoteFixture(
   status: VoteStatus = VoteStatus.Open,

@@ -1,8 +1,8 @@
-import { CreateVoteDetailCommand } from '../../../../src/application/command/dto/request/create-vote-detail.command';
-import { CreateVoteDetailHandler } from '../../../../src/application/command/handler/create-vote-detail.handler';
-import { VoteDetailRepositoryPort } from '../../../../src/application/port/persistence/command/vote-detail-repository.port';
-import { VoteDetailAggregate } from '../../../../src/domain/vote/vote-detail.aggregate';
-import { VoteDetailStatus } from '../../../../src/domain/vote/type/vote-status.type';
+import { CreateVoteDetailCommand } from '../../../../src/modules/vote/application/command/dto/request/create-vote-detail.command';
+import { CreateVoteDetailHandler } from '../../../../src/modules/vote/application/command/handler/create-vote-detail.handler';
+import { VoteDetailRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-detail-repository.port';
+import { VoteDetailAggregate } from '../../../../src/modules/vote/domain/vote/vote-detail.aggregate';
+import { VoteDetailStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
 
 describe('CreateVoteDetailHandler', () => {
   it('creates a draft vote detail and saves it through the repository', async () => {

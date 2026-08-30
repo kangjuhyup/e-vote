@@ -5,8 +5,8 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { WasabiStorageAdapter } from '../../../src/infrastructure/storage/wasabi-storage.adapter';
-import { WasabiStorageConfig } from '../../../src/infrastructure/storage/wasabi-storage.config';
+import { WasabiStorageAdapter } from '../../../src/platform/storage/wasabi-storage.adapter';
+import { WasabiStorageConfig } from '../../../src/platform/storage/wasabi-storage.config';
 
 type PresignStorageCommand =
   PutObjectCommand | GetObjectCommand | DeleteObjectCommand;

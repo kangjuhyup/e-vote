@@ -1,16 +1,14 @@
-import { MODULE_METADATA } from '@nestjs/common/constants';
-import { DatabaseModule } from '../../src/infrastructure/database/database.module';
-import { InfrastructureModule } from '../../src/infrastructure/infrastructure.module';
-import { LoggingModule } from '../../src/infrastructure/logging/logging.module';
-import { RedisModule } from '../../src/infrastructure/redis/redis.module';
-import { StorageModule } from '../../src/infrastructure/storage/storage.module';
+import { DatabaseModule } from '../../src/platform/database/database.module';
+import { PlatformModule } from '../../src/platform/platform.module';
+import { LoggingModule } from '../../src/platform/logging/logging.module';
+import { RedisModule } from '../../src/platform/redis/redis.module';
+import { StorageModule } from '../../src/platform/storage/storage.module';
 
-describe('InfrastructureModule', () => {
+describe('PlatformModule', () => {
   it('imports infrastructure feature modules', () => {
-    const imports = Reflect.getMetadata(
-      MODULE_METADATA.IMPORTS,
-      InfrastructureModule,
-    ) as unknown[];
+    const imports = PlatformModule.register({
+      entityRegistryFactory: () => Promise.resolve({ databaseEntities: [] }),
+    }).imports as unknown[];
 
     expect(imports).toContain(RedisModule);
     expect(imports).toContain(StorageModule);
@@ -18,10 +16,9 @@ describe('InfrastructureModule', () => {
   });
 
   it('exports infrastructure feature modules so application ports can use them', () => {
-    const exports = Reflect.getMetadata(
-      MODULE_METADATA.EXPORTS,
-      InfrastructureModule,
-    ) as unknown[];
+    const exports = PlatformModule.register({
+      entityRegistryFactory: () => Promise.resolve({ databaseEntities: [] }),
+    }).exports as unknown[];
 
     expect(exports).toContain(DatabaseModule);
     expect(exports).toContain(RedisModule);

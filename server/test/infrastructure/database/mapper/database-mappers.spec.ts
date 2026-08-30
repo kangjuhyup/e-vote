@@ -1,31 +1,31 @@
-import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
-import { ElectionCommissionMemberRole } from '../../../../src/domain/election-commission/type/election-commission-member-role.type';
-import { ElectionCommissionMemberStatus } from '../../../../src/domain/election-commission/type/election-commission-member-status.type';
-import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
-import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
-import { FieldVotingSessionStatus } from '../../../../src/domain/field-voting/type/field-voting-session-status.type';
-import { ParticipationStatus } from '../../../../src/domain/participation/type/participation-status.type';
+import { CandidateStatus } from '../../../../src/shared/domain/voting/type/candidate-status.type';
+import { ElectionCommissionMemberRole } from '../../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
+import { ElectionCommissionMemberStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-member-status.type';
+import { ElectionCommissionStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-status.type';
+import { ElectorStatus } from '../../../../src/shared/domain/voting/type/elector-status.type';
+import { FieldVotingSessionStatus } from '../../../../src/shared/domain/voting/type/field-voting-session-status.type';
+import { ParticipationStatus } from '../../../../src/shared/domain/voting/type/participation-status.type';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../../../../src/domain/vote/type/vote-policy.type';
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
 import {
   VoteDetailStatus,
   VoteStatus,
-} from '../../../../src/domain/vote/type/vote-status.type';
-import { VotingChannel } from '../../../../src/domain/vote/type/voting-channel.type';
-import { CandidateMapper } from '../../../../src/infrastructure/database/mapper/candidate.mapper';
-import { ElectionCommissionMemberMapper } from '../../../../src/infrastructure/database/mapper/election-commission-member.mapper';
-import { ElectionCommissionMapper } from '../../../../src/infrastructure/database/mapper/election-commission.mapper';
-import { ElectorMapper } from '../../../../src/infrastructure/database/mapper/elector.mapper';
-import { FieldParticipationEvidenceMapper } from '../../../../src/infrastructure/database/mapper/field-participation-evidence.mapper';
-import { FieldVotingSessionMapper } from '../../../../src/infrastructure/database/mapper/field-voting-session.mapper';
-import { ParticipationMapper } from '../../../../src/infrastructure/database/mapper/participation.mapper';
-import { VoteMapper } from '../../../../src/infrastructure/database/mapper/vote.mapper';
-import { VoteDetailMapper } from '../../../../src/infrastructure/database/mapper/vote-detail.mapper';
-import { PersonalDataCipher } from '../../../../src/infrastructure/security/personal-data-cipher';
+} from '../../../../src/shared/domain/voting/type/vote-status.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { CandidateMapper } from '../../../../src/modules/vote/infrastructure/database/mapper/candidate.mapper';
+import { ElectionCommissionMemberMapper } from '../../../../src/modules/election-commission/infrastructure/database/mapper/election-commission-member.mapper';
+import { ElectionCommissionMapper } from '../../../../src/modules/election-commission/infrastructure/database/mapper/election-commission.mapper';
+import { ElectorMapper } from '../../../../src/modules/elector/infrastructure/database/mapper/elector.mapper';
+import { FieldParticipationEvidenceMapper } from '../../../../src/modules/field-voting/infrastructure/database/mapper/field-participation-evidence.mapper';
+import { FieldVotingSessionMapper } from '../../../../src/modules/field-voting/infrastructure/database/mapper/field-voting-session.mapper';
+import { ParticipationMapper } from '../../../../src/modules/participation/infrastructure/database/mapper/participation.mapper';
+import { VoteMapper } from '../../../../src/modules/vote/infrastructure/database/mapper/vote.mapper';
+import { VoteDetailMapper } from '../../../../src/modules/vote/infrastructure/database/mapper/vote-detail.mapper';
+import { PersonalDataCipher } from '../../../../src/platform/security/personal-data-cipher';
 
 describe('database mappers', () => {
   it('maps election commission entity state into domain aggregates', () => {

@@ -1,15 +1,19 @@
-import { createDatabaseConfig } from '../../../src/infrastructure/database/database.config';
+import { createDatabaseConfig } from '../../../src/platform/database/database.config';
+import { createDatabaseEntityRegistry } from '../../../src/composition/database-entity.registry';
 
 describe('database config', () => {
   it('maps environment variables to PostgreSQL MikroORM options', async () => {
-    const config = await createDatabaseConfig({
-      DATABASE_HOST: 'db.example.test',
-      DATABASE_PORT: '15432',
-      DATABASE_NAME: 'vote_test',
-      DATABASE_USER: 'vote_user',
-      DATABASE_PASSWORD: 'vote_password',
-      DATABASE_SSL: 'false',
-    });
+    const config = await createDatabaseConfig(
+      {
+        DATABASE_HOST: 'db.example.test',
+        DATABASE_PORT: '15432',
+        DATABASE_NAME: 'vote_test',
+        DATABASE_USER: 'vote_user',
+        DATABASE_PASSWORD: 'vote_password',
+        DATABASE_SSL: 'false',
+      },
+      createDatabaseEntityRegistry,
+    );
 
     expect(config).toMatchObject({
       host: 'db.example.test',
@@ -26,7 +30,7 @@ describe('database config', () => {
   });
 
   it('uses local development defaults when environment variables are missing', async () => {
-    const config = await createDatabaseConfig({});
+    const config = await createDatabaseConfig({}, createDatabaseEntityRegistry);
 
     expect(config).toMatchObject({
       host: 'localhost',
@@ -38,9 +42,10 @@ describe('database config', () => {
   });
 
   it('enables SSL only when DATABASE_SSL is true', async () => {
-    const config = await createDatabaseConfig({
-      DATABASE_SSL: 'true',
-    });
+    const config = await createDatabaseConfig(
+      { DATABASE_SSL: 'true' },
+      createDatabaseEntityRegistry,
+    );
 
     expect(config.driverOptions).toEqual({
       connection: {
@@ -50,7 +55,7 @@ describe('database config', () => {
   });
 
   it('allows empty entity lists while persistence entities are out of scope', async () => {
-    const config = await createDatabaseConfig({});
+    const config = await createDatabaseConfig({}, createDatabaseEntityRegistry);
 
     expect(config.discovery).toEqual({
       warnWhenNoEntities: false,

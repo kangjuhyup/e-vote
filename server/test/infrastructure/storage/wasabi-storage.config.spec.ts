@@ -1,4 +1,4 @@
-import { loadWasabiStorageConfig } from '../../../src/infrastructure/storage/wasabi-storage.config';
+import { loadWasabiStorageConfig } from '../../../src/platform/storage/wasabi-storage.config';
 
 describe('loadWasabiStorageConfig', () => {
   it('returns null when required Wasabi environment values are missing', () => {

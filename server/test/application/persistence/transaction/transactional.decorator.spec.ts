@@ -3,12 +3,12 @@ import { join } from 'node:path';
 import type {
   DatabaseTransactionManager,
   DatabaseTransactionOptions,
-} from '../../../../src/application/port/persistence/transaction/database-transaction-manager.port';
+} from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
   type DatabaseTransactionalHost,
-} from '../../../../src/application/persistence/transaction/transactional.decorator';
+} from '../../../../src/shared/application/persistence/transaction/transactional.decorator';
 
 describe('Transactional decorator', () => {
   it('runs the decorated method through the configured transaction manager', async () => {
@@ -106,7 +106,7 @@ describe('Transactional decorator', () => {
     const source = readFileSync(
       join(
         process.cwd(),
-        'src/application/persistence/transaction/transactional.decorator.ts',
+        'src/shared/application/persistence/transaction/transactional.decorator.ts',
       ),
       'utf8',
     );

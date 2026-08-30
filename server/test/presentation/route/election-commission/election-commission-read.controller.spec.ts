@@ -2,20 +2,20 @@ import { NotFoundException } from '@nestjs/common';
 import {
   ElectionCommissionNotFoundError,
   GetElectionCommissionHandler,
-} from '../../../../src/application/query/handler/get-election-commission.handler';
-import { GetElectionCommissionPageHandler } from '../../../../src/application/query/handler/get-election-commission-page.handler';
-import { GetElectionCommissionPageQuery } from '../../../../src/application/query/dto/request/get-election-commission-page.query';
-import { GetElectionCommissionQuery } from '../../../../src/application/query/dto/request/get-election-commission.query';
+} from '../../../../src/modules/election-commission/application/query/handler/get-election-commission.handler';
+import { GetElectionCommissionPageHandler } from '../../../../src/modules/election-commission/application/query/handler/get-election-commission-page.handler';
+import { GetElectionCommissionPageQuery } from '../../../../src/modules/election-commission/application/query/dto/request/get-election-commission-page.query';
+import { GetElectionCommissionQuery } from '../../../../src/modules/election-commission/application/query/dto/request/get-election-commission.query';
 import {
   ElectionCommissionMemberView,
   ElectionCommissionPageView,
   ElectionCommissionView,
-} from '../../../../src/application/query/dto/response/election-commission.view';
-import { ElectionCommissionMemberRole } from '../../../../src/domain/election-commission/type/election-commission-member-role.type';
-import { ElectionCommissionMemberStatus } from '../../../../src/domain/election-commission/type/election-commission-member-status.type';
-import { ElectionCommissionStatus } from '../../../../src/domain/election-commission/type/election-commission-status.type';
-import { maskDecoratedPersonalData } from '../../../../src/presentation/common/serializer/mask-personal-data';
-import { ElectionCommissionReadController } from '../../../../src/presentation/route/election-commission/election-commission-read.controller';
+} from '../../../../src/modules/election-commission/application/query/dto/response/election-commission.view';
+import { ElectionCommissionMemberRole } from '../../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
+import { ElectionCommissionMemberStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-member-status.type';
+import { ElectionCommissionStatus } from '../../../../src/modules/election-commission/domain/type/election-commission-status.type';
+import { maskDecoratedPersonalData } from '../../../../src/shared/presentation/common/serializer/mask-personal-data';
+import { ElectionCommissionReadController } from '../../../../src/modules/election-commission/presentation/election-commission/election-commission-read.controller';
 
 describe('ElectionCommissionReadController', () => {
   const getElectionCommissionExecute = jest.fn<

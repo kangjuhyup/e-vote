@@ -1,28 +1,28 @@
 import { MikroORM, type EntityManager } from '@mikro-orm/postgresql';
-import { GetVoteResultHandler } from '../src/application/query/handler/get-vote-result.handler';
-import { GetVoteResultQuery } from '../src/application/query/dto/request/get-vote-result.query';
-import { VoteStatisticsInconsistentError } from '../src/application/query/vote-statistics.error';
-import { CastParticipationCommand } from '../src/application/command/dto/request/cast-participation.command';
-import { CastParticipationHandler } from '../src/application/command/handler/cast-participation.handler';
-import { ParticipationAggregate } from '../src/domain/participation/participation.aggregate';
-import { ElectorAggregate } from '../src/domain/elector/elector.aggregate';
-import { ElectorStatus } from '../src/domain/elector/type/elector-status.type';
+import { GetVoteResultHandler } from '../src/modules/participation/application/query/handler/get-vote-result.handler';
+import { GetVoteResultQuery } from '../src/modules/participation/application/query/dto/request/get-vote-result.query';
+import { VoteStatisticsInconsistentError } from '../src/modules/participation/application/query/vote-statistics.error';
+import { CastParticipationCommand } from '../src/modules/participation/application/command/dto/request/cast-participation.command';
+import { CastParticipationHandler } from '../src/modules/participation/application/command/handler/cast-participation.handler';
+import { ParticipationAggregate } from '../src/modules/participation/domain/participation.aggregate';
+import { ElectorAggregate } from '../src/modules/elector/domain/elector.aggregate';
+import { ElectorStatus } from '../src/shared/domain/voting/type/elector-status.type';
 import {
   ParticipationUnit,
   PrivacyMode,
   ResultStorageMode,
   VoteWeightMode,
-} from '../src/domain/vote/type/vote-policy.type';
-import { VotingChannel } from '../src/domain/vote/type/voting-channel.type';
-import { VotePolicy } from '../src/domain/vote/vo/vote-policy.vo';
-import { createDatabaseConfig } from '../src/infrastructure/database/database.config';
-import { ParticipationRepositoryAdapter } from '../src/infrastructure/database/repository/command/participation-repository.adapter';
-import { VoteStatisticsReadRepositoryAdapter } from '../src/infrastructure/database/repository/query/vote-statistics-read-repository.adapter';
-import { VoteRepositoryAdapter } from '../src/infrastructure/database/repository/command/vote-repository.adapter';
-import { VoteDetailRepositoryAdapter } from '../src/infrastructure/database/repository/command/vote-detail-repository.adapter';
-import { ElectorRepositoryAdapter } from '../src/infrastructure/database/repository/command/elector-repository.adapter';
-import { CandidateRepositoryAdapter } from '../src/infrastructure/database/repository/command/candidate-repository.adapter';
-import { FieldVotingSessionRepositoryAdapter } from '../src/infrastructure/database/repository/command/field-voting-session-repository.adapter';
+} from '../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../src/shared/domain/voting/type/voting-channel.type';
+import { VotePolicy } from '../src/shared/domain/voting/vo/vote-policy.vo';
+import { createDatabaseConfig } from '../src/platform/database/database.config';
+import { ParticipationRepositoryAdapter } from '../src/modules/participation/infrastructure/database/repository/command/participation-repository.adapter';
+import { VoteStatisticsReadRepositoryAdapter } from '../src/modules/participation/infrastructure/database/repository/query/vote-statistics-read-repository.adapter';
+import { VoteRepositoryAdapter } from '../src/modules/vote/infrastructure/database/repository/command/vote-repository.adapter';
+import { VoteDetailRepositoryAdapter } from '../src/modules/vote/infrastructure/database/repository/command/vote-detail-repository.adapter';
+import { ElectorRepositoryAdapter } from '../src/modules/elector/infrastructure/database/repository/command/elector-repository.adapter';
+import { CandidateRepositoryAdapter } from '../src/modules/vote/infrastructure/database/repository/command/candidate-repository.adapter';
+import { FieldVotingSessionRepositoryAdapter } from '../src/modules/field-voting/infrastructure/database/repository/command/field-voting-session-repository.adapter';
 
 const describeDatabase =
   process.env.VOTE_STATISTICS_E2E_DATABASE === 'true'

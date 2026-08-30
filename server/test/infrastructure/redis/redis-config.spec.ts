@@ -1,4 +1,4 @@
-import { readRedisConnectionConfig } from '../../../src/infrastructure/redis/redis-config';
+import { readRedisConnectionConfig } from '../../../src/platform/redis/redis-config';
 
 describe('readRedisConnectionConfig', () => {
   it('builds standalone Redis options from REDIS_URL', () => {

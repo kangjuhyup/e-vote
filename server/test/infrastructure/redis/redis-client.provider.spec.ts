@@ -1,5 +1,5 @@
 import { Cluster, Redis } from 'ioredis';
-import { createRedisClient } from '../../../src/infrastructure/redis/redis-client.provider';
+import { createRedisClient } from '../../../src/platform/redis/redis-client.provider';
 
 describe('createRedisClient', () => {
   const clients: Array<Redis | Cluster> = [];

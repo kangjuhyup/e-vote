@@ -1,8 +1,8 @@
-import { CreateCandidateCommand } from '../../../../src/application/command/dto/request/create-candidate.command';
-import { CreateCandidateHandler } from '../../../../src/application/command/handler/create-candidate.handler';
-import { CandidateRepositoryPort } from '../../../../src/application/port/persistence/command/candidate-repository.port';
-import { CandidateAggregate } from '../../../../src/domain/candidate/candidate.aggregate';
-import { CandidateStatus } from '../../../../src/domain/candidate/type/candidate-status.type';
+import { CreateCandidateCommand } from '../../../../src/modules/vote/application/command/dto/request/create-candidate.command';
+import { CreateCandidateHandler } from '../../../../src/modules/vote/application/command/handler/create-candidate.handler';
+import { CandidateRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/candidate-repository.port';
+import { CandidateAggregate } from '../../../../src/modules/vote/domain/candidate/candidate.aggregate';
+import { CandidateStatus } from '../../../../src/shared/domain/voting/type/candidate-status.type';
 
 describe('CreateCandidateHandler', () => {
   it('creates an active candidate and saves it through the repository', async () => {

@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   REDIS_CLIENT,
   type RedisClient,
-} from '../src/infrastructure/redis/redis.constants';
-import { RedisModule } from '../src/infrastructure/redis/redis.module';
+} from '../src/platform/redis/redis.constants';
+import { RedisModule } from '../src/platform/redis/redis.module';
 
 describe('RedisModule (docker e2e)', () => {
   let moduleRef: TestingModule;

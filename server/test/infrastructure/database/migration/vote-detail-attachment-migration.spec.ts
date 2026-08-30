@@ -5,7 +5,7 @@ describe('vote detail attachment migration', () => {
   const migrationSource = readFileSync(
     join(
       process.cwd(),
-      'src/infrastructure/database/migration/Migration20260813020000.ts',
+      'src/platform/database/migration/Migration20260813020000.ts',
     ),
     'utf8',
   );

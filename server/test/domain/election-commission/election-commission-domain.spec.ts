@@ -1,14 +1,14 @@
-import { ElectionCommissionAggregate } from '../../../src/domain/election-commission/election-commission.aggregate';
-import { ElectionCommissionMemberAggregate } from '../../../src/domain/election-commission/election-commission-member.aggregate';
+import { ElectionCommissionAggregate } from '../../../src/modules/election-commission/domain/election-commission.aggregate';
+import { ElectionCommissionMemberAggregate } from '../../../src/modules/election-commission/domain/election-commission-member.aggregate';
 import {
   ElectionCommissionCreated,
   ElectionCommissionMemberRegistered,
-} from '../../../src/domain/election-commission/election-commission.events';
-import { ElectionCommissionMemberRole } from '../../../src/domain/election-commission/type/election-commission-member-role.type';
-import { ElectionCommissionMemberStatus } from '../../../src/domain/election-commission/type/election-commission-member-status.type';
-import { ElectionCommissionStatus } from '../../../src/domain/election-commission/type/election-commission-status.type';
-import { DomainError } from '../../../src/domain/shared/domain-error';
-import { VotingChannel } from '../../../src/domain/vote/type/voting-channel.type';
+} from '../../../src/modules/election-commission/domain/election-commission.events';
+import { ElectionCommissionMemberRole } from '../../../src/modules/election-commission/domain/type/election-commission-member-role.type';
+import { ElectionCommissionMemberStatus } from '../../../src/modules/election-commission/domain/type/election-commission-member-status.type';
+import { ElectionCommissionStatus } from '../../../src/modules/election-commission/domain/type/election-commission-status.type';
+import { DomainError } from '../../../src/shared/domain/domain-error';
+import { VotingChannel } from '../../../src/shared/domain/voting/type/voting-channel.type';
 
 describe('election commission domain', () => {
   it('creates an active election commission and emits an event', () => {

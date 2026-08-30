@@ -1,13 +1,13 @@
-import { AuthenticateElectorCommand } from '../../../../src/application/command/dto/request/authenticate-elector.command';
-import { AuthenticateElectorHandler } from '../../../../src/application/command/handler/authenticate-elector.handler';
-import { ElectorIdentityVerificationPort } from '../../../../src/application/port/gateway/elector-identity-verification.port';
-import { ElectorRepositoryPort } from '../../../../src/application/port/persistence/command/elector-repository.port';
-import { ElectorAggregate } from '../../../../src/domain/elector/elector.aggregate';
+import { AuthenticateElectorCommand } from '../../../../src/modules/elector/application/command/dto/request/authenticate-elector.command';
+import { AuthenticateElectorHandler } from '../../../../src/modules/elector/application/command/handler/authenticate-elector.handler';
+import { ElectorIdentityVerificationPort } from '../../../../src/modules/elector/application/port/gateway/elector-identity-verification.port';
+import { ElectorRepositoryPort } from '../../../../src/modules/elector/application/port/persistence/command/elector-repository.port';
+import { ElectorAggregate } from '../../../../src/modules/elector/domain/elector.aggregate';
 import {
   ElectorIdentityVerificationEvidence,
   ElectorIdentityVerificationResult,
-} from '../../../../src/domain/elector/vo/elector-identity-verification.vo';
-import { ElectorStatus } from '../../../../src/domain/elector/type/elector-status.type';
+} from '../../../../src/modules/elector/domain/vo/elector-identity-verification.vo';
+import { ElectorStatus } from '../../../../src/shared/domain/voting/type/elector-status.type';
 
 describe('AuthenticateElectorHandler', () => {
   it('verifies elector identity through the port and saves the verified aggregate', async () => {

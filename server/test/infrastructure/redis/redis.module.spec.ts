@@ -3,12 +3,12 @@ import { Redis } from 'ioredis';
 import {
   REDIS_HEALTH_PORT,
   RedisHealthPort,
-} from '../../../src/application/port/health/redis-health.port';
+} from '../../../src/shared/application/port/health/redis-health.port';
 import {
   REDIS_CLIENT,
   RedisClient,
-} from '../../../src/infrastructure/redis/redis.constants';
-import { RedisModule } from '../../../src/infrastructure/redis/redis.module';
+} from '../../../src/platform/redis/redis.constants';
+import { RedisModule } from '../../../src/platform/redis/redis.module';
 
 describe('RedisModule', () => {
   let originalEnv: NodeJS.ProcessEnv;

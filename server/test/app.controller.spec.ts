@@ -3,15 +3,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   DATABASE_HEALTH_PORT,
   DatabaseHealthPort,
-} from '../src/application/port/health/database-health.port';
+} from '../src/shared/application/port/health/database-health.port';
 import {
   REDIS_HEALTH_PORT,
   RedisHealthPort,
-} from '../src/application/port/health/redis-health.port';
+} from '../src/shared/application/port/health/redis-health.port';
 import {
   STORAGE_HEALTH_PORT,
   StorageHealthPort,
-} from '../src/application/port/health/storage-health.port';
+} from '../src/shared/application/port/health/storage-health.port';
 import { AppController } from '../src/app.controller';
 import { AppService } from '../src/app.service';
 

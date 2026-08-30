@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createDatabaseConfig } from '../../../../src/infrastructure/database/database.config';
+import { createDatabaseConfig } from '../../../../src/platform/database/database.config';
 
 describe('initial schema migration', () => {
   const migrationSource = readFileSync(
     join(
       process.cwd(),
-      'src/infrastructure/database/migration/Migration20260809000000.ts',
+      'src/platform/database/migration/Migration20260809000000.ts',
     ),
     'utf8',
   );
@@ -62,8 +62,8 @@ describe('initial schema migration', () => {
     expect(config.extensions).toEqual([Migrator]);
     expect(config).toMatchObject({
       migrations: {
-        path: './dist/infrastructure/database/migration',
-        pathTs: './src/infrastructure/database/migration',
+        path: './dist/platform/database/migration',
+        pathTs: './src/platform/database/migration',
       },
     });
   });
