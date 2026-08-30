@@ -37,6 +37,7 @@ const details: VoteDetail[] = [
   {
     ...summaries[0],
     description: "대표 후보를 선출합니다.",
+    subVotes: [],
     candidates: [
       { id: "candidate-1", name: "김대표", description: "운영 개선", order: 1 },
     ],
@@ -62,6 +63,7 @@ const details: VoteDetail[] = [
   {
     ...summaries[1],
     description: "예산안을 승인합니다.",
+    subVotes: [],
     candidates: [],
     electors: [],
   },

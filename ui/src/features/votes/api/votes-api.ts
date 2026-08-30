@@ -9,8 +9,14 @@ import type {
   VoteDetail,
   VoteElector,
   VoteStatus,
+  VoteSubVote,
   VoteSummary,
 } from "@/features/votes/model/vote.types";
+import {
+  isApiMockMode,
+  resolveApiMode,
+  type ApiMode,
+} from "@/shared/config/api-mode";
 
 import { voteFixtureDetails } from "./votes-fixtures";
 
@@ -27,6 +33,8 @@ type VoteApiFetcher = (
 ) => Promise<Response>;
 
 const VOTE_API_PAGE_SIZE = 100;
+
+export type VoteApiMode = ApiMode;
 
 interface VoteApiPageResponse<TItem> {
   items: TItem[];
@@ -115,7 +123,8 @@ export interface VoteDetailResponseDto extends VoteSummaryResponseDto {
 interface CreateVotesApiClientOptions {
   baseUrl?: string;
   fetcher?: VoteApiFetcher;
-  fallbackVoteDetails?: VoteDetail[];
+  mockVoteDetails?: VoteDetail[];
+  mode?: VoteApiMode;
   now?: () => string;
 }
 
@@ -129,6 +138,24 @@ function resolveVoteApiBaseUrl() {
     process.env.NEXT_PUBLIC_API_BASE_URL ??
     ""
   );
+}
+
+export function resolveVoteApiMode(
+  value = process.env.NEXT_PUBLIC_VOTE_API_MODE,
+): VoteApiMode {
+  return resolveApiMode(value);
+}
+
+export function isVoteApiMockMode() {
+  return isApiMockMode();
+}
+
+function requireLiveVoteApiBaseUrl(baseUrl: string) {
+  if (baseUrl.trim().length === 0) {
+    throw new Error(
+      "NEXT_PUBLIC_VOTE_API_BASE_URL is required when NEXT_PUBLIC_VOTE_API_MODE=live",
+    );
+  }
 }
 
 function buildVoteApiUrl(
@@ -233,6 +260,21 @@ function mapVoteCandidateResponse(
   };
 }
 
+function mapVoteSubVoteResponse(
+  response: VoteDetailItemResponseDto,
+  now: string,
+): VoteSubVote {
+  return {
+    id: response.id,
+    title: response.title,
+    description: response.description,
+    type: response.type === "YES_NO" ? "yes-no" : "candidate",
+    status: mapVoteStatus(response.status, { startedAt: now, now }),
+    order: response.sortOrder,
+    candidates: response.candidates.map(mapVoteCandidateResponse),
+  };
+}
+
 function mapVoteElectorResponse(response: VoteElectorResponseDto): VoteElector {
   return {
     id: response.id,
@@ -270,6 +312,9 @@ export function mapVoteDetailResponse(
       voteDetail.candidates.map(mapVoteCandidateResponse),
     ),
     electors: mappedElectors,
+    subVotes: response.voteDetails.map((voteDetail) =>
+      mapVoteSubVoteResponse(voteDetail, now),
+    ),
   };
 }
 
@@ -341,9 +386,10 @@ async function requestVoteApiPage<T>(
 }
 
 export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) {
+  const mode = options.mode ?? resolveVoteApiMode();
   const baseUrl = options.baseUrl ?? resolveVoteApiBaseUrl();
   const fetcher = options.fetcher ?? fetch;
-  const fallbackVoteDetails = options.fallbackVoteDetails ?? voteFixtureDetails;
+  const mockVoteDetails = options.mockVoteDetails ?? voteFixtureDetails;
   const now = options.now ?? (() => new Date().toISOString());
 
   async function fetchVoteDetailFromServer(
@@ -372,9 +418,11 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
   }
 
   async function fetchVoteList(): Promise<VoteSummary[]> {
-    if (baseUrl.trim().length === 0) {
-      return fallbackVoteDetails.map(toVoteSummary);
+    if (mode === "mock") {
+      return mockVoteDetails.map(toVoteSummary);
     }
+
+    requireLiveVoteApiBaseUrl(baseUrl);
 
     const requestTime = now();
     const response = await requestVoteApiPage<VoteSummaryResponseDto>("/votes", {
@@ -394,9 +442,11 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
   }
 
   async function fetchVoteDetail(voteId: string): Promise<VoteDetail | null> {
-    if (baseUrl.trim().length === 0) {
-      return findVoteDetail(fallbackVoteDetails, voteId);
+    if (mode === "mock") {
+      return findVoteDetail(mockVoteDetails, voteId);
     }
+
+    requireLiveVoteApiBaseUrl(baseUrl);
 
     return fetchVoteDetailFromServer(voteId, now());
   }
@@ -409,5 +459,6 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
     fetchVoteDashboard,
     fetchVoteDetail,
     fetchVoteList,
+    mode,
   };
 }

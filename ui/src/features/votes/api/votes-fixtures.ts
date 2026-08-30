@@ -26,6 +26,30 @@ export const voteFixtureDetails: VoteDetail[] = [
         order: 2,
       },
     ],
+    subVotes: [
+      {
+        id: "representative-election",
+        title: "대표 후보 선출",
+        description: "운영위원회 대표 1인을 선출합니다.",
+        type: "candidate",
+        status: "active",
+        order: 0,
+        candidates: [
+          {
+            id: "candidate-1",
+            name: "김대표",
+            description: "투표 운영 자동화와 감사 추적 강화를 제안합니다.",
+            order: 1,
+          },
+          {
+            id: "candidate-2",
+            name: "박운영",
+            description: "선거인 지원 프로세스 개선을 제안합니다.",
+            order: 2,
+          },
+        ],
+      },
+    ],
     electors: [
       {
         id: "elector-1",
@@ -77,6 +101,30 @@ export const voteFixtureDetails: VoteDetail[] = [
         order: 2,
       },
     ],
+    subVotes: [
+      {
+        id: "budget-approval",
+        title: "예산안 승인",
+        description: "제출된 예산안의 승인 여부를 결정합니다.",
+        type: "yes-no",
+        status: "scheduled",
+        order: 0,
+        candidates: [
+          {
+            id: "candidate-budget-1",
+            name: "예산안 찬성",
+            description: "제출된 예산안을 승인합니다.",
+            order: 1,
+          },
+          {
+            id: "candidate-budget-2",
+            name: "예산안 반대",
+            description: "제출된 예산안을 반려합니다.",
+            order: 2,
+          },
+        ],
+      },
+    ],
     electors: [
       {
         id: "elector-4",
@@ -110,6 +158,30 @@ export const voteFixtureDetails: VoteDetail[] = [
         name: "현행 유지",
         description: "기존 운영 규정을 유지합니다.",
         order: 2,
+      },
+    ],
+    subVotes: [
+      {
+        id: "policy-revision",
+        title: "운영 규정 개정",
+        description: "운영 규정 개정안의 채택 여부를 결정합니다.",
+        type: "yes-no",
+        status: "completed",
+        order: 0,
+        candidates: [
+          {
+            id: "candidate-policy-1",
+            name: "개정안 승인",
+            description: "운영 규정 개정안을 승인합니다.",
+            order: 1,
+          },
+          {
+            id: "candidate-policy-2",
+            name: "현행 유지",
+            description: "기존 운영 규정을 유지합니다.",
+            order: 2,
+          },
+        ],
       },
     ],
     electors: [

@@ -1,42 +1,70 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { RetryErrorCard } from "@/components/feedback/retry-error-card";
 import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { voteDashboardQueryOptions } from "@/features/votes/api/votes-query-options";
+import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
 
 import { VoteDashboardContent } from "../ui/vote-dashboard-content";
+import { VoteNavigation } from "../ui/vote-navigation";
 
-export function VoteDashboardContainer() {
+interface VoteDashboardContainerProps {
+  account?: ReactNode;
+}
+
+export function VoteDashboardContainer({ account }: VoteDashboardContainerProps) {
   const dashboardQuery = useQuery(voteDashboardQueryOptions());
   const dashboard = dashboardQuery.data;
 
   return (
     <PageShell
-      eyebrow="Vote Operations"
+      account={account}
+      navigation={
+        <VoteNavigation current="dashboard" isMockMode={isVoteApiMockMode()} />
+      }
+      eyebrow="운영 현황"
       title="투표 대시보드"
       description="진행 중인 투표, 예정 투표, 참여율이 낮은 투표를 한 화면에서 확인합니다."
       actions={
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => dashboardQuery.refetch()}
-          disabled={dashboardQuery.isFetching}
-        >
-          <RefreshCw
-            className={dashboardQuery.isFetching ? "animate-spin" : ""}
-            aria-hidden="true"
-          />
-          새로고침
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild>
+            <Link href="/votes/new">
+              <Plus aria-hidden="true" />
+              투표 생성
+            </Link>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => dashboardQuery.refetch()}
+            disabled={dashboardQuery.isFetching}
+          >
+            <RefreshCw
+              className={
+                dashboardQuery.isFetching ? "motion-safe:animate-spin" : ""
+              }
+              aria-hidden="true"
+            />
+            <span aria-live="polite">
+              {dashboardQuery.isFetching ? "새로고침 중…" : "새로고침"}
+            </span>
+          </Button>
+        </div>
       }
     >
       {dashboardQuery.isLoading ? (
-        <SkeletonCardGrid count={4} className="md:grid-cols-4" />
+        <SkeletonCardGrid
+          count={4}
+          className="md:grid-cols-4"
+          label="대시보드를 불러오는 중…"
+        />
       ) : dashboardQuery.isError ? (
         <RetryErrorCard
           title="대시보드 데이터를 불러오지 못했습니다."

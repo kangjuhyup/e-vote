@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 
 interface SearchFieldProps {
   label: string;
+  name?: string;
   onValueChange: (value: string) => void;
   placeholder: string;
   value: string;
@@ -11,6 +12,7 @@ interface SearchFieldProps {
 
 export function SearchField({
   label,
+  name = "search",
   onValueChange,
   placeholder,
   value,
@@ -23,9 +25,13 @@ export function SearchField({
         aria-hidden="true"
       />
       <input
+        type="search"
+        name={name}
+        autoComplete="off"
+        spellCheck={false}
         value={value}
         onChange={(event) => onValueChange(event.target.value)}
-        className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+        className="h-11 w-full rounded-md border bg-background pl-9 pr-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] sm:h-10"
         placeholder={placeholder}
       />
     </label>

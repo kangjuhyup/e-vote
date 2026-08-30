@@ -4,6 +4,7 @@ import {
   createVotesApiClient,
   mapVoteDetailResponse,
   mapVoteSummaryResponse,
+  resolveVoteApiMode,
   unwrapVoteApiResponse,
 } from "@/features/votes/api/votes-api";
 import type {
@@ -89,6 +90,43 @@ function jsonResponse(data: unknown) {
 }
 
 describe("votes api", () => {
+  it("enables mock mode only for the explicit mock value", () => {
+    expect(resolveVoteApiMode("mock")).toBe("mock");
+    expect(resolveVoteApiMode("live")).toBe("live");
+    expect(resolveVoteApiMode("MOCK")).toBe("live");
+    expect(resolveVoteApiMode("")).toBe("live");
+  });
+
+  it("does not call the configured API while mock mode is enabled", async () => {
+    const fetcher = vi.fn();
+    const client = createVotesApiClient({
+      baseUrl: "https://api.example.com",
+      fetcher,
+      mode: "mock",
+    });
+
+    await expect(client.fetchVoteList()).resolves.not.toHaveLength(0);
+    await expect(client.fetchVoteDetail("active-general")).resolves.toEqual(
+      expect.objectContaining({ id: "active-general" }),
+    );
+    expect(client.mode).toBe("mock");
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("requires an API base URL while live mode is enabled", async () => {
+    const fetcher = vi.fn();
+    const client = createVotesApiClient({
+      baseUrl: "",
+      fetcher,
+      mode: "live",
+    });
+
+    await expect(client.fetchVoteList()).rejects.toThrow(
+      "NEXT_PUBLIC_VOTE_API_BASE_URL is required",
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it("unwraps the server response envelope from the presentation interceptor", () => {
     expect(
       unwrapVoteApiResponse({
@@ -244,6 +282,7 @@ describe("votes api", () => {
     const client = createVotesApiClient({
       baseUrl: "http://localhost:3000/",
       fetcher,
+      mode: "live",
     });
 
     await expect(client.fetchVoteList()).resolves.toEqual([
@@ -354,6 +393,7 @@ describe("votes api", () => {
     const client = createVotesApiClient({
       baseUrl: "http://localhost:3000/api",
       fetcher,
+      mode: "live",
     });
 
     await expect(client.fetchVoteDetail("vote/1")).resolves.toEqual(
@@ -416,6 +456,7 @@ describe("votes api", () => {
     const client = createVotesApiClient({
       baseUrl: "http://localhost:3000/api",
       fetcher,
+      mode: "live",
     });
 
     await expect(client.fetchVoteDetail("vote-1")).resolves.toEqual(
@@ -440,6 +481,7 @@ describe("votes api", () => {
     const client = createVotesApiClient({
       baseUrl: "http://localhost:3000",
       fetcher,
+      mode: "live",
     });
 
     await expect(client.fetchVoteDetail("missing")).resolves.toBeNull();

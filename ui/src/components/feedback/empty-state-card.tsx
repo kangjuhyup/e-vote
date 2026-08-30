@@ -14,7 +14,7 @@ export function EmptyStateCard({
   title,
 }: EmptyStateCardProps) {
   return (
-    <Card className="rounded-lg">
+    <Card className="rounded-lg" role="status" aria-live="polite">
       <CardContent className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-medium">{title}</p>

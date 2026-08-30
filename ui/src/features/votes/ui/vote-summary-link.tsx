@@ -19,7 +19,7 @@ export function VoteSummaryLink({
   return (
     <Link
       href={`/votes/${vote.id}`}
-      className="grid gap-3 rounded-md border p-4 transition-colors hover:bg-accent sm:grid-cols-[1fr_auto] sm:items-center"
+      className="grid touch-manipulation gap-3 rounded-md border p-4 transition-[color,background-color,border-color,box-shadow] hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:grid-cols-[1fr_auto] sm:items-center"
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">

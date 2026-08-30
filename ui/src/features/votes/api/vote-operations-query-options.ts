@@ -1,0 +1,43 @@
+import { queryOptions } from "@tanstack/react-query";
+
+import { resolveApiMode } from "@/shared/config/api-mode";
+
+import { voteOperationsApi } from "./vote-operations-api";
+
+const apiMode = resolveApiMode();
+
+export function subVoteOperationsQueryOptions(
+  voteId: string,
+  voteDetailId: string,
+) {
+  return queryOptions({
+    queryKey: ["vote-operations", apiMode, voteId, "sub-votes", voteDetailId],
+    queryFn: () =>
+      voteOperationsApi.fetchSubVoteOperations(voteId, voteDetailId),
+  });
+}
+
+export function electorManagementQueryOptions(
+  voteId: string,
+  page: number,
+  pageSize = 20,
+) {
+  return queryOptions({
+    queryKey: ["vote-operations", apiMode, voteId, "electors", page, pageSize],
+    queryFn: () => voteOperationsApi.fetchElectors(voteId, page, pageSize),
+  });
+}
+
+export function commissionManagementQueryOptions() {
+  return queryOptions({
+    queryKey: ["vote-operations", apiMode, "commissions"],
+    queryFn: voteOperationsApi.fetchCommissions,
+  });
+}
+
+export function fieldSessionManagementQueryOptions() {
+  return queryOptions({
+    queryKey: ["vote-operations", apiMode, "field-sessions"],
+    queryFn: voteOperationsApi.fetchFieldSessions,
+  });
+}

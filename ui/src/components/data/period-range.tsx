@@ -8,7 +8,9 @@ interface PeriodRangeProps {
 export function PeriodRange({ endsAt, startsAt }: PeriodRangeProps) {
   return (
     <span>
-      {formatKoreanDateTime(startsAt)} - {formatKoreanDateTime(endsAt)}
+      <time dateTime={startsAt}>{formatKoreanDateTime(startsAt)}</time>
+      {" - "}
+      <time dateTime={endsAt}>{formatKoreanDateTime(endsAt)}</time>
     </span>
   );
 }

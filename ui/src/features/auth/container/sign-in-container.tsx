@@ -13,13 +13,15 @@ import { E_VOTE_PROVIDER_ID } from "@/shared/auth/oidc";
 
 export function SignInContainer() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <Card className="w-full max-w-md rounded-lg">
+    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,var(--accent),transparent_42%)] px-4 py-10">
+      <Card className="w-full max-w-md rounded-xl shadow-lg">
         <CardHeader>
           <div className="mb-3 flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <ShieldCheck aria-hidden="true" />
           </div>
-          <CardTitle className="text-2xl">전자투표 로그인</CardTitle>
+          <CardTitle asChild>
+            <h1 className="text-2xl">전자투표 로그인</h1>
+          </CardTitle>
           <CardDescription>
             E-Vote 인증 서버 계정으로 운영 대시보드에 접속합니다.
           </CardDescription>

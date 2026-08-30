@@ -20,7 +20,9 @@ export function SummaryStatCard({
       <CardContent className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-2 text-3xl font-semibold tracking-normal">{value}</p>
+          <p className="mt-2 text-3xl font-semibold tabular-nums tracking-normal">
+            {value}
+          </p>
           <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         </div>
         <span className="rounded-md bg-secondary p-2 text-secondary-foreground">

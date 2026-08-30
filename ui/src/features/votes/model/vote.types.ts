@@ -30,6 +30,16 @@ export interface VoteCandidate {
   order: number;
 }
 
+export interface VoteSubVote {
+  candidates: VoteCandidate[];
+  description: string;
+  id: string;
+  order: number;
+  status: VoteStatus;
+  title: string;
+  type: "candidate" | "yes-no";
+}
+
 export interface VoteElector {
   id: string;
   name: string;
@@ -43,6 +53,7 @@ export interface VoteDetail extends VoteSummary {
   description: string;
   candidates: VoteCandidate[];
   electors: VoteElector[];
+  subVotes: VoteSubVote[];
 }
 
 export interface VoteDashboardMetrics {

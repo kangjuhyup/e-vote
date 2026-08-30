@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.hoisted(() => {
   delete process.env.NEXT_PUBLIC_API_BASE_URL;
   delete process.env.NEXT_PUBLIC_VOTE_API_BASE_URL;
+  process.env.NEXT_PUBLIC_VOTE_API_MODE = "mock";
 });
 
 import {
@@ -20,6 +21,20 @@ async function runQuery<T>(queryFn: unknown): Promise<T> {
 }
 
 describe("votes query options", () => {
+  it("isolates mock data in mode-specific query cache keys", () => {
+    expect(voteDashboardQueryOptions().queryKey).toEqual([
+      "votes",
+      "mock",
+      "dashboard",
+    ]);
+    expect(voteDetailQueryOptions("active-general").queryKey).toEqual([
+      "votes",
+      "mock",
+      "detail",
+      "active-general",
+    ]);
+  });
+
   it("keeps fixture fallback detail aggregate counts consistent with the roster", async () => {
     const vote = await runQuery<VoteDetail | null>(
       voteDetailQueryOptions("active-general").queryFn,

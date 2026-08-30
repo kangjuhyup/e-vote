@@ -23,7 +23,7 @@ export function ParticipationProgress({
     <div className="grid min-w-40 gap-2">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium">참여율</span>
-        <span className="text-muted-foreground">
+        <span className="tabular-nums text-muted-foreground">
           {isKnown ? `${percent}%` : "집계 전"}
         </span>
       </div>
@@ -38,7 +38,7 @@ export function ParticipationProgress({
       >
         <div className="h-full bg-primary" style={{ width: `${percent}%` }} />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs tabular-nums text-muted-foreground">
         {isKnown
           ? `${value.toLocaleString()} / ${max.toLocaleString()}명`
           : `참여 집계 전 / ${max.toLocaleString()}명 대상`}

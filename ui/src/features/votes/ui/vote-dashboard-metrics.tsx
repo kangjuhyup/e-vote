@@ -16,7 +16,13 @@ export function VoteDashboardMetricsGrid({
   metrics,
 }: VoteDashboardMetricsGridProps) {
   return (
-    <section className="grid gap-4 md:grid-cols-4">
+    <section
+      aria-labelledby="dashboard-metrics-title"
+      className="grid gap-4 md:grid-cols-4"
+    >
+      <h2 id="dashboard-metrics-title" className="sr-only">
+        투표 운영 지표
+      </h2>
       <SummaryStatCard
         label="진행 중"
         value={metrics.activeVotes}

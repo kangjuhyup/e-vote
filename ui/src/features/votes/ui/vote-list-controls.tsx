@@ -29,7 +29,7 @@ export function VoteListControls({
       />
       <SearchField
         label="투표 제목 검색"
-        placeholder="투표 제목 검색"
+        placeholder="투표 제목 검색…"
         value={searchText}
         onValueChange={onSearchTextChange}
       />

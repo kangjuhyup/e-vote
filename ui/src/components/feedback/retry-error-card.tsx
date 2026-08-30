@@ -17,7 +17,11 @@ export function RetryErrorCard({
   title,
 }: RetryErrorCardProps) {
   return (
-    <Card className="rounded-lg border-destructive/30">
+    <Card
+      className="rounded-lg border-destructive/30"
+      role="alert"
+      aria-live="assertive"
+    >
       <CardContent className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <AlertTriangle className="size-5 text-destructive" aria-hidden="true" />

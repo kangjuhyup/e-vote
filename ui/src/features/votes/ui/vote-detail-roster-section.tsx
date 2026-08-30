@@ -12,7 +12,9 @@ import { electorParticipationFilterOptions } from "../lib/vote-view-models";
 
 interface VoteDetailRosterSectionProps {
   candidateItems: OrderedOptionItem[];
+  electorPage: number;
   electorParticipationFilter: ElectorParticipationFilter;
+  onElectorPageChange: (page: number) => void;
   onElectorParticipationFilterChange: (
     filter: ElectorParticipationFilter,
   ) => void;
@@ -21,7 +23,9 @@ interface VoteDetailRosterSectionProps {
 
 export function VoteDetailRosterSection({
   candidateItems,
+  electorPage,
   electorParticipationFilter,
+  onElectorPageChange,
   onElectorParticipationFilterChange,
   rosterItems,
 }: VoteDetailRosterSectionProps) {
@@ -47,6 +51,9 @@ export function VoteDetailRosterSection({
           title="선거인명부"
           items={rosterItems}
           emptyLabel="조건에 맞는 선거인이 없습니다."
+          page={electorPage}
+          pageSize={25}
+          onPageChange={onElectorPageChange}
         />
       </div>
     </section>

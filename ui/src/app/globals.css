@@ -51,6 +51,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.15 0.02 255);
   --foreground: oklch(0.97 0 0);
   --card: oklch(0.2 0.02 255);
@@ -79,8 +80,12 @@
   body {
     @apply bg-background text-foreground;
     font-family:
-      Arial,
-      Helvetica,
+      Pretendard,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
       sans-serif;
+    -webkit-tap-highlight-color: oklch(0.62 0.11 255 / 18%);
+    text-rendering: optimizeLegibility;
   }
 }
