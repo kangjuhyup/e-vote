@@ -6,6 +6,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import {
+  ManagedResourceNotFoundError,
+  ManagedResourceScopeMismatchError,
+} from '../../../application/command/vote-management.error';
+import { DomainError } from '../../../domain/shared/domain-error';
 import { getResponseRequestId } from '../util/request-id.util';
 
 type ErrorResponse = {
@@ -25,10 +30,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const request = http.getRequest<Request>();
     const response = http.getResponse<Response>();
-    const statusCode =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const statusCode = this.resolveStatusCode(exception);
 
     response.status(statusCode).json({
       success: false,
@@ -42,9 +44,25 @@ export class HttpExceptionFilter implements ExceptionFilter {
     } satisfies ErrorResponse);
   }
 
+  private resolveStatusCode(exception: unknown): number {
+    if (exception instanceof HttpException) return exception.getStatus();
+    if (
+      exception instanceof ManagedResourceNotFoundError ||
+      exception instanceof ManagedResourceScopeMismatchError
+    ) {
+      return HttpStatus.NOT_FOUND;
+    }
+    if (exception instanceof DomainError) return HttpStatus.CONFLICT;
+    return HttpStatus.INTERNAL_SERVER_ERROR;
+  }
+
   private resolveMessage(exception: unknown): string {
     if (!(exception instanceof HttpException)) {
-      return 'Internal server error';
+      return exception instanceof DomainError ||
+        exception instanceof ManagedResourceNotFoundError ||
+        exception instanceof ManagedResourceScopeMismatchError
+        ? exception.message
+        : 'Internal server error';
     }
 
     const response = exception.getResponse();
