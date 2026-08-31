@@ -27,6 +27,33 @@ export class BillingOrderPaid extends DomainEvent {
   }
 }
 
+export class BillingOrderCanceled extends DomainEvent {
+  readonly type = 'BillingOrderCanceled' as const;
+
+  private constructor(aggregateId: string, occurredAt: Date) {
+    super(aggregateId, occurredAt);
+  }
+
+  static of(params: DomainEventProps): BillingOrderCanceled {
+    return new BillingOrderCanceled(params.aggregateId, params.occurredAt);
+  }
+}
+
+export class BillingOrderRefundRequested extends DomainEvent {
+  readonly type = 'BillingOrderRefundRequested' as const;
+
+  private constructor(aggregateId: string, occurredAt: Date) {
+    super(aggregateId, occurredAt);
+  }
+
+  static of(params: DomainEventProps): BillingOrderRefundRequested {
+    return new BillingOrderRefundRequested(
+      params.aggregateId,
+      params.occurredAt,
+    );
+  }
+}
+
 export class BillingOrderRefunded extends DomainEvent {
   readonly type = 'BillingOrderRefunded' as const;
 
@@ -40,4 +67,8 @@ export class BillingOrderRefunded extends DomainEvent {
 }
 
 export type BillingOrderDomainEvent =
-  BillingOrderIssued | BillingOrderPaid | BillingOrderRefunded;
+  | BillingOrderIssued
+  | BillingOrderPaid
+  | BillingOrderCanceled
+  | BillingOrderRefundRequested
+  | BillingOrderRefunded;

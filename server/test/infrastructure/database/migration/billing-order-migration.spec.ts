@@ -9,6 +9,13 @@ describe('billing order migration', () => {
     ),
     'utf8',
   );
+  const cancellationMigrationSource = readFileSync(
+    join(
+      process.cwd(),
+      'src/platform/database/migration/Migration20260831000000.ts',
+    ),
+    'utf8',
+  );
 
   it('creates immutable-price billing orders with idempotency constraints', () => {
     expect(migrationSource).toContain('create table "billing_orders"');
@@ -22,6 +29,24 @@ describe('billing order migration', () => {
     expect(migrationSource).toContain('billing_orders_vote_unique');
     expect(migrationSource).toContain('billing_orders_payment_unique');
     expect(migrationSource).toContain('where "payment_id" is not null');
+  });
+
+  it('adds vote finalization and cancellation policy snapshots', () => {
+    expect(cancellationMigrationSource).toContain('"billing_order_id" uuid');
+    expect(cancellationMigrationSource).toContain('"finalized_at" timestamptz');
+    expect(cancellationMigrationSource).toContain(
+      '"cancellation_window_days" integer',
+    );
+    expect(cancellationMigrationSource).toContain(
+      '"cancelable_until" timestamptz',
+    );
+    expect(cancellationMigrationSource).toContain('"refund_requested_at"');
+    expect(cancellationMigrationSource).toContain(
+      'set "billing_order_id" = "bo"."id", "finalized_at" = "bo"."issued_at"',
+    );
+    expect(cancellationMigrationSource).toContain(
+      '"cancellation_reason" = \\\'LEGACY_REFUND\\\'',
+    );
   });
 
   it('drops the billing table on rollback', () => {

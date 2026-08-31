@@ -15,6 +15,8 @@ export type VotePersistence = {
   readonly id: string;
   readonly commission: EntityRelationReference;
   readonly electoralRollSnapshot: EntityRelationReference | null;
+  readonly billingOrderId: string | null;
+  readonly finalizedAt: Date | null;
   readonly title: string;
   readonly votingChannels: readonly {
     readonly channel: VotingChannel;
@@ -35,6 +37,8 @@ export class VoteMapper {
       id: entity.id,
       commissionId: entity.commission.id,
       electoralRollSnapshotId: entity.electoralRollSnapshot?.id,
+      billingOrderId: entity.billingOrderId ?? undefined,
+      finalizedAt: entity.finalizedAt ?? undefined,
       title: entity.title,
       votingChannels: entity.votingChannels.map(
         (votingChannel) => votingChannel.channel,

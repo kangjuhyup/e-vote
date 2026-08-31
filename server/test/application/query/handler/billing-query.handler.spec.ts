@@ -20,6 +20,8 @@ describe('billing query handler', () => {
     currency: 'KRW',
     status: 'PENDING_PAYMENT',
     issuedAt: new Date('2026-08-30T00:00:00.000Z'),
+    cancellationWindowDays: 7,
+    cancelableUntil: new Date('2026-09-06T00:00:00.000Z'),
   });
 
   it('returns an order to an active commission member', async () => {

@@ -28,11 +28,13 @@ export class MarkBillingOrderPaidHandler {
     this[DATABASE_TRANSACTION_MANAGER_PROPERTY] = transactionManager;
   }
 
-  @Transactional()
+  @Transactional({ isolationLevel: 'serializable' })
   async execute(
     command: MarkBillingOrderPaidCommand,
   ): Promise<BillingOrderResult> {
-    const order = await this.repository.findById(command.billingOrderId);
+    const order = await this.repository.findByIdForUpdate(
+      command.billingOrderId,
+    );
     if (!order) throw new BillingOrderNotFoundError();
 
     order.markPaid({

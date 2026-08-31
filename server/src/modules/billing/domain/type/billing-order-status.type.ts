@@ -1,6 +1,8 @@
 export const BillingOrderStatus = {
   PendingPayment: 'PENDING_PAYMENT',
   Paid: 'PAID',
+  Canceled: 'CANCELED',
+  RefundPending: 'REFUND_PENDING',
   Refunded: 'REFUNDED',
 } as const;
 

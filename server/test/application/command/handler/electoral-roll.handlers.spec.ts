@@ -24,6 +24,7 @@ import {
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
+import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
 
 describe('electoral roll command handlers', () => {
   const now = new Date('2026-08-30T00:00:00.000Z');
@@ -237,6 +238,7 @@ describe('electoral roll command handlers', () => {
     const result = await new AttachElectoralRollSnapshotHandler(
       voteRepository,
       snapshotRepository,
+      voteLifecycleStub(),
       immediateTransactionManager(),
     ).execute(
       AttachElectoralRollSnapshotCommand.of({
@@ -266,6 +268,7 @@ describe('electoral roll command handlers', () => {
       new AttachElectoralRollSnapshotHandler(
         createVoteRepository(vote),
         snapshotRepository,
+        voteLifecycleStub(),
         immediateTransactionManager(),
       ).execute(
         AttachElectoralRollSnapshotCommand.of({
@@ -419,5 +422,13 @@ function createVoteRepository(
 function immediateTransactionManager(): jest.Mocked<DatabaseTransactionManager> {
   return {
     runInTransaction: jest.fn(async (work) => work()),
+  };
+}
+
+function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
+  return {
+    lockVote: jest.fn().mockResolvedValue(undefined),
+    finalizeForBilling: jest.fn().mockResolvedValue(undefined),
+    cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
   };
 }

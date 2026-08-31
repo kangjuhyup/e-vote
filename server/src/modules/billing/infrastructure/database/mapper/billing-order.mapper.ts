@@ -17,7 +17,12 @@ export type BillingOrderPersistence = {
   readonly status: BillingOrderStatus;
   readonly paymentId: string | null;
   readonly issuedAt: Date;
+  readonly cancellationWindowDays: number | string;
+  readonly cancelableUntil: Date;
   readonly paidAt: Date | null;
+  readonly canceledAt: Date | null;
+  readonly cancellationReason: string | null;
+  readonly refundRequestedAt: Date | null;
   readonly refundedAt: Date | null;
 };
 
@@ -39,7 +44,12 @@ export class BillingOrderMapper {
       status: entity.status,
       paymentId: entity.paymentId ?? undefined,
       issuedAt: entity.issuedAt,
+      cancellationWindowDays: Number(entity.cancellationWindowDays),
+      cancelableUntil: entity.cancelableUntil,
       paidAt: entity.paidAt ?? undefined,
+      canceledAt: entity.canceledAt ?? undefined,
+      cancellationReason: entity.cancellationReason ?? undefined,
+      refundRequestedAt: entity.refundRequestedAt ?? undefined,
       refundedAt: entity.refundedAt ?? undefined,
     });
   }

@@ -33,7 +33,15 @@ export function createBillingEntities(
       status: p.string().$type<BillingOrderStatus>(),
       paymentId: p.string().fieldName('payment_id').nullable(),
       issuedAt: p.datetime().fieldName('issued_at'),
+      cancellationWindowDays: p.integer().fieldName('cancellation_window_days'),
+      cancelableUntil: p.datetime().fieldName('cancelable_until'),
       paidAt: p.datetime().fieldName('paid_at').nullable(),
+      canceledAt: p.datetime().fieldName('canceled_at').nullable(),
+      cancellationReason: p.text().fieldName('cancellation_reason').nullable(),
+      refundRequestedAt: p
+        .datetime()
+        .fieldName('refund_requested_at')
+        .nullable(),
       refundedAt: p.datetime().fieldName('refunded_at').nullable(),
       updatedAt: p.datetime().fieldName('updated_at'),
     },

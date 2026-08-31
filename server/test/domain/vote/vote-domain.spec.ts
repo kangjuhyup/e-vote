@@ -105,6 +105,10 @@ describe('vote domain aggregates', () => {
       status: VoteStatus.Draft,
     });
 
+    vote.finalizeForBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date('2026-08-08T00:00:00.000Z'),
+    });
     vote.open(new Date('2026-08-09T00:00:00.000Z'));
     vote.close(new Date('2026-08-10T00:00:00.000Z'));
 

@@ -23,6 +23,10 @@ import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
 } from '../../../../../shared/application/persistence/transaction/transactional.decorator';
+import {
+  VOTE_SETUP_LIFECYCLE_PORT,
+  type VoteSetupLifecyclePort,
+} from '../../../../../shared/application/port/capability/vote-billing.port';
 
 @Injectable()
 export class AttachElectoralRollSnapshotHandler {
@@ -33,6 +37,8 @@ export class AttachElectoralRollSnapshotHandler {
     private readonly voteRepository: VoteRepositoryPort,
     @Inject(ELECTORAL_ROLL_SNAPSHOT_ACCESS_PORT)
     private readonly snapshotRepository: ElectoralRollSnapshotAccessPort,
+    @Inject(VOTE_SETUP_LIFECYCLE_PORT)
+    private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
   ) {
@@ -43,6 +49,7 @@ export class AttachElectoralRollSnapshotHandler {
   async execute(
     command: AttachElectoralRollSnapshotCommand,
   ): Promise<AttachElectoralRollSnapshotResult> {
+    await this.voteSetupLifecycle.lockVote(command.voteId);
     const vote = await this.voteRepository.findById(command.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
 

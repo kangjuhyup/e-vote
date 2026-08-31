@@ -25,6 +25,7 @@ describe('MikroOrmDatabaseTransactionManagerAdapter', () => {
     });
     const em = {
       transactional,
+      isInTransaction: jest.fn().mockReturnValue(false),
     } as unknown as EntityManager;
     const adapter = new MikroOrmDatabaseTransactionManagerAdapter(em);
 
@@ -87,6 +88,7 @@ describe('MikroOrmDatabaseTransactionManagerAdapter', () => {
       });
       const em = {
         transactional,
+        isInTransaction: jest.fn().mockReturnValue(false),
       } as unknown as EntityManager;
       const adapter = new MikroOrmDatabaseTransactionManagerAdapter(em);
 
@@ -104,4 +106,35 @@ describe('MikroOrmDatabaseTransactionManagerAdapter', () => {
       );
     },
   );
+
+  it('retries a top-level serializable transaction after a serialization failure', async () => {
+    const serializationFailure = Object.assign(new Error('retry'), {
+      code: '40001',
+    });
+    const transactional = jest
+      .fn<
+        Promise<string>,
+        [() => Promise<string>, TransactionOptions | undefined]
+      >()
+      .mockRejectedValueOnce(serializationFailure)
+      .mockImplementation(async (work) => work());
+    const em = {
+      transactional,
+      isInTransaction: jest.fn().mockReturnValue(false),
+    } as unknown as EntityManager;
+    const adapter = new MikroOrmDatabaseTransactionManagerAdapter(em);
+
+    await expect(
+      adapter.runInTransaction(
+        async () => {
+          await Promise.resolve();
+          return 'saved';
+        },
+        {
+          isolationLevel: 'serializable',
+        },
+      ),
+    ).resolves.toBe('saved');
+    expect(transactional).toHaveBeenCalledTimes(2);
+  });
 });

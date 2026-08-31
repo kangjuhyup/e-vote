@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
 import type { VoteRepositoryPort } from '../../../../application/port/persistence/command/vote-repository.port';
 import type { VoteAggregate } from '../../../../domain/vote/vote.aggregate';
+import type { VoteSetupLifecyclePort } from '../../../../../../shared/application/port/capability/vote-billing.port';
+import { ManagedResourceNotFoundError } from '../../../../../../shared/application/error/managed-resource.error';
 import { VoteMapper, type VotePersistence } from '../../mapper/vote.mapper';
 import {
   JOINED_RELATION_LOAD_OPTIONS,
@@ -26,7 +28,9 @@ type VoteEntityPersistence = Omit<VotePersistence, 'votingChannels'> & {
 };
 
 @Injectable()
-export class VoteRepositoryAdapter implements VoteRepositoryPort {
+export class VoteRepositoryAdapter
+  implements VoteRepositoryPort, VoteSetupLifecyclePort
+{
   constructor(private readonly em: EntityManager) {}
 
   nextId(): string {
@@ -45,6 +49,19 @@ export class VoteRepositoryAdapter implements VoteRepositoryPort {
     )) as unknown as VoteEntityPersistence | null;
 
     return entity ? this.toDomain(entity) : undefined;
+  }
+
+  async lockVote(voteId: string): Promise<void> {
+    const em = this.em.getContext();
+    const rows = await em
+      .getConnection()
+      .execute(
+        'select "id" from "votes" where "id" = ? for update',
+        [voteId],
+        'all',
+        em.getTransactionContext(),
+      );
+    if (rows.length === 0) throw new ManagedResourceNotFoundError('vote');
   }
 
   async save(vote: VoteAggregate): Promise<void> {
@@ -78,6 +95,8 @@ export class VoteRepositoryAdapter implements VoteRepositoryPort {
               vote.electoralRollSnapshotId,
             )
           : null,
+        billingOrderId: vote.billingOrderId ?? null,
+        finalizedAt: vote.finalizedAt ?? null,
         title: vote.title,
         defaultPrivacyMode: vote.defaultPolicy.privacyMode,
         defaultParticipationUnit: vote.defaultPolicy.participationUnit,
@@ -113,11 +132,36 @@ export class VoteRepositoryAdapter implements VoteRepositoryPort {
     await this.em.flush();
   }
 
+  async finalizeForBilling(params: {
+    voteId: string;
+    billingOrderId: string;
+    finalizedAt: Date;
+  }): Promise<void> {
+    await this.lockVote(params.voteId);
+    const vote = await this.findById(params.voteId);
+    if (!vote) throw new ManagedResourceNotFoundError('vote');
+    vote.finalizeForBilling(params);
+    await this.save(vote);
+  }
+
+  async cancelFinalizedVote(params: {
+    voteId: string;
+    canceledAt: Date;
+  }): Promise<void> {
+    await this.lockVote(params.voteId);
+    const vote = await this.findById(params.voteId);
+    if (!vote) throw new ManagedResourceNotFoundError('vote');
+    vote.cancelFinalized(params.canceledAt);
+    await this.save(vote);
+  }
+
   private toDomain(entity: VoteEntityPersistence): VoteAggregate {
     return VoteMapper.toDomain({
       id: entity.id,
       commission: entity.commission,
       electoralRollSnapshot: entity.electoralRollSnapshot,
+      billingOrderId: entity.billingOrderId,
+      finalizedAt: entity.finalizedAt,
       title: entity.title,
       votingChannels: loadedItems<VotePersistence['votingChannels'][number]>(
         entity.votingChannels,

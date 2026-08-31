@@ -14,6 +14,8 @@ import {
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
+import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
+import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 
 describe('CreateElectorHandler', () => {
   it('creates an eligible elector and saves it through the repository', async () => {
@@ -25,7 +27,12 @@ describe('CreateElectorHandler', () => {
       findById: jest.fn().mockResolvedValue(undefined),
       save,
     };
-    const handler = new CreateElectorHandler(voteRepository(), repository);
+    const handler = new CreateElectorHandler(
+      voteRepository(),
+      repository,
+      voteLifecycleStub(),
+      transactionManagerStub(),
+    );
 
     const result = await handler.execute(
       CreateElectorCommand.of({
@@ -70,7 +77,12 @@ describe('CreateElectorHandler', () => {
     };
 
     await expect(
-      new CreateElectorHandler(voteRepository('snapshot-1'), electors).execute(
+      new CreateElectorHandler(
+        voteRepository('snapshot-1'),
+        electors,
+        voteLifecycleStub(),
+        transactionManagerStub(),
+      ).execute(
         CreateElectorCommand.of({
           voteId: 'vote-1',
           name: 'Member',
@@ -80,9 +92,38 @@ describe('CreateElectorHandler', () => {
     ).rejects.toThrow('managed by the attached electoral roll snapshot');
     expect((electors.save as jest.Mock).mock.calls).toHaveLength(0);
   });
+
+  it('locks the parent vote and rejects creation after finalization', async () => {
+    const electors: ElectorRepositoryPort = {
+      nextId: jest.fn(),
+      findById: jest.fn(),
+      save: jest.fn(),
+    };
+    const lifecycle = voteLifecycleStub();
+
+    await expect(
+      new CreateElectorHandler(
+        voteRepository(undefined, true),
+        electors,
+        lifecycle,
+        transactionManagerStub(),
+      ).execute(
+        CreateElectorCommand.of({
+          voteId: 'vote-1',
+          name: 'Member',
+          identifier: 'member-1',
+        }),
+      ),
+    ).rejects.toThrow('finalized vote electors cannot be changed');
+    expect(lifecycle.lockVote.mock.calls).toContainEqual(['vote-1']);
+    expect((electors.save as jest.Mock).mock.calls).toHaveLength(0);
+  });
 });
 
-function voteRepository(electoralRollSnapshotId?: string): VoteRepositoryPort {
+function voteRepository(
+  electoralRollSnapshotId?: string,
+  finalized = false,
+): VoteRepositoryPort {
   const vote = VoteAggregate.create({
     id: 'vote-1',
     commissionId: 'commission-1',
@@ -99,10 +140,28 @@ function voteRepository(electoralRollSnapshotId?: string): VoteRepositoryPort {
     }),
     electoralRollSnapshotId,
   });
+  if (finalized) {
+    vote.finalizeForBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date('2026-08-31T00:00:00.000Z'),
+    });
+  }
 
   return {
     nextId: jest.fn(),
     findById: jest.fn().mockResolvedValue(vote),
     save: jest.fn(),
   };
+}
+
+function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
+  return {
+    lockVote: jest.fn().mockResolvedValue(undefined),
+    finalizeForBilling: jest.fn().mockResolvedValue(undefined),
+    cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+function transactionManagerStub(): DatabaseTransactionManager {
+  return { runInTransaction: jest.fn(async (work) => work()) };
 }

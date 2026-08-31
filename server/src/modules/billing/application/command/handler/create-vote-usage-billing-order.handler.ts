@@ -12,6 +12,10 @@ import {
   VOTE_ELECTOR_COUNT_ACCESS_PORT,
   type VoteElectorCountAccessPort,
 } from '../../../../../shared/application/port/capability/vote-elector-count-access.port';
+import {
+  VOTE_SETUP_LIFECYCLE_PORT,
+  type VoteSetupLifecyclePort,
+} from '../../../../../shared/application/port/capability/vote-billing.port';
 import { BillingOrderAggregate } from '../../../domain/billing-order.aggregate';
 import { VoteUsagePrice } from '../../../domain/vo/vote-usage-price.vo';
 import { VoteBillingAccessDeniedError } from '../../billing.error';
@@ -43,6 +47,8 @@ export class CreateVoteUsageBillingOrderHandler {
     private readonly membershipAccess: ElectionCommissionMembershipAccessPort,
     @Inject(VOTE_ELECTOR_COUNT_ACCESS_PORT)
     private readonly electorCountAccess: VoteElectorCountAccessPort,
+    @Inject(VOTE_SETUP_LIFECYCLE_PORT)
+    private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
   ) {
@@ -62,16 +68,31 @@ export class CreateVoteUsageBillingOrderHandler {
     );
     if (!canManageBilling) throw new VoteBillingAccessDeniedError();
 
-    const existing = await this.billingOrderRepository.findByVoteId(vote.id);
-    if (existing) return BillingOrderResult.of(existing);
+    await this.voteSetupLifecycle.lockVote(vote.id);
+    const existing = await this.billingOrderRepository.findByVoteIdForUpdate(
+      vote.id,
+    );
+    if (existing) {
+      await this.voteSetupLifecycle.finalizeForBilling({
+        voteId: vote.id,
+        billingOrderId: existing.id,
+        finalizedAt: existing.issuedAt,
+      });
+      return BillingOrderResult.of(existing);
+    }
 
+    const billingOrderId = this.billingOrderRepository.nextId();
+    await this.voteSetupLifecycle.finalizeForBilling({
+      voteId: vote.id,
+      billingOrderId,
+      finalizedAt: command.issuedAt,
+    });
     const electorCount = await this.electorCountAccess.countEligibleElectors(
       vote.id,
     );
     const price = VoteUsagePrice.forElectorCount(electorCount);
-
     const order = BillingOrderAggregate.issue({
-      id: this.billingOrderRepository.nextId(),
+      id: billingOrderId,
       voteId: vote.id,
       commissionId: vote.commissionId,
       orderedByUserPrincipalId: command.orderedByUserPrincipalId,

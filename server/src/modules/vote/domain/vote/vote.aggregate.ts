@@ -19,6 +19,8 @@ interface CreateVoteParams {
   readonly defaultPolicy: VotePolicy;
   readonly identityVerificationPolicy: IdentityVerificationPolicy;
   readonly electoralRollSnapshotId?: string;
+  readonly billingOrderId?: string;
+  readonly finalizedAt?: Date;
   readonly status?: VoteStatus;
 }
 
@@ -37,6 +39,8 @@ export class VoteAggregate {
     public defaultPolicy: VotePolicy,
     public identityVerificationPolicy: IdentityVerificationPolicy,
     public electoralRollSnapshotId: string | undefined,
+    public billingOrderId: string | undefined,
+    public finalizedAt: Date | undefined,
     public status: VoteStatus,
   ) {}
 
@@ -53,6 +57,11 @@ export class VoteAggregate {
     VoteAggregate.assertIdentityVerificationPolicy(
       params.identityVerificationPolicy,
     );
+    if (!!params.billingOrderId !== !!params.finalizedAt) {
+      throw new DomainError(
+        'vote billing order and finalization timestamp must be set together',
+      );
+    }
 
     return new VoteAggregate(
       id,
@@ -64,6 +73,8 @@ export class VoteAggregate {
       params.electoralRollSnapshotId
         ? createId(params.electoralRollSnapshotId)
         : undefined,
+      params.billingOrderId ? createId(params.billingOrderId) : undefined,
+      params.finalizedAt,
       params.status ?? VoteStatus.Draft,
     );
   }
@@ -82,9 +93,7 @@ export class VoteAggregate {
     readonly defaultPolicy: VotePolicy;
     readonly identityVerificationPolicy: IdentityVerificationPolicy;
   }): void {
-    if (this.status !== VoteStatus.Draft) {
-      throw new DomainError('only draft votes can be updated');
-    }
+    this.assertSetupMutable('updated');
 
     const title = params.title.trim();
     if (title.length === 0) {
@@ -102,11 +111,7 @@ export class VoteAggregate {
   }
 
   attachElectoralRollSnapshot(snapshotId: string): void {
-    if (this.status !== VoteStatus.Draft) {
-      throw new DomainError(
-        'only draft votes can attach an electoral roll snapshot',
-      );
-    }
+    this.assertSetupMutable('attach an electoral roll snapshot');
 
     this.electoralRollSnapshotId = createId(snapshotId);
   }
@@ -114,6 +119,9 @@ export class VoteAggregate {
   open(openedAt: Date): void {
     if (this.status !== VoteStatus.Draft) {
       throw new DomainError('only draft votes can be opened');
+    }
+    if (!this.finalizedAt || !this.billingOrderId) {
+      throw new DomainError('only finalized votes can be opened');
     }
 
     this.status = VoteStatus.Open;
@@ -134,8 +142,52 @@ export class VoteAggregate {
   }
 
   cancel(canceledAt: Date): void {
-    if (this.status !== VoteStatus.Draft && this.status !== VoteStatus.Open) {
-      throw new DomainError('only draft or open votes can be canceled');
+    if (this.finalizedAt || this.billingOrderId) {
+      throw new DomainError(
+        'finalized votes must be canceled through the billing order',
+      );
+    }
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError('only draft votes can be canceled');
+    }
+
+    this.status = VoteStatus.Canceled;
+    this.events.push(
+      VoteCanceled.of({ aggregateId: this.id, occurredAt: canceledAt }),
+    );
+  }
+
+  finalizeForBilling(params: {
+    billingOrderId: string;
+    finalizedAt: Date;
+  }): void {
+    const billingOrderId = createId(params.billingOrderId);
+    if (this.billingOrderId || this.finalizedAt) {
+      if (
+        this.billingOrderId !== billingOrderId ||
+        this.finalizedAt?.getTime() !== params.finalizedAt.getTime()
+      ) {
+        throw new DomainError(
+          'vote is already finalized with different billing data',
+        );
+      }
+      return;
+    }
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError('only draft votes can be finalized');
+    }
+
+    this.billingOrderId = billingOrderId;
+    this.finalizedAt = params.finalizedAt;
+  }
+
+  cancelFinalized(canceledAt: Date): void {
+    if (this.status === VoteStatus.Canceled) return;
+    if (!this.finalizedAt || !this.billingOrderId) {
+      throw new DomainError('vote is not finalized');
+    }
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError('only unopened finalized votes can be canceled');
     }
 
     this.status = VoteStatus.Canceled;
@@ -163,6 +215,15 @@ export class VoteAggregate {
       throw new DomainError(
         'identity verification provider and method must be absent',
       );
+    }
+  }
+
+  private assertSetupMutable(action: string): void {
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError(`only draft votes can be ${action}`);
+    }
+    if (this.finalizedAt || this.billingOrderId) {
+      throw new DomainError('finalized vote setup cannot be changed');
     }
   }
 

@@ -20,6 +20,8 @@ describe('BillingOrderController', () => {
     currency: 'KRW',
     status: 'PENDING_PAYMENT' as const,
     issuedAt: new Date('2026-08-30T00:00:00.000Z'),
+    cancellationWindowDays: 7,
+    cancelableUntil: new Date('2026-09-06T00:00:00.000Z'),
   };
 
   it('uses request.user as the order actor and ignores client pricing', async () => {
@@ -38,6 +40,8 @@ describe('BillingOrderController', () => {
       unitPrice: 3_000,
       amount: 6_000,
       issuedAt: '2026-08-30T00:00:00.000Z',
+      cancellationWindowDays: 7,
+      cancelableUntil: '2026-09-06T00:00:00.000Z',
     });
     expect(create.execute).toHaveBeenCalledWith(
       expect.objectContaining({
