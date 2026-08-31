@@ -11,6 +11,8 @@ import { SMS_SENDER_PORT } from '../src/shared/application/port/gateway/sms-send
 import { RandomSmsSenderAdapter } from '../src/shared/infrastructure/sms/random-sms-sender.adapter';
 import { SMS_RECIPIENT_ACCESS_PORT } from '../src/shared/application/port/capability/sms-recipient-access.port';
 import { ElectorSmsRecipientAccessAdapter } from '../src/modules/elector/infrastructure/sms/elector-sms-recipient-access.adapter';
+import { BillingOrderCancellationController } from '../src/modules/billing/presentation/billing-order/billing-order-cancellation.controller';
+import { CancelVoteUsageBillingOrderHandler } from '../src/modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
 
 describe('AppModule', () => {
   it('registers vote statistics query endpoints and handlers', () => {
@@ -58,5 +60,19 @@ describe('AppModule', () => {
       provide: SMS_RECIPIENT_ACCESS_PORT,
       useClass: ElectorSmsRecipientAccessAdapter,
     });
+  });
+
+  it('registers the billing cancellation endpoint and handler', () => {
+    const controllers = Reflect.getMetadata(
+      MODULE_METADATA.CONTROLLERS,
+      AppModule,
+    ) as unknown[];
+    const providers = Reflect.getMetadata(
+      MODULE_METADATA.PROVIDERS,
+      AppModule,
+    ) as unknown[];
+
+    expect(controllers).toContain(BillingOrderCancellationController);
+    expect(providers).toContain(CancelVoteUsageBillingOrderHandler);
   });
 });

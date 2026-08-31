@@ -17,7 +17,12 @@ export class BillingOrderView {
     readonly status: BillingOrderStatus,
     readonly paymentId: string | undefined,
     readonly issuedAt: Date,
+    readonly cancellationWindowDays: number,
+    readonly cancelableUntil: Date,
     readonly paidAt: Date | undefined,
+    readonly canceledAt: Date | undefined,
+    readonly cancellationReason: string | undefined,
+    readonly refundRequestedAt: Date | undefined,
     readonly refundedAt: Date | undefined,
   ) {}
 
@@ -37,7 +42,12 @@ export class BillingOrderView {
     readonly status: BillingOrderStatus;
     readonly paymentId?: string;
     readonly issuedAt: Date;
+    readonly cancellationWindowDays: number;
+    readonly cancelableUntil: Date;
     readonly paidAt?: Date;
+    readonly canceledAt?: Date;
+    readonly cancellationReason?: string;
+    readonly refundRequestedAt?: Date;
     readonly refundedAt?: Date;
   }): BillingOrderView {
     return new BillingOrderView(
@@ -56,7 +66,12 @@ export class BillingOrderView {
       params.status,
       params.paymentId,
       params.issuedAt,
+      params.cancellationWindowDays,
+      params.cancelableUntil,
       params.paidAt,
+      params.canceledAt,
+      params.cancellationReason,
+      params.refundRequestedAt,
       params.refundedAt,
     );
   }

@@ -18,6 +18,8 @@ describe('billing order domain', () => {
       unitPrice: 3_000,
       price: { amount: 3_000, currency: 'KRW' },
       status: BillingOrderStatus.PendingPayment,
+      cancellationWindowDays: 7,
+      cancelableUntil: new Date('2026-09-06T00:00:00.000Z'),
     });
     expect(order.pullEvents()).toEqual([
       expect.objectContaining({ type: 'BillingOrderIssued' }),
@@ -89,6 +91,104 @@ describe('billing order domain', () => {
     expect(() =>
       order.markPaid({ ...payment, paymentId: 'payment-2' }),
     ).toThrow('already paid by another payment');
+  });
+
+  it('cancels an unpaid order within seven days', () => {
+    const order = issueOrder();
+
+    order.requestCancellation({
+      reason: '일정 변경',
+      canceledAt: new Date('2026-09-06T00:00:00.000Z'),
+    });
+
+    expect(order).toMatchObject({
+      status: BillingOrderStatus.Canceled,
+      cancellationReason: '일정 변경',
+      canceledAt: new Date('2026-09-06T00:00:00.000Z'),
+    });
+    expect(order.pullEvents()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'BillingOrderCanceled' }),
+      ]),
+    );
+  });
+
+  it('requests a refund when a paid order is canceled', () => {
+    const order = issueOrder();
+    order.markPaid({
+      paymentId: 'payment-1',
+      paidAmount: 3_000,
+      paidCurrency: 'KRW',
+      paidAt: issuedAt,
+    });
+
+    order.requestCancellation({
+      reason: '투표 취소',
+      canceledAt: new Date('2026-09-01T00:00:00.000Z'),
+    });
+
+    expect(order).toMatchObject({
+      status: BillingOrderStatus.RefundPending,
+      refundRequestedAt: new Date('2026-09-01T00:00:00.000Z'),
+    });
+    order.markRefunded(new Date('2026-09-02T00:00:00.000Z'));
+    expect(order.status).toBe(BillingOrderStatus.Refunded);
+  });
+
+  it('rejects cancellation after the snapshotted deadline', () => {
+    const order = issueOrder();
+
+    expect(() =>
+      order.requestCancellation({
+        reason: '늦은 취소',
+        canceledAt: new Date('2026-09-06T00:00:00.001Z'),
+      }),
+    ).toThrow('cancellation window has expired');
+  });
+
+  it('rejects cancellation timestamps before order issuance', () => {
+    const order = issueOrder();
+
+    expect(() =>
+      order.requestCancellation({
+        reason: '잘못된 시각',
+        canceledAt: new Date('2026-08-29T23:59:59.999Z'),
+      }),
+    ).toThrow('cannot be canceled before it is issued');
+  });
+
+  it('reconstitutes a legacy refunded order after migration backfill', () => {
+    const refundedAt = new Date('2026-09-01T00:00:00.000Z');
+    const order = BillingOrderAggregate.reconstitute({
+      id: 'billing-order-1',
+      voteId: 'vote-1',
+      commissionId: 'commission-1',
+      orderedByUserPrincipalId: 'user-1',
+      productCode: 'VOTE_USAGE',
+      productName: '투표 개설 이용료',
+      electorCount: 100,
+      pricingUnitSize: 100,
+      pricingUnitCount: 1,
+      unitPrice: 3_000,
+      amount: 3_000,
+      currency: 'KRW',
+      status: BillingOrderStatus.Refunded,
+      paymentId: 'payment-1',
+      issuedAt,
+      cancellationWindowDays: 7,
+      cancelableUntil: new Date('2026-09-06T00:00:00.000Z'),
+      paidAt: issuedAt,
+      canceledAt: refundedAt,
+      cancellationReason: 'LEGACY_REFUND',
+      refundRequestedAt: refundedAt,
+      refundedAt,
+    });
+
+    expect(order).toMatchObject({
+      status: BillingOrderStatus.Refunded,
+      cancellationReason: 'LEGACY_REFUND',
+      refundedAt,
+    });
   });
 
   function issueOrder(

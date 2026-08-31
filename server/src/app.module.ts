@@ -116,6 +116,13 @@ import { BillingOrderController } from './modules/billing/presentation/billing-o
 import { CreateVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/create-vote-usage-billing-order.handler';
 import { MarkBillingOrderPaidHandler } from './modules/billing/application/command/handler/mark-billing-order-paid.handler';
 import { GetBillingOrderHandler } from './modules/billing/application/query/handler/get-billing-order.handler';
+import { BillingOrderCancellationController } from './modules/billing/presentation/billing-order/billing-order-cancellation.controller';
+import { CancelVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
+import { BILLING_ORDER_REPOSITORY_PORT } from './modules/billing/application/port/persistence/command/billing-order-repository.port';
+import {
+  VOTE_SETUP_LIFECYCLE_PORT,
+  VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
+} from './shared/application/port/capability/vote-billing.port';
 
 @Module({
   imports: [
@@ -150,6 +157,7 @@ import { GetBillingOrderHandler } from './modules/billing/application/query/hand
     VoteStatisticsController,
     FieldParticipationEvidenceController,
     BillingOrderController,
+    BillingOrderCancellationController,
   ],
   providers: [
     AppService,
@@ -166,6 +174,11 @@ import { GetBillingOrderHandler } from './modules/billing/application/query/hand
       useExisting: ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
     },
     { provide: VOTE_ACCESS_PORT, useExisting: VOTE_REPOSITORY_PORT },
+    { provide: VOTE_SETUP_LIFECYCLE_PORT, useExisting: VOTE_REPOSITORY_PORT },
+    {
+      provide: VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
+      useExisting: BILLING_ORDER_REPOSITORY_PORT,
+    },
     {
       provide: VOTE_DETAIL_ACCESS_PORT,
       useExisting: VOTE_DETAIL_REPOSITORY_PORT,
@@ -235,6 +248,7 @@ import { GetBillingOrderHandler } from './modules/billing/application/query/hand
     GetVoteTurnoutHandler,
     GetVoteResultHandler,
     CreateVoteUsageBillingOrderHandler,
+    CancelVoteUsageBillingOrderHandler,
     MarkBillingOrderPaidHandler,
     GetBillingOrderHandler,
     {

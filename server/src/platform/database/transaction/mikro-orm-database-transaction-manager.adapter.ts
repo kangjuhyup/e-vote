@@ -21,12 +21,32 @@ export class MikroOrmDatabaseTransactionManagerAdapter implements DatabaseTransa
     work: () => Promise<T>,
     options: DatabaseTransactionOptions = {},
   ): Promise<T> {
-    return this.em.transactional(async () => {
-      const result = await work();
+    const canRetry =
+      options.isolationLevel === 'serializable' && !this.em.isInTransaction();
+    const maxAttempts = canRetry ? 3 : 1;
 
-      return result;
-    }, toMikroOrmTransactionOptions(options));
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this.em.transactional(async () => {
+          const result = await work();
+
+          return result;
+        }, toMikroOrmTransactionOptions(options));
+      } catch (error) {
+        if (attempt === maxAttempts || !isRetryableTransactionError(error)) {
+          throw error;
+        }
+      }
+    }
+
+    throw new Error('database transaction retry exhausted');
   }
+}
+
+function isRetryableTransactionError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = (error as { readonly code?: unknown }).code;
+  return code === '40001' || code === '40P01';
 }
 
 function toMikroOrmTransactionOptions(

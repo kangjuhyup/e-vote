@@ -7,6 +7,12 @@ export const BILLING_ORDER_REPOSITORY_PORT = Symbol(
 export interface BillingOrderRepositoryPort {
   nextId(): string;
   findById(orderId: string): Promise<BillingOrderAggregate | undefined>;
+  findByIdForUpdate(
+    orderId: string,
+  ): Promise<BillingOrderAggregate | undefined>;
   findByVoteId(voteId: string): Promise<BillingOrderAggregate | undefined>;
+  findByVoteIdForUpdate(
+    voteId: string,
+  ): Promise<BillingOrderAggregate | undefined>;
   save(order: BillingOrderAggregate): Promise<void>;
 }

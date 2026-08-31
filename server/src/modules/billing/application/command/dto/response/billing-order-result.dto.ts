@@ -13,7 +13,13 @@ type BillingOrderResultSource = {
   readonly status: BillingOrderStatus;
   readonly paymentId?: string;
   readonly issuedAt: Date;
+  readonly cancellationWindowDays: number;
+  readonly cancelableUntil: Date;
   readonly paidAt?: Date;
+  readonly canceledAt?: Date;
+  readonly cancellationReason?: string;
+  readonly refundRequestedAt?: Date;
+  readonly refundedAt?: Date;
 };
 
 export class BillingOrderResult {
@@ -31,7 +37,13 @@ export class BillingOrderResult {
     readonly status: BillingOrderStatus,
     readonly paymentId: string | undefined,
     readonly issuedAt: Date,
+    readonly cancellationWindowDays: number,
+    readonly cancelableUntil: Date,
     readonly paidAt: Date | undefined,
+    readonly canceledAt: Date | undefined,
+    readonly cancellationReason: string | undefined,
+    readonly refundRequestedAt: Date | undefined,
+    readonly refundedAt: Date | undefined,
   ) {}
 
   static of(source: BillingOrderResultSource): BillingOrderResult {
@@ -49,7 +61,13 @@ export class BillingOrderResult {
       source.status,
       source.paymentId,
       source.issuedAt,
+      source.cancellationWindowDays,
+      source.cancelableUntil,
       source.paidAt,
+      source.canceledAt,
+      source.cancellationReason,
+      source.refundRequestedAt,
+      source.refundedAt,
     );
   }
 }

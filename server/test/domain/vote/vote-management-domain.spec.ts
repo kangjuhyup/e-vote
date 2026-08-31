@@ -31,6 +31,10 @@ describe('vote management domain behavior', () => {
       }),
     });
     expect(vote.title).toBe('Updated');
+    vote.finalizeForBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date(),
+    });
     vote.open(new Date());
     expect(() =>
       vote.updateSettings({
@@ -42,6 +46,49 @@ describe('vote management domain behavior', () => {
         }),
       }),
     ).toThrow(DomainError);
+  });
+
+  it('locks setup at billing finalization and only cancels before opening', () => {
+    const vote = createVote();
+    vote.finalizeForBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date('2026-08-31T00:00:00.000Z'),
+    });
+
+    expect(() => vote.attachElectoralRollSnapshot('snapshot-1')).toThrow(
+      'finalized vote setup cannot be changed',
+    );
+    vote.cancelFinalized(new Date('2026-09-01T00:00:00.000Z'));
+    expect(vote.status).toBe(VoteStatus.Canceled);
+  });
+
+  it('rejects partial or conflicting vote finalization data', () => {
+    expect(() =>
+      VoteAggregate.reconstitute({
+        id: 'vote-1',
+        commissionId: 'commission-1',
+        title: 'Vote',
+        votingChannels: [VotingChannel.Online],
+        defaultPolicy: policy(),
+        identityVerificationPolicy: IdentityVerificationPolicy.of({
+          required: false,
+        }),
+        billingOrderId: 'billing-order-1',
+        status: VoteStatus.Draft,
+      }),
+    ).toThrow('must be set together');
+
+    const vote = createVote();
+    vote.finalizeForBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date('2026-08-31T00:00:00.000Z'),
+    });
+    expect(() =>
+      vote.finalizeForBilling({
+        billingOrderId: 'billing-order-1',
+        finalizedAt: new Date('2026-08-31T00:00:01.000Z'),
+      }),
+    ).toThrow('different billing data');
   });
 
   it('updates and cancels only draft child votes', () => {

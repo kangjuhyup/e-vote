@@ -15,7 +15,12 @@ type GetBillingOrderResponseSource = {
   readonly status: string;
   readonly paymentId?: string;
   readonly issuedAt: Date;
+  readonly cancellationWindowDays: number;
+  readonly cancelableUntil: Date;
   readonly paidAt?: Date;
+  readonly canceledAt?: Date;
+  readonly cancellationReason?: string;
+  readonly refundRequestedAt?: Date;
   readonly refundedAt?: Date;
 };
 
@@ -32,12 +37,21 @@ export class GetBillingOrderResponse {
   @ApiProperty() readonly unitPrice: number;
   @ApiProperty() readonly amount: number;
   @ApiProperty() readonly currency: string;
-  @ApiProperty({ enum: ['PENDING_PAYMENT', 'PAID', 'REFUNDED'] })
+  @ApiProperty({
+    enum: ['PENDING_PAYMENT', 'PAID', 'CANCELED', 'REFUND_PENDING', 'REFUNDED'],
+  })
   readonly status: string;
   @ApiProperty({ required: false }) readonly paymentId?: string;
   @ApiProperty({ format: 'date-time' }) readonly issuedAt: string;
+  @ApiProperty({ example: 7 }) readonly cancellationWindowDays: number;
+  @ApiProperty({ format: 'date-time' }) readonly cancelableUntil: string;
   @ApiProperty({ format: 'date-time', required: false })
   readonly paidAt?: string;
+  @ApiProperty({ format: 'date-time', required: false })
+  readonly canceledAt?: string;
+  @ApiProperty({ required: false }) readonly cancellationReason?: string;
+  @ApiProperty({ format: 'date-time', required: false })
+  readonly refundRequestedAt?: string;
   @ApiProperty({ format: 'date-time', required: false })
   readonly refundedAt?: string;
 
@@ -57,7 +71,18 @@ export class GetBillingOrderResponse {
     this.status = source.status;
     if (source.paymentId !== undefined) this.paymentId = source.paymentId;
     this.issuedAt = source.issuedAt.toISOString();
+    this.cancellationWindowDays = source.cancellationWindowDays;
+    this.cancelableUntil = source.cancelableUntil.toISOString();
     if (source.paidAt !== undefined) this.paidAt = source.paidAt.toISOString();
+    if (source.canceledAt !== undefined) {
+      this.canceledAt = source.canceledAt.toISOString();
+    }
+    if (source.cancellationReason !== undefined) {
+      this.cancellationReason = source.cancellationReason;
+    }
+    if (source.refundRequestedAt !== undefined) {
+      this.refundRequestedAt = source.refundRequestedAt.toISOString();
+    }
     if (source.refundedAt !== undefined) {
       this.refundedAt = source.refundedAt.toISOString();
     }

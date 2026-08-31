@@ -15,6 +15,8 @@ import {
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
+import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
+import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 
 describe('snapshot-managed elector commands', () => {
   it('rejects direct updates and blocks for snapshot-derived electors', async () => {
@@ -22,7 +24,12 @@ describe('snapshot-managed elector commands', () => {
     const electorRepository = createElectorRepository();
 
     await expect(
-      new UpdateElectorHandler(voteRepository, electorRepository).execute(
+      new UpdateElectorHandler(
+        voteRepository,
+        electorRepository,
+        voteLifecycleStub(),
+        transactionManagerStub(),
+      ).execute(
         UpdateElectorCommand.of({
           voteId: 'vote-1',
           electorId: 'elector-1',
@@ -32,7 +39,12 @@ describe('snapshot-managed elector commands', () => {
       ),
     ).rejects.toThrow('managed by the attached electoral roll snapshot');
     await expect(
-      new BlockElectorHandler(voteRepository, electorRepository).execute(
+      new BlockElectorHandler(
+        voteRepository,
+        electorRepository,
+        voteLifecycleStub(),
+        transactionManagerStub(),
+      ).execute(
         BlockElectorCommand.of({
           voteId: 'vote-1',
           electorId: 'elector-1',
@@ -65,6 +77,18 @@ function createVoteRepository(): VoteRepositoryPort {
     findById: jest.fn().mockResolvedValue(vote),
     save: jest.fn(),
   };
+}
+
+function voteLifecycleStub(): VoteSetupLifecyclePort {
+  return {
+    lockVote: jest.fn().mockResolvedValue(undefined),
+    finalizeForBilling: jest.fn().mockResolvedValue(undefined),
+    cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+function transactionManagerStub(): DatabaseTransactionManager {
+  return { runInTransaction: jest.fn(async (work) => work()) };
 }
 
 function createElectorRepository(): jest.Mocked<ElectorRepositoryPort> {

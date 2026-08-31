@@ -1,8 +1,10 @@
 import { DomainError } from '../../../shared/domain/domain-error';
 import { createId } from '../../../shared/domain/id';
 import {
+  BillingOrderCanceled,
   BillingOrderIssued,
   BillingOrderPaid,
+  BillingOrderRefundRequested,
   BillingOrderRefunded,
   type BillingOrderDomainEvent,
 } from './billing-order.events';
@@ -12,6 +14,7 @@ import {
 } from './type/billing-order-status.type';
 import { Money } from './vo/money.vo';
 import { VoteUsagePrice } from './vo/vote-usage-price.vo';
+import { VoteUsageCancellationPolicy } from './vo/vote-usage-cancellation-policy.vo';
 
 type BillingOrderParams = {
   readonly id: string;
@@ -29,7 +32,12 @@ type BillingOrderParams = {
   readonly status: BillingOrderStatusType;
   readonly paymentId?: string;
   readonly issuedAt: Date;
+  readonly cancellationWindowDays: number;
+  readonly cancelableUntil: Date;
   readonly paidAt?: Date;
+  readonly canceledAt?: Date;
+  readonly cancellationReason?: string;
+  readonly refundRequestedAt?: Date;
   readonly refundedAt?: Date;
 };
 
@@ -51,7 +59,12 @@ export class BillingOrderAggregate {
     public status: BillingOrderStatusType,
     public paymentId: string | undefined,
     readonly issuedAt: Date,
+    readonly cancellationWindowDays: number,
+    readonly cancelableUntil: Date,
     public paidAt: Date | undefined,
+    public canceledAt: Date | undefined,
+    public cancellationReason: string | undefined,
+    public refundRequestedAt: Date | undefined,
     public refundedAt: Date | undefined,
   ) {}
 
@@ -63,6 +76,7 @@ export class BillingOrderAggregate {
     price: VoteUsagePrice;
     issuedAt: Date;
   }): BillingOrderAggregate {
+    const cancellationPolicy = VoteUsageCancellationPolicy.standard();
     const order = BillingOrderAggregate.build({
       id: params.id,
       voteId: params.voteId,
@@ -78,6 +92,10 @@ export class BillingOrderAggregate {
       currency: params.price.money.currency,
       status: BillingOrderStatus.PendingPayment,
       issuedAt: params.issuedAt,
+      cancellationWindowDays: cancellationPolicy.windowDays,
+      cancelableUntil: cancellationPolicy.calculateCancelableUntil(
+        params.issuedAt,
+      ),
     });
 
     order.events.push(
@@ -133,8 +151,10 @@ export class BillingOrderAggregate {
 
   markRefunded(refundedAt: Date): void {
     if (this.status === BillingOrderStatus.Refunded) return;
-    if (this.status !== BillingOrderStatus.Paid) {
-      throw new DomainError('only paid billing orders can be refunded');
+    if (this.status !== BillingOrderStatus.RefundPending) {
+      throw new DomainError(
+        'only refund-pending billing orders can be refunded',
+      );
     }
 
     this.status = BillingOrderStatus.Refunded;
@@ -151,6 +171,65 @@ export class BillingOrderAggregate {
     return this.status === BillingOrderStatus.Paid;
   }
 
+  requestCancellation(params: { reason: string; canceledAt: Date }): void {
+    const reason = params.reason.trim();
+    if (reason.length === 0) {
+      throw new DomainError('billing order cancellation reason is required');
+    }
+    if (reason.length > 500) {
+      throw new DomainError(
+        'billing order cancellation reason must not exceed 500 characters',
+      );
+    }
+
+    if (
+      this.status === BillingOrderStatus.Canceled ||
+      this.status === BillingOrderStatus.RefundPending ||
+      this.status === BillingOrderStatus.Refunded
+    ) {
+      if (this.cancellationReason !== reason) {
+        throw new DomainError(
+          'billing order was already canceled with another reason',
+        );
+      }
+      return;
+    }
+
+    if (params.canceledAt.getTime() > this.cancelableUntil.getTime()) {
+      throw new DomainError('billing order cancellation window has expired');
+    }
+    if (params.canceledAt.getTime() < this.issuedAt.getTime()) {
+      throw new DomainError(
+        'billing order cannot be canceled before it is issued',
+      );
+    }
+
+    this.canceledAt = params.canceledAt;
+    this.cancellationReason = reason;
+    if (this.status === BillingOrderStatus.PendingPayment) {
+      this.status = BillingOrderStatus.Canceled;
+      this.events.push(
+        BillingOrderCanceled.of({
+          aggregateId: this.id,
+          occurredAt: params.canceledAt,
+        }),
+      );
+      return;
+    }
+    if (this.status !== BillingOrderStatus.Paid) {
+      throw new DomainError('billing order cannot be canceled');
+    }
+
+    this.status = BillingOrderStatus.RefundPending;
+    this.refundRequestedAt = params.canceledAt;
+    this.events.push(
+      BillingOrderRefundRequested.of({
+        aggregateId: this.id,
+        occurredAt: params.canceledAt,
+      }),
+    );
+  }
+
   pullEvents(): BillingOrderDomainEvent[] {
     const events = [...this.events];
     this.events.length = 0;
@@ -161,6 +240,9 @@ export class BillingOrderAggregate {
     const orderedByUserPrincipalId = params.orderedByUserPrincipalId.trim();
     const productCode = params.productCode.trim();
     const productName = params.productName.trim();
+    const cancellationPolicy = VoteUsageCancellationPolicy.of({
+      windowDays: params.cancellationWindowDays,
+    });
 
     if (orderedByUserPrincipalId.length === 0) {
       throw new DomainError(
@@ -170,8 +252,49 @@ export class BillingOrderAggregate {
     if (productCode.length === 0 || productName.length === 0) {
       throw new DomainError('billing order product snapshot is required');
     }
-    if (params.status === BillingOrderStatus.Paid && !params.paymentId) {
-      throw new DomainError('paid billing order must have a payment id');
+    if (
+      (params.status === BillingOrderStatus.Paid ||
+        params.status === BillingOrderStatus.RefundPending ||
+        params.status === BillingOrderStatus.Refunded) &&
+      (!params.paymentId || !params.paidAt)
+    ) {
+      throw new DomainError(
+        'paid billing order lifecycle must have payment metadata',
+      );
+    }
+    const expectedCancelableUntil = cancellationPolicy.calculateCancelableUntil(
+      params.issuedAt,
+    );
+    if (
+      expectedCancelableUntil.getTime() !== params.cancelableUntil.getTime()
+    ) {
+      throw new DomainError(
+        'billing order cancellation deadline does not match policy snapshot',
+      );
+    }
+    if (
+      (params.status === BillingOrderStatus.Canceled ||
+        params.status === BillingOrderStatus.RefundPending ||
+        params.status === BillingOrderStatus.Refunded) &&
+      (!params.canceledAt || !params.cancellationReason)
+    ) {
+      throw new DomainError(
+        'canceled billing order must have cancellation metadata',
+      );
+    }
+    if (
+      (params.status === BillingOrderStatus.RefundPending ||
+        params.status === BillingOrderStatus.Refunded) &&
+      !params.refundRequestedAt
+    ) {
+      throw new DomainError(
+        'refunding billing order must have a refund request timestamp',
+      );
+    }
+    if (params.status === BillingOrderStatus.Refunded && !params.refundedAt) {
+      throw new DomainError(
+        'refunded billing order must have a refund timestamp',
+      );
     }
 
     const pricing = VoteUsagePrice.reconstitute({
@@ -200,7 +323,12 @@ export class BillingOrderAggregate {
       params.status,
       params.paymentId,
       params.issuedAt,
+      cancellationPolicy.windowDays,
+      params.cancelableUntil,
       params.paidAt,
+      params.canceledAt,
+      params.cancellationReason,
+      params.refundRequestedAt,
       params.refundedAt,
     );
   }

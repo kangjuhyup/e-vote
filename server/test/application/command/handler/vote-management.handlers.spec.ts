@@ -20,13 +20,23 @@ import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 import { VoteDetailAggregate } from '../../../../src/modules/vote/domain/vote/vote-detail.aggregate';
 import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
+import type {
+  VoteSetupLifecyclePort,
+  VoteUsageEntitlementAccessPort,
+} from '../../../../src/shared/application/port/capability/vote-billing.port';
+import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 
 describe('vote management command handlers', () => {
   it('updates and opens a vote through the authoritative repository', async () => {
     const vote = createVote();
     const save = jest.fn();
     const repository = voteRepository(vote, save);
-    await new UpdateVoteHandler(repository).execute(
+    const voteLifecycle = voteLifecycleStub();
+    await new UpdateVoteHandler(
+      repository,
+      voteLifecycle,
+      transactionManagerStub(),
+    ).execute(
       UpdateVoteCommand.of({
         voteId: vote.id,
         title: 'Updated',
@@ -35,7 +45,16 @@ describe('vote management command handlers', () => {
         identityVerificationPolicy: { required: false },
       }),
     );
-    await new ChangeVoteStatusHandler(repository).execute(
+    vote.finalizeForBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date(),
+    });
+    await new ChangeVoteStatusHandler(
+      repository,
+      entitlementStub(true),
+      voteLifecycle,
+      transactionManagerStub(),
+    ).execute(
       ChangeVoteStatusCommand.of({
         voteId: vote.id,
         action: 'open',
@@ -44,6 +63,29 @@ describe('vote management command handlers', () => {
     );
     expect(vote).toMatchObject({ title: 'Updated', status: VoteStatus.Open });
     expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects opening without a paid billing entitlement', async () => {
+    const vote = createVote();
+    vote.finalizeForBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date(),
+    });
+
+    await expect(
+      new ChangeVoteStatusHandler(
+        voteRepository(vote),
+        entitlementStub(false),
+        voteLifecycleStub(),
+        transactionManagerStub(),
+      ).execute(
+        ChangeVoteStatusCommand.of({
+          voteId: vote.id,
+          action: 'open',
+          changedAt: new Date(),
+        }),
+      ),
+    ).rejects.toThrow('paid billing order is required');
   });
 
   it('rejects a candidate outside the requested parent scope', async () => {
@@ -120,5 +162,21 @@ function voteRepository(
     nextId: jest.fn(),
     findById: jest.fn().mockResolvedValue(vote),
     save,
+  };
+}
+
+function entitlementStub(paid: boolean): VoteUsageEntitlementAccessPort {
+  return { hasPaidOrder: jest.fn().mockResolvedValue(paid) };
+}
+
+function transactionManagerStub(): DatabaseTransactionManager {
+  return { runInTransaction: jest.fn(async (work) => work()) };
+}
+
+function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
+  return {
+    lockVote: jest.fn().mockResolvedValue(undefined),
+    finalizeForBilling: jest.fn().mockResolvedValue(undefined),
+    cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
   };
 }

@@ -40,6 +40,8 @@ export function createVoteEntities(
           .inversedBy('votes')
           .deleteRule('restrict')
           .nullable(),
+      billingOrderId: p.uuid().fieldName('billing_order_id').nullable(),
+      finalizedAt: p.datetime().fieldName('finalized_at').nullable(),
       title: p.string(),
       description: p.text(),
       defaultPrivacyMode: p

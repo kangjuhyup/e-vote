@@ -32,7 +32,12 @@ export class BillingOrderReadRepositoryAdapter implements BillingOrderReadReposi
           status: entity.status,
           paymentId: entity.paymentId ?? undefined,
           issuedAt: entity.issuedAt,
+          cancellationWindowDays: Number(entity.cancellationWindowDays),
+          cancelableUntil: entity.cancelableUntil,
           paidAt: entity.paidAt ?? undefined,
+          canceledAt: entity.canceledAt ?? undefined,
+          cancellationReason: entity.cancellationReason ?? undefined,
+          refundRequestedAt: entity.refundRequestedAt ?? undefined,
           refundedAt: entity.refundedAt ?? undefined,
         })
       : undefined;
