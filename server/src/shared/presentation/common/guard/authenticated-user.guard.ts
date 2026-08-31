@@ -3,11 +3,13 @@ import {
   type ExecutionContext,
   Inject,
   Injectable,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
   ACCESS_TOKEN_VERIFIER_PORT,
+  AccessTokenVerificationUnavailableError,
   type AccessTokenVerifierPort,
 } from '../../../application/port/security/access-token-verifier.port';
 import type { UserPrincipal } from '../../../application/security/user-principal';
@@ -58,8 +60,13 @@ export class AuthenticatedUserGuard implements CanActivate {
     try {
       request.user = await this.accessTokenVerifier.verify(accessToken);
       return true;
-    } catch {
+    } catch (error) {
       delete request.user;
+      if (error instanceof AccessTokenVerificationUnavailableError) {
+        throw new ServiceUnavailableException(
+          'authentication service is unavailable',
+        );
+      }
       throw new UnauthorizedException('invalid or expired access token');
     }
   }

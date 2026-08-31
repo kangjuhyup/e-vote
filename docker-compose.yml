@@ -1,3 +1,5 @@
+name: vote
+
 x-auth-service-image: &auth-service-image ${AUTH_SERVICE_IMAGE:-ghcr.io/kangjuhyup/auth/auth-service@sha256:50ed6277db320f0e76cc227448297cd97cf61f30886132ec39bab25615a41f7d}
 x-auth-ui-image: &auth-ui-image ${AUTH_UI_IMAGE:-ghcr.io/kangjuhyup/auth/auth-ui@sha256:c7e9c92c64d372e993214de30ef160b8df9d045623528e1c60e818642d10d006}
 x-auth-service-environment: &auth-service-environment
@@ -10,7 +12,7 @@ x-auth-service-environment: &auth-service-environment
   REDIS_URL: ${AUTH_SERVICE_REDIS_URL:-redis://redis:6379/0}
   OIDC_ISSUER: ${AUTH_SERVICE_OIDC_ISSUER:-http://localhost:3002}
   OIDC_COOKIE_KEYS: ${AUTH_SERVICE_OIDC_COOKIE_KEYS:-vote-local-oidc-cookie-key-1,vote-local-oidc-cookie-key-2}
-  OIDC_ACCESS_TOKEN_FORMAT: ${AUTH_SERVICE_OIDC_ACCESS_TOKEN_FORMAT:-jwt}
+  OIDC_ACCESS_TOKEN_FORMAT: ${AUTH_SERVICE_OIDC_ACCESS_TOKEN_FORMAT:-opaque}
   OIDC_ADAPTER_DRIVER: ${AUTH_SERVICE_OIDC_ADAPTER_DRIVER:-redis}
   OIDC_CACHE_TTL_MARGIN_SEC: ${AUTH_SERVICE_OIDC_CACHE_TTL_MARGIN_SEC:-30}
   OIDC_CACHE_NEGATIVE_TTL_SEC: ${AUTH_SERVICE_OIDC_CACHE_NEGATIVE_TTL_SEC:-30}
@@ -73,11 +75,7 @@ services:
     volumes:
       - auth-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"',
-        ]
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -110,7 +108,8 @@ services:
     ports:
       - '127.0.0.1:${AUTH_SERVICE_PORT:-3002}:3000'
     healthcheck:
-      test: ['CMD-SHELL', 'wget -q -O - http://127.0.0.1:3000/health >/dev/null']
+      test:
+        ['CMD-SHELL', 'wget -q -O - http://127.0.0.1:3000/health >/dev/null']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -130,6 +129,9 @@ services:
       AUTH_CLIENT_ID: e-vote
       AUTH_CLIENT_REDIRECT_URI: ${AUTH_CLIENT_REDIRECT_URI:-http://localhost:3001/api/auth/callback/e-vote}
       AUTH_CLIENT_POST_LOGOUT_URI: ${AUTH_CLIENT_POST_LOGOUT_URI:-http://localhost:3001}
+      AUTH_CLIENT_ALLOWED_RESOURCE: ${VOTE_AUTH_AUDIENCE:-https://vote-api.local}
+      AUTH_RESOURCE_SERVER_CLIENT_ID: ${VOTE_AUTH_INTROSPECTION_CLIENT_ID:-vote-api}
+      AUTH_RESOURCE_SERVER_CLIENT_SECRET: ${VOTE_AUTH_INTROSPECTION_CLIENT_SECRET:-vote-local-introspection-secret-change-me}
     volumes:
       - ./scripts/bootstrap-auth-client.mjs:/app/bootstrap-auth-client.mjs:ro
 

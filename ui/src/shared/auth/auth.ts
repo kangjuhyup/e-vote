@@ -5,6 +5,7 @@ import {
   E_VOTE_PROVIDER_ID,
   type EVoteOidcProfile,
   getTenantOidcIssuer,
+  getVoteApiResource,
   mapEVoteProfileToUser,
 } from '@/shared/auth/oidc';
 import { persistVoteAccessToken } from '@/shared/auth/vote-session-token';
@@ -25,6 +26,7 @@ export const authConfig = {
       authorization: {
         params: {
           scope: 'openid profile email',
+          resource: getVoteApiResource(),
         },
       },
       checks: ['pkce', 'state', 'nonce'],

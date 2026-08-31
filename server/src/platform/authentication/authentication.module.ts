@@ -5,7 +5,10 @@ import {
   OIDC_AUTHENTICATION_CONFIG,
   OidcAuthenticationConfig,
 } from './oidc-authentication.config';
-import { createOidcJwtVerifier, OIDC_JWT_VERIFIER } from './oidc-jwt-verifier';
+import {
+  createOidcTokenIntrospector,
+  OIDC_TOKEN_INTROSPECTOR,
+} from './oidc-token-introspector';
 
 @Module({
   providers: [
@@ -15,9 +18,9 @@ import { createOidcJwtVerifier, OIDC_JWT_VERIFIER } from './oidc-jwt-verifier';
         OidcAuthenticationConfig.fromEnvironment(),
     },
     {
-      provide: OIDC_JWT_VERIFIER,
+      provide: OIDC_TOKEN_INTROSPECTOR,
       inject: [OIDC_AUTHENTICATION_CONFIG],
-      useFactory: createOidcJwtVerifier,
+      useFactory: createOidcTokenIntrospector,
     },
     {
       provide: ACCESS_TOKEN_VERIFIER_PORT,

@@ -89,7 +89,8 @@ cp ui/.env.example ui/.env.local
 copy the example file and replace `AUTH_SECRET` with a generated value. Update
 the issuer and tenant code for non-local environments. The configured issuer becomes
 `{AUTH_OIDC_ISSUER}/t/{AUTH_OIDC_TENANT_CODE}/oidc`. If the registered
-client is confidential, also set `AUTH_E_VOTE_SECRET`.
+client is confidential, also set `AUTH_E_VOTE_SECRET`. `AUTH_E_VOTE_RESOURCE`
+identifies the Vote API resource and defaults to `https://vote-api.local`.
 
 Register this redirect URI in the OIDC auth server:
 
@@ -98,28 +99,49 @@ Register this redirect URI in the OIDC auth server:
 ```
 
 The local Compose bootstrap registers
-`http://localhost:3001/api/auth/callback/e-vote` automatically. Override it
-with `AUTH_CLIENT_REDIRECT_URI` when the vote UI origin changes.
+`http://localhost:3001/api/auth/callback/e-vote` and the
+`https://vote-api.local` allowed resource on the public `e-vote` client. It
+also registers a `vote-api` service client using `client_secret_basic` and the
+same value in `introspectionResources`. Override these values with
+`AUTH_CLIENT_REDIRECT_URI`, `AUTH_CLIENT_ALLOWED_RESOURCE`,
+`AUTH_RESOURCE_SERVER_CLIENT_ID`, and `AUTH_RESOURCE_SERVER_CLIENT_SECRET`.
 
 After login, the UI stores the OIDC access token only inside the encrypted
 Auth.js JWT session cookie. The server-side `/api/vote-server/*` route reads
 that cookie and forwards the token to the Vote API as a Bearer token. It is not
 added to the browser-visible session object.
 
-The Vote API validates the JWT signature through the tenant JWKS and checks the
-exact issuer, audience, and token lifetime before assigning a `UserPrincipal`
-to `request.user`. Local development derives these values from the shared OIDC
-settings:
+The Vote API treats the access token as opaque. It authenticates as a
+confidential resource server and sends the token to the tenant's RFC 7662
+introspection endpoint. A `UserPrincipal` is assigned to `request.user` only
+when the response has `active=true`, non-empty `sub` and `tenant_id`, the exact
+issuer and Vote API audience, and an unexpired `exp`. A future `nbf` is also
+rejected.
+
+Local development uses this contract:
 
 ```text
-issuer   = {AUTH_OIDC_ISSUER}/t/{AUTH_OIDC_TENANT_CODE}/oidc
-jwks     = {issuer}/jwks
-audience = e-vote
+issuer                = {AUTH_OIDC_ISSUER}/t/{AUTH_OIDC_TENANT_CODE}/oidc
+introspection         = {issuer}/token/introspection
+audience/resource     = https://vote-api.local
+resource server ID    = vote-api
+resource server secret= vote-local-introspection-secret-change-me
 ```
 
-For deployments with a different API token contract, set the server-only
-overrides `VOTE_AUTH_ISSUER`, `VOTE_AUTH_JWKS_URI`, and
-`VOTE_AUTH_AUDIENCE`. Production OIDC and JWKS URLs should use HTTPS.
+The auth server must expose `POST application/x-www-form-urlencoded`
+introspection using `client_secret_basic`, register the Vote API credentials,
+and return at least `active`, `client_id`, `token_type`, `scope`, `iss`, `aud`,
+`exp`, `iat`, `tenant_id`, and `sub` for user tokens. The stable `tenant_id`
+and `sub` values populate `UserPrincipal`; profile attributes and role
+assignments are intentionally not required from introspection.
+
+For deployments, configure `VOTE_AUTH_INTROSPECTION_CLIENT_SECRET` and
+optionally override `VOTE_AUTH_ISSUER`, `VOTE_AUTH_INTROSPECTION_URI`,
+`VOTE_AUTH_AUDIENCE`, `VOTE_AUTH_INTROSPECTION_CLIENT_ID`, and
+`VOTE_AUTH_INTROSPECTION_TIMEOUT_MS` (default `3000`). Use HTTPS for the issuer
+and introspection endpoint. Invalid or inactive tokens return 401; an
+unreachable or invalid introspection service response returns 503. Do not use
+the public `e-vote` UI client credentials for introspection.
 
 ### UI Mock Mode
 
