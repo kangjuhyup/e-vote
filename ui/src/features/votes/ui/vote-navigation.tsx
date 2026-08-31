@@ -1,8 +1,8 @@
 import {
   Building2,
-  ClipboardCheck,
   LayoutDashboard,
   ListChecks,
+  ScrollText,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -10,7 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/shared/lib/utils";
 
 interface VoteNavigationProps {
-  current: "commissions" | "dashboard" | "field-sessions" | "votes";
+  current:
+    | "commissions"
+    | "dashboard"
+    | "electoral-rolls"
+    | "votes";
   isMockMode?: boolean;
 }
 
@@ -18,10 +22,10 @@ const navigationItems = [
   { href: "/", label: "대시보드", value: "dashboard", icon: LayoutDashboard },
   { href: "/votes", label: "투표 목록", value: "votes", icon: ListChecks },
   {
-    href: "/field-sessions",
-    label: "현장 운영",
-    value: "field-sessions",
-    icon: ClipboardCheck,
+    href: "/electoral-rolls",
+    label: "선거인명부",
+    value: "electoral-rolls",
+    icon: ScrollText,
   },
   {
     href: "/commissions",

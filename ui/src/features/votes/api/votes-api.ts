@@ -60,6 +60,7 @@ interface IdentityVerificationPolicyResponseDto {
 export interface VoteSummaryResponseDto {
   id: string;
   commissionId: string;
+  electoralRollSnapshotId?: string;
   title: string;
   votingChannels: string[];
   defaultPolicy: VotePolicyResponseDto;
@@ -235,6 +236,8 @@ export function mapVoteSummaryResponse(
   const participationKnown = hasKnownVoteParticipationCounts(response);
 
   return {
+    commissionId: response.commissionId,
+    electoralRollSnapshotId: response.electoralRollSnapshotId,
     id: response.id,
     title: response.title,
     status: mapVoteStatus(response.status, {
@@ -304,6 +307,17 @@ export function mapVoteDetailResponse(
 
   return {
     ...mapVoteSummaryResponse(response, now),
+    defaultPolicy: {
+      participationUnit: response.defaultPolicy
+        .participationUnit as NonNullable<VoteDetail["defaultPolicy"]>["participationUnit"],
+      privacyMode: response.defaultPolicy
+        .privacyMode as NonNullable<VoteDetail["defaultPolicy"]>["privacyMode"],
+      resultStorageMode: response.defaultPolicy
+        .resultStorageMode as NonNullable<VoteDetail["defaultPolicy"]>["resultStorageMode"],
+      voteWeightMode: response.defaultPolicy
+        .voteWeightMode as NonNullable<VoteDetail["defaultPolicy"]>["voteWeightMode"],
+    },
+    identityVerificationPolicy: response.identityVerificationPolicy,
     electorCount: response.electorCount ?? mappedElectors.length,
     participatedCount,
     participationKnown,
@@ -315,6 +329,9 @@ export function mapVoteDetailResponse(
     subVotes: response.voteDetails.map((voteDetail) =>
       mapVoteSubVoteResponse(voteDetail, now),
     ),
+    votingChannels: response.votingChannels as NonNullable<
+      VoteDetail["votingChannels"]
+    >,
   };
 }
 
@@ -323,7 +340,8 @@ function fetchVoteApiResponse(
   input: { baseUrl: string; fetcher: VoteApiFetcher },
   query?: Record<string, string | number>,
 ): Promise<Response> {
-  return input.fetcher(buildVoteApiUrl(input.baseUrl, path, query), {
+  const fetcher = input.fetcher;
+  return fetcher(buildVoteApiUrl(input.baseUrl, path, query), {
     headers: { Accept: "application/json" },
   });
 }

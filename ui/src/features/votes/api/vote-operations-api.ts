@@ -13,12 +13,13 @@ import type {
   FieldSessionStatus,
   OperationCandidate,
   PageResult,
-  ReadCollection,
   SubVoteOperations,
   VotePolicyRecord,
   VoteResultRecord,
   VoteTurnoutRecord,
+  UpdateVoteInput,
 } from "../model/vote-operations.types";
+import { findLatestMockElectoralRollSnapshot } from "./electoral-roll-fixtures";
 import { createVoteOperationsFixtures } from "./vote-operations-fixtures";
 import { voteFixtureDetails } from "./votes-fixtures";
 import { unwrapVoteApiResponse } from "./votes-api";
@@ -51,6 +52,7 @@ interface SubVoteDto {
 }
 
 interface ParentVoteDto {
+  commissionId: string;
   defaultPolicy: VotePolicyRecord;
 }
 
@@ -63,6 +65,29 @@ interface CandidateDto {
 }
 
 interface ElectorDto extends ElectorRecord {
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CommissionSummaryDto {
+  createdAt: string;
+  id: string;
+  name: string;
+  status: CommissionRecord["status"];
+  updatedAt: string;
+}
+
+type CommissionMemberDto = CommissionRecord["members"][number] & {
+  commissionId: string;
+  registeredAt: string;
+  updatedAt: string;
+};
+
+interface CommissionDetailDto extends CommissionSummaryDto {
+  members: CommissionMemberDto[];
+}
+
+interface FieldSessionDto extends FieldSessionRecord {
   createdAt: string;
   updatedAt: string;
 }
@@ -171,6 +196,34 @@ function toCandidate(dto: CandidateDto): OperationCandidate {
   };
 }
 
+function toCommission(dto: CommissionDetailDto): CommissionRecord {
+  return {
+    id: dto.id,
+    members: dto.members.map(({ id, name, role, status }) => ({
+      id,
+      name,
+      role,
+      status,
+    })),
+    name: dto.name,
+    status: dto.status,
+  };
+}
+
+function paginate<T>(items: T[], page: number, pageSize: number): PageResult<T> {
+  const normalizedPage = Math.max(1, Math.trunc(page));
+  const normalizedPageSize = Math.min(100, Math.max(1, Math.trunc(pageSize)));
+  const offset = (normalizedPage - 1) * normalizedPageSize;
+
+  return {
+    items: items.slice(offset, offset + normalizedPageSize),
+    page: normalizedPage,
+    pageSize: normalizedPageSize,
+    totalItems: items.length,
+    totalPages: Math.ceil(items.length / normalizedPageSize),
+  };
+}
+
 export function createVoteOperationsApiClient(
   options: CreateVoteOperationsApiClientOptions = {},
 ) {
@@ -260,30 +313,97 @@ export function createVoteOperationsApiClient(
 
   async function createVote(input: CreateVoteInput): Promise<CreateVoteResult> {
     if (mode === "mock") {
+      const electoralRollSnapshot = findLatestMockElectoralRollSnapshot(
+        input.electoralRollId,
+      );
+      if (!electoralRollSnapshot) {
+        throw new Error("선택한 선거인명부의 스냅샷을 찾을 수 없습니다.");
+      }
       const id = nextMockId("vote");
       const startsAt = new Date().toISOString();
       const endsAt = new Date(Date.now() + 7 * 86_400_000).toISOString();
+      const electors = electoralRollSnapshot.members.map((member) => ({
+        id: nextMockId("elector"),
+        name: member.identifier,
+        label: member.groupKey ?? member.identifier,
+        participated: false,
+        participatedAt: null,
+        participationKnown: true,
+      }));
+      mockState.electors.push(
+        ...electoralRollSnapshot.members.map((member, index) => ({
+          id: electors[index].id,
+          voteId: id,
+          name: member.identifier,
+          identifier: member.identifier,
+          groupKey: member.groupKey,
+          voteWeight: member.voteWeight,
+          status: "ELIGIBLE" as const,
+          identityVerified: false,
+        })),
+      );
       voteFixtureDetails.push({
+        ...(input.commissionId ? { commissionId: input.commissionId } : {}),
+        electoralRollSnapshotId: electoralRollSnapshot.id,
+        defaultPolicy: { ...input.defaultPolicy },
         id,
+        identityVerificationPolicy: {
+          ...input.identityVerificationPolicy,
+        },
         title: input.title,
         description: "설정 중인 신규 투표입니다.",
         status: "draft",
         startsAt,
         endsAt,
-        electorCount: 0,
+        electorCount: electors.length,
         participatedCount: 0,
         participationKnown: true,
         candidates: [],
-        electors: [],
+        electors,
         subVotes: [],
+        votingChannels: [...input.votingChannels],
       });
-      return { id, commissionId: input.commissionId, status: "DRAFT" };
+      return {
+        id,
+        ...(input.commissionId ? { commissionId: input.commissionId } : {}),
+        electoralRollId: input.electoralRollId,
+        electoralRollSnapshotId: electoralRollSnapshot.id,
+        status: "DRAFT",
+      };
     }
 
     return request<CreateVoteResult>(fetcher, baseUrl, "/votes", {
       method: "POST",
       body: JSON.stringify(input),
     });
+  }
+
+  async function updateVote(input: UpdateVoteInput) {
+    if (mode === "mock") {
+      const vote = voteFixtureDetails.find((item) => item.id === input.voteId);
+      if (!vote) {
+        throw new Error("투표를 찾을 수 없습니다.");
+      }
+      if (vote.status !== "draft" && vote.status !== "scheduled") {
+        throw new Error("초안 투표만 수정할 수 있습니다.");
+      }
+
+      vote.title = input.title;
+      vote.votingChannels = [...input.votingChannels];
+      vote.defaultPolicy = { ...input.defaultPolicy };
+      vote.identityVerificationPolicy = {
+        ...input.identityVerificationPolicy,
+      };
+      return { id: vote.id, status: "DRAFT" as const };
+    }
+
+    const { voteId, ...body } = input;
+    return request<CreateEntityResponse>(
+      fetcher,
+      baseUrl,
+      `/votes/${encode(voteId)}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    );
   }
 
   async function createSubVote(input: CreateSubVoteInput) {
@@ -413,10 +533,38 @@ export function createVoteOperationsApiClient(
     };
   }
 
-  async function fetchCommissions(): Promise<ReadCollection<CommissionRecord>> {
-    return mode === "mock"
-      ? { items: mockState.commissions, readAvailable: true }
-      : { items: [], readAvailable: false };
+  async function fetchCommissions(
+    page = 1,
+    pageSize = 20,
+  ): Promise<PageResult<CommissionRecord>> {
+    if (mode === "mock") {
+      return paginate(mockState.commissions, page, pageSize);
+    }
+
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+    const commissionPage = await request<PageDto<CommissionSummaryDto>>(
+      fetcher,
+      baseUrl,
+      "/election-commissions",
+      {},
+      query,
+    );
+    const items = await Promise.all(
+      commissionPage.items.map(async (commission) =>
+        toCommission(
+          await request<CommissionDetailDto>(
+            fetcher,
+            baseUrl,
+            `/election-commissions/${encode(commission.id)}`,
+          ),
+        ),
+      ),
+    );
+
+    return { ...commissionPage, items };
   }
 
   async function createCommission(name: string): Promise<CommissionRecord> {
@@ -470,12 +618,30 @@ export function createVoteOperationsApiClient(
     return { id: response.id, name: input.name, role: input.role, status: "ACTIVE" as const };
   }
 
-  async function fetchFieldSessions(): Promise<
-    ReadCollection<FieldSessionRecord>
-  > {
-    return mode === "mock"
-      ? { items: mockState.fieldSessions, readAvailable: true }
-      : { items: [], readAvailable: false };
+  async function fetchFieldSessions(
+    voteId: string,
+    page = 1,
+    pageSize = 20,
+  ): Promise<PageResult<FieldSessionRecord>> {
+    if (mode === "mock") {
+      return paginate(
+        mockState.fieldSessions.filter((item) => item.voteId === voteId),
+        page,
+        pageSize,
+      );
+    }
+
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+    return request<PageDto<FieldSessionDto>>(
+      fetcher,
+      baseUrl,
+      `/votes/${encode(voteId)}/field-voting-sessions`,
+      {},
+      query,
+    );
   }
 
   async function createFieldSession(input: CreateFieldSessionInput) {
@@ -540,6 +706,7 @@ export function createVoteOperationsApiClient(
     createFieldSession,
     createSubVote,
     createVote,
+    updateVote,
     fetchCommissions,
     fetchElectors,
     fetchFieldSessions,

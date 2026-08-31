@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, UsersRound } from "lucide-react";
+import { ArrowLeft, Pencil, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
@@ -23,6 +23,8 @@ import { filterElectors } from "@/features/votes/model/vote-selectors";
 import { useVotesUiStore } from "@/features/votes/store/votes-ui.store";
 
 import { toCandidateItems, toRosterItems } from "../lib/vote-view-models";
+import { FieldSessionContainer } from "./field-session-container";
+import { VoteSmsContainer } from "./vote-sms-container";
 import { VoteDetailRosterSection } from "../ui/vote-detail-roster-section";
 import { VoteDetailSummary } from "../ui/vote-detail-summary";
 import { VoteNavigation } from "../ui/vote-navigation";
@@ -34,8 +36,18 @@ interface VoteDetailContainerProps {
 }
 
 const electorPageSize = 25;
+type FieldVotingChannel = "ONSITE" | "VISIT";
 
-export function VoteDetailContainer({ account, voteId }: VoteDetailContainerProps) {
+function isFieldVotingChannel(
+  channel: "ONLINE" | "ONSITE" | "VISIT",
+): channel is FieldVotingChannel {
+  return channel === "ONSITE" || channel === "VISIT";
+}
+
+export function VoteDetailContainer({
+  account,
+  voteId,
+}: VoteDetailContainerProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -62,6 +74,8 @@ export function VoteDetailContainer({ account, voteId }: VoteDetailContainerProp
   const filteredElectors = vote
     ? filterElectors(vote.electors, electorParticipationFilter)
     : [];
+  const fieldVotingChannels =
+    vote?.votingChannels?.filter(isFieldVotingChannel) ?? [];
   const electorPageCount = Math.max(
     1,
     Math.ceil(filteredElectors.length / electorPageSize),
@@ -137,6 +151,12 @@ export function VoteDetailContainer({ account, voteId }: VoteDetailContainerProp
       actions={
         <>
           <Button type="button" variant="outline" asChild>
+            <Link href={`/votes/${voteId}/edit`}>
+              <Pencil aria-hidden="true" />
+              투표 수정
+            </Link>
+          </Button>
+          <Button type="button" variant="outline" asChild>
             <Link href={`/votes/${voteId}/electors`}>
               <UsersRound aria-hidden="true" />
               선거인 관리
@@ -175,6 +195,7 @@ export function VoteDetailContainer({ account, voteId }: VoteDetailContainerProp
       ) : (
         <>
           <VoteDetailSummary vote={vote} />
+          <VoteSmsContainer voteId={vote.id} voteStatus={vote.status} />
           <VoteSubVoteSection voteId={vote.id} subVotes={vote.subVotes} />
           <VoteDetailRosterSection
             candidateItems={toCandidateItems(vote.candidates)}
@@ -184,6 +205,14 @@ export function VoteDetailContainer({ account, voteId }: VoteDetailContainerProp
             onElectorPageChange={handleElectorPageChange}
             onElectorParticipationFilterChange={handleParticipationFilterChange}
           />
+          {fieldVotingChannels.length > 0 ? (
+            <FieldSessionContainer
+              voteId={vote.id}
+              smsEnabled={vote.status === "active"}
+              commissionId={vote.commissionId}
+              allowedChannels={fieldVotingChannels}
+            />
+          ) : null}
         </>
       )}
     </PageShell>

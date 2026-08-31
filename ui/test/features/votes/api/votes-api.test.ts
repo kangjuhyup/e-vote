@@ -90,6 +90,39 @@ function jsonResponse(data: unknown) {
 }
 
 describe("votes api", () => {
+  it("calls the browser fetch function without rebinding its receiver", async () => {
+    const browserFetch = vi.fn(function (this: unknown) {
+      if (this !== undefined && this !== globalThis) {
+        throw new TypeError("Illegal invocation");
+      }
+      return Promise.resolve(jsonResponse(pageDto([], 1, 0)));
+    });
+    vi.stubGlobal("fetch", browserFetch);
+
+    try {
+      const client = createVotesApiClient({
+        baseUrl: "https://api.example.com",
+        mode: "live",
+      });
+
+      await expect(client.fetchVoteList()).resolves.toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("maps a successful empty vote page to an empty list", async () => {
+    const fetcher = vi.fn(async () => jsonResponse(pageDto([], 1, 0)));
+    const client = createVotesApiClient({
+      baseUrl: "https://api.example.com",
+      fetcher,
+      mode: "live",
+    });
+
+    await expect(client.fetchVoteList()).resolves.toEqual([]);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it("enables mock mode only for the explicit mock value", () => {
     expect(resolveVoteApiMode("mock")).toBe("mock");
     expect(resolveVoteApiMode("live")).toBe("live");
@@ -169,6 +202,31 @@ describe("votes api", () => {
         "2026-08-13T00:00:00.000Z",
       ),
     ).toEqual(expect.objectContaining({ status: "scheduled" }));
+  });
+
+  it("preserves the attached electoral-roll snapshot id", () => {
+    expect(
+      mapVoteSummaryResponse(
+        voteSummaryDto({
+          electoralRollSnapshotId: "electoral-roll-snapshot-1",
+        }),
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        electoralRollSnapshotId: "electoral-roll-snapshot-1",
+      }),
+    );
+    expect(
+      mapVoteDetailResponse(
+        voteDetailDto({
+          electoralRollSnapshotId: "electoral-roll-snapshot-1",
+        }),
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        electoralRollSnapshotId: "electoral-roll-snapshot-1",
+      }),
+    );
   });
 
   it("maps server vote detail DTO values without leaking DTO casing", () => {

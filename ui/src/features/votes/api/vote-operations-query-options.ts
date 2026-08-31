@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 
 import { resolveApiMode } from "@/shared/config/api-mode";
 
@@ -28,16 +28,28 @@ export function electorManagementQueryOptions(
   });
 }
 
-export function commissionManagementQueryOptions() {
+export function commissionManagementQueryOptions(page: number, pageSize = 20) {
   return queryOptions({
-    queryKey: ["vote-operations", apiMode, "commissions"],
-    queryFn: voteOperationsApi.fetchCommissions,
+    queryKey: ["vote-operations", apiMode, "commissions", page, pageSize],
+    queryFn: () => voteOperationsApi.fetchCommissions(page, pageSize),
+    placeholderData: keepPreviousData,
   });
 }
 
-export function fieldSessionManagementQueryOptions() {
+export function fieldSessionManagementQueryOptions(
+  voteId: string,
+  page: number,
+  pageSize = 20,
+) {
   return queryOptions({
-    queryKey: ["vote-operations", apiMode, "field-sessions"],
-    queryFn: voteOperationsApi.fetchFieldSessions,
+    queryKey: [
+      "vote-operations",
+      apiMode,
+      "field-sessions",
+      voteId,
+      page,
+      pageSize,
+    ],
+    queryFn: () => voteOperationsApi.fetchFieldSessions(voteId, page, pageSize),
   });
 }

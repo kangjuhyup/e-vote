@@ -36,6 +36,14 @@ export function VoteDetailSummary({ vote }: VoteDetailSummaryProps) {
             <span className="font-medium">투표 기간: </span>
             <PeriodRange startsAt={vote.startsAt} endsAt={vote.endsAt} />
           </div>
+          {vote.electoralRollSnapshotId ? (
+            <div className="text-sm">
+              <span className="font-medium">선거인명부 스냅샷: </span>
+              <code className="break-all rounded bg-muted px-1.5 py-0.5 text-xs">
+                {vote.electoralRollSnapshotId}
+              </code>
+            </div>
+          ) : null}
         </div>
         <ParticipationProgress
           isKnown={vote.participationKnown}

@@ -13,6 +13,8 @@ export type ElectorParticipationFilter =
   | "not-participated";
 
 export interface VoteSummary {
+  commissionId?: string;
+  electoralRollSnapshotId?: string;
   id: string;
   title: string;
   status: VoteStatus;
@@ -51,9 +53,21 @@ export interface VoteElector {
 
 export interface VoteDetail extends VoteSummary {
   description: string;
+  defaultPolicy?: {
+    participationUnit: "INDIVIDUAL" | "GROUP";
+    privacyMode: "SECRET" | "PUBLIC";
+    resultStorageMode: "DATABASE" | "BLOCKCHAIN";
+    voteWeightMode: "EQUAL" | "SHARE";
+  };
+  identityVerificationPolicy?: {
+    method?: string;
+    provider?: string;
+    required: boolean;
+  };
   candidates: VoteCandidate[];
   electors: VoteElector[];
   subVotes: VoteSubVote[];
+  votingChannels?: Array<"ONLINE" | "ONSITE" | "VISIT">;
 }
 
 export interface VoteDashboardMetrics {

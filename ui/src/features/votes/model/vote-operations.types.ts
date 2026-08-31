@@ -130,27 +130,30 @@ export interface FieldSessionRecord {
   voteId: string;
 }
 
-export interface ReadCollection<T> {
-  items: T[];
-  readAvailable: boolean;
-}
-
 export interface CreateVoteInput {
-  commissionId: string;
+  commissionId?: string;
   defaultPolicy: VotePolicyRecord;
   identityVerificationPolicy: {
     method?: string;
     provider?: string;
     required: boolean;
   };
+  electoralRollId: string;
   title: string;
   votingChannels: VotingChannel[];
 }
 
 export interface CreateVoteResult {
-  commissionId: string;
+  commissionId?: string;
+  electoralRollId?: string;
+  electoralRollSnapshotId?: string;
   id: string;
   status: VoteLifecycleStatus;
+}
+
+export interface UpdateVoteInput
+  extends Omit<CreateVoteInput, "commissionId" | "electoralRollId"> {
+  voteId: string;
 }
 
 export interface CreateSubVoteInput {

@@ -2,10 +2,19 @@ import type { VoteDetail } from "@/features/votes/model/vote.types";
 
 export const voteFixtureDetails: VoteDetail[] = [
   {
+    commissionId: "commission-1",
     id: "active-general",
     title: "2026 상반기 대표 선출",
     description:
       "전자투표 운영위원회 대표 후보를 선출하는 진행 중 투표입니다.",
+    defaultPolicy: {
+      privacyMode: "SECRET",
+      participationUnit: "INDIVIDUAL",
+      resultStorageMode: "DATABASE",
+      voteWeightMode: "EQUAL",
+    },
+    identityVerificationPolicy: { required: false },
+    votingChannels: ["ONLINE", "ONSITE"],
     status: "active",
     startsAt: "2026-08-10T09:00:00.000Z",
     endsAt: "2026-08-20T09:00:00.000Z",
@@ -78,9 +87,19 @@ export const voteFixtureDetails: VoteDetail[] = [
     ],
   },
   {
+    commissionId: "commission-1",
     id: "scheduled-budget",
+    electoralRollSnapshotId: "electoral-roll-snapshot-1",
     title: "예산 승인 투표",
     description: "하반기 전자투표 시스템 예산 집행안을 승인합니다.",
+    defaultPolicy: {
+      privacyMode: "SECRET",
+      participationUnit: "INDIVIDUAL",
+      resultStorageMode: "DATABASE",
+      voteWeightMode: "EQUAL",
+    },
+    identityVerificationPolicy: { required: false },
+    votingChannels: ["ONLINE"],
     status: "scheduled",
     startsAt: "2026-09-01T09:00:00.000Z",
     endsAt: "2026-09-05T09:00:00.000Z",
@@ -137,9 +156,18 @@ export const voteFixtureDetails: VoteDetail[] = [
     ],
   },
   {
+    commissionId: "commission-1",
     id: "completed-policy",
     title: "운영 규정 개정 투표",
     description: "투표 운영 규정 개정안을 확정한 종료 투표입니다.",
+    defaultPolicy: {
+      privacyMode: "PUBLIC",
+      participationUnit: "INDIVIDUAL",
+      resultStorageMode: "DATABASE",
+      voteWeightMode: "EQUAL",
+    },
+    identityVerificationPolicy: { required: false },
+    votingChannels: ["ONLINE"],
     status: "completed",
     startsAt: "2026-07-01T09:00:00.000Z",
     endsAt: "2026-07-07T09:00:00.000Z",

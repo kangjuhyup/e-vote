@@ -12,6 +12,8 @@ function clampParticipationPercent(value: number) {
 
 export function toVoteSummary(vote: VoteSummary): VoteSummary {
   return {
+    commissionId: vote.commissionId,
+    electoralRollSnapshotId: vote.electoralRollSnapshotId,
     id: vote.id,
     title: vote.title,
     status: vote.status,
