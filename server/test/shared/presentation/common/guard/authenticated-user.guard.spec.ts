@@ -1,7 +1,13 @@
 import type { ExecutionContext } from '@nestjs/common';
-import { UnauthorizedException } from '@nestjs/common';
+import {
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { AccessTokenVerifierPort } from '../../../../../src/shared/application/port/security/access-token-verifier.port';
+import {
+  AccessTokenVerificationUnavailableError,
+  type AccessTokenVerifierPort,
+} from '../../../../../src/shared/application/port/security/access-token-verifier.port';
 import { UserPrincipal } from '../../../../../src/shared/application/security/user-principal';
 import { AuthenticatedUserGuard } from '../../../../../src/shared/presentation/common/guard/authenticated-user.guard';
 
@@ -108,6 +114,27 @@ describe('AuthenticatedUserGuard', () => {
     ).rejects.toMatchObject({
       message: 'invalid or expired access token',
     });
+    expect(request.user).toBeUndefined();
+  });
+
+  it('returns service unavailable when introspection cannot be reached', async () => {
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue(false),
+    } as unknown as Reflector;
+    const verifier: AccessTokenVerifierPort = {
+      verify: jest
+        .fn()
+        .mockRejectedValue(new AccessTokenVerificationUnavailableError()),
+    };
+    const request: TestRequest = {
+      headers: { authorization: 'Bearer opaque-token' },
+      user: { id: 'untrusted-user' },
+    };
+    const guard = new AuthenticatedUserGuard(reflector, verifier);
+
+    await expect(
+      guard.canActivate(createExecutionContext(request)),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
     expect(request.user).toBeUndefined();
   });
 });

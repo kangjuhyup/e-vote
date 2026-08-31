@@ -120,6 +120,7 @@ describe('UserPrincipal', () => {
     const scopes = ['openid'];
     const principal = UserPrincipal.of({
       id: 'user-1',
+      tenantId: 'tenant-id-1',
       roles,
       scopes,
     });
@@ -129,6 +130,7 @@ describe('UserPrincipal', () => {
 
     expect(principal).toMatchObject({
       id: 'user-1',
+      tenantId: 'tenant-id-1',
       roles: ['ADMIN'],
       scopes: ['openid'],
     });

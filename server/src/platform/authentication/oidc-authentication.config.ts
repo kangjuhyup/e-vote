@@ -2,9 +2,12 @@ type AuthenticationEnvironment = Readonly<Record<string, string | undefined>>;
 
 type OidcAuthenticationConfigParams = {
   readonly issuer: string;
-  readonly jwksUri: string;
+  readonly introspectionUri: string;
   readonly audience: string;
   readonly tenantCode: string;
+  readonly introspectionClientId: string;
+  readonly introspectionClientSecret: string | undefined;
+  readonly timeoutMs: number;
 };
 
 export const OIDC_AUTHENTICATION_CONFIG = Symbol('OIDC_AUTHENTICATION_CONFIG');
@@ -15,6 +18,22 @@ function requireNonEmpty(value: string | undefined, name: string): string {
   }
 
   return value.trim();
+}
+
+function requireSecret(value: string | undefined, name: string): string {
+  if (!value || value.trim().length === 0) {
+    throw new TypeError(`${name} must not be empty`);
+  }
+
+  return value;
+}
+
+function requirePositiveInteger(value: number, name: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError(`${name} must be a positive integer`);
+  }
+
+  return value;
 }
 
 function normalizeAbsoluteHttpUrl(value: string, name: string): string {
@@ -37,21 +56,46 @@ function normalizeAbsoluteHttpUrl(value: string, name: string): string {
   return url.toString().replace(/\/+$/, '');
 }
 
+function normalizeHttpsOrigin(value: string, name: string): string {
+  let url: URL;
+
+  try {
+    url = new URL(value);
+  } catch {
+    throw new TypeError(`${name} must be an absolute HTTPS origin`);
+  }
+
+  if (url.protocol !== 'https:' || url.username || url.password) {
+    throw new TypeError(`${name} must be an absolute HTTPS origin`);
+  }
+
+  return url.origin;
+}
+
 export class OidcAuthenticationConfig {
   private constructor(
     readonly issuer: string,
-    readonly jwksUri: string,
+    readonly introspectionUri: string,
     readonly audience: string,
     readonly tenantCode: string,
+    readonly introspectionClientId: string,
+    readonly introspectionClientSecret: string,
+    readonly timeoutMs: number,
   ) {}
 
   static of(params: OidcAuthenticationConfigParams): OidcAuthenticationConfig {
     return Object.freeze(
       new OidcAuthenticationConfig(
         normalizeAbsoluteHttpUrl(params.issuer, 'issuer'),
-        normalizeAbsoluteHttpUrl(params.jwksUri, 'jwksUri'),
-        requireNonEmpty(params.audience, 'audience'),
+        normalizeAbsoluteHttpUrl(params.introspectionUri, 'introspectionUri'),
+        normalizeHttpsOrigin(params.audience, 'audience'),
         requireNonEmpty(params.tenantCode, 'tenantCode'),
+        requireNonEmpty(params.introspectionClientId, 'introspectionClientId'),
+        requireSecret(
+          params.introspectionClientSecret,
+          'introspectionClientSecret',
+        ),
+        requirePositiveInteger(params.timeoutMs, 'timeoutMs'),
       ),
     );
   }
@@ -75,13 +119,18 @@ export class OidcAuthenticationConfig {
 
     return OidcAuthenticationConfig.of({
       issuer,
-      jwksUri:
-        environment.VOTE_AUTH_JWKS_URI ?? `${issuer.replace(/\/+$/, '')}/jwks`,
-      audience:
-        environment.VOTE_AUTH_AUDIENCE ??
-        environment.AUTH_E_VOTE_CLIENT_ID ??
-        'e-vote',
+      introspectionUri:
+        environment.VOTE_AUTH_INTROSPECTION_URI ??
+        `${issuer.replace(/\/+$/, '')}/token/introspection`,
+      audience: environment.VOTE_AUTH_AUDIENCE ?? 'https://vote-api.local',
       tenantCode,
+      introspectionClientId:
+        environment.VOTE_AUTH_INTROSPECTION_CLIENT_ID ?? 'vote-api',
+      introspectionClientSecret:
+        environment.VOTE_AUTH_INTROSPECTION_CLIENT_SECRET,
+      timeoutMs: environment.VOTE_AUTH_INTROSPECTION_TIMEOUT_MS
+        ? Number(environment.VOTE_AUTH_INTROSPECTION_TIMEOUT_MS)
+        : 3_000,
     });
   }
 }

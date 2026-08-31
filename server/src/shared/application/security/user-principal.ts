@@ -1,6 +1,7 @@
 export class UserPrincipal {
   private constructor(
     readonly id: string,
+    readonly tenantId: string | undefined,
     readonly tenantCode: string | undefined,
     readonly username: string | undefined,
     readonly email: string | undefined,
@@ -10,6 +11,7 @@ export class UserPrincipal {
 
   static of(params: {
     id: string;
+    tenantId?: string;
     tenantCode?: string;
     username?: string;
     email?: string;
@@ -23,6 +25,7 @@ export class UserPrincipal {
     return Object.freeze(
       new UserPrincipal(
         params.id,
+        params.tenantId,
         params.tenantCode,
         params.username,
         params.email,
