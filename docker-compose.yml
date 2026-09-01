@@ -1,7 +1,7 @@
 name: vote
 
-x-auth-service-image: &auth-service-image ${AUTH_SERVICE_IMAGE:-ghcr.io/kangjuhyup/auth/auth-service@sha256:50ed6277db320f0e76cc227448297cd97cf61f30886132ec39bab25615a41f7d}
-x-auth-ui-image: &auth-ui-image ${AUTH_UI_IMAGE:-ghcr.io/kangjuhyup/auth/auth-ui@sha256:c7e9c92c64d372e993214de30ef160b8df9d045623528e1c60e818642d10d006}
+x-auth-service-image: &auth-service-image ${AUTH_SERVICE_IMAGE:-ghcr.io/kangjuhyup/auth/auth-service@sha256:5886e25fd78b6c5b6249311ca589a23f6215877af896b80fed7039c63c359668}
+x-auth-ui-image: &auth-ui-image ${AUTH_UI_IMAGE:-ghcr.io/kangjuhyup/auth/auth-ui@sha256:64a7ee74ebf3a632d59a95dde5fbb6bb28daab72ff14e53358407de2197f8f98}
 x-auth-service-environment: &auth-service-environment
   DB_DRIVER: ${AUTH_SERVICE_DB_DRIVER:-postgresql}
   DB_HOST: ${AUTH_SERVICE_DB_HOST:-auth-postgres}
