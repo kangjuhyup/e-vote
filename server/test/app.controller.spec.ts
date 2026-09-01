@@ -83,13 +83,13 @@ describe('AppController', () => {
     it('rejects readiness when database is not reachable', async () => {
       databaseHealth.ping.mockResolvedValue({
         status: 'down',
-        reason: 'not_configured',
+        reason: 'database connection refused',
       });
       redisHealth.ping.mockResolvedValue({ status: 'up' });
       storageHealth.ping.mockResolvedValue({ status: 'up' });
 
-      await expect(appController.getReadiness()).rejects.toBeInstanceOf(
-        ServiceUnavailableException,
+      await expect(appController.getReadiness()).rejects.toThrow(
+        'database is not ready: database connection refused',
       );
     });
 

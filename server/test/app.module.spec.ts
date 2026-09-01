@@ -13,6 +13,7 @@ import { SMS_RECIPIENT_ACCESS_PORT } from '../src/shared/application/port/capabi
 import { ElectorSmsRecipientAccessAdapter } from '../src/modules/elector/infrastructure/sms/elector-sms-recipient-access.adapter';
 import { BillingOrderCancellationController } from '../src/modules/billing/presentation/billing-order/billing-order-cancellation.controller';
 import { CancelVoteUsageBillingOrderHandler } from '../src/modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
+import { DATABASE_HEALTH_PORT } from '../src/shared/application/port/health/database-health.port';
 
 describe('AppModule', () => {
   it('registers vote statistics query endpoints and handlers', () => {
@@ -74,5 +75,18 @@ describe('AppModule', () => {
 
     expect(controllers).toContain(BillingOrderCancellationController);
     expect(providers).toContain(CancelVoteUsageBillingOrderHandler);
+  });
+
+  it('does not override the database health port owned by DatabaseModule', () => {
+    const providers = Reflect.getMetadata(
+      MODULE_METADATA.PROVIDERS,
+      AppModule,
+    ) as unknown[];
+
+    expect(providers).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ provide: DATABASE_HEALTH_PORT }),
+      ]),
+    );
   });
 });
