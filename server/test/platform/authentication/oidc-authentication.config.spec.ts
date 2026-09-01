@@ -12,7 +12,7 @@ describe('OidcAuthenticationConfig', () => {
       issuer: 'http://localhost:3002/t/tenant%20one/oidc',
       introspectionUri:
         'http://localhost:3002/t/tenant%20one/oidc/token/introspection',
-      audience: 'https://vote-api.local',
+      audience: 'https://vote-api.example.com',
       tenantCode: 'tenant one',
       introspectionClientId: 'vote-api',
       introspectionClientSecret: 'resource-server-secret',

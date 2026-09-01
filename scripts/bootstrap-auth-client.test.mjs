@@ -62,7 +62,7 @@ test('creates the local public OIDC client through the admin API', async () => {
   );
   assert.match(calls[2].options.headers.cookie, /admin_session=session-token/);
   assert.deepEqual(createDesiredClient(env).allowedResources, [
-    'https://vote-api.local',
+    'https://vote-api.example.com',
   ]);
 });
 
@@ -81,7 +81,7 @@ test('registers a confidential Vote API introspection client', () => {
     applicationType: 'web',
     skipConsent: true,
     allowedResources: [],
-    introspectionResources: ['https://vote-api.local'],
+    introspectionResources: ['https://vote-api.example.com'],
   });
 });
 
@@ -173,7 +173,7 @@ test('updates only allowedResources for a compatible legacy public client', asyn
   assert.equal(calls.length, 4);
   assert.equal(calls[2].options.method, 'PUT');
   assert.deepEqual(JSON.parse(calls[2].options.body), {
-    allowedResources: ['https://vote-api.local'],
+    allowedResources: ['https://vote-api.example.com'],
   });
 });
 

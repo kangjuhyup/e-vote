@@ -3,7 +3,7 @@ export const E_VOTE_CLIENT_ID = 'e-vote';
 
 const DEFAULT_OIDC_ISSUER_ORIGIN = 'http://localhost:3000';
 const DEFAULT_OIDC_TENANT_CODE = 'acme';
-const DEFAULT_VOTE_API_RESOURCE = 'https://vote-api.local';
+const DEFAULT_VOTE_API_RESOURCE = 'https://vote-api.example.com';
 
 export interface EVoteOidcProfile {
   sub: string;

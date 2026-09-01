@@ -28,7 +28,7 @@ describe('buildTenantOidcIssuer', () => {
 
 describe('getVoteApiResource', () => {
   it('uses the shared Vote API resource by default', () => {
-    expect(getVoteApiResource({})).toBe('https://vote-api.local');
+    expect(getVoteApiResource({})).toBe('https://vote-api.example.com');
   });
 
   it('accepts an absolute resource URI override', () => {

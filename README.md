@@ -90,7 +90,7 @@ copy the example file and replace `AUTH_SECRET` with a generated value. Update
 the issuer and tenant code for non-local environments. The configured issuer becomes
 `{AUTH_OIDC_ISSUER}/t/{AUTH_OIDC_TENANT_CODE}/oidc`. If the registered
 client is confidential, also set `AUTH_E_VOTE_SECRET`. `AUTH_E_VOTE_RESOURCE`
-identifies the Vote API resource and defaults to `https://vote-api.local`.
+identifies the Vote API resource and defaults to `https://vote-api.example.com`.
 
 Register this redirect URI in the OIDC auth server:
 
@@ -100,7 +100,7 @@ Register this redirect URI in the OIDC auth server:
 
 The local Compose bootstrap registers
 `http://localhost:3001/api/auth/callback/e-vote` and the
-`https://vote-api.local` allowed resource on the public `e-vote` client. It
+`https://vote-api.example.com` allowed resource on the public `e-vote` client. It
 also registers a `vote-api` service client using `client_secret_basic` and the
 same value in `introspectionResources`. Override these values with
 `AUTH_CLIENT_REDIRECT_URI`, `AUTH_CLIENT_ALLOWED_RESOURCE`,
@@ -123,7 +123,7 @@ Local development uses this contract:
 ```text
 issuer                = {AUTH_OIDC_ISSUER}/t/{AUTH_OIDC_TENANT_CODE}/oidc
 introspection         = {issuer}/token/introspection
-audience/resource     = https://vote-api.local
+audience/resource     = https://vote-api.example.com
 resource server ID    = vote-api
 resource server secret= vote-local-introspection-secret-change-me
 ```
