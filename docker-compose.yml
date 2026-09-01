@@ -129,7 +129,7 @@ services:
       AUTH_CLIENT_ID: e-vote
       AUTH_CLIENT_REDIRECT_URI: ${AUTH_CLIENT_REDIRECT_URI:-http://localhost:3001/api/auth/callback/e-vote}
       AUTH_CLIENT_POST_LOGOUT_URI: ${AUTH_CLIENT_POST_LOGOUT_URI:-http://localhost:3001}
-      AUTH_CLIENT_ALLOWED_RESOURCE: ${VOTE_AUTH_AUDIENCE:-https://vote-api.local}
+      AUTH_CLIENT_ALLOWED_RESOURCE: ${VOTE_AUTH_AUDIENCE:-https://vote-api.example.com}
       AUTH_RESOURCE_SERVER_CLIENT_ID: ${VOTE_AUTH_INTROSPECTION_CLIENT_ID:-vote-api}
       AUTH_RESOURCE_SERVER_CLIENT_SECRET: ${VOTE_AUTH_INTROSPECTION_CLIENT_SECRET:-vote-local-introspection-secret-change-me}
     volumes:

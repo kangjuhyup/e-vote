@@ -4,7 +4,7 @@ const DEFAULT_BASE_URL = 'http://auth-service:3000';
 const DEFAULT_CLIENT_ID = 'e-vote';
 const DEFAULT_REDIRECT_URI = 'http://localhost:3001/api/auth/callback/e-vote';
 const DEFAULT_POST_LOGOUT_URI = 'http://localhost:3001';
-const DEFAULT_ALLOWED_RESOURCE = 'https://vote-api.local';
+const DEFAULT_ALLOWED_RESOURCE = 'https://vote-api.example.com';
 const DEFAULT_RESOURCE_SERVER_CLIENT_ID = 'vote-api';
 const DEFAULT_RESOURCE_SERVER_SECRET =
   'vote-local-introspection-secret-change-me';

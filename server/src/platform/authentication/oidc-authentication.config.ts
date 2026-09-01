@@ -122,7 +122,8 @@ export class OidcAuthenticationConfig {
       introspectionUri:
         environment.VOTE_AUTH_INTROSPECTION_URI ??
         `${issuer.replace(/\/+$/, '')}/token/introspection`,
-      audience: environment.VOTE_AUTH_AUDIENCE ?? 'https://vote-api.local',
+      audience:
+        environment.VOTE_AUTH_AUDIENCE ?? 'https://vote-api.example.com',
       tenantCode,
       introspectionClientId:
         environment.VOTE_AUTH_INTROSPECTION_CLIENT_ID ?? 'vote-api',

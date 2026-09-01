@@ -15,7 +15,7 @@ set -eu
 : "${AUTH_TRUST_HOST:=true}"
 : "${AUTH_OIDC_ISSUER:=http://localhost:$AUTH_SERVICE_PORT}"
 : "${AUTH_OIDC_TENANT_CODE:=acme}"
-: "${VOTE_AUTH_AUDIENCE:=https://vote-api.local}"
+: "${VOTE_AUTH_AUDIENCE:=https://vote-api.example.com}"
 : "${VOTE_AUTH_INTROSPECTION_CLIENT_ID:=vote-api}"
 : "${VOTE_AUTH_INTROSPECTION_CLIENT_SECRET:=vote-local-introspection-secret-change-me}"
 : "${AUTH_E_VOTE_RESOURCE:=$VOTE_AUTH_AUDIENCE}"
