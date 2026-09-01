@@ -14,6 +14,9 @@ import { Public } from '../src/shared/presentation/common/decorator/public.decor
 import { User } from '../src/shared/presentation/common/decorator/user.decorator';
 import { UserPrincipal } from '../src/shared/application/security/user-principal';
 import { ACCESS_TOKEN_VERIFIER_PORT } from '../src/shared/application/port/security/access-token-verifier.port';
+import { DATABASE_HEALTH_PORT } from '../src/shared/application/port/health/database-health.port';
+import { REDIS_HEALTH_PORT } from '../src/shared/application/port/health/redis-health.port';
+import { STORAGE_HEALTH_PORT } from '../src/shared/application/port/health/storage-health.port';
 
 type HttpTestResponse = {
   readonly body: unknown;
@@ -70,6 +73,12 @@ describe('AppController (e2e)', () => {
           return Promise.resolve(UserPrincipal.of({ id: 'verified-user-1' }));
         },
       })
+      .overrideProvider(DATABASE_HEALTH_PORT)
+      .useValue({ ping: () => Promise.resolve({ status: 'up' }) })
+      .overrideProvider(REDIS_HEALTH_PORT)
+      .useValue({ ping: () => Promise.resolve({ status: 'up' }) })
+      .overrideProvider(STORAGE_HEALTH_PORT)
+      .useValue({ ping: () => Promise.resolve({ status: 'up' }) })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -127,18 +136,21 @@ describe('AppController (e2e)', () => {
     });
   });
 
-  it('/readiness (GET) returns unavailable when database is not configured', async () => {
+  it('/readiness (GET) reports all configured dependencies as ready', async () => {
     const response = (await request(app.getHttpServer())
       .get('/readiness')
       .set('x-request-id', 'request-readiness')
-      .expect(503)) as HttpTestResponse;
+      .expect(200)) as HttpTestResponse;
 
     expectBodyWithTimestamp(response.body, {
-      success: false,
-      error: {
-        statusCode: 503,
-        message: 'database is not ready: not_configured',
-        path: '/readiness',
+      success: true,
+      data: {
+        status: 'ok',
+        checks: {
+          database: 'up',
+          redis: 'up',
+          storage: 'up',
+        },
       },
       requestId: 'request-readiness',
     });

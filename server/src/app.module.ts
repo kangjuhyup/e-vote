@@ -32,7 +32,6 @@ import { UpdateVoteDetailHandler } from './modules/vote/application/command/hand
 import { UpdateVoteHandler } from './modules/vote/application/command/handler/update-vote.handler';
 import { WithdrawCandidateHandler } from './modules/vote/application/command/handler/withdraw-candidate.handler';
 import { ELECTOR_IDENTITY_VERIFICATION_PORT } from './modules/elector/application/port/gateway/elector-identity-verification.port';
-import { DATABASE_HEALTH_PORT } from './shared/application/port/health/database-health.port';
 import { GetCandidatePageHandler } from './modules/vote/application/query/handler/get-candidate-page.handler';
 import { GetCandidateHandler } from './modules/vote/application/query/handler/get-candidate.handler';
 import { GetElectionCommissionHandler } from './modules/election-commission/application/query/handler/get-election-commission.handler';
@@ -59,7 +58,6 @@ import {
   databaseRepositoryPortTokens,
   databaseRepositoryProviders,
 } from './composition/database-repository.providers';
-import { NotConfiguredDatabaseHealthAdapter } from './platform/database/not-configured-database-health.adapter';
 import { NotConfiguredElectorIdentityVerificationAdapter } from './modules/elector/infrastructure/security/not-configured-elector-identity-verification.adapter';
 import { RandomSmsSenderAdapter } from './shared/infrastructure/sms/random-sms-sender.adapter';
 import { ElectorSmsRecipientAccessAdapter } from './modules/elector/infrastructure/sms/elector-sms-recipient-access.adapter';
@@ -251,10 +249,6 @@ import {
     CancelVoteUsageBillingOrderHandler,
     MarkBillingOrderPaidHandler,
     GetBillingOrderHandler,
-    {
-      provide: DATABASE_HEALTH_PORT,
-      useClass: NotConfiguredDatabaseHealthAdapter,
-    },
     {
       provide: ELECTOR_IDENTITY_VERIFICATION_PORT,
       useClass: NotConfiguredElectorIdentityVerificationAdapter,
