@@ -52,7 +52,7 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
         id: electoralRollId,
         accessGrants: { userPrincipalId },
       },
-      JOINED_RELATION_LOAD_OPTIONS,
+      { ...JOINED_RELATION_LOAD_OPTIONS },
     )) as unknown as ElectoralRollPersistence | null;
 
     return entity

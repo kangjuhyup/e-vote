@@ -13,13 +13,13 @@ export type DatabaseEntityClass = EntityClass<AnyEntity>;
 export type LoadedCollectionLike<T> =
   readonly T[] | { getItems(check?: boolean): T[] };
 
-export const JOINED_RELATION_LOAD_OPTIONS = {
+export const JOINED_RELATION_LOAD_OPTIONS = Object.freeze({
   strategy: LoadStrategy.JOINED,
-} as const;
+} as const);
 
-export const SELECT_IN_RELATION_LOAD_OPTIONS = {
+export const SELECT_IN_RELATION_LOAD_OPTIONS = Object.freeze({
   strategy: LoadStrategy.SELECT_IN,
-} as const;
+} as const);
 
 let databaseEntityRegistryFactory: DatabaseEntityRegistryFactory | undefined;
 
