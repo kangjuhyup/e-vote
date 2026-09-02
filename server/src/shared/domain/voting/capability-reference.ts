@@ -71,6 +71,5 @@ export interface ParticipationReference {
 
 export interface ElectoralRollSnapshotReference {
   readonly id: string;
-  readonly commissionId: string;
   readonly memberCount: number;
 }

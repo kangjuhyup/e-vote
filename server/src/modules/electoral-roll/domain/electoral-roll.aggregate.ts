@@ -3,7 +3,6 @@ import { createId } from '../../../shared/domain/id';
 
 type CreateElectoralRollParams = {
   readonly id: string;
-  readonly commissionId: string;
   readonly name: string;
   readonly createdAt: Date;
 };
@@ -16,7 +15,6 @@ type ReconstituteElectoralRollParams = CreateElectoralRollParams & {
 export class ElectoralRollAggregate {
   private constructor(
     readonly id: string,
-    readonly commissionId: string,
     public name: string,
     public revision: number,
     readonly createdAt: Date,
@@ -61,7 +59,6 @@ export class ElectoralRollAggregate {
     params: ReconstituteElectoralRollParams,
   ): ElectoralRollAggregate {
     const id = createId(params.id);
-    const commissionId = createId(params.commissionId);
     const name = ElectoralRollAggregate.normalizeName(params.name);
 
     if (!Number.isInteger(params.revision) || params.revision < 1) {
@@ -72,7 +69,6 @@ export class ElectoralRollAggregate {
 
     return new ElectoralRollAggregate(
       id,
-      commissionId,
       name,
       params.revision,
       params.createdAt,

@@ -65,7 +65,6 @@ export class ElectoralRollSnapshotCreator {
     const snapshot = ElectoralRollSnapshotAggregate.create({
       id: this.snapshotRepository.nextId(),
       electoralRollId: electoralRoll.id,
-      commissionId: electoralRoll.commissionId,
       rollName: electoralRoll.name,
       sourceRevision: electoralRoll.revision,
       contentHash,

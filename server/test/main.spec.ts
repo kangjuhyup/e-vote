@@ -14,6 +14,7 @@ describe('bootstrap', () => {
       listen: jest.fn().mockResolvedValue(undefined),
       useGlobalFilters: jest.fn(),
       useGlobalInterceptors: jest.fn(),
+      useGlobalPipes: jest.fn(),
       useBodyParser: jest.fn(),
     };
     const create = jest.fn().mockResolvedValue(app);
@@ -41,6 +42,7 @@ describe('bootstrap', () => {
       ['urlencoded', { extended: true, limit: '100kb' }],
     ]);
     expect(app.enableShutdownHooks).toHaveBeenCalledWith(['SIGTERM', 'SIGINT']);
+    expect(app.useGlobalPipes).toHaveBeenCalledTimes(1);
     expect(app.enableShutdownHooks.mock.invocationCallOrder[0]).toBeLessThan(
       app.listen.mock.invocationCallOrder[0],
     );

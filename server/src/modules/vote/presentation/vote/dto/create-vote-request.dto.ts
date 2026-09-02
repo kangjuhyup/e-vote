@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 const PrivacyModeBody = {
   Secret: 'SECRET',
@@ -93,8 +94,10 @@ class IdentityVerificationPolicyBody {
 }
 
 export class CreateVoteBody {
+  @IsUUID()
   @ApiProperty({
-    example: 'commission-1',
+    format: 'uuid',
+    example: '22222222-2222-4222-8222-222222222222',
     description: '투표를 주관하는 선거관리위원회 ID입니다.',
   })
   readonly commissionId!: string;
@@ -129,8 +132,10 @@ export class CreateVoteBody {
 }
 
 export class VoteParam {
+  @IsUUID()
   @ApiProperty({
-    example: 'vote-1',
+    format: 'uuid',
+    example: '11111111-1111-4111-8111-111111111111',
     description: '부모 투표 ID입니다.',
   })
   readonly voteId!: string;

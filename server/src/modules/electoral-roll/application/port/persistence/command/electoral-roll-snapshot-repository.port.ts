@@ -7,9 +7,6 @@ export const ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT = Symbol(
 export interface ElectoralRollSnapshotRepositoryPort {
   nextId(): string;
   nextMemberId(): string;
-  findById(
-    snapshotId: string,
-  ): Promise<ElectoralRollSnapshotAggregate | undefined>;
   findBySourceRevision(
     electoralRollId: string,
     sourceRevision: number,

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 const VotingChannelBody = {
   Onsite: 'ONSITE',
@@ -9,8 +10,10 @@ type VotingChannelBody =
   (typeof VotingChannelBody)[keyof typeof VotingChannelBody];
 
 export class CreateFieldVotingSessionBody {
+  @IsUUID()
   @ApiProperty({
-    example: 'commission-1',
+    format: 'uuid',
+    example: '22222222-2222-4222-8222-222222222222',
     description: '현장 투표 세션을 운영하는 선거관리위원회 ID입니다.',
   })
   readonly commissionId!: string;
@@ -46,9 +49,11 @@ export class CreateFieldVotingSessionBody {
   })
   readonly address!: string;
 
+  @IsUUID('all', { each: true })
   @ApiProperty({
     isArray: true,
-    example: ['member-1'],
+    format: 'uuid',
+    example: ['77777777-7777-4777-8777-777777777777'],
     description: '현장 투표를 관리할 선거관리위원 ID 목록입니다.',
   })
   readonly managerIds!: string[];
@@ -67,8 +72,10 @@ export class CreateFieldVotingSessionBody {
 }
 
 export class CreateFieldVotingSessionParam {
+  @IsUUID()
   @ApiProperty({
-    example: 'vote-1',
+    format: 'uuid',
+    example: '11111111-1111-4111-8111-111111111111',
     description: '현장 투표 세션을 만들 부모 투표 ID입니다.',
   })
   readonly voteId!: string;

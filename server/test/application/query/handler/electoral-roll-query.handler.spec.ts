@@ -12,32 +12,41 @@ describe('GetElectoralRollHandler', () => {
   it('returns the dedicated electoral roll read model', async () => {
     const view = ElectoralRollView.of({
       id: 'roll-1',
-      commissionId: 'commission-1',
       name: 'Members',
       revision: 2,
       members: [],
       createdAt: new Date('2026-08-30T00:00:00.000Z'),
       updatedAt: new Date('2026-08-30T01:00:00.000Z'),
     });
+    const findDetailById = jest.fn().mockResolvedValue(view);
     const repository: ElectoralRollReadRepositoryPort = {
-      findDetailById: jest.fn().mockResolvedValue(view),
+      findDetailById,
+      findPage: jest.fn(),
     };
 
     await expect(
       new GetElectoralRollHandler(repository).execute(
-        GetElectoralRollQuery.of({ electoralRollId: 'roll-1' }),
+        GetElectoralRollQuery.of({
+          userPrincipalId: 'user-1',
+          electoralRollId: 'roll-1',
+        }),
       ),
     ).resolves.toBe(view);
+    expect(findDetailById).toHaveBeenCalledWith('roll-1', 'user-1');
   });
 
   it('throws for a missing electoral roll', async () => {
     const repository: ElectoralRollReadRepositoryPort = {
       findDetailById: jest.fn().mockResolvedValue(undefined),
+      findPage: jest.fn(),
     };
 
     await expect(
       new GetElectoralRollHandler(repository).execute(
-        GetElectoralRollQuery.of({ electoralRollId: 'missing' }),
+        GetElectoralRollQuery.of({
+          userPrincipalId: 'user-1',
+          electoralRollId: 'missing',
+        }),
       ),
     ).rejects.toThrow('electoral roll not found');
   });
@@ -59,7 +68,6 @@ describe('GetElectoralRollPageHandler', () => {
     };
     const query = GetElectoralRollPageQuery.of({
       userPrincipalId: 'user-1',
-      commissionId: '  commission-1  ',
       query: '  상반기  ',
       page: 0,
       pageSize: 101,
@@ -70,7 +78,6 @@ describe('GetElectoralRollPageHandler', () => {
     ).resolves.toBe(page);
     expect(findPage).toHaveBeenCalledWith({
       userPrincipalId: 'user-1',
-      commissionId: 'commission-1',
       query: '상반기',
       page: 1,
       pageSize: 100,

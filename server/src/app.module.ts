@@ -14,6 +14,7 @@ import { CreateCandidateHandler } from './modules/vote/application/command/handl
 import { CreateElectionCommissionHandler } from './modules/election-commission/application/command/handler/create-election-commission.handler';
 import { CreateElectoralRollHandler } from './modules/electoral-roll/application/command/handler/create-electoral-roll.handler';
 import { ElectoralRollSnapshotCreator } from './modules/electoral-roll/application/command/electoral-roll-snapshot.creator';
+import { ElectoralRollSnapshotResolver } from './modules/electoral-roll/application/command/electoral-roll-snapshot.resolver';
 import { CreateElectorHandler } from './modules/elector/application/command/handler/create-elector.handler';
 import { CreateFieldVotingSessionHandler } from './modules/field-voting/application/command/handler/create-field-voting-session.handler';
 import { CreateVoteDetailHandler } from './modules/vote/application/command/handler/create-vote-detail.handler';
@@ -106,7 +107,6 @@ import { ELECTOR_REPOSITORY_PORT } from './modules/elector/application/port/pers
 import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from './modules/field-voting/application/port/persistence/command/field-voting-session-repository.port';
 import { PARTICIPATION_REPOSITORY_PORT } from './modules/participation/application/port/persistence/command/participation-repository.port';
 import { FILE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/file-repository.port';
-import { ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT } from './modules/electoral-roll/application/port/persistence/command/electoral-roll-snapshot-repository.port';
 import { AuthenticatedUserGuard } from './shared/presentation/common/guard/authenticated-user.guard';
 import { SMS_SENDER_PORT } from './shared/application/port/gateway/sms-sender.port';
 import { SMS_RECIPIENT_ACCESS_PORT } from './shared/application/port/capability/sms-recipient-access.port';
@@ -194,7 +194,7 @@ import {
     { provide: FILE_ACCESS_PORT, useExisting: FILE_REPOSITORY_PORT },
     {
       provide: ELECTORAL_ROLL_SNAPSHOT_ACCESS_PORT,
-      useExisting: ELECTORAL_ROLL_SNAPSHOT_REPOSITORY_PORT,
+      useExisting: ElectoralRollSnapshotResolver,
     },
     AttachmentTargetValidator,
     CreateVoteHandler,
@@ -207,6 +207,7 @@ import {
     UpdateElectoralRollMemberHandler,
     RemoveElectoralRollMemberHandler,
     ElectoralRollSnapshotCreator,
+    ElectoralRollSnapshotResolver,
     AttachElectoralRollSnapshotHandler,
     CreateElectorHandler,
     AuthenticateElectorHandler,

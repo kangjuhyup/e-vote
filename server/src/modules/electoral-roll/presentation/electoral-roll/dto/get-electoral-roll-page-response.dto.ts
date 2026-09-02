@@ -3,7 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 type ElectoralRollPageItemSource = {
   readonly id: string;
   readonly name: string;
-  readonly commissionId: string;
   readonly revision: number;
   readonly memberCount: number;
   readonly updatedAt: Date;
@@ -12,7 +11,6 @@ type ElectoralRollPageItemSource = {
 export class ElectoralRollPageItemResponse {
   @ApiProperty({ example: 'electoral-roll-1' }) readonly id: string;
   @ApiProperty({ example: '2026 상반기 선거인명부' }) readonly name: string;
-  @ApiProperty({ example: 'commission-1' }) readonly commissionId: string;
   @ApiProperty({ example: 2 }) readonly revision: number;
   @ApiProperty({ example: 120 }) readonly memberCount: number;
   @ApiProperty({
@@ -24,7 +22,6 @@ export class ElectoralRollPageItemResponse {
   private constructor(source: ElectoralRollPageItemSource) {
     this.id = source.id;
     this.name = source.name;
-    this.commissionId = source.commissionId;
     this.revision = source.revision;
     this.memberCount = source.memberCount;
     this.updatedAt = source.updatedAt.toISOString();

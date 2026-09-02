@@ -17,6 +17,7 @@ export class GetElectoralRollHandler {
   async execute(query: GetElectoralRollQuery): Promise<ElectoralRollView> {
     const electoralRoll = await this.repository.findDetailById(
       query.electoralRollId,
+      query.userPrincipalId,
     );
     if (!electoralRoll) throw new ElectoralRollNotFoundError();
     return electoralRoll;

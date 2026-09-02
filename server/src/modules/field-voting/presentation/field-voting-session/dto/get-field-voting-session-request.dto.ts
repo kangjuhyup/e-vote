@@ -1,8 +1,12 @@
+import { IsUUID } from 'class-validator';
+
 export class GetFieldVotingSessionParam {
+  @IsUUID()
   readonly fieldVotingSessionId!: string;
 }
 
 export class GetFieldVotingSessionPageParam {
+  @IsUUID()
   readonly voteId!: string;
 }
 

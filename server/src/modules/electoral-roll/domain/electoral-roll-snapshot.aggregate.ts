@@ -42,7 +42,6 @@ export class ElectoralRollSnapshotMember {
 type ElectoralRollSnapshotParams = {
   readonly id: string;
   readonly electoralRollId: string;
-  readonly commissionId: string;
   readonly rollName: string;
   readonly sourceRevision: number;
   readonly contentHash: string;
@@ -57,7 +56,6 @@ export class ElectoralRollSnapshotAggregate {
   private constructor(
     readonly id: string,
     readonly electoralRollId: string,
-    readonly commissionId: string,
     readonly rollName: string,
     readonly sourceRevision: number,
     readonly contentHash: string,
@@ -112,7 +110,6 @@ export class ElectoralRollSnapshotAggregate {
     return new ElectoralRollSnapshotAggregate(
       createId(params.id),
       createId(params.electoralRollId),
-      createId(params.commissionId),
       rollName,
       params.sourceRevision,
       params.contentHash,

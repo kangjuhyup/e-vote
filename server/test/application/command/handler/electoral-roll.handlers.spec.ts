@@ -1,9 +1,12 @@
 import { AddElectoralRollMembersCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/add-electoral-roll-members.command';
+import { CreateElectoralRollCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/create-electoral-roll.command';
 import { AttachElectoralRollSnapshotCommand } from '../../../../src/modules/vote/application/command/dto/request/attach-electoral-roll-snapshot.command';
 import { RemoveElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/remove-electoral-roll-member.command';
 import { UpdateElectoralRollMemberCommand } from '../../../../src/modules/electoral-roll/application/command/dto/request/update-electoral-roll-member.command';
 import { ElectoralRollSnapshotCreator } from '../../../../src/modules/electoral-roll/application/command/electoral-roll-snapshot.creator';
+import { ElectoralRollSnapshotResolver } from '../../../../src/modules/electoral-roll/application/command/electoral-roll-snapshot.resolver';
 import { AddElectoralRollMembersHandler } from '../../../../src/modules/electoral-roll/application/command/handler/add-electoral-roll-members.handler';
+import { CreateElectoralRollHandler } from '../../../../src/modules/electoral-roll/application/command/handler/create-electoral-roll.handler';
 import { AttachElectoralRollSnapshotHandler } from '../../../../src/modules/vote/application/command/handler/attach-electoral-roll-snapshot.handler';
 import { RemoveElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/remove-electoral-roll-member.handler';
 import { UpdateElectoralRollMemberHandler } from '../../../../src/modules/electoral-roll/application/command/handler/update-electoral-roll-member.handler';
@@ -25,9 +28,47 @@ import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-
 import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
+import type { ElectoralRollSnapshotAccessPort } from '../../../../src/shared/application/port/capability/electoral-roll-snapshot-access.port';
 
 describe('electoral roll command handlers', () => {
   const now = new Date('2026-08-30T00:00:00.000Z');
+
+  it('creates a commission-independent roll owned by its creator', async () => {
+    const rollRepository = createRollRepository(createRoll(), []);
+    const snapshotRepository = createSnapshotRepository();
+
+    const result = await new CreateElectoralRollHandler(
+      rollRepository,
+      new ElectoralRollSnapshotCreator(rollRepository, snapshotRepository),
+      immediateTransactionManager(),
+    ).execute(
+      CreateElectoralRollCommand.of({
+        userPrincipalId: 'user-1',
+        name: 'Independent members',
+        createdAt: now,
+      }),
+    );
+
+    expect(result).toEqual({
+      id: 'roll-2',
+      name: 'Independent members',
+      revision: 1,
+    });
+    expect(rollRepository.create.mock.calls).toContainEqual([
+      expect.objectContaining({
+        id: 'roll-2',
+        name: 'Independent members',
+      }),
+      'user-1',
+    ]);
+    expect(snapshotRepository.save.mock.calls).toContainEqual([
+      expect.objectContaining({
+        electoralRollId: 'roll-2',
+        sourceRevision: 1,
+        memberCount: 0,
+      }),
+    ]);
+  });
 
   it('adds a member batch with one revision and one snapshot transactionally', async () => {
     const roll = createRoll();
@@ -41,6 +82,7 @@ describe('electoral roll command handlers', () => {
       transactionManager,
     ).execute(
       AddElectoralRollMembersCommand.of({
+        userPrincipalId: 'user-1',
         electoralRollId: roll.id,
         members: [
           { identifier: 'member-1', groupKey: 'group-1', voteWeight: 2 },
@@ -75,6 +117,7 @@ describe('electoral roll command handlers', () => {
   it('rejects an empty member batch', () => {
     expect(() =>
       AddElectoralRollMembersCommand.of({
+        userPrincipalId: 'user-1',
         electoralRollId: 'roll-1',
         members: [],
         changedAt: now,
@@ -85,6 +128,7 @@ describe('electoral roll command handlers', () => {
   it('rejects a member batch larger than 50000 items', () => {
     expect(() =>
       AddElectoralRollMembersCommand.of({
+        userPrincipalId: 'user-1',
         electoralRollId: 'roll-1',
         members: Array.from({ length: 50_001 }, (_, index) => ({
           identifier: `member-${index}`,
@@ -109,6 +153,7 @@ describe('electoral roll command handlers', () => {
     await expect(
       handler.execute(
         AddElectoralRollMembersCommand.of({
+          userPrincipalId: 'user-1',
           electoralRollId: roll.id,
           members: [{ identifier: 'member-1' }, { identifier: ' member-1 ' }],
           changedAt: now,
@@ -136,6 +181,7 @@ describe('electoral roll command handlers', () => {
       immediateTransactionManager(),
     ).execute(
       UpdateElectoralRollMemberCommand.of({
+        userPrincipalId: 'user-1',
         electoralRollId: roll.id,
         memberId: sourceMember.id,
         identifier: 'updated-member',
@@ -178,6 +224,7 @@ describe('electoral roll command handlers', () => {
       immediateTransactionManager(),
     ).execute(
       RemoveElectoralRollMemberCommand.of({
+        userPrincipalId: 'user-1',
         electoralRollId: roll.id,
         memberId: sourceMember.id,
         changedAt: now,
@@ -229,21 +276,48 @@ describe('electoral roll command handlers', () => {
     });
   });
 
-  it('attaches a same-commission snapshot and materializes vote electors', async () => {
+  it('automatically resolves the current snapshot from an accessible roll', async () => {
+    const roll = createRoll();
+    const rollRepository = createRollRepository(roll, []);
+    const snapshotRepository = createSnapshotRepository();
+    const resolver = new ElectoralRollSnapshotResolver(
+      rollRepository,
+      snapshotRepository,
+      new ElectoralRollSnapshotCreator(rollRepository, snapshotRepository),
+      immediateTransactionManager(),
+    );
+
+    const snapshot = await resolver.resolveCurrent(roll.id, 'user-1', now);
+
+    expect(rollRepository.findById.mock.calls).toContainEqual([
+      roll.id,
+      'user-1',
+    ]);
+    expect(snapshot).toMatchObject({
+      electoralRollId: roll.id,
+      sourceRevision: 1,
+      memberCount: 0,
+    });
+    expect(snapshotRepository.save.mock.calls).toHaveLength(1);
+  });
+
+  it('attaches an accessible snapshot and materializes vote electors', async () => {
     const vote = createVote();
     const snapshot = createSnapshot();
     const voteRepository = createVoteRepository(vote);
-    const snapshotRepository = createSnapshotRepository(snapshot);
+    const snapshotAccess = createSnapshotAccess(snapshot);
 
     const result = await new AttachElectoralRollSnapshotHandler(
       voteRepository,
-      snapshotRepository,
+      snapshotAccess,
       voteLifecycleStub(),
       immediateTransactionManager(),
     ).execute(
       AttachElectoralRollSnapshotCommand.of({
+        userPrincipalId: 'user-1',
         voteId: vote.id,
-        snapshotId: snapshot.id,
+        electoralRollId: snapshot.electoralRollId,
+        requestedAt: now,
       }),
     );
 
@@ -253,7 +327,12 @@ describe('electoral roll command handlers', () => {
       memberCount: 0,
     });
     expect(vote.electoralRollSnapshotId).toBe(snapshot.id);
-    expect(snapshotRepository.materializeVoteElectors.mock.calls).toEqual([
+    expect(snapshotAccess.resolveCurrent.mock.calls).toContainEqual([
+      snapshot.electoralRollId,
+      'user-1',
+      now,
+    ]);
+    expect(snapshotAccess.materializeVoteElectors.mock.calls).toEqual([
       [vote.id, snapshot.id],
     ]);
   });
@@ -261,32 +340,53 @@ describe('electoral roll command handlers', () => {
   it('does not overwrite manually managed vote electors', async () => {
     const vote = createVote();
     const snapshot = createSnapshot();
-    const snapshotRepository = createSnapshotRepository(snapshot);
-    snapshotRepository.hasVoteElectors.mockResolvedValue(true);
+    const snapshotAccess = createSnapshotAccess(snapshot);
+    snapshotAccess.hasVoteElectors.mockResolvedValue(true);
 
     await expect(
       new AttachElectoralRollSnapshotHandler(
         createVoteRepository(vote),
-        snapshotRepository,
+        snapshotAccess,
         voteLifecycleStub(),
         immediateTransactionManager(),
       ).execute(
         AttachElectoralRollSnapshotCommand.of({
+          userPrincipalId: 'user-1',
           voteId: vote.id,
-          snapshotId: snapshot.id,
+          electoralRollId: snapshot.electoralRollId,
+          requestedAt: now,
         }),
       ),
     ).rejects.toThrow('manually managed electors');
-    expect(snapshotRepository.materializeVoteElectors.mock.calls).toHaveLength(
-      0,
-    );
+    expect(snapshotAccess.materializeVoteElectors.mock.calls).toHaveLength(0);
+  });
+
+  it('hides a snapshot when the principal has no source-roll grant', async () => {
+    const vote = createVote();
+    const snapshotAccess = createSnapshotAccess();
+
+    await expect(
+      new AttachElectoralRollSnapshotHandler(
+        createVoteRepository(vote),
+        snapshotAccess,
+        voteLifecycleStub(),
+        immediateTransactionManager(),
+      ).execute(
+        AttachElectoralRollSnapshotCommand.of({
+          userPrincipalId: 'unauthorized-user',
+          voteId: vote.id,
+          electoralRollId: 'roll-1',
+          requestedAt: now,
+        }),
+      ),
+    ).rejects.toThrow('electoral roll not found or access denied');
+    expect(snapshotAccess.materializeVoteElectors.mock.calls).toHaveLength(0);
   });
 });
 
 function createRoll(): ElectoralRollAggregate {
   return ElectoralRollAggregate.create({
     id: 'roll-1',
-    commissionId: 'commission-1',
     name: 'Members',
     createdAt: new Date('2026-08-30T00:00:00.000Z'),
   });
@@ -314,6 +414,7 @@ function createRollRepository(
       .fn()
       .mockImplementation(() => Promise.resolve([...storedMembers])),
     save: jest.fn(),
+    create: jest.fn(),
     saveMember: jest
       .fn()
       .mockImplementation((member: ElectoralRollMemberAggregate) => {
@@ -355,7 +456,6 @@ function createSnapshotRepository(
     nextMemberId: jest
       .fn()
       .mockImplementation(() => `snapshot-member-${++memberSequence}`),
-    findById: jest.fn().mockResolvedValue(snapshot),
     findBySourceRevision: jest
       .fn()
       .mockImplementation((electoralRollId: string, sourceRevision: number) =>
@@ -378,11 +478,20 @@ function createSnapshotRepository(
   };
 }
 
+function createSnapshotAccess(
+  snapshot?: ElectoralRollSnapshotAggregate,
+): jest.Mocked<ElectoralRollSnapshotAccessPort> {
+  return {
+    resolveCurrent: jest.fn().mockResolvedValue(snapshot),
+    hasVoteElectors: jest.fn().mockResolvedValue(false),
+    materializeVoteElectors: jest.fn(),
+  };
+}
+
 function createSnapshot(): ElectoralRollSnapshotAggregate {
   return ElectoralRollSnapshotAggregate.create({
     id: 'snapshot-1',
     electoralRollId: 'roll-1',
-    commissionId: 'commission-1',
     rollName: 'Members',
     sourceRevision: 1,
     contentHash: 'a'.repeat(64),

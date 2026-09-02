@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
@@ -12,6 +13,7 @@ async function bootstrap() {
   app.useBodyParser('json', { limit: '32mb' });
   app.useBodyParser('urlencoded', { extended: true, limit: '100kb' });
   app.enableShutdownHooks(['SIGTERM', 'SIGINT']);
+  app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter(new RvlogHttpExceptionLogger()));
   await app.listen(process.env.PORT ?? 3000);

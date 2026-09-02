@@ -4,6 +4,7 @@ import {
   Get,
   INestApplication,
   InternalServerErrorException,
+  ValidationPipe,
 } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -88,6 +89,7 @@ describe('AppController (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe());
     app.useGlobalInterceptors(new ResponseInterceptor());
     app.useGlobalFilters(new HttpExceptionFilter(exceptionLogger));
     await app.init();
@@ -179,6 +181,62 @@ describe('AppController (e2e)', () => {
     });
     expect(exceptionLogger.warn.mock.calls).toContainEqual([
       'GET /votes failed 401',
+    ]);
+    expect(exceptionLogger.error.mock.calls).toHaveLength(0);
+  });
+
+  it('rejects malformed UUID route parameters before database access', async () => {
+    const response = (await request(app.getHttpServer())
+      .get('/votes/not-a-uuid')
+      .set('authorization', 'Bearer valid-test-token')
+      .set('x-request-id', 'request-invalid-uuid')
+      .expect(400)) as HttpTestResponse;
+
+    expectBodyWithTimestamp(response.body, {
+      success: false,
+      error: {
+        statusCode: 400,
+        message: 'voteId must be a UUID',
+        path: '/votes/not-a-uuid',
+      },
+      requestId: 'request-invalid-uuid',
+    });
+    expect(exceptionLogger.warn.mock.calls).toContainEqual([
+      'GET /votes/not-a-uuid failed 400',
+    ]);
+    expect(exceptionLogger.error.mock.calls).toHaveLength(0);
+  });
+
+  it('rejects malformed UUID body fields before database access', async () => {
+    const response = (await request(app.getHttpServer())
+      .post('/votes')
+      .set('authorization', 'Bearer valid-test-token')
+      .set('x-request-id', 'request-invalid-body-uuid')
+      .send({
+        commissionId: 'commission-1',
+        title: 'Board election',
+        votingChannels: ['ONLINE'],
+        defaultPolicy: {
+          privacyMode: 'SECRET',
+          participationUnit: 'INDIVIDUAL',
+          resultStorageMode: 'DATABASE',
+          voteWeightMode: 'EQUAL',
+        },
+        identityVerificationPolicy: { required: false },
+      })
+      .expect(400)) as HttpTestResponse;
+
+    expectBodyWithTimestamp(response.body, {
+      success: false,
+      error: {
+        statusCode: 400,
+        message: 'commissionId must be a UUID',
+        path: '/votes',
+      },
+      requestId: 'request-invalid-body-uuid',
+    });
+    expect(exceptionLogger.warn.mock.calls).toContainEqual([
+      'POST /votes failed 400',
     ]);
     expect(exceptionLogger.error.mock.calls).toHaveLength(0);
   });
