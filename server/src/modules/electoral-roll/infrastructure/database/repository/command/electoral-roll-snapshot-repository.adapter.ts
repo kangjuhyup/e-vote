@@ -7,7 +7,7 @@ import {
 } from '../../../../domain/electoral-roll-snapshot.aggregate';
 import { DomainError } from '../../../../../../shared/domain/domain-error';
 import {
-  JOINED_RELATION_LOAD_OPTIONS,
+  SELECT_IN_RELATION_LOAD_OPTIONS,
   entityReference,
   getDatabaseEntities,
   loadedItems,
@@ -61,7 +61,7 @@ export class ElectoralRollSnapshotRepositoryAdapter implements ElectoralRollSnap
       } as any,
       {
         populate: SNAPSHOT_RELATIONS,
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       },
     )) as unknown as SnapshotPersistence | null;
 

@@ -151,7 +151,7 @@ describe('electoral roll repository adapters', () => {
     });
     expect(findOne.mock.calls[0]?.[2]).toMatchObject({
       populate: ['members'],
-      strategy: LoadStrategy.JOINED,
+      strategy: LoadStrategy.SELECT_IN,
     });
     expect(result).toMatchObject({
       id: 'roll-1',

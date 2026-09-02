@@ -11,7 +11,7 @@ import {
   ElectoralRollView,
 } from '../../../../application/query/dto/response/electoral-roll.view';
 import {
-  JOINED_RELATION_LOAD_OPTIONS,
+  SELECT_IN_RELATION_LOAD_OPTIONS,
   getDatabaseEntities,
   loadedItems,
   type LoadedCollectionLike,
@@ -53,7 +53,7 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
       } as any,
       {
         populate: ['members'],
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       },
     )) as unknown as ElectoralRollReadPersistence | null;
 
@@ -103,7 +103,7 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
         limit: request.pageSize,
         offset: (request.page - 1) * request.pageSize,
         orderBy: { updatedAt: 'desc', id: 'desc' },
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       } as any,
     )) as unknown as [ElectoralRollReadPersistence[], number];
 
