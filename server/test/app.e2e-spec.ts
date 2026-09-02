@@ -17,6 +17,7 @@ import { ACCESS_TOKEN_VERIFIER_PORT } from '../src/shared/application/port/secur
 import { DATABASE_HEALTH_PORT } from '../src/shared/application/port/health/database-health.port';
 import { REDIS_HEALTH_PORT } from '../src/shared/application/port/health/redis-health.port';
 import { STORAGE_HEALTH_PORT } from '../src/shared/application/port/health/storage-health.port';
+import type { HttpExceptionLogger } from '../src/shared/presentation/common/filter/http-exception-logger';
 
 type HttpTestResponse = {
   readonly body: unknown;
@@ -57,8 +58,13 @@ class TestAuthenticatedController {
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
+  let exceptionLogger: jest.Mocked<HttpExceptionLogger>;
 
   beforeEach(async () => {
+    exceptionLogger = {
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
       controllers: [TestErrorController, TestAuthenticatedController],
@@ -83,7 +89,7 @@ describe('AppController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalInterceptors(new ResponseInterceptor());
-    app.useGlobalFilters(new HttpExceptionFilter());
+    app.useGlobalFilters(new HttpExceptionFilter(exceptionLogger));
     await app.init();
   });
 
@@ -171,6 +177,10 @@ describe('AppController (e2e)', () => {
       },
       requestId: 'request-protected',
     });
+    expect(exceptionLogger.warn.mock.calls).toContainEqual([
+      'GET /votes failed 401',
+    ]);
+    expect(exceptionLogger.error.mock.calls).toHaveLength(0);
   });
 
   it('creates request.user from a verified bearer access token', async () => {
@@ -202,6 +212,7 @@ describe('AppController (e2e)', () => {
       },
       requestId: 'request-http-error',
     });
+    expect(exceptionLogger.error.mock.calls).toHaveLength(1);
   });
 
   it('wraps unknown errors without leaking internal messages', async () => {
@@ -219,6 +230,10 @@ describe('AppController (e2e)', () => {
       },
       requestId: 'request-unknown-error',
     });
+    expect(exceptionLogger.error.mock.calls).toHaveLength(1);
+    const loggedError = exceptionLogger.error.mock.calls[0]?.[1];
+    expect(loggedError?.stack).toContain('TestErrorController.getUnknownError');
+    expect(loggedError?.stack).not.toContain('sensitive internal error');
   });
 
   afterEach(async () => {
