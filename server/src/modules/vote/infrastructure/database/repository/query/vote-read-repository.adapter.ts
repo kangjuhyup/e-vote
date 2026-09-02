@@ -28,7 +28,7 @@ import type {
 } from '../../../../../../shared/domain/voting/type/vote-status.type';
 import type { VotingChannel } from '../../../../../../shared/domain/voting/type/voting-channel.type';
 import {
-  JOINED_RELATION_LOAD_OPTIONS,
+  SELECT_IN_RELATION_LOAD_OPTIONS,
   getDatabaseEntities,
   loadedItems,
   type LoadedCollectionLike,
@@ -106,7 +106,7 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
     const { VoteEntity } = await getDatabaseEntities();
     const entity = (await this.em.findOne(VoteEntity as any, { id: voteId }, {
       populate: VOTE_DETAIL_READ_RELATIONS,
-      ...JOINED_RELATION_LOAD_OPTIONS,
+      ...SELECT_IN_RELATION_LOAD_OPTIONS,
     } as any)) as unknown as VoteReadPersistence | null;
 
     return entity ? this.toVoteView(entity) : undefined;
@@ -125,7 +125,7 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
           createdAt: 'desc',
           id: 'desc',
         },
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       } as any,
     )) as unknown as [VoteSummaryReadPersistence[], number];
 

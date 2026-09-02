@@ -17,6 +17,10 @@ export const JOINED_RELATION_LOAD_OPTIONS = {
   strategy: LoadStrategy.JOINED,
 } as const;
 
+export const SELECT_IN_RELATION_LOAD_OPTIONS = {
+  strategy: LoadStrategy.SELECT_IN,
+} as const;
+
 let databaseEntityRegistryFactory: DatabaseEntityRegistryFactory | undefined;
 
 export function configureDatabaseEntityRegistryFactory(

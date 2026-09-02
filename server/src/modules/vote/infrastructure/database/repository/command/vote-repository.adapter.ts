@@ -6,7 +6,7 @@ import type { VoteSetupLifecyclePort } from '../../../../../../shared/applicatio
 import { ManagedResourceNotFoundError } from '../../../../../../shared/application/error/managed-resource.error';
 import { VoteMapper, type VotePersistence } from '../../mapper/vote.mapper';
 import {
-  JOINED_RELATION_LOAD_OPTIONS,
+  SELECT_IN_RELATION_LOAD_OPTIONS,
   entityReference,
   getDatabaseEntities,
   loadedItems,
@@ -44,7 +44,7 @@ export class VoteRepositoryAdapter
       { id: voteId } as any,
       {
         populate: VOTE_RELATIONS,
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       },
     )) as unknown as VoteEntityPersistence | null;
 
