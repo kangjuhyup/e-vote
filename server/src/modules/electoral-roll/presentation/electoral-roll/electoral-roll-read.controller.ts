@@ -30,9 +30,8 @@ export class ElectoralRollReadController {
   @ApiOperation({
     summary: '선거인명부 페이지 조회',
     description:
-      '인증 사용자가 활성 위원으로 등록된 선거관리위원회의 명부 메타데이터만 조회합니다. 명부 구성원의 식별정보는 반환하지 않습니다.',
+      '인증 사용자에게 직접 접근 권한이 부여된 명부 메타데이터만 조회합니다. 명부 구성원의 식별정보는 반환하지 않습니다.',
   })
-  @ApiQuery({ name: 'commissionId', required: false })
   @ApiQuery({ name: 'q', required: false })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'pageSize', required: false, example: 20 })
@@ -48,7 +47,6 @@ export class ElectoralRollReadController {
       await this.pageHandler.execute(
         GetElectoralRollPageApplicationQuery.of({
           userPrincipalId: user.id,
-          commissionId: query.commissionId,
           query: query.q,
           page: Number(query.page),
           pageSize: Number(query.pageSize),
@@ -65,7 +63,12 @@ export class ElectoralRollReadController {
   ): Promise<GetElectoralRollResponse> {
     try {
       return GetElectoralRollResponse.of(
-        await this.handler.execute(GetElectoralRollQuery.of(params)),
+        await this.handler.execute(
+          GetElectoralRollQuery.of({
+            userPrincipalId: user.id,
+            electoralRollId: params.electoralRollId,
+          }),
+        ),
       );
     } catch (error) {
       throwMappedElectoralRollError(error);

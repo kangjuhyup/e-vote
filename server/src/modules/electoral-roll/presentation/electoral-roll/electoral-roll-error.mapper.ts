@@ -11,10 +11,6 @@ import {
 } from '../../application/command/electoral-roll.error';
 import { ManagedResourceNotFoundError } from '../../../../shared/application/error/managed-resource.error';
 import { DomainError } from '../../../../shared/domain/domain-error';
-import {
-  ElectionCommissionNotFoundError,
-  ElectionCommissionUnavailableError,
-} from '../../../../shared/application/error/election-commission-access.error';
 
 export function throwMappedElectoralRollError(error: unknown): never {
   if (error instanceof InvalidElectoralRollMemberBatchError) {
@@ -24,14 +20,12 @@ export function throwMappedElectoralRollError(error: unknown): never {
   if (
     error instanceof ElectoralRollNotFoundError ||
     error instanceof ElectoralRollMemberNotFoundError ||
-    error instanceof ElectionCommissionNotFoundError ||
     error instanceof ManagedResourceNotFoundError
   ) {
     throw new NotFoundException(error.message);
   }
 
   if (
-    error instanceof ElectionCommissionUnavailableError ||
     error instanceof DuplicateElectoralRollMemberIdentifierError ||
     error instanceof DomainError ||
     isUniqueConstraintError(error)

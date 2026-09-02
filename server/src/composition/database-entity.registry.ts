@@ -46,6 +46,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   const databaseEntities = [
     entities.ElectionCommissionEntity,
     entities.ElectoralRollEntity,
+    entities.ElectoralRollAccessGrantEntity,
     entities.ElectoralRollMemberEntity,
     entities.ElectoralRollSnapshotEntity,
     entities.ElectoralRollSnapshotMemberEntity,

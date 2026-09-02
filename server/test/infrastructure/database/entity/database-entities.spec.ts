@@ -14,6 +14,7 @@ describe('database entities registry', () => {
       'ElectorAttachmentEntity',
       'ElectorEntity',
       'ElectorIdentityVerificationEntity',
+      'ElectoralRollAccessGrantEntity',
       'ElectoralRollEntity',
       'ElectoralRollMemberEntity',
       'ElectoralRollSnapshotEntity',

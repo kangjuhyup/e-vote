@@ -28,7 +28,6 @@ type ElectoralRollMemberReadPersistence = {
 
 type ElectoralRollReadPersistence = {
   readonly id: string;
-  readonly commission: { readonly id: string };
   readonly name: string;
   readonly revision: number;
   readonly memberCount: number | string;
@@ -43,13 +42,17 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
 
   async findDetailById(
     electoralRollId: string,
+    userPrincipalId: string,
   ): Promise<ElectoralRollView | undefined> {
     const { ElectoralRollEntity } = await getDatabaseEntities();
     const entity = (await this.em.findOne(
       ElectoralRollEntity as any,
-      { id: electoralRollId } as any,
       {
-        populate: ['commission', 'members'],
+        id: electoralRollId,
+        accessGrants: { userPrincipalId },
+      } as any,
+      {
+        populate: ['members'],
         ...JOINED_RELATION_LOAD_OPTIONS,
       },
     )) as unknown as ElectoralRollReadPersistence | null;
@@ -58,7 +61,6 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
 
     return ElectoralRollView.of({
       id: entity.id,
-      commissionId: entity.commission.id,
       name: entity.name,
       revision: entity.revision,
       members: loadedItems(entity.members)
@@ -87,17 +89,9 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
     request: ElectoralRollPageRequest,
   ): Promise<ElectoralRollPageView> {
     const { ElectoralRollEntity } = await getDatabaseEntities();
-    const commissionFilter: Record<string, unknown> = {
-      members: {
-        userPrincipalId: request.userPrincipalId,
-        status: 'ACTIVE',
-      },
+    const where: Record<string, unknown> = {
+      accessGrants: { userPrincipalId: request.userPrincipalId },
     };
-    if (request.commissionId !== undefined) {
-      commissionFilter.id = request.commissionId;
-    }
-
-    const where: Record<string, unknown> = { commission: commissionFilter };
     if (request.query !== undefined) {
       where.name = { $ilike: `%${request.query}%` };
     }
@@ -106,7 +100,6 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
       ElectoralRollEntity as any,
       where,
       {
-        populate: ['commission'],
         limit: request.pageSize,
         offset: (request.page - 1) * request.pageSize,
         orderBy: { updatedAt: 'desc', id: 'desc' },
@@ -118,7 +111,6 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
       items: entities.map((entity) =>
         ElectoralRollPageItemView.of({
           id: entity.id,
-          commissionId: entity.commission.id,
           name: entity.name,
           revision: entity.revision,
           memberCount: Number(entity.memberCount),

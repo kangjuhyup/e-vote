@@ -3,8 +3,33 @@ import { ElectoralRollSnapshotRepositoryAdapter } from '../../../../src/modules/
 import { ElectoralRollRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/command/electoral-roll-repository.adapter';
 import { ElectoralRollReadRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/query/electoral-roll-read-repository.adapter';
 import { ElectoralRollMemberAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll-member.aggregate';
+import { ElectoralRollAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll.aggregate';
 
 describe('electoral roll repository adapters', () => {
+  it('creates a roll and its creator access grant in one unit of work', async () => {
+    const persist = jest.fn();
+    const em = {
+      create: jest.fn((_entity: unknown, data: object) => data),
+      persist,
+      flush: jest.fn(),
+    };
+    const roll = ElectoralRollAggregate.create({
+      id: 'roll-1',
+      name: 'Members',
+      createdAt: new Date('2026-08-30T00:00:00.000Z'),
+    });
+
+    await new ElectoralRollRepositoryAdapter(em as any).create(roll, 'user-1');
+
+    expect(persist).toHaveBeenCalledTimes(2);
+    expect(em.create.mock.calls[1]?.[1]).toMatchObject({
+      electoralRoll: em.create.mock.calls[0]?.[1],
+      userPrincipalId: 'user-1',
+      grantedAt: roll.createdAt,
+    });
+    expect(em.flush).toHaveBeenCalledTimes(1);
+  });
+
   it('persists a member batch with one unit-of-work flush', async () => {
     const persist = jest.fn();
     const flush = jest.fn().mockResolvedValue(undefined);
@@ -38,14 +63,13 @@ describe('electoral roll repository adapters', () => {
     expect(flush).toHaveBeenCalledTimes(1);
   });
 
-  it('pages only metadata from rolls in actively authorized commissions', async () => {
+  it('pages only metadata from rolls granted to the principal', async () => {
     const findAndCount = jest
       .fn<Promise<[unknown[], number]>, [unknown, unknown, unknown?]>()
       .mockResolvedValue([
         [
           {
             id: 'roll-1',
-            commission: { id: 'commission-1' },
             name: '2026 상반기 선거인명부',
             revision: 2,
             memberCount: 120,
@@ -61,24 +85,16 @@ describe('electoral roll repository adapters', () => {
 
     const result = await adapter.findPage({
       userPrincipalId: 'user-1',
-      commissionId: 'commission-1',
       query: '상반기',
       page: 1,
       pageSize: 20,
     });
 
     expect(findAndCount.mock.calls[0]?.[1]).toEqual({
-      commission: {
-        id: 'commission-1',
-        members: {
-          userPrincipalId: 'user-1',
-          status: 'ACTIVE',
-        },
-      },
+      accessGrants: { userPrincipalId: 'user-1' },
       name: { $ilike: '%상반기%' },
     });
     expect(findAndCount.mock.calls[0]?.[2]).toMatchObject({
-      populate: ['commission'],
       limit: 20,
       offset: 0,
       orderBy: { updatedAt: 'desc', id: 'desc' },
@@ -88,7 +104,6 @@ describe('electoral roll repository adapters', () => {
         {
           id: 'roll-1',
           name: '2026 상반기 선거인명부',
-          commissionId: 'commission-1',
           revision: 2,
           memberCount: 120,
           updatedAt: new Date('2026-08-30T10:00:00.000Z'),
@@ -107,7 +122,6 @@ describe('electoral roll repository adapters', () => {
       .fn<Promise<unknown>, [unknown, unknown, unknown?]>()
       .mockResolvedValue({
         id: 'roll-1',
-        commission: { id: 'commission-1' },
         name: 'Members',
         revision: 2,
         members: [
@@ -129,16 +143,18 @@ describe('electoral roll repository adapters', () => {
 
     const result = await new ElectoralRollReadRepositoryAdapter(
       em as any,
-    ).findDetailById('roll-1');
+    ).findDetailById('roll-1', 'user-1');
 
-    expect(findOne.mock.calls[0]?.[1]).toEqual({ id: 'roll-1' });
+    expect(findOne.mock.calls[0]?.[1]).toEqual({
+      id: 'roll-1',
+      accessGrants: { userPrincipalId: 'user-1' },
+    });
     expect(findOne.mock.calls[0]?.[2]).toMatchObject({
-      populate: ['commission', 'members'],
+      populate: ['members'],
       strategy: LoadStrategy.JOINED,
     });
     expect(result).toMatchObject({
       id: 'roll-1',
-      commissionId: 'commission-1',
       revision: 2,
       members: [
         {

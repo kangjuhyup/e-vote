@@ -5,7 +5,11 @@ export const ELECTORAL_ROLL_SNAPSHOT_ACCESS_PORT = Symbol(
 );
 
 export interface ElectoralRollSnapshotAccessPort {
-  findById(id: string): Promise<ElectoralRollSnapshotReference | undefined>;
+  resolveCurrent(
+    electoralRollId: string,
+    userPrincipalId: string,
+    createdAt: Date,
+  ): Promise<ElectoralRollSnapshotReference | undefined>;
   hasVoteElectors(voteId: string): Promise<boolean>;
   materializeVoteElectors(voteId: string, snapshotId: string): Promise<void>;
 }

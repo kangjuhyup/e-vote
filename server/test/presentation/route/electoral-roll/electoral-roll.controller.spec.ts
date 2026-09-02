@@ -27,7 +27,6 @@ describe('electoral roll controllers', () => {
   it('maps source-roll creation to its command handler', async () => {
     const createRoll = handler({
       id: 'roll-1',
-      commissionId: 'commission-1',
       name: 'Members',
       revision: 1,
     });
@@ -40,10 +39,15 @@ describe('electoral roll controllers', () => {
 
     await expect(
       controller.createElectoralRoll(TEST_USER_PRINCIPAL, {
-        commissionId: 'commission-1',
         name: 'Members',
       }),
     ).resolves.toMatchObject({ id: 'roll-1', revision: 1 });
+    expect(createRoll.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userPrincipalId: TEST_USER_PRINCIPAL.id,
+        name: 'Members',
+      }),
+    );
   });
 
   it('maps one bulk request to one add-members command', async () => {
@@ -77,6 +81,7 @@ describe('electoral roll controllers', () => {
     });
     expect(addMembers.execute).toHaveBeenCalledWith(
       expect.objectContaining({
+        userPrincipalId: TEST_USER_PRINCIPAL.id,
         electoralRollId: 'roll-1',
         members: [
           { identifier: 'member-1', voteWeight: 2 },
@@ -121,17 +126,17 @@ describe('electoral roll controllers', () => {
   it('maps a roll view to an ISO-timestamped response', async () => {
     const view = ElectoralRollView.of({
       id: 'roll-1',
-      commissionId: 'commission-1',
       name: 'Members',
       revision: 2,
       members: [],
       createdAt: new Date('2026-08-30T00:00:00.000Z'),
       updatedAt: new Date('2026-08-30T01:00:00.000Z'),
     });
+    const getRoll = handler(view);
 
     await expect(
       new ElectoralRollReadController(
-        handler(view) as unknown as GetElectoralRollHandler,
+        getRoll as unknown as GetElectoralRollHandler,
         handler() as unknown as GetElectoralRollPageHandler,
       ).getElectoralRoll(TEST_USER_PRINCIPAL, {
         electoralRollId: 'roll-1',
@@ -142,6 +147,12 @@ describe('electoral roll controllers', () => {
       createdAt: '2026-08-30T00:00:00.000Z',
       updatedAt: '2026-08-30T01:00:00.000Z',
     });
+    expect(getRoll.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userPrincipalId: TEST_USER_PRINCIPAL.id,
+        electoralRollId: 'roll-1',
+      }),
+    );
   });
 
   it('maps GET /electoral-rolls to an authorized metadata-only page', async () => {
@@ -150,7 +161,6 @@ describe('electoral roll controllers', () => {
         ElectoralRollPageItemView.of({
           id: 'roll-1',
           name: '2026 상반기 선거인명부',
-          commissionId: 'commission-1',
           revision: 2,
           memberCount: 120,
           updatedAt: new Date('2026-08-30T10:00:00.000Z'),
@@ -167,7 +177,6 @@ describe('electoral roll controllers', () => {
       handler() as unknown as GetElectoralRollHandler,
       pageHandler as unknown as GetElectoralRollPageHandler,
     ).getElectoralRollPage(TEST_USER_PRINCIPAL, {
-      commissionId: 'commission-1',
       q: '상반기',
       page: '1',
       pageSize: '20',
@@ -176,7 +185,6 @@ describe('electoral roll controllers', () => {
     expect(pageHandler.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         userPrincipalId: TEST_USER_PRINCIPAL.id,
-        commissionId: 'commission-1',
         query: '상반기',
         page: 1,
         pageSize: 20,
@@ -187,7 +195,6 @@ describe('electoral roll controllers', () => {
         {
           id: 'roll-1',
           name: '2026 상반기 선거인명부',
-          commissionId: 'commission-1',
           revision: 2,
           memberCount: 120,
           updatedAt: '2026-08-30T10:00:00.000Z',

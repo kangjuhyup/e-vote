@@ -88,8 +88,10 @@ export class VoteController {
       return AttachElectoralRollSnapshotResponse.of(
         await this.attachElectoralRollSnapshotHandler!.execute(
           AttachElectoralRollSnapshotCommand.of({
+            userPrincipalId: user.id,
             voteId: params.voteId,
-            snapshotId: body.snapshotId,
+            electoralRollId: body.electoralRollId,
+            requestedAt: new Date(),
           }),
         ),
       );

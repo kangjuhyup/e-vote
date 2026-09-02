@@ -53,7 +53,11 @@ export class ElectoralRollController {
     try {
       return CreateElectoralRollResponse.of(
         await this.createElectoralRollHandler.execute(
-          CreateElectoralRollCommand.of({ ...body, createdAt: new Date() }),
+          CreateElectoralRollCommand.of({
+            userPrincipalId: user.id,
+            ...body,
+            createdAt: new Date(),
+          }),
         ),
       );
     } catch (error) {
@@ -73,6 +77,7 @@ export class ElectoralRollController {
       return AddElectoralRollMembersResponse.of(
         await this.addMembersHandler.execute(
           AddElectoralRollMembersCommand.of({
+            userPrincipalId: user.id,
             electoralRollId: params.electoralRollId,
             members: body.members,
             changedAt: new Date(),
@@ -95,6 +100,7 @@ export class ElectoralRollController {
       return ManageElectoralRollMemberResponse.of(
         await this.updateMemberHandler.execute(
           UpdateElectoralRollMemberCommand.of({
+            userPrincipalId: user.id,
             ...params,
             ...body,
             changedAt: new Date(),
@@ -116,6 +122,7 @@ export class ElectoralRollController {
       return RemoveElectoralRollMemberResponse.of(
         await this.removeMemberHandler.execute(
           RemoveElectoralRollMemberCommand.of({
+            userPrincipalId: user.id,
             ...params,
             changedAt: new Date(),
           }),

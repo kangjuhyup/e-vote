@@ -1,5 +1,6 @@
 export class UpdateElectoralRollMemberCommand {
   private constructor(
+    readonly userPrincipalId: string,
     readonly electoralRollId: string,
     readonly memberId: string,
     readonly identifier: string,
@@ -9,6 +10,7 @@ export class UpdateElectoralRollMemberCommand {
   ) {}
 
   static of(params: {
+    readonly userPrincipalId: string;
     readonly electoralRollId: string;
     readonly memberId: string;
     readonly identifier: string;
@@ -17,6 +19,7 @@ export class UpdateElectoralRollMemberCommand {
     readonly changedAt: Date;
   }): UpdateElectoralRollMemberCommand {
     return new UpdateElectoralRollMemberCommand(
+      params.userPrincipalId,
       params.electoralRollId,
       params.memberId,
       params.identifier,

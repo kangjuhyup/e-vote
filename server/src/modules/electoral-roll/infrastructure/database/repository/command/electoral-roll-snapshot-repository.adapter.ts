@@ -15,7 +15,7 @@ import {
   type LoadedCollectionLike,
 } from '../../../../../../platform/database/repository/database-repository.util';
 
-const SNAPSHOT_RELATIONS = ['sourceRoll', 'commission', 'members'] as const;
+const SNAPSHOT_RELATIONS = ['sourceRoll', 'members'] as const;
 
 type SnapshotMemberPersistence = {
   readonly id: string;
@@ -28,7 +28,6 @@ type SnapshotMemberPersistence = {
 type SnapshotPersistence = {
   readonly id: string;
   readonly sourceRoll: { readonly id: string };
-  readonly commission: { readonly id: string };
   readonly rollName: string;
   readonly sourceRevision: number;
   readonly memberCount: number;
@@ -47,22 +46,6 @@ export class ElectoralRollSnapshotRepositoryAdapter implements ElectoralRollSnap
 
   nextMemberId(): string {
     return nextRepositoryId();
-  }
-
-  async findById(
-    snapshotId: string,
-  ): Promise<ElectoralRollSnapshotAggregate | undefined> {
-    const { ElectoralRollSnapshotEntity } = await getDatabaseEntities();
-    const entity = (await this.em.findOne(
-      ElectoralRollSnapshotEntity as any,
-      { id: snapshotId } as any,
-      {
-        populate: SNAPSHOT_RELATIONS,
-        ...JOINED_RELATION_LOAD_OPTIONS,
-      },
-    )) as unknown as SnapshotPersistence | null;
-
-    return entity ? this.toDomain(entity) : undefined;
   }
 
   async findBySourceRevision(
@@ -87,7 +70,6 @@ export class ElectoralRollSnapshotRepositoryAdapter implements ElectoralRollSnap
 
   async save(snapshot: ElectoralRollSnapshotAggregate): Promise<void> {
     const {
-      ElectionCommissionEntity,
       ElectoralRollEntity,
       ElectoralRollSnapshotEntity,
       ElectoralRollSnapshotMemberEntity,
@@ -105,11 +87,6 @@ export class ElectoralRollSnapshotRepositoryAdapter implements ElectoralRollSnap
           this.em,
           ElectoralRollEntity,
           snapshot.electoralRollId,
-        ),
-        commission: entityReference(
-          this.em,
-          ElectionCommissionEntity,
-          snapshot.commissionId,
         ),
         rollName: snapshot.rollName,
         sourceRevision: snapshot.sourceRevision,
@@ -253,7 +230,6 @@ export class ElectoralRollSnapshotRepositoryAdapter implements ElectoralRollSnap
     return ElectoralRollSnapshotAggregate.reconstitute({
       id: entity.id,
       electoralRollId: entity.sourceRoll.id,
-      commissionId: entity.commission.id,
       rollName: entity.rollName,
       sourceRevision: entity.sourceRevision,
       contentHash: entity.contentHash,

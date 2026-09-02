@@ -12,7 +12,6 @@ type MemberSource = {
 
 type ElectoralRollSource = {
   readonly id: string;
-  readonly commissionId: string;
   readonly name: string;
   readonly revision: number;
   readonly members: readonly MemberSource[];
@@ -46,7 +45,6 @@ export class ElectoralRollMemberResponse {
 
 export class GetElectoralRollResponse {
   @ApiProperty() readonly id: string;
-  @ApiProperty() readonly commissionId: string;
   @ApiProperty() readonly name: string;
   @ApiProperty() readonly revision: number;
   @ApiProperty({ type: () => [ElectoralRollMemberResponse] })
@@ -56,7 +54,6 @@ export class GetElectoralRollResponse {
 
   private constructor(source: ElectoralRollSource) {
     this.id = source.id;
-    this.commissionId = source.commissionId;
     this.name = source.name;
     this.revision = source.revision;
     this.members = source.members.map((member) =>

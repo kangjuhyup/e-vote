@@ -2,8 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AttachElectoralRollSnapshotCommand } from '../dto/request/attach-electoral-roll-snapshot.command';
 import { AttachElectoralRollSnapshotResult } from '../dto/response/attach-electoral-roll-snapshot-result.dto';
 import {
-  ElectoralRollCommissionMismatchError,
-  ElectoralRollSnapshotNotFoundError,
+  ElectoralRollSnapshotSourceNotFoundError,
   VoteElectorsAlreadyExistError,
 } from '../electoral-roll-snapshot-attachment.error';
 import { ManagedResourceNotFoundError } from '../../../../../shared/application/error/managed-resource.error';
@@ -53,11 +52,12 @@ export class AttachElectoralRollSnapshotHandler {
     const vote = await this.voteRepository.findById(command.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
 
-    const snapshot = await this.snapshotRepository.findById(command.snapshotId);
-    if (!snapshot) throw new ElectoralRollSnapshotNotFoundError();
-    if (snapshot.commissionId !== vote.commissionId) {
-      throw new ElectoralRollCommissionMismatchError();
-    }
+    const snapshot = await this.snapshotRepository.resolveCurrent(
+      command.electoralRollId,
+      command.userPrincipalId,
+      command.requestedAt,
+    );
+    if (!snapshot) throw new ElectoralRollSnapshotSourceNotFoundError();
 
     if (vote.electoralRollSnapshotId === snapshot.id) {
       return AttachElectoralRollSnapshotResult.of({

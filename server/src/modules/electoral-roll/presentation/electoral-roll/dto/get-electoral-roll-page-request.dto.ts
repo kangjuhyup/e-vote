@@ -2,12 +2,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GetElectoralRollPageQuery {
   @ApiPropertyOptional({
-    example: 'commission-1',
-    description: '특정 선거관리위원회의 명부만 조회할 때 사용합니다.',
-  })
-  readonly commissionId?: string;
-
-  @ApiPropertyOptional({
     example: '상반기',
     description:
       '명부 이름에 포함될 검색어입니다. 대소문자를 구분하지 않습니다.',

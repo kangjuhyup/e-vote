@@ -13,7 +13,6 @@ import {
 
 type ElectoralRollPersistence = {
   readonly id: string;
-  readonly commission: { readonly id: string };
   readonly name: string;
   readonly revision: number;
   readonly createdAt: Date;
@@ -44,21 +43,21 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
 
   async findById(
     electoralRollId: string,
+    userPrincipalId: string,
   ): Promise<ElectoralRollAggregate | undefined> {
     const { ElectoralRollEntity } = await getDatabaseEntities();
     const entity = (await this.em.findOne(
       ElectoralRollEntity as any,
-      { id: electoralRollId } as any,
       {
-        populate: ['commission'],
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        id: electoralRollId,
+        accessGrants: { userPrincipalId },
       },
+      JOINED_RELATION_LOAD_OPTIONS,
     )) as unknown as ElectoralRollPersistence | null;
 
     return entity
       ? ElectoralRollAggregate.reconstitute({
           id: entity.id,
-          commissionId: entity.commission.id,
           name: entity.name,
           revision: entity.revision,
           createdAt: entity.createdAt,
@@ -105,8 +104,7 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
   }
 
   async save(electoralRoll: ElectoralRollAggregate): Promise<void> {
-    const { ElectionCommissionEntity, ElectoralRollEntity } =
-      await getDatabaseEntities();
+    const { ElectoralRollEntity } = await getDatabaseEntities();
     await saveEntity(
       this.em,
       ElectoralRollEntity,
@@ -115,16 +113,42 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
         createdAt: electoralRoll.createdAt,
       },
       {
-        commission: entityReference(
-          this.em,
-          ElectionCommissionEntity,
-          electoralRoll.commissionId,
-        ),
         name: electoralRoll.name,
         revision: electoralRoll.revision,
         updatedAt: electoralRoll.updatedAt,
       },
     );
+  }
+
+  async create(
+    electoralRoll: ElectoralRollAggregate,
+    userPrincipalId: string,
+  ): Promise<void> {
+    const { ElectoralRollAccessGrantEntity, ElectoralRollEntity } =
+      await getDatabaseEntities();
+    const electoralRollEntity = this.em.create(
+      ElectoralRollEntity as any,
+      {
+        id: electoralRoll.id,
+        name: electoralRoll.name,
+        revision: electoralRoll.revision,
+        createdAt: electoralRoll.createdAt,
+        updatedAt: electoralRoll.updatedAt,
+      } as any,
+    );
+    this.em.persist(electoralRollEntity);
+    this.em.persist(
+      this.em.create(
+        ElectoralRollAccessGrantEntity as any,
+        {
+          id: nextRepositoryId(),
+          electoralRoll: electoralRollEntity,
+          userPrincipalId,
+          grantedAt: electoralRoll.createdAt,
+        } as any,
+      ),
+    );
+    await this.em.flush();
   }
 
   async saveMember(member: ElectoralRollMemberAggregate): Promise<void> {

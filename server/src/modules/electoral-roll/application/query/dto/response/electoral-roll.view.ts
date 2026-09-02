@@ -38,7 +38,6 @@ export class ElectoralRollMemberView {
 
 type ElectoralRollViewProps = {
   readonly id: string;
-  readonly commissionId: string;
   readonly name: string;
   readonly revision: number;
   readonly members: readonly ElectoralRollMemberView[];
@@ -49,7 +48,6 @@ type ElectoralRollViewProps = {
 export class ElectoralRollView {
   private constructor(
     readonly id: string,
-    readonly commissionId: string,
     readonly name: string,
     readonly revision: number,
     readonly members: readonly ElectoralRollMemberView[],
@@ -60,7 +58,6 @@ export class ElectoralRollView {
   static of(params: ElectoralRollViewProps): ElectoralRollView {
     return new ElectoralRollView(
       params.id,
-      params.commissionId,
       params.name,
       params.revision,
       params.members,
@@ -72,7 +69,6 @@ export class ElectoralRollView {
 
 type ElectoralRollPageItemViewProps = {
   readonly id: string;
-  readonly commissionId: string;
   readonly name: string;
   readonly revision: number;
   readonly memberCount: number;
@@ -82,7 +78,6 @@ type ElectoralRollPageItemViewProps = {
 export class ElectoralRollPageItemView {
   private constructor(
     readonly id: string,
-    readonly commissionId: string,
     readonly name: string,
     readonly revision: number,
     readonly memberCount: number,
@@ -92,7 +87,6 @@ export class ElectoralRollPageItemView {
   static of(params: ElectoralRollPageItemViewProps): ElectoralRollPageItemView {
     return new ElectoralRollPageItemView(
       params.id,
-      params.commissionId,
       params.name,
       params.revision,
       params.memberCount,

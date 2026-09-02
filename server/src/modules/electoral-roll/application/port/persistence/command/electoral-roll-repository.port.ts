@@ -10,6 +10,7 @@ export interface ElectoralRollRepositoryPort {
   nextMemberId(): string;
   findById(
     electoralRollId: string,
+    userPrincipalId: string,
   ): Promise<ElectoralRollAggregate | undefined>;
   findMemberById(
     electoralRollId: string,
@@ -18,6 +19,10 @@ export interface ElectoralRollRepositoryPort {
   findMembersByRollId(
     electoralRollId: string,
   ): Promise<readonly ElectoralRollMemberAggregate[]>;
+  create(
+    electoralRoll: ElectoralRollAggregate,
+    userPrincipalId: string,
+  ): Promise<void>;
   save(electoralRoll: ElectoralRollAggregate): Promise<void>;
   saveMember(member: ElectoralRollMemberAggregate): Promise<void>;
   saveMembers(members: readonly ElectoralRollMemberAggregate[]): Promise<void>;

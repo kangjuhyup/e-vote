@@ -16,7 +16,6 @@ export class GetElectoralRollPageHandler {
   execute(query: GetElectoralRollPageQuery): Promise<ElectoralRollPageView> {
     return this.repository.findPage({
       userPrincipalId: query.userPrincipalId,
-      commissionId: query.commissionId,
       query: query.query,
       page: query.page,
       pageSize: query.pageSize,

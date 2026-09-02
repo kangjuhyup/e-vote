@@ -15,11 +15,6 @@ export function createElectoralRollEntities(
     tableName: 'electoral_rolls',
     properties: {
       id: p.uuid().primary(),
-      commission: () =>
-        p
-          .manyToOne(getEntity(context, 'ElectionCommissionEntity'))
-          .fieldName('commission_id')
-          .deleteRule('restrict'),
       name: p.string(),
       revision: p.integer().default(1),
       createdAt: p.datetime().fieldName('created_at'),
@@ -34,6 +29,10 @@ export function createElectoralRollEntities(
         p
           .oneToMany(getEntity(context, 'ElectoralRollMemberEntity'))
           .mappedBy('electoralRoll'),
+      accessGrants: () =>
+        p
+          .oneToMany(getEntity(context, 'ElectoralRollAccessGrantEntity'))
+          .mappedBy('electoralRoll'),
       snapshots: () =>
         p
           .oneToMany(getEntity(context, 'ElectoralRollSnapshotEntity'))
@@ -42,6 +41,31 @@ export function createElectoralRollEntities(
   });
   class ElectoralRollEntity extends ElectoralRollSchema.class {}
   ElectoralRollSchema.setClass(ElectoralRollEntity);
+
+  const ElectoralRollAccessGrantSchema = defineEntity({
+    name: 'ElectoralRollAccessGrantEntity',
+    tableName: 'electoral_roll_access_grants',
+    uniques: [
+      {
+        name: 'electoral_roll_access_grants_roll_principal_unique',
+        properties: ['electoralRoll', 'userPrincipalId'],
+      },
+    ],
+    properties: {
+      id: p.uuid().primary(),
+      electoralRoll: () =>
+        p
+          .manyToOne(getEntity(context, 'ElectoralRollEntity'))
+          .fieldName('electoral_roll_id')
+          .inversedBy('accessGrants')
+          .deleteRule('cascade'),
+      userPrincipalId: p.string().fieldName('user_principal_id'),
+      grantedAt: p.datetime().fieldName('granted_at'),
+    },
+  });
+  class ElectoralRollAccessGrantEntity
+    extends ElectoralRollAccessGrantSchema.class {}
+  ElectoralRollAccessGrantSchema.setClass(ElectoralRollAccessGrantEntity);
 
   const ElectoralRollMemberSchema = defineEntity({
     name: 'ElectoralRollMemberEntity',
@@ -86,11 +110,6 @@ export function createElectoralRollEntities(
           .manyToOne(getEntity(context, 'ElectoralRollEntity'))
           .fieldName('source_roll_id')
           .inversedBy('snapshots')
-          .deleteRule('restrict'),
-      commission: () =>
-        p
-          .manyToOne(getEntity(context, 'ElectionCommissionEntity'))
-          .fieldName('commission_id')
           .deleteRule('restrict'),
       rollName: p.string().fieldName('roll_name'),
       sourceRevision: p.integer().fieldName('source_revision'),
@@ -144,6 +163,7 @@ export function createElectoralRollEntities(
 
   return {
     ElectoralRollEntity,
+    ElectoralRollAccessGrantEntity,
     ElectoralRollMemberEntity,
     ElectoralRollSnapshotEntity,
     ElectoralRollSnapshotMemberEntity,

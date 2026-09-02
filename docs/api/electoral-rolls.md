@@ -1,128 +1,111 @@
 # 선거인명부 API 인터페이스
 
-이 문서는 투표 생성 화면에서 기존 선거인명부를 검색하기 위한 목록 API 계약을 설명합니다.
+선거인명부는 선거관리위원회와 별도로 생성·수정합니다. 투표만
+`commissionId`를 가지며, 투표에는 선택한 명부의 불변 스냅샷을 연결합니다.
 
-## 공통 응답 형식
+```text
+ElectionCommission -> Vote <- ElectoralRollSnapshot <- ElectoralRoll
+```
 
-성공 응답은 실제 HTTP 계층에서 다음 envelope로 감싸집니다.
+## 공통 계약
+
+- 모든 API는 `Authorization: Bearer {accessToken}`이 필요합니다.
+- 서버는 JWT 검증 또는 opaque token introspection 결과로 `request.user`를 만들며,
+  요청이 전달한 사용자 식별값은 신뢰하지 않습니다.
+- 명부를 생성한 `UserPrincipal.id`에 명부 접근 권한이 직접 부여됩니다.
+- 목록·상세·구성원 수정·스냅샷 생성은 모두 이 권한으로 제한됩니다.
+- 접근 권한이 없는 명부와 스냅샷은 존재 여부를 노출하지 않고 `404`로 처리합니다.
+- 목록 응답에는 구성원의 `identifier`, `groupKey`, `voteWeight`가 포함되지 않습니다.
+
+성공 응답은 공통 envelope의 `data`에 아래 응답이 포함됩니다.
 
 ```json
 {
   "success": true,
   "data": {},
-  "timestamp": "2026-08-30T10:00:00.000Z",
+  "timestamp": "2026-09-02T10:00:00.000Z",
   "requestId": "request-id"
 }
 ```
 
-오류 응답은 다음 형식입니다.
-
-```json
-{
-  "success": false,
-  "error": {
-    "statusCode": 401,
-    "message": "authenticated user principal is not available",
-    "path": "/electoral-rolls"
-  },
-  "timestamp": "2026-08-30T10:00:00.000Z",
-  "requestId": "request-id"
-}
-```
-
-## 인증 및 권한 계약
-
-- 모든 선거인명부 API는 `Authorization: Bearer {accessToken}` 헤더가 필요합니다.
-- 서버는 OIDC JWKS로 JWT 서명과 `issuer`, `audience`, 만료를 검증한 뒤 `UserPrincipal.of(...)`로 `request.user`를 생성합니다.
-- 목록 권한은 `UserPrincipal.id`와 선거관리위원의 `userPrincipalId`가 같고, 위원 상태가 `ACTIVE`일 때 부여됩니다.
-- 클라이언트가 사용자 ID나 권한 위원회 ID 목록을 전달할 수 없습니다.
-- 요청한 `commissionId`에 접근할 수 없으면 존재 여부를 노출하지 않고 빈 페이지를 반환합니다.
-- 목록 응답은 명부 메타데이터와 구성원 수만 포함하며 구성원의 `identifier`, `groupKey`, `voteWeight`는 포함하지 않습니다.
-
-`request.user.id`는 검증된 JWT의 `sub` 클레임입니다. `x-user-id` 같은 임의 헤더나 요청 본문의 사용자 ID, 검증되지 않은 일반 객체는 인증 정보로 사용하지 않습니다.
+## 명부 생성
 
 ```http
-GET /electoral-rolls?page=1&pageSize=20
-Authorization: Bearer {OIDC access token}
-```
-
-## 선거관리위원과 사용자 연결
-
-명부 조회 권한을 부여하려면 위원 등록 시 인증 시스템의 불변 사용자 식별자, 즉 이후 `UserPrincipal.id`가 될 값을 함께 저장해야 합니다.
-
-```http
-POST /election-commissions/{commissionId}/members
+POST /electoral-rolls
+Authorization: Bearer {accessToken}
 Content-Type: application/json
 ```
 
 ```json
 {
-  "userPrincipalId": "oidc-subject-1",
-  "name": "김관리",
-  "role": "ADMIN"
+  "name": "2026 상반기 선거인명부"
 }
 ```
 
-기존 위원 데이터는 마이그레이션 호환성을 위해 `userPrincipalId`가 비어 있을 수 있습니다. 이 데이터는 사용자와 연결되기 전까지 목록 조회 권한을 부여하지 않습니다.
-
-## 선거인명부 목록 조회
-
-```http
-GET /electoral-rolls?commissionId={id}&q={검색어}&page=1&pageSize=20
-```
-
-### Query parameters
-
-| 이름           | 필수   | 기본값                | 설명                                                             |
-| -------------- | ------ | --------------------- | ---------------------------------------------------------------- |
-| `commissionId` | 아니요 | 전체 접근 가능 위원회 | 지정한 위원회의 명부만 조회합니다.                               |
-| `q`            | 아니요 | 없음                  | 명부 이름에 대한 공백 제거 후 대소문자 무시 부분 검색입니다.     |
-| `page`         | 아니요 | `1`                   | 1 이상의 페이지 번호입니다. 잘못된 값은 1로 정규화됩니다.        |
-| `pageSize`     | 아니요 | `20`                  | 1~100 사이의 페이지 크기입니다. 100을 넘으면 100으로 제한됩니다. |
-
-정렬은 `updatedAt DESC, id DESC`로 고정되어 같은 수정 시각에도 안정적입니다.
-
-### 성공 응답
+응답 `data`:
 
 ```json
 {
-  "success": true,
-  "data": {
-    "items": [
-      {
-        "id": "electoral-roll-1",
-        "name": "2026 상반기 선거인명부",
-        "commissionId": "commission-1",
-        "revision": 2,
-        "memberCount": 120,
-        "updatedAt": "2026-08-30T10:00:00.000Z"
-      }
-    ],
-    "page": 1,
-    "pageSize": 20,
-    "totalItems": 1,
-    "totalPages": 1
-  },
-  "timestamp": "2026-08-30T10:00:00.000Z",
-  "requestId": "request-id"
+  "id": "electoral-roll-1",
+  "name": "2026 상반기 선거인명부",
+  "revision": 1
 }
 ```
 
-### 상태 코드
+`commissionId`는 요청·응답에 사용하지 않습니다.
+명부 생성과 동시에 revision 1의 불변 스냅샷도 자동 생성됩니다.
 
-| 상태  | 조건                                                                 |
-| ----- | -------------------------------------------------------------------- |
-| `200` | 조회 성공입니다. 결과가 없거나 접근 권한이 없으면 `items: []`입니다. |
-| `401` | Bearer 토큰이 없거나 JWT 검증에 실패했습니다.                        |
-| `500` | 예상하지 못한 서버 오류입니다.                                       |
+## 명부 목록 조회
+
+```http
+GET /electoral-rolls?q={검색어}&page=1&pageSize=20
+Authorization: Bearer {accessToken}
+```
+
+| 이름       | 필수   | 기본값 | 설명                                                         |
+| ---------- | ------ | ------ | ------------------------------------------------------------ |
+| `q`        | 아니요 | 없음   | 이름에 대한 공백 제거 후 대소문자 무시 부분 검색입니다.      |
+| `page`     | 아니요 | `1`    | 1 이상의 페이지 번호이며 잘못된 값은 1로 정규화됩니다.       |
+| `pageSize` | 아니요 | `20`   | 1~100 사이이며 100을 넘으면 100으로 제한됩니다.              |
+
+정렬은 `updatedAt DESC, id DESC`입니다. 응답 `data`:
+
+```json
+{
+  "items": [
+    {
+      "id": "electoral-roll-1",
+      "name": "2026 상반기 선거인명부",
+      "revision": 2,
+      "memberCount": 120,
+      "updatedAt": "2026-09-02T10:00:00.000Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalItems": 1,
+  "totalPages": 1
+}
+```
+
+## 명부 상세 조회
+
+```http
+GET /electoral-rolls/{electoralRollId}
+Authorization: Bearer {accessToken}
+```
+
+상세 응답은 `id`, `name`, `revision`, `createdAt`, `updatedAt`과 구성원 배열을
+포함합니다. 각 구성원에는 `id`, `electoralRollId`, `identifier`, 선택적인
+`groupKey`, `voteWeight`, `createdAt`, `updatedAt`이 포함됩니다. 민감한 구성원
+식별정보가 있으므로 목록 화면에서는 상세 API를 미리 호출하거나 장기 캐시하지
+않습니다.
 
 ## 선거인 다건 등록
 
-선거인은 한 명씩 등록하지 않고 한 요청의 `members` 배열로 등록합니다.
-
 ```http
 PUT /electoral-rolls/{electoralRollId}/members
-Authorization: Bearer {OIDC access token}
+Authorization: Bearer {accessToken}
 Content-Type: application/json
 ```
 
@@ -141,48 +124,65 @@ Content-Type: application/json
 }
 ```
 
-- 한 요청에는 1명 이상 50,000명 이하를 전달할 수 있습니다.
-- `groupKey`는 선택값이며, `voteWeight`를 생략하면 `1`이 적용됩니다.
-- 요청 전체를 하나의 serializable 트랜잭션으로 처리합니다. 한 건이라도 유효하지 않거나 식별자가 중복되면 전체 등록을 롤백합니다.
-- 정상 등록 시 명부 revision은 구성원 수와 관계없이 한 번만 증가합니다.
-- 변경된 revision에 대한 불변 스냅샷은 별도 API 호출 없이 한 번 자동 생성됩니다.
-- 대량 요청을 받을 수 있도록 서버의 HTTP 요청 본문 크기는 최대 32 MB로 제한합니다.
+- 한 요청은 1~50,000명입니다.
+- `voteWeight` 기본값은 `1`입니다.
+- 전체 요청은 serializable 트랜잭션으로 처리되며 한 건이 실패하면 모두 롤백합니다.
+- 정상 처리 시 revision은 한 번 증가하고 해당 revision의 불변 스냅샷이 자동 생성됩니다.
+- 요청 본문 최대 크기는 32 MB입니다.
 
-### 성공 응답
-
-대량 응답을 피하기 위해 등록된 구성원 전체를 반환하지 않고 처리 요약만 반환합니다. 구성원 ID가 필요하면 상세 조회 API를 사용합니다.
+응답 `data`:
 
 ```json
 {
-  "success": true,
-  "data": {
-    "electoralRollId": "electoral-roll-1",
-    "revision": 2,
-    "addedMemberCount": 2
-  },
-  "timestamp": "2026-08-30T10:00:00.000Z",
-  "requestId": "request-id"
+  "electoralRollId": "electoral-roll-1",
+  "revision": 2,
+  "addedMemberCount": 2
 }
 ```
 
-### 상태 코드
+구성원 수정은 `PATCH /electoral-rolls/{electoralRollId}/members/{memberId}`,
+삭제는 `DELETE /electoral-rolls/{electoralRollId}/members/{memberId}`를 사용하며,
+각 변경도 새 revision과 불변 스냅샷을 만듭니다.
 
-| 상태  | 조건                                                                                 |
-| ----- | ------------------------------------------------------------------------------------ |
-| `201` | 모든 선거인 등록과 자동 스냅샷 생성이 완료됐습니다.                                 |
-| `400` | `members`가 배열이 아니거나 1~50,000건 범위를 벗어났습니다.                          |
-| `401` | Bearer 토큰이 없거나 JWT 검증에 실패했습니다.                                        |
-| `404` | 선거인명부가 없습니다.                                                               |
-| `409` | 요청 내부 또는 기존 명부에 같은 `identifier`가 있거나 구성원 값이 유효하지 않습니다. |
-| `413` | 요청 본문이 32 MB를 초과했습니다.                                                    |
-| `500` | 예상하지 못한 서버 오류입니다.                                                       |
+## 투표에 명부 스냅샷 연결
 
-## 목록 선택 후 상세 조회
-
-목록에서 선택한 `id`는 기존 상세 조회 경로에 사용합니다.
+투표 생성 시 `commissionId`는 계속 필수입니다. 사용자가 명부 ID를 선택해 연결하면
+서버가 그 명부의 현재 revision 스냅샷을 자동 조회하거나 생성합니다.
 
 ```http
-GET /electoral-rolls/{electoralRollId}
+PUT /votes/{voteId}/electoral-roll-snapshot
+Authorization: Bearer {accessToken}
+Content-Type: application/json
 ```
 
-상세 응답에는 명부 구성원의 `identifier`, `groupKey`, `voteWeight`가 포함되므로 목록 화면에서 불필요하게 호출하거나 캐시하지 않습니다. 이 문서의 권한 필터 보장은 목록 API에 한정되며, 상세·수정·스냅샷 API의 위원회 권한 적용은 별도 보안 작업이 필요합니다.
+```json
+{
+  "electoralRollId": "electoral-roll-1"
+}
+```
+
+서버는 요청 사용자가 원본 명부에 접근할 수 있는지 확인합니다. 현재 revision에
+이미 자동 생성된 스냅샷이 있으면 재사용하고, 아직 없으면 같은 트랜잭션에서 한 번
+생성합니다. 명부와 위원회의 동일성 비교는 하지 않습니다. 연결 후 스냅샷 구성원이
+투표 선거인으로 구체화되며, 원본 명부를 나중에 수정해도 연결된 스냅샷은 바뀌지
+않습니다. 투표가 확정되거나 시작된 뒤에는 교체할 수 없습니다.
+
+## 주요 상태 코드
+
+| 상태  | 조건                                                               |
+| ----- | ------------------------------------------------------------------ |
+| `200` | 목록·상세·수정·삭제 또는 투표 연결 성공입니다.                    |
+| `201` | 명부·구성원·스냅샷 생성 성공입니다.                               |
+| `400` | 요청 형식이나 다건 등록 범위가 올바르지 않습니다.                  |
+| `401` | Bearer 토큰이 없거나 검증에 실패했습니다.                          |
+| `404` | 리소스가 없거나 요청 사용자에게 명부 접근 권한이 없습니다.         |
+| `409` | 중복 식별자, 도메인 정책 또는 투표 상태가 변경을 허용하지 않습니다. |
+| `413` | 요청 본문이 32 MB를 초과했습니다.                                  |
+| `500` | 예상하지 못한 서버 오류입니다.                                     |
+
+## 기존 데이터 마이그레이션
+
+기존 `commission_id` 기반 명부는 마이그레이션 시 해당 위원회의 `ACTIVE` 위원 중
+`user_principal_id`가 연결된 모든 사용자에게 직접 접근 권한을 부여합니다. 그 후
+명부와 스냅샷의 `commission_id` 컬럼을 제거합니다. 연결된 활성 사용자가 없는 기존
+명부는 자동 권한을 만들 수 없으므로 관리 데이터 보정 전까지 조회되지 않습니다.

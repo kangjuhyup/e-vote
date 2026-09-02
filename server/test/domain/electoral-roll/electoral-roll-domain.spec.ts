@@ -22,7 +22,6 @@ describe('electoral roll domain', () => {
   it('increments the source revision when roll members change', () => {
     const roll = ElectoralRollAggregate.create({
       id: 'roll-1',
-      commissionId: 'commission-1',
       name: 'Members',
       createdAt: now,
     });
@@ -75,7 +74,6 @@ describe('electoral roll domain', () => {
     const snapshot = ElectoralRollSnapshotAggregate.create({
       id: 'snapshot-1',
       electoralRollId: 'roll-1',
-      commissionId: 'commission-1',
       rollName: 'Members',
       sourceRevision: 1,
       contentHash: 'a'.repeat(64),
@@ -122,7 +120,6 @@ describe('electoral roll domain', () => {
       ElectoralRollSnapshotAggregate.create({
         id: 'snapshot-1',
         electoralRollId: 'roll-1',
-        commissionId: 'commission-1',
         rollName: 'Members',
         sourceRevision: 1,
         contentHash: 'a'.repeat(64),

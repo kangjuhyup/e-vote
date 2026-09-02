@@ -4,6 +4,8 @@ import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/app
 import { ConfirmAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
 import { CreateVoteCommand } from '../../../../src/modules/vote/application/command/dto/request/create-vote.command';
 import { CreateVoteHandler } from '../../../../src/modules/vote/application/command/handler/create-vote.handler';
+import { AttachElectoralRollSnapshotCommand } from '../../../../src/modules/vote/application/command/dto/request/attach-electoral-roll-snapshot.command';
+import { AttachElectoralRollSnapshotHandler } from '../../../../src/modules/vote/application/command/handler/attach-electoral-roll-snapshot.handler';
 import { RequestAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/request-attachment-upload.command';
 import { RequestAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/request-attachment-upload.handler';
 import { AttachmentTargetType } from '../../../../src/modules/vote/application/port/persistence/command/attachment-repository.port';
@@ -72,6 +74,13 @@ describe('VoteController', () => {
   const confirmAttachmentUploadHandler = {
     execute: confirmAttachmentUploadExecute,
   } as unknown as jest.Mocked<ConfirmAttachmentUploadHandler>;
+  const attachElectoralRollSnapshotExecute = jest.fn<
+    ReturnType<AttachElectoralRollSnapshotHandler['execute']>,
+    [AttachElectoralRollSnapshotCommand]
+  >();
+  const attachElectoralRollSnapshotHandler = {
+    execute: attachElectoralRollSnapshotExecute,
+  } as unknown as jest.Mocked<AttachElectoralRollSnapshotHandler>;
 
   let controller: VoteController;
   let readController: VoteReadController;
@@ -79,7 +88,12 @@ describe('VoteController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new VoteController(createVoteHandler);
+    controller = new VoteController(
+      createVoteHandler,
+      undefined,
+      undefined,
+      attachElectoralRollSnapshotHandler,
+    );
     readController = new VoteReadController(getVoteHandler, getVotePageHandler);
     attachmentController = new VoteAttachmentController(
       requestAttachmentUploadHandler,
@@ -233,6 +247,33 @@ describe('VoteController', () => {
       title: 'Board election',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
     });
+  });
+
+  it('automatically attaches the current snapshot for a selected roll', async () => {
+    attachElectoralRollSnapshotExecute.mockResolvedValue({
+      voteId: 'vote-1',
+      snapshotId: 'snapshot-1',
+      memberCount: 120,
+    });
+
+    await expect(
+      controller.attachElectoralRollSnapshot(
+        TEST_USER_PRINCIPAL,
+        { voteId: 'vote-1' },
+        { electoralRollId: 'roll-1' },
+      ),
+    ).resolves.toEqual({
+      voteId: 'vote-1',
+      snapshotId: 'snapshot-1',
+      memberCount: 120,
+    });
+    expect(attachElectoralRollSnapshotExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userPrincipalId: TEST_USER_PRINCIPAL.id,
+        voteId: 'vote-1',
+        electoralRollId: 'roll-1',
+      }),
+    );
   });
 
   it('maps POST /votes/:voteId/attachments/upload-url to request attachment upload handler', async () => {

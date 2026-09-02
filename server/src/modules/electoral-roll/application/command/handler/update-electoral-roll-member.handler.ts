@@ -39,6 +39,7 @@ export class UpdateElectoralRollMemberHandler {
   ): Promise<ManageElectoralRollMemberResult> {
     const electoralRoll = await this.electoralRollRepository.findById(
       command.electoralRollId,
+      command.userPrincipalId,
     );
     if (!electoralRoll) throw new ElectoralRollNotFoundError();
 

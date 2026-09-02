@@ -10,12 +10,14 @@ type AddElectoralRollMemberInput = {
 
 export class AddElectoralRollMembersCommand {
   private constructor(
+    readonly userPrincipalId: string,
     readonly electoralRollId: string,
     readonly members: readonly AddElectoralRollMemberInput[],
     readonly changedAt: Date,
   ) {}
 
   static of(params: {
+    readonly userPrincipalId: string;
     readonly electoralRollId: string;
     readonly members: unknown;
     readonly changedAt: Date;
@@ -46,6 +48,7 @@ export class AddElectoralRollMembersCommand {
     });
 
     return new AddElectoralRollMembersCommand(
+      params.userPrincipalId,
       params.electoralRollId,
       members,
       params.changedAt,

@@ -1,16 +1,22 @@
 export class AttachElectoralRollSnapshotCommand {
   private constructor(
+    readonly userPrincipalId: string,
     readonly voteId: string,
-    readonly snapshotId: string,
+    readonly electoralRollId: string,
+    readonly requestedAt: Date,
   ) {}
 
   static of(params: {
+    readonly userPrincipalId: string;
     readonly voteId: string;
-    readonly snapshotId: string;
+    readonly electoralRollId: string;
+    readonly requestedAt: Date;
   }): AttachElectoralRollSnapshotCommand {
     return new AttachElectoralRollSnapshotCommand(
+      params.userPrincipalId,
       params.voteId,
-      params.snapshotId,
+      params.electoralRollId,
+      params.requestedAt,
     );
   }
 }

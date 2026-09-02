@@ -3,48 +3,53 @@ import { ElectoralRollAggregate } from '../../../domain/electoral-roll.aggregate
 import { CreateElectoralRollCommand } from '../dto/request/create-electoral-roll.command';
 import { CreateElectoralRollResult } from '../dto/response/create-electoral-roll-result.dto';
 import {
-  ElectionCommissionNotFoundError,
-  ElectionCommissionUnavailableError,
-} from '../../../../../shared/application/error/election-commission-access.error';
-import {
-  ELECTION_COMMISSION_ACCESS_PORT,
-  type ElectionCommissionAccessPort,
-} from '../../../../../shared/application/port/capability/election-commission-access.port';
-import {
   ELECTORAL_ROLL_REPOSITORY_PORT,
   type ElectoralRollRepositoryPort,
 } from '../../port/persistence/command/electoral-roll-repository.port';
+import {
+  DATABASE_TRANSACTION_MANAGER,
+  type DatabaseTransactionManager,
+} from '../../../../../shared/application/port/persistence/transaction/database-transaction-manager.port';
+import {
+  DATABASE_TRANSACTION_MANAGER_PROPERTY,
+  Transactional,
+} from '../../../../../shared/application/persistence/transaction/transactional.decorator';
+import { ElectoralRollSnapshotCreator } from '../electoral-roll-snapshot.creator';
 
 @Injectable()
 export class CreateElectoralRollHandler {
+  readonly [DATABASE_TRANSACTION_MANAGER_PROPERTY]: DatabaseTransactionManager;
+
   constructor(
     @Inject(ELECTORAL_ROLL_REPOSITORY_PORT)
     private readonly electoralRollRepository: ElectoralRollRepositoryPort,
-    @Inject(ELECTION_COMMISSION_ACCESS_PORT)
-    private readonly electionCommissionRepository: ElectionCommissionAccessPort,
-  ) {}
+    private readonly snapshotCreator: ElectoralRollSnapshotCreator,
+    @Inject(DATABASE_TRANSACTION_MANAGER)
+    transactionManager: DatabaseTransactionManager,
+  ) {
+    this[DATABASE_TRANSACTION_MANAGER_PROPERTY] = transactionManager;
+  }
 
+  @Transactional({ isolationLevel: 'serializable' })
   async execute(
     command: CreateElectoralRollCommand,
   ): Promise<CreateElectoralRollResult> {
-    const commission = await this.electionCommissionRepository.findById(
-      command.commissionId,
-    );
-    if (!commission) throw new ElectionCommissionNotFoundError();
-    if (!commission.canRunVote())
-      throw new ElectionCommissionUnavailableError();
-
     const electoralRoll = ElectoralRollAggregate.create({
       id: this.electoralRollRepository.nextId(),
-      commissionId: command.commissionId,
       name: command.name,
       createdAt: command.createdAt,
     });
-    await this.electoralRollRepository.save(electoralRoll);
+    await this.electoralRollRepository.create(
+      electoralRoll,
+      command.userPrincipalId,
+    );
+    await this.snapshotCreator.createForCurrentRevision(
+      electoralRoll,
+      command.createdAt,
+    );
 
     return CreateElectoralRollResult.of({
       id: electoralRoll.id,
-      commissionId: electoralRoll.commissionId,
       name: electoralRoll.name,
       revision: electoralRoll.revision,
     });
