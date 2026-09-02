@@ -17,6 +17,8 @@
 - Database is the source of truth unless a policy explicitly says otherwise.
 - ORM entities stay in infrastructure.
 - Application/domain use ports and domain models.
+- Treat ORM query-option objects as single-call values because MikroORM normalizes and mutates the object it receives. Never pass an exported/shared options object directly to an ORM method.
+- Keep shared ORM options as frozen templates only, and pass a fresh object to every ORM call via a factory or object spread. This prevents fields such as `populate`, `logging`, and `schema` from leaking across requests through a mutated shared object.
 - Transactions are coordinated in infrastructure/application service boundaries, not controllers.
 - Transaction decorator options are application-level concepts; infrastructure adapters translate them to the selected ORM.
 - Ordinary write commands should join an existing transaction by default. Use a new transaction only when the follow-up persistence is intentionally independent from the caller.
@@ -77,6 +79,7 @@ Do not cache:
 ## Checklist
 
 - [ ] ORM entities are infrastructure-only.
+- [ ] Shared ORM option templates are frozen, and each ORM call receives a fresh options object.
 - [ ] Database write happens before cache update.
 - [ ] File metadata and binary storage are separated.
 - [ ] Blockchain result storage has retry/error handling.

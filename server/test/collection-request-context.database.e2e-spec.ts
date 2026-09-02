@@ -106,6 +106,50 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     });
   });
 
+  it('returns an election commission detail with initialized members', async () => {
+    await request(app.getHttpServer())
+      .put(`/electoral-rolls/${ELECTORAL_ROLL_ID}/members`)
+      .set('authorization', 'Bearer add-roll-member')
+      .send({ members: [{ identifier: 'member-2' }] })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get(`/election-commissions/${COMMISSION_ID}`)
+      .set('authorization', 'Bearer commission-detail')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      id: COMMISSION_ID,
+      members: [],
+    });
+  });
+
+  it('returns electors with initialized participation collections after a write request', async () => {
+    await request(app.getHttpServer())
+      .put(`/electoral-rolls/${ELECTORAL_ROLL_ID}/members`)
+      .set('authorization', 'Bearer add-roll-member')
+      .send({ members: [{ identifier: 'member-2' }] })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get(`/votes/${VOTE_ID}/electors?page=1&pageSize=20`)
+      .set('authorization', 'Bearer elector-page')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      items: [
+        {
+          id: ELECTOR_ID,
+          voteId: VOTE_ID,
+          identifier: 'member-1',
+          identityVerified: false,
+          participated: false,
+        },
+      ],
+      totalItems: 1,
+    });
+  });
+
   it('resolves an electoral-roll snapshot after loading the vote aggregate', async () => {
     const response = await request(app.getHttpServer())
       .put(`/votes/${VOTE_ID}/electoral-roll-snapshot`)
@@ -142,6 +186,7 @@ const ELECTORAL_ROLL_MEMBER_ID = '10000000-0000-4000-8000-000000000006';
 const ELECTORAL_ROLL_SNAPSHOT_ID = '10000000-0000-4000-8000-000000000007';
 const ELECTORAL_ROLL_SNAPSHOT_MEMBER_ID =
   '10000000-0000-4000-8000-000000000008';
+const ELECTOR_ID = '10000000-0000-4000-8000-000000000009';
 
 function assertDedicatedTestDatabase(): void {
   if (!process.env.DATABASE_NAME?.endsWith('_test')) {
@@ -191,6 +236,15 @@ async function seedFixtures(em: MikroORM['em']): Promise<void> {
      )`,
     `insert into vote_voting_channels (id, vote_id, channel, created_at)
      values ('${VOTING_CHANNEL_ID}', '${VOTE_ID}', 'ONLINE', current_timestamp)`,
+    `insert into electors (
+       id, vote_id, snapshot_member_id, name, identifier, phone_number,
+       phone_number_hash, birth_date, group_key, vote_weight, status,
+       created_at, updated_at
+     ) values (
+       '${ELECTOR_ID}', '${VOTE_ID}', '${ELECTORAL_ROLL_SNAPSHOT_MEMBER_ID}',
+       'Member 1', 'member-1', null, null, null, null, 1, 'ELIGIBLE',
+       current_timestamp, current_timestamp
+     )`,
   ];
 
   for (const statement of statements) {
