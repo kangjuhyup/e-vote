@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 export class CreateElectorBody {
   @ApiProperty({
@@ -55,8 +56,10 @@ export class CreateElectorBody {
 }
 
 export class CreateElectorParam {
+  @IsUUID()
   @ApiProperty({
-    example: 'vote-1',
+    format: 'uuid',
+    example: '11111111-1111-4111-8111-111111111111',
     description: '선거인을 등록할 부모 투표 ID입니다.',
   })
   readonly voteId!: string;

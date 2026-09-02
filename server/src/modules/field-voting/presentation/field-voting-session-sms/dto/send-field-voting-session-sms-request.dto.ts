@@ -1,7 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 export class SendFieldVotingSessionSmsParam {
-  @ApiProperty() readonly fieldVotingSessionId!: string;
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly fieldVotingSessionId!: string;
 }
 
 export class SendFieldVotingSessionSmsBody {

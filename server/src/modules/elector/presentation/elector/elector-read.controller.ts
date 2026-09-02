@@ -22,7 +22,10 @@ import {
   GetElectorHandler,
 } from '../../application/query/handler/get-elector.handler';
 import { GetElectorQuery } from '../../application/query/dto/request/get-elector.query';
-import { GetElectorPageQuery as GetElectorPageRequestQuery } from './dto/get-elector-page-request.dto';
+import {
+  GetElectorPageParam,
+  GetElectorPageQuery as GetElectorPageRequestQuery,
+} from './dto/get-elector-page-request.dto';
 import { GetElectorPageResponse } from './dto/get-elector-page-response.dto';
 import { GetElectorParam } from './dto/get-elector-request.dto';
 import { GetElectorResponse } from './dto/get-elector-response.dto';
@@ -63,7 +66,7 @@ export class ElectorReadController {
   })
   async getElectorPage(
     @User() user: UserPrincipal,
-    @Param() params: Pick<GetElectorParam, 'voteId'>,
+    @Param() params: GetElectorPageParam,
     @Query() query: GetElectorPageRequestQuery,
   ): Promise<GetElectorPageResponse> {
     const result = await this.getElectorPageHandler.execute(

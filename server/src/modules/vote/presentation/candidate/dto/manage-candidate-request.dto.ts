@@ -1,9 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 export class ManageCandidateParam {
-  @ApiProperty() readonly voteId!: string;
-  @ApiProperty() readonly voteDetailId!: string;
-  @ApiProperty() readonly candidateId!: string;
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly voteId!: string;
+
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly voteDetailId!: string;
+
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly candidateId!: string;
 }
 
 export class UpdateCandidateBody {

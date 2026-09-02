@@ -1,11 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 export class ElectoralRollParam {
-  @ApiProperty() readonly electoralRollId!: string;
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly electoralRollId!: string;
 }
 
 export class ElectoralRollMemberParam extends ElectoralRollParam {
-  @ApiProperty() readonly memberId!: string;
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly memberId!: string;
 }
 
 export class UpdateElectoralRollMemberBody {

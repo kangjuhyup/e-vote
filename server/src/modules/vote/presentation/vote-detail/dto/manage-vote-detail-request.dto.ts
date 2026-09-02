@@ -1,9 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 import type { CreateVoteDetailBody } from './create-vote-detail-request.dto';
 
 export class ManageVoteDetailParam {
-  @ApiProperty() readonly voteId!: string;
-  @ApiProperty() readonly voteDetailId!: string;
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly voteId!: string;
+
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly voteDetailId!: string;
 }
 
 export class UpdateVoteDetailBody {

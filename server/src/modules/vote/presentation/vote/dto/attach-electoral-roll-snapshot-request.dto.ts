@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 export class AttachElectoralRollSnapshotBody {
-  @ApiProperty()
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
   readonly electoralRollId!: string;
 }

@@ -1,7 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 export class GetSmsDispatchPageParam {
-  @ApiProperty() readonly voteId!: string;
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly voteId!: string;
 }
 
 export class GetSmsDispatchPageQuery {
@@ -12,6 +15,11 @@ export class GetSmsDispatchPageQuery {
 }
 
 export class GetSmsDispatchParam {
-  @ApiProperty() readonly voteId!: string;
-  @ApiProperty() readonly smsDispatchId!: string;
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly voteId!: string;
+
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly smsDispatchId!: string;
 }

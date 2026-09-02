@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID } from 'class-validator';
 
 const ElectionCommissionMemberRoleBody = {
   Admin: 'ADMIN',
@@ -35,8 +36,10 @@ export class RegisterElectionCommissionMemberBody {
 }
 
 export class RegisterElectionCommissionMemberParam {
+  @IsUUID()
   @ApiProperty({
-    example: 'commission-1',
+    format: 'uuid',
+    example: '22222222-2222-4222-8222-222222222222',
     description: '위원을 등록할 선거관리위원회 ID입니다.',
   })
   readonly commissionId!: string;
