@@ -1,7 +1,6 @@
 import {
   CallHandler,
   ExecutionContext,
-  HttpException,
   Inject,
   Injectable,
   NestInterceptor,
@@ -68,13 +67,6 @@ export class RvlogHttpLoggingInterceptor implements NestInterceptor {
             startedAt,
           );
         },
-        error: (error: unknown) => {
-          const statusCode =
-            error instanceof HttpException ? error.getStatus() : 500;
-          this.logger.error(
-            `${method} ${path} failed ${statusCode} (${this.getDuration(startedAt)})`,
-          );
-        },
       }),
     );
   }
@@ -85,10 +77,22 @@ export class RvlogHttpLoggingInterceptor implements NestInterceptor {
     statusCode: number,
     startedAt: number,
   ): void {
+    const duration = this.getDuration(startedAt);
+
+    if (statusCode >= 500) {
+      this.logger.error(`${method} ${path} failed ${statusCode} (${duration})`);
+      return;
+    }
+
+    if (statusCode >= 400) {
+      this.logger.warn(`${method} ${path} failed ${statusCode} (${duration})`);
+      return;
+    }
+
     logAtLevel(
       this.logger,
       this.options.level ?? LogLevel.INFO,
-      `${method} ${path} completed ${statusCode} (${this.getDuration(startedAt)})`,
+      `${method} ${path} completed ${statusCode} (${duration})`,
     );
   }
 

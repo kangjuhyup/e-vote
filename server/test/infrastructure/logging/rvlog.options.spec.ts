@@ -1,5 +1,6 @@
 import { LogLevel } from '@kangjuhyup/rvlog';
 import {
+  createRvlogHttpOptions,
   createRvlogLoggerOptions,
   RVLOG_HTTP_OPTIONS,
 } from '../../../src/platform/logging/rvlog.options';
@@ -16,6 +17,18 @@ describe('rvlog options', () => {
     expect(createRvlogLoggerOptions('development')).toMatchObject({
       minLevel: LogLevel.DEBUG,
       pretty: true,
+    });
+  });
+
+  it('logs local HTTP requests at DEBUG', () => {
+    expect(createRvlogHttpOptions('development')).toMatchObject({
+      level: LogLevel.DEBUG,
+    });
+  });
+
+  it('logs production HTTP requests at INFO', () => {
+    expect(createRvlogHttpOptions('production')).toMatchObject({
+      level: LogLevel.INFO,
     });
   });
 

@@ -19,15 +19,21 @@ export function createRvlogLoggerOptions(
   };
 }
 
-export const RVLOG_HTTP_OPTIONS: RvlogHttpLoggingOptions = {
-  context: 'HTTP',
-  level: LogLevel.INFO,
-  logBody: false,
-  logQuery: false,
-  logParams: false,
-  logHeaders: false,
-  logResponseBody: false,
-  excludePaths: ['/liveness'],
-  requestIdHeader: 'x-request-id',
-  setResponseHeader: true,
-};
+export function createRvlogHttpOptions(
+  environment = process.env.NODE_ENV,
+): RvlogHttpLoggingOptions {
+  return {
+    context: 'HTTP',
+    level: environment === 'production' ? LogLevel.INFO : LogLevel.DEBUG,
+    logBody: false,
+    logQuery: false,
+    logParams: false,
+    logHeaders: false,
+    logResponseBody: false,
+    excludePaths: ['/liveness'],
+    requestIdHeader: 'x-request-id',
+    setResponseHeader: true,
+  };
+}
+
+export const RVLOG_HTTP_OPTIONS = createRvlogHttpOptions();

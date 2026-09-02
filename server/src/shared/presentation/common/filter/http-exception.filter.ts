@@ -12,6 +12,7 @@ import {
 } from '../../../application/error/managed-resource.error';
 import { DomainError } from '../../../domain/domain-error';
 import { getResponseRequestId } from '../util/request-id.util';
+import type { HttpExceptionLogger } from './http-exception-logger';
 
 type ErrorResponse = {
   success: false;
@@ -26,11 +27,15 @@ type ErrorResponse = {
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  constructor(private readonly logger?: HttpExceptionLogger) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const http = host.switchToHttp();
     const request = http.getRequest<Request>();
     const response = http.getResponse<Response>();
     const statusCode = this.resolveStatusCode(exception);
+
+    this.logFailure(exception, request, statusCode);
 
     response.status(statusCode).json({
       success: false,
@@ -42,6 +47,44 @@ export class HttpExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       requestId: getResponseRequestId(response),
     } satisfies ErrorResponse);
+  }
+
+  private logFailure(
+    exception: unknown,
+    request: Request,
+    statusCode: number,
+  ): void {
+    if (!this.logger) return;
+
+    const method = request.method || 'HTTP';
+    const path = request.path || request.originalUrl.split('?')[0] || '';
+    const message = `${method} ${path} failed ${statusCode}`;
+
+    if (statusCode >= 500) {
+      this.logger.error(message, this.toSafeError(exception));
+      return;
+    }
+
+    this.logger.warn(message);
+  }
+
+  private toSafeError(exception: unknown): Error {
+    const source = exception instanceof Error ? exception : new Error();
+    const safeError = new Error('Internal server error');
+    safeError.name = source.name || 'Error';
+
+    if (source.stack) {
+      const stackFrames = source.stack
+        .split('\n')
+        .slice(1)
+        .filter((line) => /^\s*at\s/.test(line));
+      safeError.stack = [
+        `${safeError.name}: ${safeError.message}`,
+        ...stackFrames,
+      ].join('\n');
+    }
+
+    return safeError;
   }
 
   private resolveStatusCode(exception: unknown): number {
