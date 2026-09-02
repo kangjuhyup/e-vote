@@ -4,8 +4,29 @@ import { ElectoralRollRepositoryAdapter } from '../../../../src/modules/electora
 import { ElectoralRollReadRepositoryAdapter } from '../../../../src/modules/electoral-roll/infrastructure/database/repository/query/electoral-roll-read-repository.adapter';
 import { ElectoralRollMemberAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll-member.aggregate';
 import { ElectoralRollAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll.aggregate';
+import { JOINED_RELATION_LOAD_OPTIONS } from '../../../../src/platform/database/repository/database-repository.util';
 
 describe('electoral roll repository adapters', () => {
+  it('does not expose shared relation options to MikroORM mutation', async () => {
+    const findOne = jest
+      .fn<Promise<null>, [unknown, unknown, Record<string, unknown>]>()
+      .mockImplementation((_entity, _where, options) => {
+        expect(options).not.toBe(JOINED_RELATION_LOAD_OPTIONS);
+        options.populate = [];
+        return Promise.resolve(null);
+      });
+
+    await new ElectoralRollRepositoryAdapter({ findOne } as any).findById(
+      'roll-1',
+      'user-1',
+    );
+
+    expect(Object.isFrozen(JOINED_RELATION_LOAD_OPTIONS)).toBe(true);
+    expect(JOINED_RELATION_LOAD_OPTIONS).toEqual({
+      strategy: LoadStrategy.JOINED,
+    });
+  });
+
   it('creates a roll and its creator access grant in one unit of work', async () => {
     const persist = jest.fn();
     const em = {
@@ -151,7 +172,7 @@ describe('electoral roll repository adapters', () => {
     });
     expect(findOne.mock.calls[0]?.[2]).toMatchObject({
       populate: ['members'],
-      strategy: LoadStrategy.JOINED,
+      strategy: LoadStrategy.SELECT_IN,
     });
     expect(result).toMatchObject({
       id: 'roll-1',

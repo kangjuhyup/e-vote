@@ -36,7 +36,7 @@ describe('VoteReadRepositoryAdapter', () => {
         'votingChannels',
         'voteDetails.candidates',
       ],
-      strategy: LoadStrategy.JOINED,
+      strategy: LoadStrategy.SELECT_IN,
     });
     expect(result).toMatchObject({
       id: 'vote-1',
@@ -113,7 +113,7 @@ describe('VoteReadRepositoryAdapter', () => {
         createdAt: 'desc',
         id: 'desc',
       },
-      strategy: LoadStrategy.JOINED,
+      strategy: LoadStrategy.SELECT_IN,
     });
     expect(result).toMatchObject({
       page: 2,

@@ -76,13 +76,13 @@ describe('database repository adapters', () => {
     });
   });
 
-  it('uses explicit joined relation loading for aggregate reconstitution', async () => {
+  it('uses explicit relation loading for aggregate reconstitution', async () => {
     const em = createMockEntityManager();
 
     await new VoteRepositoryAdapter(em as any).findById('vote-1');
     expect(em.findOne.mock.calls[0][2]).toMatchObject({
       populate: ['commission', 'electoralRollSnapshot', 'votingChannels'],
-      strategy: LoadStrategy.JOINED,
+      strategy: LoadStrategy.SELECT_IN,
     });
 
     await new VoteDetailRepositoryAdapter(em as any).findById('detail-1');
