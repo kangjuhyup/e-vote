@@ -100,9 +100,12 @@ describe('electoral roll repository adapters', () => {
         ],
         1,
       ]);
-    const adapter = new ElectoralRollReadRepositoryAdapter({
-      findAndCount,
-    } as any);
+    const adapter = new ElectoralRollReadRepositoryAdapter(
+      {
+        findAndCount,
+      } as any,
+      identityDataProtectorStub(),
+    );
 
     const result = await adapter.findPage({
       userPrincipalId: 'user-1',
@@ -151,6 +154,9 @@ describe('electoral roll repository adapters', () => {
             identifier: 'member-1',
             groupKey: 'group-1',
             voteWeight: '2.5',
+            encryptedName: 'encrypted-name',
+            encryptedPhoneNumber: 'encrypted-phone',
+            encryptedBirthDate: 'encrypted-birth-date',
             createdAt: new Date('2026-08-30T00:00:00.000Z'),
             updatedAt: new Date('2026-08-30T01:00:00.000Z'),
           },
@@ -164,6 +170,7 @@ describe('electoral roll repository adapters', () => {
 
     const result = await new ElectoralRollReadRepositoryAdapter(
       em as any,
+      identityDataProtectorStub(),
     ).findDetailById('roll-1', 'user-1');
 
     expect(findOne.mock.calls[0]?.[1]).toEqual({
@@ -182,6 +189,9 @@ describe('electoral roll repository adapters', () => {
           identifier: 'member-1',
           groupKey: 'group-1',
           voteWeight: 2.5,
+          name: '홍길동',
+          phoneNumber: '010-1234-5678',
+          birthDate: '1990-01-02',
         },
       ],
     });
@@ -197,6 +207,12 @@ describe('electoral roll repository adapters', () => {
           identifier: 'member-1',
           groupKey: 'group-1',
           voteWeight: '2',
+          identityNameHash: 'name-hash',
+          identityPhoneNumberHash: 'phone-hash',
+          identityBirthDateHash: 'birth-date-hash',
+          encryptedName: 'encrypted-name',
+          encryptedPhoneNumber: 'encrypted-phone',
+          encryptedBirthDate: 'encrypted-birth-date',
         },
       ]);
     const nativeDelete = jest
@@ -229,6 +245,12 @@ describe('electoral roll repository adapters', () => {
         groupKey: 'group-1',
         voteWeight: 2,
         status: 'ELIGIBLE',
+        identityNameHash: 'name-hash',
+        phoneNumberHash: 'phone-hash',
+        identityBirthDateHash: 'birth-date-hash',
+        name: 'encrypted-name',
+        phoneNumber: 'encrypted-phone',
+        birthDate: 'encrypted-birth-date',
       }),
     );
   });
@@ -245,3 +267,19 @@ describe('electoral roll repository adapters', () => {
     ).rejects.toThrow('with operational history cannot be replaced');
   });
 });
+
+function identityDataProtectorStub() {
+  return {
+    protectName: jest.fn(),
+    protectPhoneNumber: jest.fn(),
+    protectBirthDate: jest.fn(),
+    reveal: jest.fn((value: string) => {
+      const values: Record<string, string> = {
+        'encrypted-name': '홍길동',
+        'encrypted-phone': '010-1234-5678',
+        'encrypted-birth-date': '1990-01-02',
+      };
+      return values[value] ?? value;
+    }),
+  };
+}

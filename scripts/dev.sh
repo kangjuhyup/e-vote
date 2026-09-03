@@ -18,6 +18,7 @@ set -eu
 : "${VOTE_AUTH_AUDIENCE:=https://vote-api.example.com}"
 : "${VOTE_AUTH_INTROSPECTION_CLIENT_ID:=vote-api}"
 : "${VOTE_AUTH_INTROSPECTION_CLIENT_SECRET:=vote-local-introspection-secret-change-me}"
+: "${PERSONAL_DATA_ENCRYPTION_SECRET:=vote-local-personal-data-secret-change-me}"
 : "${AUTH_E_VOTE_RESOURCE:=$VOTE_AUTH_AUDIENCE}"
 
 export POSTGRES_PORT
@@ -37,6 +38,7 @@ export AUTH_OIDC_TENANT_CODE
 export VOTE_AUTH_AUDIENCE
 export VOTE_AUTH_INTROSPECTION_CLIENT_ID
 export VOTE_AUTH_INTROSPECTION_CLIENT_SECRET
+export PERSONAL_DATA_ENCRYPTION_SECRET
 export AUTH_E_VOTE_RESOURCE
 
 docker compose up -d --wait

@@ -78,6 +78,14 @@ pnpm build:ui
 pnpm lint:ui
 ```
 
+### Vote API personal-data encryption
+
+Set `PERSONAL_DATA_ENCRYPTION_SECRET` to a stable secret of at least 32
+characters whenever the Vote API is started outside the test environment.
+`pnpm dev` supplies a local-only default. The value encrypts electoral-roll
+identity fields and keys their matching hashes, so changing it requires an
+explicit data re-encryption and re-hashing migration.
+
 ### UI OIDC Auth
 
 ```bash

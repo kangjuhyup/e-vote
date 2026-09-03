@@ -7,6 +7,12 @@ export type ElectoralRollSnapshotMemberParams = {
   readonly identifier: string;
   readonly groupKey?: string;
   readonly voteWeight: number;
+  readonly encryptedName?: string;
+  readonly encryptedPhoneNumber?: string;
+  readonly encryptedBirthDate?: string;
+  readonly identityNameHash?: string;
+  readonly identityPhoneNumberHash?: string;
+  readonly identityBirthDateHash?: string;
 };
 
 export class ElectoralRollSnapshotMember {
@@ -15,6 +21,12 @@ export class ElectoralRollSnapshotMember {
   readonly identifier: string;
   readonly groupKey?: string;
   readonly voteWeight: number;
+  readonly encryptedName?: string;
+  readonly encryptedPhoneNumber?: string;
+  readonly encryptedBirthDate?: string;
+  readonly identityNameHash?: string;
+  readonly identityPhoneNumberHash?: string;
+  readonly identityBirthDateHash?: string;
 
   private constructor(params: ElectoralRollSnapshotMemberParams) {
     const identifier = params.identifier.trim();
@@ -29,6 +41,15 @@ export class ElectoralRollSnapshotMember {
     this.identifier = identifier;
     this.groupKey = params.groupKey?.trim() || undefined;
     this.voteWeight = params.voteWeight;
+    this.encryptedName = params.encryptedName?.trim() || undefined;
+    this.encryptedPhoneNumber =
+      params.encryptedPhoneNumber?.trim() || undefined;
+    this.encryptedBirthDate = params.encryptedBirthDate?.trim() || undefined;
+    this.identityNameHash = params.identityNameHash?.trim() || undefined;
+    this.identityPhoneNumberHash =
+      params.identityPhoneNumberHash?.trim() || undefined;
+    this.identityBirthDateHash =
+      params.identityBirthDateHash?.trim() || undefined;
     Object.freeze(this);
   }
 
@@ -122,5 +143,15 @@ export class ElectoralRollSnapshotAggregate {
     params: ElectoralRollSnapshotParams,
   ): ElectoralRollSnapshotAggregate {
     return ElectoralRollSnapshotAggregate.create(params);
+  }
+
+  hasCompleteIdentityVerificationData(): boolean {
+    return this.members.every(
+      (member) =>
+        member.identityNameHash !== undefined &&
+        member.identityPhoneNumberHash !== undefined &&
+        member.encryptedName !== undefined &&
+        member.encryptedPhoneNumber !== undefined,
+    );
   }
 }

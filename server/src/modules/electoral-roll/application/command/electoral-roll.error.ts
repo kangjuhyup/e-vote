@@ -25,3 +25,9 @@ export class DuplicateElectoralRollMemberIdentifierError extends Error {
     super(`duplicate electoral roll member identifier: ${identifier}`);
   }
 }
+
+export class InvalidElectoralRollMemberIdentityDataError extends Error {
+  constructor(reason: string) {
+    super(reason);
+  }
+}

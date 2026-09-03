@@ -4,6 +4,9 @@ type ElectoralRollMemberViewProps = {
   readonly identifier: string;
   readonly groupKey?: string;
   readonly voteWeight: number;
+  readonly name?: string;
+  readonly phoneNumber?: string;
+  readonly birthDate?: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -17,6 +20,9 @@ export class ElectoralRollMemberView {
     readonly identifier: string,
     groupKey: string | undefined,
     readonly voteWeight: number,
+    readonly name: string | undefined,
+    readonly phoneNumber: string | undefined,
+    readonly birthDate: string | undefined,
     readonly createdAt: Date,
     readonly updatedAt: Date,
   ) {
@@ -30,6 +36,9 @@ export class ElectoralRollMemberView {
       params.identifier,
       params.groupKey,
       params.voteWeight,
+      params.name,
+      params.phoneNumber,
+      params.birthDate,
       params.createdAt,
       params.updatedAt,
     );

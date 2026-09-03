@@ -15,6 +15,8 @@ export type ElectorPersistence = {
   readonly identifier: string;
   readonly phoneNumber: string | null;
   readonly phoneNumberHash: string | null;
+  readonly identityNameHash: string | null;
+  readonly identityBirthDateHash: string | null;
   readonly birthDate: string | null;
   readonly groupKey: string | null;
   readonly voteWeight: number | string;
@@ -65,6 +67,9 @@ export class ElectorMapper {
       voteWeight: Number(entity.voteWeight),
       status: entity.status,
       identityVerified: options.identityVerified ?? false,
+      identityNameHash: entity.identityNameHash ?? undefined,
+      identityPhoneNumberHash: entity.phoneNumberHash ?? undefined,
+      identityBirthDateHash: entity.identityBirthDateHash ?? undefined,
     });
   }
 
@@ -89,6 +94,11 @@ export class ElectorMapper {
       identifier: elector.identifier,
       phoneNumber: encryptedPersonalData.phoneNumber,
       phoneNumberHash: encryptedPersonalData.phoneNumberHash,
+      identityNameHash: options.personalDataCipher.hash(elector.name),
+      identityBirthDateHash:
+        elector.birthDate === undefined
+          ? null
+          : options.personalDataCipher.hash(elector.birthDate),
       birthDate: encryptedPersonalData.birthDate,
       groupKey: elector.groupKey ?? null,
       voteWeight: elector.voteWeight,

@@ -87,6 +87,21 @@ export function createElectoralRollEntities(
       identifier: p.string(),
       groupKey: p.string().fieldName('group_key').nullable(),
       voteWeight: p.decimal('number').fieldName('vote_weight').default(1),
+      encryptedName: p.text().fieldName('encrypted_name').nullable(),
+      encryptedPhoneNumber: p
+        .text()
+        .fieldName('encrypted_phone_number')
+        .nullable(),
+      encryptedBirthDate: p.text().fieldName('encrypted_birth_date').nullable(),
+      identityNameHash: p.string().fieldName('identity_name_hash').nullable(),
+      identityPhoneNumberHash: p
+        .string()
+        .fieldName('identity_phone_number_hash')
+        .nullable(),
+      identityBirthDateHash: p
+        .string()
+        .fieldName('identity_birth_date_hash')
+        .nullable(),
       createdAt: p.datetime().fieldName('created_at'),
       updatedAt: p.datetime().fieldName('updated_at'),
     },
@@ -150,6 +165,21 @@ export function createElectoralRollEntities(
       identifier: p.string(),
       groupKey: p.string().fieldName('group_key').nullable(),
       voteWeight: p.decimal('number').fieldName('vote_weight').default(1),
+      encryptedName: p.text().fieldName('encrypted_name').nullable(),
+      encryptedPhoneNumber: p
+        .text()
+        .fieldName('encrypted_phone_number')
+        .nullable(),
+      encryptedBirthDate: p.text().fieldName('encrypted_birth_date').nullable(),
+      identityNameHash: p.string().fieldName('identity_name_hash').nullable(),
+      identityPhoneNumberHash: p
+        .string()
+        .fieldName('identity_phone_number_hash')
+        .nullable(),
+      identityBirthDateHash: p
+        .string()
+        .fieldName('identity_birth_date_hash')
+        .nullable(),
       createdAt: p.datetime().fieldName('created_at'),
       electors: () =>
         p

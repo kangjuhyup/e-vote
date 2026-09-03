@@ -44,6 +44,11 @@ export function createElectorEntities(
       identifier: p.string(),
       phoneNumber: p.text().fieldName('phone_number').nullable(),
       phoneNumberHash: p.string().fieldName('phone_number_hash').nullable(),
+      identityNameHash: p.string().fieldName('identity_name_hash').nullable(),
+      identityBirthDateHash: p
+        .string()
+        .fieldName('identity_birth_date_hash')
+        .nullable(),
       birthDate: p.text().fieldName('birth_date').nullable(),
       groupKey: p.string().fieldName('group_key').nullable(),
       voteWeight: p.decimal('number').fieldName('vote_weight').default(1),

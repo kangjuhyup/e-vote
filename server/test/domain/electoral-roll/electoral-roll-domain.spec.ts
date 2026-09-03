@@ -70,6 +70,12 @@ describe('electoral roll domain', () => {
       identifier: source.identifier,
       groupKey: source.groupKey,
       voteWeight: source.voteWeight,
+      encryptedName: 'encrypted-name',
+      encryptedPhoneNumber: 'encrypted-phone',
+      encryptedBirthDate: 'encrypted-birth-date',
+      identityNameHash: 'name-hash',
+      identityPhoneNumberHash: 'phone-hash',
+      identityBirthDateHash: 'birth-date-hash',
     });
     const snapshot = ElectoralRollSnapshotAggregate.create({
       id: 'snapshot-1',
@@ -89,7 +95,11 @@ describe('electoral roll domain', () => {
     expect(snapshot.members[0]).toMatchObject({
       identifier: 'member-1',
       voteWeight: 2,
+      identityNameHash: 'name-hash',
+      identityPhoneNumberHash: 'phone-hash',
+      identityBirthDateHash: 'birth-date-hash',
     });
+    expect(snapshot.hasCompleteIdentityVerificationData()).toBe(true);
     expect(Object.isFrozen(snapshot)).toBe(true);
     expect(Object.isFrozen(snapshot.members[0])).toBe(true);
   });

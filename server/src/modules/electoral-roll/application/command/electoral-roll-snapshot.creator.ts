@@ -49,6 +49,12 @@ export class ElectoralRollSnapshotCreator {
             identifier: member.identifier,
             groupKey: member.groupKey ?? '',
             voteWeight: member.voteWeight,
+            encryptedName: member.encryptedName ?? '',
+            encryptedPhoneNumber: member.encryptedPhoneNumber ?? '',
+            encryptedBirthDate: member.encryptedBirthDate ?? '',
+            identityNameHash: member.identityNameHash ?? '',
+            identityPhoneNumberHash: member.identityPhoneNumberHash ?? '',
+            identityBirthDateHash: member.identityBirthDateHash ?? '',
           })),
         ),
       )
@@ -60,6 +66,12 @@ export class ElectoralRollSnapshotCreator {
         identifier: member.identifier,
         groupKey: member.groupKey,
         voteWeight: member.voteWeight,
+        encryptedName: member.encryptedName,
+        encryptedPhoneNumber: member.encryptedPhoneNumber,
+        encryptedBirthDate: member.encryptedBirthDate,
+        identityNameHash: member.identityNameHash,
+        identityPhoneNumberHash: member.identityPhoneNumberHash,
+        identityBirthDateHash: member.identityBirthDateHash,
       }),
     );
     const snapshot = ElectoralRollSnapshotAggregate.create({

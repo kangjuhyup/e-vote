@@ -18,4 +18,9 @@ export class UpdateElectoralRollMemberBody {
   @ApiProperty({ required: false, example: 'group-1' })
   readonly groupKey?: string;
   @ApiProperty({ example: 1, minimum: 0.000001 }) readonly voteWeight!: number;
+  @ApiProperty({ required: false, example: '홍길동' }) readonly name?: string;
+  @ApiProperty({ required: false, example: '010-1234-5678' })
+  readonly phoneNumber?: string;
+  @ApiProperty({ required: false, example: '1990-01-02', format: 'date' })
+  readonly birthDate?: string;
 }
