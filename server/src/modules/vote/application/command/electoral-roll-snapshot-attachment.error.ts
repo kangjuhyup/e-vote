@@ -9,3 +9,11 @@ export class VoteElectorsAlreadyExistError extends Error {
     super('vote already has manually managed electors');
   }
 }
+
+export class ElectoralRollIdentityVerificationDataRequiredError extends Error {
+  constructor() {
+    super(
+      'all electoral roll members require identity verification data for this vote',
+    );
+  }
+}

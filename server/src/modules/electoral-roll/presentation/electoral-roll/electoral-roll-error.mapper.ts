@@ -8,12 +8,16 @@ import {
   ElectoralRollMemberNotFoundError,
   ElectoralRollNotFoundError,
   InvalidElectoralRollMemberBatchError,
+  InvalidElectoralRollMemberIdentityDataError,
 } from '../../application/command/electoral-roll.error';
 import { ManagedResourceNotFoundError } from '../../../../shared/application/error/managed-resource.error';
 import { DomainError } from '../../../../shared/domain/domain-error';
 
 export function throwMappedElectoralRollError(error: unknown): never {
-  if (error instanceof InvalidElectoralRollMemberBatchError) {
+  if (
+    error instanceof InvalidElectoralRollMemberBatchError ||
+    error instanceof InvalidElectoralRollMemberIdentityDataError
+  ) {
     throw new BadRequestException(error.message);
   }
 

@@ -13,6 +13,9 @@ interface CreateElectorParams {
   readonly voteWeight?: number;
   readonly status?: ElectorStatus;
   readonly identityVerified?: boolean;
+  readonly identityNameHash?: string;
+  readonly identityPhoneNumberHash?: string;
+  readonly identityBirthDateHash?: string;
 }
 
 type ReconstituteElectorParams = CreateElectorParams & {
@@ -35,6 +38,9 @@ export class ElectorAggregate {
     public voteWeight: number,
     public status: ElectorStatus,
     identityVerified: boolean,
+    readonly identityNameHash: string | undefined,
+    readonly identityPhoneNumberHash: string | undefined,
+    readonly identityBirthDateHash: string | undefined,
   ) {
     this.identityVerified = identityVerified;
   }
@@ -69,6 +75,9 @@ export class ElectorAggregate {
       voteWeight,
       params.status ?? ElectorStatus.Eligible,
       params.identityVerified ?? false,
+      params.identityNameHash?.trim() || undefined,
+      params.identityPhoneNumberHash?.trim() || undefined,
+      params.identityBirthDateHash?.trim() || undefined,
     );
   }
 

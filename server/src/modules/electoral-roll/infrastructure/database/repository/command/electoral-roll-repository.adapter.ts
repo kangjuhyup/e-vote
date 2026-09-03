@@ -25,6 +25,12 @@ type ElectoralRollMemberPersistence = {
   readonly identifier: string;
   readonly groupKey: string | null;
   readonly voteWeight: number | string;
+  readonly encryptedName: string | null;
+  readonly encryptedPhoneNumber: string | null;
+  readonly encryptedBirthDate: string | null;
+  readonly identityNameHash: string | null;
+  readonly identityPhoneNumberHash: string | null;
+  readonly identityBirthDateHash: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -170,6 +176,12 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
         identifier: member.identifier,
         groupKey: member.groupKey ?? null,
         voteWeight: member.voteWeight,
+        encryptedName: member.encryptedName ?? null,
+        encryptedPhoneNumber: member.encryptedPhoneNumber ?? null,
+        encryptedBirthDate: member.encryptedBirthDate ?? null,
+        identityNameHash: member.identityNameHash ?? null,
+        identityPhoneNumberHash: member.identityPhoneNumberHash ?? null,
+        identityBirthDateHash: member.identityBirthDateHash ?? null,
         updatedAt: member.updatedAt,
       },
     );
@@ -197,6 +209,12 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
             identifier: member.identifier,
             groupKey: member.groupKey ?? null,
             voteWeight: member.voteWeight,
+            encryptedName: member.encryptedName ?? null,
+            encryptedPhoneNumber: member.encryptedPhoneNumber ?? null,
+            encryptedBirthDate: member.encryptedBirthDate ?? null,
+            identityNameHash: member.identityNameHash ?? null,
+            identityPhoneNumberHash: member.identityPhoneNumberHash ?? null,
+            identityBirthDateHash: member.identityBirthDateHash ?? null,
             createdAt: member.createdAt,
             updatedAt: member.updatedAt,
           } as any,
@@ -223,6 +241,12 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
       identifier: entity.identifier,
       groupKey: entity.groupKey ?? undefined,
       voteWeight: Number(entity.voteWeight),
+      encryptedName: entity.encryptedName ?? undefined,
+      encryptedPhoneNumber: entity.encryptedPhoneNumber ?? undefined,
+      encryptedBirthDate: entity.encryptedBirthDate ?? undefined,
+      identityNameHash: entity.identityNameHash ?? undefined,
+      identityPhoneNumberHash: entity.identityPhoneNumberHash ?? undefined,
+      identityBirthDateHash: entity.identityBirthDateHash ?? undefined,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });

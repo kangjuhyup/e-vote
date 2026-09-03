@@ -16,12 +16,20 @@ import {
   loadedItems,
   type LoadedCollectionLike,
 } from '../../../../../../platform/database/repository/database-repository.util';
+import {
+  IDENTITY_DATA_PROTECTOR_PORT,
+  type IdentityDataProtectorPort,
+} from '../../../../../../shared/application/port/security/identity-data-protector.port';
+import { Inject } from '@nestjs/common';
 
 type ElectoralRollMemberReadPersistence = {
   readonly id: string;
   readonly identifier: string;
   readonly groupKey: string | null;
   readonly voteWeight: number | string;
+  readonly encryptedName: string | null;
+  readonly encryptedPhoneNumber: string | null;
+  readonly encryptedBirthDate: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -38,7 +46,11 @@ type ElectoralRollReadPersistence = {
 
 @Injectable()
 export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepositoryPort {
-  constructor(private readonly em: EntityManager) {}
+  constructor(
+    private readonly em: EntityManager,
+    @Inject(IDENTITY_DATA_PROTECTOR_PORT)
+    private readonly identityDataProtector: IdentityDataProtectorPort,
+  ) {}
 
   async findDetailById(
     electoralRollId: string,
@@ -71,6 +83,9 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
             identifier: member.identifier,
             groupKey: member.groupKey ?? undefined,
             voteWeight: Number(member.voteWeight),
+            name: this.reveal(member.encryptedName),
+            phoneNumber: this.reveal(member.encryptedPhoneNumber),
+            birthDate: this.reveal(member.encryptedBirthDate),
             createdAt: member.createdAt,
             updatedAt: member.updatedAt,
           }),
@@ -122,5 +137,11 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
       totalItems,
       totalPages: Math.ceil(totalItems / request.pageSize),
     });
+  }
+
+  private reveal(value: string | null): string | undefined {
+    return value === null
+      ? undefined
+      : this.identityDataProtector.reveal(value);
   }
 }

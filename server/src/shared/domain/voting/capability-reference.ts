@@ -72,4 +72,5 @@ export interface ParticipationReference {
 export interface ElectoralRollSnapshotReference {
   readonly id: string;
   readonly memberCount: number;
+  hasCompleteIdentityVerificationData(): boolean;
 }

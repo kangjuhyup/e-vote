@@ -163,6 +163,83 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     });
   });
 
+  it('encrypts roll identity data and carries it through the immutable snapshot to electors', async () => {
+    await request(app.getHttpServer())
+      .put(`/electoral-rolls/${ELECTORAL_ROLL_ID}/members`)
+      .set('authorization', 'Bearer add-roll-member')
+      .send({
+        members: [
+          {
+            identifier: 'member-2',
+            name: '홍길동',
+            phoneNumber: '010-1234-5678',
+            birthDate: '1990-01-02',
+          },
+        ],
+      })
+      .expect(201);
+
+    const detail = await request(app.getHttpServer())
+      .get(`/electoral-rolls/${ELECTORAL_ROLL_ID}`)
+      .set('authorization', 'Bearer preload-electoral-roll')
+      .expect(200);
+    const detailBody = detail.body as unknown as {
+      readonly members: readonly unknown[];
+    };
+    expect(detailBody.members).toContainEqual(
+      expect.objectContaining({
+        identifier: 'member-2',
+        name: '홍길동',
+        phoneNumber: '010-1234-5678',
+        birthDate: '1990-01-02',
+      }),
+    );
+
+    const em = orm.em.fork();
+    const [persistedMember] = await em.getConnection().execute<
+      Array<{
+        encrypted_name: string;
+        encrypted_phone_number: string;
+        identity_phone_number_hash: string;
+      }>
+    >(
+      `select encrypted_name, encrypted_phone_number, identity_phone_number_hash
+       from electoral_roll_members where electoral_roll_id = ? and identifier = ?`,
+      [ELECTORAL_ROLL_ID, 'member-2'],
+    );
+    expect(persistedMember?.encrypted_name).toMatch(/^v1:/);
+    expect(persistedMember?.encrypted_name).not.toContain('홍길동');
+    expect(persistedMember?.encrypted_phone_number).not.toContain(
+      '010-1234-5678',
+    );
+    expect(persistedMember?.identity_phone_number_hash).toMatch(
+      /^[a-f0-9]{64}$/,
+    );
+
+    await request(app.getHttpServer())
+      .put(`/votes/${VOTE_ID}/electoral-roll-snapshot`)
+      .set('authorization', 'Bearer preload-vote')
+      .send({ electoralRollId: ELECTORAL_ROLL_ID })
+      .expect(200);
+
+    const [materializedElector] = await em.getConnection().execute<
+      Array<{
+        name: string;
+        phone_number: string;
+        phone_number_hash: string;
+      }>
+    >(
+      `select name, phone_number, phone_number_hash
+       from electors where vote_id = ? and identifier = ?`,
+      [VOTE_ID, 'member-2'],
+    );
+    expect(materializedElector).toMatchObject({
+      name: persistedMember?.encrypted_name,
+      phone_number: persistedMember?.encrypted_phone_number,
+      phone_number_hash: persistedMember?.identity_phone_number_hash,
+    });
+  });
+
   afterAll(async () => {
     if (orm && (await orm.isConnected())) {
       await orm.em
