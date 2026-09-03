@@ -23,6 +23,12 @@ type SnapshotMemberPersistence = {
   readonly identifier: string;
   readonly groupKey: string | null;
   readonly voteWeight: number | string;
+  readonly encryptedName: string | null;
+  readonly encryptedPhoneNumber: string | null;
+  readonly encryptedBirthDate: string | null;
+  readonly identityNameHash: string | null;
+  readonly identityPhoneNumberHash: string | null;
+  readonly identityBirthDateHash: string | null;
 };
 
 type SnapshotPersistence = {
@@ -108,6 +114,12 @@ export class ElectoralRollSnapshotRepositoryAdapter implements ElectoralRollSnap
             identifier: member.identifier,
             groupKey: member.groupKey ?? null,
             voteWeight: member.voteWeight,
+            encryptedName: member.encryptedName ?? null,
+            encryptedPhoneNumber: member.encryptedPhoneNumber ?? null,
+            encryptedBirthDate: member.encryptedBirthDate ?? null,
+            identityNameHash: member.identityNameHash ?? null,
+            identityPhoneNumberHash: member.identityPhoneNumberHash ?? null,
+            identityBirthDateHash: member.identityBirthDateHash ?? null,
             createdAt: snapshot.createdAt,
           } as any,
         ),
@@ -191,11 +203,13 @@ export class ElectoralRollSnapshotRepositoryAdapter implements ElectoralRollSnap
               ElectoralRollSnapshotMemberEntity,
               member.id,
             ),
-            name: member.identifier,
+            name: member.encryptedName ?? member.identifier,
             identifier: member.identifier,
-            phoneNumber: null,
-            phoneNumberHash: null,
-            birthDate: null,
+            phoneNumber: member.encryptedPhoneNumber,
+            phoneNumberHash: member.identityPhoneNumberHash,
+            birthDate: member.encryptedBirthDate,
+            identityNameHash: member.identityNameHash,
+            identityBirthDateHash: member.identityBirthDateHash,
             groupKey: member.groupKey,
             voteWeight: Number(member.voteWeight),
             status: 'ELIGIBLE',
@@ -218,6 +232,12 @@ export class ElectoralRollSnapshotRepositoryAdapter implements ElectoralRollSnap
         identifier: member.identifier,
         groupKey: member.groupKey ?? undefined,
         voteWeight: Number(member.voteWeight),
+        encryptedName: member.encryptedName ?? undefined,
+        encryptedPhoneNumber: member.encryptedPhoneNumber ?? undefined,
+        encryptedBirthDate: member.encryptedBirthDate ?? undefined,
+        identityNameHash: member.identityNameHash ?? undefined,
+        identityPhoneNumberHash: member.identityPhoneNumberHash ?? undefined,
+        identityBirthDateHash: member.identityBirthDateHash ?? undefined,
       }),
     );
 

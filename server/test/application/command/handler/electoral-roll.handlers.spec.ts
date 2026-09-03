@@ -16,7 +16,10 @@ import type { VoteRepositoryPort } from '../../../../src/modules/vote/applicatio
 import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 import { ElectoralRollAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll.aggregate';
 import { ElectoralRollMemberAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll-member.aggregate';
-import { ElectoralRollSnapshotAggregate } from '../../../../src/modules/electoral-roll/domain/electoral-roll-snapshot.aggregate';
+import {
+  ElectoralRollSnapshotAggregate,
+  ElectoralRollSnapshotMember,
+} from '../../../../src/modules/electoral-roll/domain/electoral-roll-snapshot.aggregate';
 import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
 import {
   ParticipationUnit,
@@ -29,6 +32,7 @@ import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
 import type { ElectoralRollSnapshotAccessPort } from '../../../../src/shared/application/port/capability/electoral-roll-snapshot-access.port';
+import type { IdentityDataProtectorPort } from '../../../../src/shared/application/port/security/identity-data-protector.port';
 
 describe('electoral roll command handlers', () => {
   const now = new Date('2026-08-30T00:00:00.000Z');
@@ -79,13 +83,21 @@ describe('electoral roll command handlers', () => {
     const result = await new AddElectoralRollMembersHandler(
       rollRepository,
       new ElectoralRollSnapshotCreator(rollRepository, snapshotRepository),
+      identityDataProtectorStub(),
       transactionManager,
     ).execute(
       AddElectoralRollMembersCommand.of({
         userPrincipalId: 'user-1',
         electoralRollId: roll.id,
         members: [
-          { identifier: 'member-1', groupKey: 'group-1', voteWeight: 2 },
+          {
+            identifier: 'member-1',
+            name: '최 선거',
+            phoneNumber: '010-1234-5678',
+            birthDate: '1990-01-02',
+            groupKey: 'group-1',
+            voteWeight: 2,
+          },
           { identifier: 'member-2' },
         ],
         changedAt: now,
@@ -107,6 +119,19 @@ describe('electoral roll command handlers', () => {
       members: [
         expect.objectContaining({ identifier: 'member-1', voteWeight: 2 }),
         expect.objectContaining({ identifier: 'member-2', voteWeight: 1 }),
+      ],
+    });
+    expect(snapshotRepository.save.mock.calls[0]?.[0]).toMatchObject({
+      members: [
+        expect.objectContaining({
+          identityNameHash: 'name-hash:최 선거',
+          identityPhoneNumberHash: 'phone-hash:010-1234-5678',
+          identityBirthDateHash: 'birth-date-hash:1990-01-02',
+          encryptedName: 'encrypted-name:최 선거',
+          encryptedPhoneNumber: 'encrypted-phone:010-1234-5678',
+          encryptedBirthDate: 'encrypted-birth-date:1990-01-02',
+        }),
+        expect.objectContaining({ identifier: 'member-2' }),
       ],
     });
     expect(transactionManager.runInTransaction.mock.calls[0]?.[1]).toEqual({
@@ -147,6 +172,7 @@ describe('electoral roll command handlers', () => {
         rollRepository,
         createSnapshotRepository(),
       ),
+      identityDataProtectorStub(),
       immediateTransactionManager(),
     );
 
@@ -178,6 +204,7 @@ describe('electoral roll command handlers', () => {
     const result = await new UpdateElectoralRollMemberHandler(
       rollRepository,
       new ElectoralRollSnapshotCreator(rollRepository, snapshotRepository),
+      identityDataProtectorStub(),
       immediateTransactionManager(),
     ).execute(
       UpdateElectoralRollMemberCommand.of({
@@ -187,6 +214,9 @@ describe('electoral roll command handlers', () => {
         identifier: 'updated-member',
         groupKey: 'updated-group',
         voteWeight: 3,
+        name: '박 투표',
+        phoneNumber: '010-9999-0000',
+        birthDate: '1985-10-20',
         changedAt: now,
       }),
     );
@@ -202,6 +232,9 @@ describe('electoral roll command handlers', () => {
           identifier: 'updated-member',
           groupKey: 'updated-group',
           voteWeight: 3,
+          identityNameHash: 'name-hash:박 투표',
+          identityPhoneNumberHash: 'phone-hash:010-9999-0000',
+          identityBirthDateHash: 'birth-date-hash:1985-10-20',
         },
       ],
     });
@@ -335,6 +368,44 @@ describe('electoral roll command handlers', () => {
     expect(snapshotAccess.materializeVoteElectors.mock.calls).toEqual([
       [vote.id, snapshot.id],
     ]);
+  });
+
+  it('rejects an identity-verification vote when snapshot members have no matching data', async () => {
+    const vote = createVote(true);
+    const snapshot = ElectoralRollSnapshotAggregate.create({
+      id: 'snapshot-1',
+      electoralRollId: 'roll-1',
+      rollName: 'Members',
+      sourceRevision: 1,
+      contentHash: 'a'.repeat(64),
+      members: [
+        ElectoralRollSnapshotMember.of({
+          id: 'snapshot-member-1',
+          sourceMemberId: 'member-1',
+          identifier: 'member-1',
+          voteWeight: 1,
+        }),
+      ],
+      createdAt: now,
+    });
+    const snapshotAccess = createSnapshotAccess(snapshot);
+
+    await expect(
+      new AttachElectoralRollSnapshotHandler(
+        createVoteRepository(vote),
+        snapshotAccess,
+        voteLifecycleStub(),
+        immediateTransactionManager(),
+      ).execute(
+        AttachElectoralRollSnapshotCommand.of({
+          userPrincipalId: 'user-1',
+          voteId: vote.id,
+          electoralRollId: snapshot.electoralRollId,
+          requestedAt: now,
+        }),
+      ),
+    ).rejects.toThrow('identity verification data');
+    expect(snapshotAccess.materializeVoteElectors.mock.calls).toHaveLength(0);
   });
 
   it('does not overwrite manually managed vote electors', async () => {
@@ -500,7 +571,7 @@ function createSnapshot(): ElectoralRollSnapshotAggregate {
   });
 }
 
-function createVote(): VoteAggregate {
+function createVote(identityVerificationRequired = false): VoteAggregate {
   return VoteAggregate.create({
     id: 'vote-1',
     commissionId: 'commission-1',
@@ -513,7 +584,9 @@ function createVote(): VoteAggregate {
       voteWeightMode: VoteWeightMode.Equal,
     }),
     identityVerificationPolicy: IdentityVerificationPolicy.of({
-      required: false,
+      required: identityVerificationRequired,
+      provider: identityVerificationRequired ? 'PASS' : undefined,
+      method: identityVerificationRequired ? 'MOBILE' : undefined,
     }),
   });
 }
@@ -539,5 +612,23 @@ function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
     lockVote: jest.fn().mockResolvedValue(undefined),
     finalizeForBilling: jest.fn().mockResolvedValue(undefined),
     cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+function identityDataProtectorStub(): jest.Mocked<IdentityDataProtectorPort> {
+  return {
+    protectName: jest.fn((value) => ({
+      encryptedValue: `encrypted-name:${value}`,
+      hash: `name-hash:${value}`,
+    })),
+    protectPhoneNumber: jest.fn((value) => ({
+      encryptedValue: `encrypted-phone:${value}`,
+      hash: `phone-hash:${value}`,
+    })),
+    protectBirthDate: jest.fn((value) => ({
+      encryptedValue: `encrypted-birth-date:${value}`,
+      hash: `birth-date-hash:${value}`,
+    })),
+    reveal: jest.fn((value) => value),
   };
 }

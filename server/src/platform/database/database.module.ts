@@ -16,6 +16,7 @@ import {
 import { configureDatabaseEntityRegistryFactory } from './repository/database-repository.util';
 import { DATABASE_HEALTH_PORT } from '../../shared/application/port/health/database-health.port';
 import { MikroOrmDatabaseHealthAdapter } from './mikro-orm-database-health.adapter';
+import { SecurityModule } from '../security/security.module';
 
 export interface DatabaseModuleOptions {
   readonly entityRegistryFactory: DatabaseEntityRegistryFactory;
@@ -58,7 +59,7 @@ export class DatabaseModule {
 
     return {
       module: DatabaseModule,
-      imports: [configModule, mikroOrmModule],
+      imports: [configModule, SecurityModule, mikroOrmModule],
       providers: [
         {
           provide: DATABASE_HEALTH_PORT,

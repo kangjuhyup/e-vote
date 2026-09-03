@@ -17,11 +17,13 @@ import type { GetElectoralRollPageHandler } from '../../../../src/modules/electo
 import {
   ElectoralRollPageItemView,
   ElectoralRollPageView,
+  ElectoralRollMemberView,
   ElectoralRollView,
 } from '../../../../src/modules/electoral-roll/application/query/dto/response/electoral-roll.view';
 import { ElectoralRollController } from '../../../../src/modules/electoral-roll/presentation/electoral-roll/electoral-roll.controller';
 import { ElectoralRollReadController } from '../../../../src/modules/electoral-roll/presentation/electoral-roll/electoral-roll-read.controller';
 import { throwMappedElectoralRollError } from '../../../../src/modules/electoral-roll/presentation/electoral-roll/electoral-roll-error.mapper';
+import { maskDecoratedPersonalData } from '../../../../src/shared/presentation/common/serializer/mask-personal-data';
 
 describe('electoral roll controllers', () => {
   it('maps source-roll creation to its command handler', async () => {
@@ -128,7 +130,19 @@ describe('electoral roll controllers', () => {
       id: 'roll-1',
       name: 'Members',
       revision: 2,
-      members: [],
+      members: [
+        ElectoralRollMemberView.of({
+          id: 'member-1',
+          electoralRollId: 'roll-1',
+          identifier: 'member-1',
+          name: '홍길동',
+          phoneNumber: '010-1234-5678',
+          birthDate: '1990-01-02',
+          voteWeight: 1,
+          createdAt: new Date('2026-08-30T00:00:00.000Z'),
+          updatedAt: new Date('2026-08-30T01:00:00.000Z'),
+        }),
+      ],
       createdAt: new Date('2026-08-30T00:00:00.000Z'),
       updatedAt: new Date('2026-08-30T01:00:00.000Z'),
     });
@@ -153,6 +167,17 @@ describe('electoral roll controllers', () => {
         electoralRollId: 'roll-1',
       }),
     );
+    const response = await new ElectoralRollReadController(
+      getRoll as unknown as GetElectoralRollHandler,
+      handler() as unknown as GetElectoralRollPageHandler,
+    ).getElectoralRoll(TEST_USER_PRINCIPAL, {
+      electoralRollId: 'roll-1',
+    });
+    expect(maskDecoratedPersonalData(response).members[0]).toMatchObject({
+      name: '홍*동',
+      phoneNumber: '010-****-5678',
+      birthDate: '1990-**-**',
+    });
   });
 
   it('maps GET /electoral-rolls to an authorized metadata-only page', async () => {

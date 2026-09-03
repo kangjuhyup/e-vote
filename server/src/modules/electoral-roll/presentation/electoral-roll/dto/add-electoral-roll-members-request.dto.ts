@@ -6,6 +6,20 @@ export class AddElectoralRollMemberItemBody {
   readonly groupKey?: string;
   @ApiProperty({ required: false, example: 1, minimum: 0.000001 })
   readonly voteWeight?: number;
+  @ApiProperty({
+    required: false,
+    example: '홍길동',
+    description: 'Required with phoneNumber for identity-verification votes.',
+  })
+  readonly name?: string;
+  @ApiProperty({
+    required: false,
+    example: '010-1234-5678',
+    description: 'Required with name for identity-verification votes.',
+  })
+  readonly phoneNumber?: string;
+  @ApiProperty({ required: false, example: '1990-01-02', format: 'date' })
+  readonly birthDate?: string;
 }
 
 export class AddElectoralRollMembersBody {

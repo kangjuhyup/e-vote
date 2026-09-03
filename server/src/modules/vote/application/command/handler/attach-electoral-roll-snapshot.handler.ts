@@ -3,6 +3,7 @@ import { AttachElectoralRollSnapshotCommand } from '../dto/request/attach-electo
 import { AttachElectoralRollSnapshotResult } from '../dto/response/attach-electoral-roll-snapshot-result.dto';
 import {
   ElectoralRollSnapshotSourceNotFoundError,
+  ElectoralRollIdentityVerificationDataRequiredError,
   VoteElectorsAlreadyExistError,
 } from '../electoral-roll-snapshot-attachment.error';
 import { ManagedResourceNotFoundError } from '../../../../../shared/application/error/managed-resource.error';
@@ -58,6 +59,13 @@ export class AttachElectoralRollSnapshotHandler {
       command.requestedAt,
     );
     if (!snapshot) throw new ElectoralRollSnapshotSourceNotFoundError();
+
+    if (
+      vote.identityVerificationPolicy.required &&
+      !snapshot.hasCompleteIdentityVerificationData()
+    ) {
+      throw new ElectoralRollIdentityVerificationDataRequiredError();
+    }
 
     if (vote.electoralRollSnapshotId === snapshot.id) {
       return AttachElectoralRollSnapshotResult.of({
