@@ -49,6 +49,17 @@ export class CandidateAggregate {
     return CandidateAggregate.create(params);
   }
 
+  belongsToVoteDetail(voteDetailId: string): boolean {
+    return this.voteDetailId === voteDetailId;
+  }
+
+  isSelectableForVoteDetail(voteDetailId: string): boolean {
+    return (
+      this.belongsToVoteDetail(voteDetailId) &&
+      this.status === CandidateStatus.Active
+    );
+  }
+
   update(params: {
     readonly candidateNo: number;
     readonly name: string;

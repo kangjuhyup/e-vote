@@ -66,6 +66,7 @@ export class VoteController {
   ): Promise<CreateVoteResponse> {
     const result = await this.createVoteHandler.execute(
       CreateVoteCommand.of({
+        createdByUserPrincipalId: user.id,
         commissionId: body.commissionId,
         title: body.title,
         votingChannels: body.votingChannels,

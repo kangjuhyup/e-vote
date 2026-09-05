@@ -45,6 +45,7 @@ function createVote(
 ): VoteAggregate {
   return VoteAggregate.create({
     id: 'vote-1',
+    createdByUserPrincipalId: 'user-1',
     commissionId: 'commission-1',
     title: 'Hybrid vote',
     votingChannels,
@@ -85,6 +86,8 @@ describe('field voting session domain', () => {
       status: FieldVotingSessionStatus.Scheduled,
     });
     expect(session.hasAssignedManager('member-1')).toBe(true);
+    expect(session.belongsToVote('vote-1')).toBe(true);
+    expect(session.belongsToVote('vote-2')).toBe(false);
     expect(session.pullEvents()[0]).toBeInstanceOf(FieldVotingSessionScheduled);
   });
 

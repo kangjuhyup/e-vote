@@ -17,6 +17,7 @@ export function createBillingEntities(
     ],
     properties: {
       id: p.uuid().primary(),
+      version: p.integer(),
       voteId: p.uuid().fieldName('vote_id'),
       commissionId: p.uuid().fieldName('commission_id'),
       orderedByUserPrincipalId: p

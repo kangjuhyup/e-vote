@@ -18,6 +18,7 @@ export interface ElectionCommissionMemberReference {
 
 export interface VoteReference {
   readonly id: string;
+  readonly createdByUserPrincipalId?: string;
   readonly commissionId: string;
   readonly status: VoteStatus;
   readonly electoralRollSnapshotId?: string;
@@ -26,12 +27,19 @@ export interface VoteReference {
   readonly defaultPolicy: VotePolicy;
   readonly identityVerificationPolicy: { readonly required: boolean };
   allowsVotingChannel(channel: VotingChannel): boolean;
+  isCreatedBy(userPrincipalId: string): boolean;
+  hasElectoralRollSnapshot(): boolean;
+  usesElectoralRollSnapshot(snapshotId: string): boolean;
+  assertElectorsMutable(action: 'created' | 'updated' | 'deleted'): void;
+  assertParticipationAllowed(channel: VotingChannel): void;
 }
 
 export interface VoteDetailReference {
   readonly id: string;
   readonly voteId: string;
   readonly status: VoteDetailStatus;
+  belongsToVote(voteId: string): boolean;
+  assertParticipationAllowed(): void;
   getEffectivePolicy(defaultPolicy: VotePolicy): VotePolicy;
 }
 
@@ -39,6 +47,8 @@ export interface CandidateReference {
   readonly id: string;
   readonly voteDetailId: string;
   readonly status: CandidateStatus;
+  belongsToVoteDetail(voteDetailId: string): boolean;
+  isSelectableForVoteDetail(voteDetailId: string): boolean;
 }
 
 export interface ElectorReference {
@@ -57,6 +67,7 @@ export interface FieldVotingSessionReference {
   readonly channel: VotingChannel;
   readonly status: FieldVotingSessionStatus;
   hasAssignedManager(memberId: string): boolean;
+  belongsToVote(voteId: string): boolean;
 }
 
 export interface ParticipationReference {

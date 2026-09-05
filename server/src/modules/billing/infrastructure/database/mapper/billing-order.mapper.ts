@@ -3,6 +3,7 @@ import type { BillingOrderStatus } from '../../../domain/type/billing-order-stat
 
 export type BillingOrderPersistence = {
   readonly id: string;
+  readonly version: number | string;
   readonly voteId: string;
   readonly commissionId: string;
   readonly orderedByUserPrincipalId: string;
@@ -30,6 +31,7 @@ export class BillingOrderMapper {
   static toDomain(entity: BillingOrderPersistence): BillingOrderAggregate {
     return BillingOrderAggregate.reconstitute({
       id: entity.id,
+      version: Number(entity.version),
       voteId: entity.voteId,
       commissionId: entity.commissionId,
       orderedByUserPrincipalId: entity.orderedByUserPrincipalId,

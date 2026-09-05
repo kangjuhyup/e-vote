@@ -38,6 +38,7 @@ describe('CreateVoteHandler', () => {
 
     const result = await handler.execute(
       CreateVoteCommand.of({
+        createdByUserPrincipalId: 'user-1',
         commissionId: 'commission-1',
         title: 'Board election',
         votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
@@ -63,6 +64,7 @@ describe('CreateVoteHandler', () => {
     expect(save.mock.calls[0][0]).toMatchObject({
       id: 'vote-1',
       commissionId: 'commission-1',
+      createdByUserPrincipalId: 'user-1',
       title: 'Board election',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
       status: VoteStatus.Draft,

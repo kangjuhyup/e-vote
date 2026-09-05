@@ -53,8 +53,20 @@ import { ELECTION_COMMISSION_MEMBERSHIP_ACCESS_PORT } from '../shared/applicatio
 import { ElectionCommissionMembershipAccessAdapter } from '../modules/election-commission/infrastructure/database/repository/query/election-commission-membership-access.adapter';
 import { VOTE_ELECTOR_COUNT_ACCESS_PORT } from '../shared/application/port/capability/vote-elector-count-access.port';
 import { VoteElectorCountAccessAdapter } from '../modules/elector/infrastructure/database/repository/query/vote-elector-count-access.adapter';
+import { INTEGRATION_EVENT_OUTBOX_PORT } from '../shared/application/port/messaging/integration-event-outbox.port';
+import { OUTBOX_MESSAGE_REPOSITORY_PORT } from '../shared/application/port/messaging/outbox-message-repository.port';
+import { IntegrationOutboxRepositoryAdapter } from '../platform/outbox/infrastructure/database/repository/integration-outbox-repository.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
+  IntegrationOutboxRepositoryAdapter,
+  {
+    provide: INTEGRATION_EVENT_OUTBOX_PORT,
+    useExisting: IntegrationOutboxRepositoryAdapter,
+  },
+  {
+    provide: OUTBOX_MESSAGE_REPOSITORY_PORT,
+    useExisting: IntegrationOutboxRepositoryAdapter,
+  },
   {
     provide: ELECTION_COMMISSION_REPOSITORY_PORT,
     useClass: ElectionCommissionRepositoryAdapter,
@@ -166,6 +178,8 @@ export const databaseRepositoryProviders: Provider[] = [
 ];
 
 export const databaseRepositoryPortTokens = [
+  INTEGRATION_EVENT_OUTBOX_PORT,
+  OUTBOX_MESSAGE_REPOSITORY_PORT,
   ELECTION_COMMISSION_REPOSITORY_PORT,
   ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT,
   ELECTION_COMMISSION_READ_REPOSITORY_PORT,

@@ -20,6 +20,8 @@ import {
 } from '../../../../src/shared/domain/voting/type/vote-policy.type';
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
+import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
 import {
   AttachmentTargetType,
   CandidateAttachmentType,
@@ -56,6 +58,33 @@ type MockEntityManager = {
 };
 
 describe('database repository adapters', () => {
+  it('persists the authenticated creator on a new vote', async () => {
+    const em = createMockEntityManager();
+    const vote = VoteAggregate.create({
+      id: 'vote-1',
+      createdByUserPrincipalId: 'user-1',
+      commissionId: 'commission-1',
+      title: 'Board election',
+      votingChannels: [VotingChannel.Online],
+      defaultPolicy: VotePolicy.of({
+        privacyMode: PrivacyMode.Secret,
+        participationUnit: ParticipationUnit.Individual,
+        resultStorageMode: ResultStorageMode.Database,
+        voteWeightMode: VoteWeightMode.Equal,
+      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of({
+        required: false,
+      }),
+    });
+
+    await new VoteRepositoryAdapter(em as any).save(vote);
+
+    expect(createdData(em, 0)).toMatchObject({
+      id: 'vote-1',
+      createdByUserPrincipalId: 'user-1',
+    });
+  });
+
   it('persists the user principal binding for a commission member', async () => {
     const em = createMockEntityManager();
     const member = ElectionCommissionMemberAggregate.create({

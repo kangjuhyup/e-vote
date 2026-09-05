@@ -58,6 +58,7 @@ describe('snapshot-managed elector commands', () => {
 function createVoteRepository(): VoteRepositoryPort {
   const vote = VoteAggregate.create({
     id: 'vote-1',
+    createdByUserPrincipalId: 'user-1',
     commissionId: 'commission-1',
     title: 'Vote',
     votingChannels: [VotingChannel.Online],

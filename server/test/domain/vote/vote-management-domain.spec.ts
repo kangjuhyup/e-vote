@@ -50,6 +50,7 @@ describe('vote management domain behavior', () => {
 
   it('locks setup at billing finalization and only cancels before opening', () => {
     const vote = createVote();
+    expect(() => vote.assertElectorsMutable('updated')).not.toThrow();
     vote.finalizeForBilling({
       billingOrderId: 'billing-order-1',
       finalizedAt: new Date('2026-08-31T00:00:00.000Z'),
@@ -57,6 +58,9 @@ describe('vote management domain behavior', () => {
 
     expect(() => vote.attachElectoralRollSnapshot('snapshot-1')).toThrow(
       'finalized vote setup cannot be changed',
+    );
+    expect(() => vote.assertElectorsMutable('updated')).toThrow(
+      'finalized vote electors cannot be changed',
     );
     vote.cancelFinalized(new Date('2026-09-01T00:00:00.000Z'));
     expect(vote.status).toBe(VoteStatus.Canceled);
@@ -93,6 +97,7 @@ describe('vote management domain behavior', () => {
 
   it('updates and cancels only draft child votes', () => {
     const detail = createDetail();
+    expect(() => detail.assertChildResourcesMutable('updated')).not.toThrow();
     detail.updateSettings({
       title: 'Updated detail',
       type: 'YES_NO',
@@ -150,6 +155,7 @@ function policy() {
 function createVote() {
   return VoteAggregate.create({
     id: 'vote-1',
+    createdByUserPrincipalId: 'user-1',
     commissionId: 'commission-1',
     title: 'Vote',
     votingChannels: [VotingChannel.Online],

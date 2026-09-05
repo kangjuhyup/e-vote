@@ -75,4 +75,8 @@ export class BillingOrderView {
       params.refundedAt,
     );
   }
+
+  isOrderedBy(userPrincipalId: string): boolean {
+    return this.orderedByUserPrincipalId === userPrincipalId;
+  }
 }
