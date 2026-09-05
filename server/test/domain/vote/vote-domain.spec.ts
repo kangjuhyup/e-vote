@@ -153,11 +153,29 @@ describe('vote domain aggregates', () => {
       status: VoteStatus.Draft,
     });
 
-    vote.finalizeForBilling({
+    vote.lockForBilling('billing-order-1');
+    expect(vote.status).toBe(VoteStatus.Draft);
+    expect(() =>
+      vote.updateSettings({
+        title: 'Locked lifecycle',
+        votingChannels: [VotingChannel.Online],
+        defaultPolicy: vote.defaultPolicy,
+        identityVerificationPolicy: vote.identityVerificationPolicy,
+      }),
+    ).toThrow('billing-locked vote setup cannot be changed');
+
+    vote.finalizePaidBilling({
       billingOrderId: 'billing-order-1',
-      finalizedAt: new Date('2026-08-08T00:00:00.000Z'),
+      finalizedAt: new Date('2026-08-08T00:01:00.000Z'),
     });
+    expect(vote.status).toBe(VoteStatus.Finalized);
     vote.open(new Date('2026-08-09T00:00:00.000Z'));
+    expect(() =>
+      vote.finalizePaidBilling({
+        billingOrderId: 'billing-order-1',
+        finalizedAt: new Date('2026-08-09T00:01:00.000Z'),
+      }),
+    ).not.toThrow();
     vote.close(new Date('2026-08-10T00:00:00.000Z'));
 
     const events = vote.pullEvents();
@@ -169,6 +187,58 @@ describe('vote domain aggregates', () => {
     ]);
     expect(events[0]).toBeInstanceOf(VoteOpened);
     expect(events[1]).toBeInstanceOf(VoteClosed);
+  });
+
+  it('keeps a paid vote locked until terminal refund and then allows another billing order', () => {
+    const vote = VoteAggregate.create({
+      id: 'vote-refund-lifecycle',
+      createdByUserPrincipalId: 'user-1',
+      commissionId: 'commission-1',
+      title: 'Refund lifecycle',
+      votingChannels: [VotingChannel.Online],
+      defaultPolicy: VotePolicy.of({
+        privacyMode: PrivacyMode.Secret,
+        participationUnit: ParticipationUnit.Individual,
+        resultStorageMode: ResultStorageMode.Database,
+        voteWeightMode: VoteWeightMode.Equal,
+      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of({
+        required: false,
+      }),
+    });
+
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date('2026-09-05T00:00:00.000Z'),
+    });
+    vote.assertBillingCancellationAllowed('billing-order-1');
+
+    expect(vote.status).toBe(VoteStatus.Finalized);
+    expect(() =>
+      vote.updateSettings({
+        title: 'Still locked',
+        votingChannels: [VotingChannel.Online],
+        defaultPolicy: vote.defaultPolicy,
+        identityVerificationPolicy: vote.identityVerificationPolicy,
+      }),
+    ).toThrow('only draft votes can be updated');
+
+    vote.releaseBilling('billing-order-1');
+    expect(vote).toMatchObject({
+      status: VoteStatus.Draft,
+      billingOrderId: undefined,
+      finalizedAt: undefined,
+    });
+
+    vote.updateSettings({
+      title: 'Editable again',
+      votingChannels: [VotingChannel.Online],
+      defaultPolicy: vote.defaultPolicy,
+      identityVerificationPolicy: vote.identityVerificationPolicy,
+    });
+    vote.lockForBilling('billing-order-2');
+    expect(vote.billingOrderId).toBe('billing-order-2');
   });
 
   it('creates elector and candidate aggregates with validated values', () => {

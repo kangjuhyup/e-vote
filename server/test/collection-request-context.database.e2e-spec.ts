@@ -9,6 +9,10 @@ import { OIDC_TOKEN_INTROSPECTOR } from '../src/platform/authentication/oidc-tok
 import { getDatabaseEntities } from '../src/platform/database/repository/database-repository.util';
 import { ACCESS_TOKEN_VERIFIER_PORT } from '../src/shared/application/port/security/access-token-verifier.port';
 import { UserPrincipal } from '../src/shared/application/security/user-principal';
+import { HttpExceptionFilter } from '../src/shared/presentation/common/filter/http-exception.filter';
+import { RvlogHttpExceptionLogger } from '../src/platform/logging/rvlog-http-exception.logger';
+import { MockPaymentOutboxWorker } from '../src/modules/billing/infrastructure/payment/mock-payment-outbox.worker';
+import { MOCK_PAYMENT_RANDOM_SOURCE } from '../src/modules/billing/infrastructure/payment/payment-integration.config';
 
 const describeDatabase =
   process.env.COLLECTION_REQUEST_CONTEXT_E2E_DATABASE === 'true'
@@ -54,6 +58,8 @@ describeDatabase('MikroORM collections in Nest request context', () => {
           return UserPrincipal.of({ id: USER_PRINCIPAL_ID });
         },
       })
+      .overrideProvider(MOCK_PAYMENT_RANDOM_SOURCE)
+      .useValue(() => 0)
       .compile();
 
     orm = moduleRef.get(MikroORM);
@@ -64,6 +70,9 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     await orm.migrator.up();
     app = moduleRef.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalFilters(
+      new HttpExceptionFilter(new RvlogHttpExceptionLogger()),
+    );
     await app.init();
   });
 
@@ -193,6 +202,25 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       .send({ electoralRollId: ELECTORAL_ROLL_ID })
       .expect(200);
 
+    const createdDetail = await request(app.getHttpServer())
+      .put(`/votes/${voteId}/sub-votes`)
+      .set('authorization', 'Bearer create-vote-detail')
+      .send({
+        title: 'Creator-owned sub-vote',
+        type: 'CANDIDATE',
+        sortOrder: 0,
+      })
+      .expect(201);
+    const voteDetailId = (createdDetail.body as { readonly id: string }).id;
+    await request(app.getHttpServer())
+      .put(`/votes/${voteId}/sub-votes/${voteDetailId}/candidates`)
+      .set('authorization', 'Bearer create-candidate')
+      .send({ candidateNo: 1, name: 'Candidate 1' })
+      .expect(201);
+
+    const mockPaymentWorker = moduleRef.get(MockPaymentOutboxWorker);
+    await mockPaymentWorker.onApplicationShutdown();
+
     const billingOrder = await request(app.getHttpServer())
       .post('/billing/vote-usage-orders')
       .set('authorization', 'Bearer create-billing-order')
@@ -206,8 +234,48 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       status: 'PENDING_PAYMENT',
     });
     const billingOrderId = (billingOrder.body as { readonly id: string }).id;
+    const duplicateOrder = await request(app.getHttpServer())
+      .post('/billing/vote-usage-orders')
+      .set('authorization', 'Bearer repeat-billing-order')
+      .send({ voteId })
+      .expect(201);
+    expect((duplicateOrder.body as { readonly id: string }).id).toBe(
+      billingOrderId,
+    );
 
+    await expectPersistedVoteBilling(voteId, {
+      status: 'DRAFT',
+      billingOrderId,
+      finalized: false,
+    });
+    await expectVoteStatus(voteId, 'DRAFT');
+    await updateVote(voteId, 'Payment-pending update').expect(409);
+    await request(app.getHttpServer())
+      .put(`/votes/${voteId}/sub-votes`)
+      .set('authorization', 'Bearer locked-vote-detail')
+      .send({ title: 'Locked detail', type: 'YES_NO', sortOrder: 1 })
+      .expect(409);
+    await request(app.getHttpServer())
+      .put(`/votes/${voteId}/sub-votes/${voteDetailId}/candidates`)
+      .set('authorization', 'Bearer locked-candidate')
+      .send({ candidateNo: 2, name: 'Locked candidate' })
+      .expect(409);
+
+    await mockPaymentWorker.dispatchOnce();
     await expectBillingOrderStatus(billingOrderId, 'PAID');
+    await expectPersistedVoteBilling(voteId, {
+      status: 'FINALIZED',
+      billingOrderId,
+      finalized: true,
+    });
+    await expectVoteStatus(voteId, 'FINALIZED');
+    await expectPersistedVoteBilling(voteId, {
+      status: 'FINALIZED',
+      billingOrderId,
+      finalized: true,
+    });
+    await expectVotePageStatus(voteId, 'FINALIZED');
+    await updateVote(voteId, 'Paid update').expect(409);
 
     await request(app.getHttpServer())
       .post(`/billing/vote-usage-orders/${billingOrderId}/cancellation`)
@@ -217,8 +285,38 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       .expect(({ body }) => {
         expect(body).toMatchObject({ status: 'REFUND_PENDING' });
       });
+    await expectPersistedVoteBilling(voteId, {
+      status: 'FINALIZED',
+      billingOrderId,
+      finalized: true,
+    });
+    await expectVoteStatus(voteId, 'FINALIZED');
+    await updateVote(voteId, 'Refund-pending update').expect(409);
 
+    await mockPaymentWorker.dispatchOnce();
+    await mockPaymentWorker.dispatchOnce();
     await expectBillingOrderStatus(billingOrderId, 'REFUNDED');
+    await expectPersistedVoteBilling(voteId, {
+      status: 'DRAFT',
+      billingOrderId: null,
+      finalized: false,
+    });
+    await expectVoteStatus(voteId, 'DRAFT');
+    await expectVotePageStatus(voteId, 'DRAFT');
+    await updateVote(voteId, 'Editable after refund').expect(200);
+
+    const replacementOrder = await request(app.getHttpServer())
+      .post('/billing/vote-usage-orders')
+      .set('authorization', 'Bearer create-replacement-billing-order')
+      .send({ voteId })
+      .expect(201);
+    expect(replacementOrder.body).toMatchObject({
+      voteId,
+      status: 'PENDING_PAYMENT',
+    });
+    expect((replacementOrder.body as { readonly id: string }).id).not.toBe(
+      billingOrderId,
+    );
 
     const em = orm.em.fork();
     const [persistedVote] = await em
@@ -350,6 +448,77 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     throw new Error(`billing order did not reach ${expectedStatus}`);
+  }
+
+  async function expectVoteStatus(
+    voteId: string,
+    expectedStatus: string,
+  ): Promise<void> {
+    const response = await request(app.getHttpServer())
+      .get(`/votes/${voteId}`)
+      .set('authorization', 'Bearer get-vote')
+      .expect(200);
+    expect(response.body).toMatchObject({ id: voteId, status: expectedStatus });
+  }
+
+  async function expectPersistedVoteBilling(
+    voteId: string,
+    expected: {
+      readonly status: string;
+      readonly billingOrderId: string | null;
+      readonly finalized: boolean;
+    },
+  ): Promise<void> {
+    const [vote] = await orm.em
+      .fork()
+      .getConnection()
+      .execute<
+        Array<{
+          status: string;
+          billing_order_id: string | null;
+          finalized: boolean;
+        }>
+      >(
+        `select status, billing_order_id, (finalized_at is not null) as finalized
+         from votes where id = ?`,
+        [voteId],
+      );
+    expect(vote).toEqual({
+      status: expected.status,
+      billing_order_id: expected.billingOrderId,
+      finalized: expected.finalized,
+    });
+  }
+
+  async function expectVotePageStatus(
+    voteId: string,
+    expectedStatus: string,
+  ): Promise<void> {
+    const response = await request(app.getHttpServer())
+      .get('/votes?page=1&pageSize=20')
+      .set('authorization', 'Bearer get-vote-page')
+      .expect(200);
+    const body = response.body as unknown as { readonly items: unknown[] };
+    expect(body.items).toContainEqual(
+      expect.objectContaining({ id: voteId, status: expectedStatus }),
+    );
+  }
+
+  function updateVote(voteId: string, title: string): request.Test {
+    return request(app.getHttpServer())
+      .patch(`/votes/${voteId}`)
+      .set('authorization', 'Bearer update-vote')
+      .send({
+        title,
+        votingChannels: ['ONLINE'],
+        defaultPolicy: {
+          privacyMode: 'SECRET',
+          participationUnit: 'INDIVIDUAL',
+          resultStorageMode: 'DATABASE',
+          voteWeightMode: 'EQUAL',
+        },
+        identityVerificationPolicy: { required: false },
+      });
   }
 });
 

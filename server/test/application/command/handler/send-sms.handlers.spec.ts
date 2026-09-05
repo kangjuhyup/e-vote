@@ -5,6 +5,7 @@ import { SendFieldVotingSessionSmsHandler } from '../../../../src/modules/field-
 import type { SmsSenderPort } from '../../../../src/shared/application/port/gateway/sms-sender.port';
 import type { SmsDispatchRepositoryPort } from '../../../../src/shared/application/port/persistence/sms-dispatch-repository.port';
 import type { VoteAccessPort } from '../../../../src/shared/application/port/capability/vote-access.port';
+import type { VoteUsageEntitlementAccessPort } from '../../../../src/shared/application/port/capability/vote-billing.port';
 import type { FieldVotingSessionAccessPort } from '../../../../src/shared/application/port/capability/field-voting-access.port';
 import { SmsSenderNotConfiguredError } from '../../../../src/shared/application/error/sms-sender.error';
 import { ManagedResourceNotFoundError } from '../../../../src/shared/application/error/managed-resource.error';
@@ -40,7 +41,7 @@ describe('SMS command handlers', () => {
     },
     {
       purpose: SmsMessagePurpose.UpcomingVoteNotice,
-      status: VoteStatus.Draft,
+      status: VoteStatus.Finalized,
       method: 'sendUpcomingVoteNotice' as const,
     },
   ])(
@@ -50,6 +51,7 @@ describe('SMS command handlers', () => {
       const smsDispatchRepository = createSmsDispatchRepository();
       const handler = new SendVoteSmsHandler(
         createVoteAccess(createVote(testCase.status)),
+        createEntitlementAccess(),
         smsDispatchRepository,
         smsSender,
       );
@@ -89,6 +91,7 @@ describe('SMS command handlers', () => {
     const smsSender = createSmsSender();
     const handler = new SendVoteSmsHandler(
       createVoteAccess(createVote(VoteStatus.Draft)),
+      createEntitlementAccess(),
       createSmsDispatchRepository(),
       smsSender,
     );
@@ -109,6 +112,7 @@ describe('SMS command handlers', () => {
     await expect(
       new SendVoteSmsHandler(
         createVoteAccess(undefined),
+        createEntitlementAccess(),
         createSmsDispatchRepository(),
         createSmsSender(),
       ).execute(
@@ -128,7 +132,8 @@ describe('SMS command handlers', () => {
     ).toThrow(DomainError);
     await expect(
       new SendVoteSmsHandler(
-        createVoteAccess(createVote(VoteStatus.Draft)),
+        createVoteAccess(createVote(VoteStatus.Finalized)),
+        createEntitlementAccess(),
         createSmsDispatchRepository(),
       ).execute(
         SendVoteSmsCommand.of({
@@ -138,6 +143,31 @@ describe('SMS command handlers', () => {
         }),
       ),
     ).rejects.toBeInstanceOf(SmsSenderNotConfiguredError);
+  });
+
+  it('rejects an upcoming notice while the paid order is refund-pending', async () => {
+    const smsSender = createSmsSender();
+    const entitlement = createEntitlementAccess(false);
+    const handler = new SendVoteSmsHandler(
+      createVoteAccess(createVote(VoteStatus.Finalized)),
+      entitlement,
+      createSmsDispatchRepository(),
+      smsSender,
+    );
+
+    await expect(
+      handler.execute(
+        SendVoteSmsCommand.of({
+          voteId: 'vote-1',
+          purpose: SmsMessagePurpose.UpcomingVoteNotice,
+          message: '예정 안내',
+        }),
+      ),
+    ).rejects.toThrow(
+      'upcoming vote notices require an active paid billing order',
+    );
+    expect(entitlement.hasPaidOrder.mock.calls).toEqual([['vote-1']]);
+    expectSmsSenderNotCalled(smsSender);
   });
 
   it('sends a field-session notice only for an open vote with its field channel enabled', async () => {
@@ -278,6 +308,12 @@ function createSmsDispatchRepository(): jest.Mocked<SmsDispatchRepositoryPort> {
 
 function createVoteAccess(vote: VoteReference | undefined): VoteAccessPort {
   return { findById: jest.fn().mockResolvedValue(vote) };
+}
+
+function createEntitlementAccess(
+  hasPaidOrder = true,
+): jest.Mocked<VoteUsageEntitlementAccessPort> {
+  return { hasPaidOrder: jest.fn().mockResolvedValue(hasPaidOrder) };
 }
 
 function createFieldSessionAccess(

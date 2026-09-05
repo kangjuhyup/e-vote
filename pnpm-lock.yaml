@@ -49,6 +49,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^11.4.6
         version: 11.4.6(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@rvkang/batch-core':
+        specifier: 0.1.0
+        version: 0.1.0
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -1605,6 +1608,10 @@ packages:
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
+
+  '@rvkang/batch-core@0.1.0':
+    resolution: {integrity: sha512-BuWaPGf8mLKY8ZXo+L+g3+b8q4YyiOcNMQe3H2RutQRseX3SYAb1elEbLmTrqVP0TSPKZu8237SYIYGjsd7pGw==}
+    engines: {node: '>=20.18.0'}
 
   '@scarf/scarf@1.4.0':
     resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
@@ -7002,6 +7009,8 @@ snapshots:
   '@rolldown/pluginutils@1.0.1': {}
 
   '@rtsao/scc@1.1.0': {}
+
+  '@rvkang/batch-core@0.1.0': {}
 
   '@scarf/scarf@1.4.0': {}
 

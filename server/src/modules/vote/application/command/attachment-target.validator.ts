@@ -54,6 +54,31 @@ export class AttachmentTargetValidator {
     }
   }
 
+  async assertMutable(target: AttachmentTarget): Promise<void> {
+    const vote = await this.voteRepository.findById(target.voteId);
+    if (!vote) throw new AttachmentTargetNotFoundError();
+    vote.assertChildResourcesMutable('created');
+
+    if (target.targetType === AttachmentTargetType.Vote) return;
+
+    const voteDetail = await this.voteDetailRepository.findById(
+      target.voteDetailId,
+    );
+    if (!voteDetail || !voteDetail.belongsToVote(vote.id)) {
+      throw new AttachmentTargetNotFoundError();
+    }
+    voteDetail.assertChildResourcesMutable('created');
+
+    if (target.targetType === AttachmentTargetType.VoteDetail) return;
+
+    const candidate = await this.candidateRepository.findById(
+      target.candidateId,
+    );
+    if (!candidate || !candidate.belongsToVoteDetail(voteDetail.id)) {
+      throw new AttachmentTargetNotFoundError();
+    }
+  }
+
   private async assertVoteExists(voteId: string): Promise<void> {
     const vote = await this.voteRepository.findById(voteId);
 

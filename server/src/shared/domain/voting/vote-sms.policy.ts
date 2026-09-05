@@ -58,7 +58,7 @@ export class VoteSmsPolicy {
       case SmsMessagePurpose.VoteResultNotice:
         return VoteStatus.Closed;
       case SmsMessagePurpose.UpcomingVoteNotice:
-        return VoteStatus.Draft;
+        return VoteStatus.Finalized;
     }
   }
 }

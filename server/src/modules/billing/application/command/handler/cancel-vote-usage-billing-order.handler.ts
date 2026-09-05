@@ -22,6 +22,7 @@ import {
 import { CancelVoteUsageBillingOrderCommand } from '../dto/request/cancel-vote-usage-billing-order.command';
 import { BillingOrderResult } from '../dto/response/billing-order-result.dto';
 import { BillingOrderOutboxRecorder } from '../../event/billing-order-outbox.recorder';
+import { BillingOrderStatus } from '../../../domain/type/billing-order-status.type';
 
 @Injectable()
 export class CancelVoteUsageBillingOrderHandler {
@@ -54,14 +55,25 @@ export class CancelVoteUsageBillingOrderHandler {
     const lockedOrder = await this.billingOrders.findByIdForUpdate(order.id);
     if (!lockedOrder) throw new BillingOrderNotFoundError();
 
+    const wasTerminal =
+      lockedOrder.status === BillingOrderStatus.Canceled ||
+      lockedOrder.status === BillingOrderStatus.Refunded;
+    if (!wasTerminal) {
+      await this.voteSetupLifecycle.assertBillingCancellationAllowed({
+        voteId: lockedOrder.voteId,
+        billingOrderId: lockedOrder.id,
+      });
+    }
     lockedOrder.requestCancellation({
       reason: command.reason,
       canceledAt: command.canceledAt,
     });
-    await this.voteSetupLifecycle.cancelFinalizedVote({
-      voteId: lockedOrder.voteId,
-      canceledAt: command.canceledAt,
-    });
+    if (!wasTerminal && lockedOrder.status === BillingOrderStatus.Canceled) {
+      await this.voteSetupLifecycle.releaseBilling({
+        voteId: lockedOrder.voteId,
+        billingOrderId: lockedOrder.id,
+      });
+    }
     await this.billingOrders.save(lockedOrder);
     await this.outboxRecorder.record(lockedOrder);
 

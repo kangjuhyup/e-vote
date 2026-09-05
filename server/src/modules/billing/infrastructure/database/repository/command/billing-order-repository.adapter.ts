@@ -12,6 +12,7 @@ import {
   type BillingOrderPersistence,
 } from '../../mapper/billing-order.mapper';
 import type { VoteUsageEntitlementAccessPort } from '../../../../../../shared/application/port/capability/vote-billing.port';
+import { BillingOrderStatus } from '../../../../domain/type/billing-order-status.type';
 
 @Injectable()
 export class BillingOrderRepositoryAdapter
@@ -33,16 +34,22 @@ export class BillingOrderRepositoryAdapter
     return this.findOne({ id: orderId }, LockMode.PESSIMISTIC_WRITE);
   }
 
-  async findByVoteId(
+  async findActiveByVoteIdForUpdate(
     voteId: string,
   ): Promise<BillingOrderAggregate | undefined> {
-    return this.findOne({ voteId });
-  }
-
-  async findByVoteIdForUpdate(
-    voteId: string,
-  ): Promise<BillingOrderAggregate | undefined> {
-    return this.findOne({ voteId }, LockMode.PESSIMISTIC_WRITE);
+    return this.findOne(
+      {
+        voteId,
+        status: {
+          $in: [
+            BillingOrderStatus.PendingPayment,
+            BillingOrderStatus.Paid,
+            BillingOrderStatus.RefundPending,
+          ],
+        },
+      },
+      LockMode.PESSIMISTIC_WRITE,
+    );
   }
 
   async save(order: BillingOrderAggregate): Promise<void> {
@@ -83,7 +90,11 @@ export class BillingOrderRepositoryAdapter
   }
 
   async hasPaidOrder(voteId: string): Promise<boolean> {
-    return (await this.findByVoteId(voteId))?.grantsVoteUsage() ?? false;
+    return (
+      (
+        await this.findOne({ voteId, status: BillingOrderStatus.Paid })
+      )?.grantsVoteUsage() ?? false
+    );
   }
 
   private async findOne(

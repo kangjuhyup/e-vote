@@ -106,6 +106,38 @@ describe('billing order domain', () => {
     ).toThrow('already paid by another payment');
   });
 
+  it.each([BillingOrderStatus.RefundPending, BillingOrderStatus.Refunded])(
+    'keeps a matching payment replay idempotent after reaching %s',
+    (status) => {
+      const order = issueOrder();
+      const payment = {
+        paymentId: 'payment-1',
+        paidAmount: 3_000,
+        paidCurrency: 'KRW',
+        paidAt: issuedAt,
+      };
+      order.markPaid(payment);
+      order.requestCancellation({
+        reason: '일정 변경',
+        canceledAt: new Date('2026-09-01T00:00:00.000Z'),
+      });
+      if (status === BillingOrderStatus.Refunded) {
+        order.markRefunded(new Date('2026-09-01T00:01:00.000Z'));
+      }
+      order.clearDomainEvents();
+      const version = order.version;
+
+      order.markPaid(payment);
+
+      expect(order.status).toBe(status);
+      expect(order.version).toBe(version);
+      expect(order.domainEvents()).toEqual([]);
+      expect(() =>
+        order.markPaid({ ...payment, paymentId: 'payment-2' }),
+      ).toThrow('already paid by another payment');
+    },
+  );
+
   it('cancels an unpaid order within seven days', () => {
     const order = issueOrder();
 

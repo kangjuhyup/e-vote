@@ -2,14 +2,22 @@ export const VOTE_SETUP_LIFECYCLE_PORT = Symbol('VOTE_SETUP_LIFECYCLE_PORT');
 
 export interface VoteSetupLifecyclePort {
   lockVote(voteId: string): Promise<void>;
-  finalizeForBilling(params: {
+  lockForBilling(params: {
+    voteId: string;
+    billingOrderId: string;
+  }): Promise<void>;
+  finalizePaidBilling(params: {
     voteId: string;
     billingOrderId: string;
     finalizedAt: Date;
   }): Promise<void>;
-  cancelFinalizedVote(params: {
+  assertBillingCancellationAllowed(params: {
     voteId: string;
-    canceledAt: Date;
+    billingOrderId: string;
+  }): Promise<void>;
+  releaseBilling(params: {
+    voteId: string;
+    billingOrderId: string;
   }): Promise<void>;
 }
 

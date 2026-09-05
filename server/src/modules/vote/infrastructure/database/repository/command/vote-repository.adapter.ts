@@ -133,26 +133,43 @@ export class VoteRepositoryAdapter
     await this.em.flush();
   }
 
-  async finalizeForBilling(params: {
+  async lockForBilling(params: {
+    voteId: string;
+    billingOrderId: string;
+  }): Promise<void> {
+    const vote = await this.findById(params.voteId);
+    if (!vote) throw new ManagedResourceNotFoundError('vote');
+    vote.lockForBilling(params.billingOrderId);
+    await this.save(vote);
+  }
+
+  async finalizePaidBilling(params: {
     voteId: string;
     billingOrderId: string;
     finalizedAt: Date;
   }): Promise<void> {
-    await this.lockVote(params.voteId);
     const vote = await this.findById(params.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
-    vote.finalizeForBilling(params);
+    vote.finalizePaidBilling(params);
     await this.save(vote);
   }
 
-  async cancelFinalizedVote(params: {
+  async assertBillingCancellationAllowed(params: {
     voteId: string;
-    canceledAt: Date;
+    billingOrderId: string;
   }): Promise<void> {
-    await this.lockVote(params.voteId);
     const vote = await this.findById(params.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
-    vote.cancelFinalized(params.canceledAt);
+    vote.assertBillingCancellationAllowed(params.billingOrderId);
+  }
+
+  async releaseBilling(params: {
+    voteId: string;
+    billingOrderId: string;
+  }): Promise<void> {
+    const vote = await this.findById(params.voteId);
+    if (!vote) throw new ManagedResourceNotFoundError('vote');
+    vote.releaseBilling(params.billingOrderId);
     await this.save(vote);
   }
 

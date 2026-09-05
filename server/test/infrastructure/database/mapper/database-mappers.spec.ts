@@ -58,6 +58,8 @@ describe('database mappers', () => {
       commission: { id: 'commission-1' },
       createdByUserPrincipalId: 'user-1',
       electoralRollSnapshot: { id: 'snapshot-1' },
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date('2026-09-05T00:00:00.000Z'),
       title: 'Board election',
       votingChannels: [{ channel: VotingChannel.Online }],
       defaultPrivacyMode: PrivacyMode.Public,
@@ -67,10 +69,12 @@ describe('database mappers', () => {
       identityVerificationRequired: true,
       identityVerificationProvider: 'PASS',
       identityVerificationMethod: 'MOBILE',
-      status: VoteStatus.Open,
+      status: VoteStatus.Finalized,
     });
 
-    expect(vote.status).toBe(VoteStatus.Open);
+    expect(vote.status).toBe(VoteStatus.Finalized);
+    expect(vote.billingOrderId).toBe('billing-order-1');
+    expect(vote.finalizedAt).toEqual(new Date('2026-09-05T00:00:00.000Z'));
     expect(vote.commissionId).toBe('commission-1');
     expect(vote.createdByUserPrincipalId).toBe('user-1');
     expect(vote.electoralRollSnapshotId).toBe('snapshot-1');

@@ -78,12 +78,22 @@ export class VoteAggregate {
     VoteAggregate.assertIdentityVerificationPolicy(
       params.identityVerificationPolicy,
     );
-    if (!!params.billingOrderId !== !!params.finalizedAt) {
+    if (params.finalizedAt && !params.billingOrderId) {
       throw new DomainError(
-        'vote billing order and finalization timestamp must be set together',
+        'vote finalization timestamp requires a billing order',
       );
     }
-
+    if (
+      params.status === VoteStatus.Finalized &&
+      (!params.billingOrderId || !params.finalizedAt)
+    ) {
+      throw new DomainError(
+        'finalized vote requires billing order and finalization timestamp',
+      );
+    }
+    if (params.status === VoteStatus.Draft && params.finalizedAt) {
+      throw new DomainError('draft vote cannot have a finalization timestamp');
+    }
     return new VoteAggregate(
       id,
       createdByUserPrincipalId,
@@ -110,11 +120,11 @@ export class VoteAggregate {
   }
 
   assertElectorsMutable(action: 'created' | 'updated' | 'deleted'): void {
+    if (this.billingOrderId !== undefined) {
+      throw new DomainError('billing-locked vote electors cannot be changed');
+    }
     if (this.status !== VoteStatus.Draft) {
       throw new DomainError(`only draft vote resources can be ${action}`);
-    }
-    if (this.finalizedAt !== undefined) {
-      throw new DomainError('finalized vote electors cannot be changed');
     }
     if (this.electoralRollSnapshotId !== undefined) {
       throw new DomainError(
@@ -133,8 +143,13 @@ export class VoteAggregate {
   }
 
   assertChildResourcesMutable(
-    action: 'updated' | 'deleted' | 'canceled',
+    action: 'created' | 'updated' | 'deleted' | 'canceled',
   ): void {
+    if (this.billingOrderId !== undefined) {
+      throw new DomainError(
+        `billing-locked vote resources cannot be ${action}`,
+      );
+    }
     if (this.status !== VoteStatus.Draft) {
       throw new DomainError(`only draft vote resources can be ${action}`);
     }
@@ -184,10 +199,7 @@ export class VoteAggregate {
   }
 
   open(openedAt: Date): void {
-    if (this.status !== VoteStatus.Draft) {
-      throw new DomainError('only draft votes can be opened');
-    }
-    if (!this.finalizedAt || !this.billingOrderId) {
+    if (this.status !== VoteStatus.Finalized) {
       throw new DomainError('only finalized votes can be opened');
     }
 
@@ -224,43 +236,71 @@ export class VoteAggregate {
     );
   }
 
-  finalizeForBilling(params: {
+  lockForBilling(billingOrderId: string): void {
+    const normalizedBillingOrderId = createId(billingOrderId);
+    if (this.billingOrderId === normalizedBillingOrderId) return;
+    if (this.billingOrderId || this.finalizedAt) {
+      throw new DomainError('vote is already linked to another billing order');
+    }
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError('only draft votes can be locked for billing');
+    }
+
+    this.billingOrderId = normalizedBillingOrderId;
+  }
+
+  finalizePaidBilling(params: {
     billingOrderId: string;
     finalizedAt: Date;
   }): void {
     const billingOrderId = createId(params.billingOrderId);
-    if (this.billingOrderId || this.finalizedAt) {
-      if (
-        this.billingOrderId !== billingOrderId ||
-        this.finalizedAt?.getTime() !== params.finalizedAt.getTime()
-      ) {
-        throw new DomainError(
-          'vote is already finalized with different billing data',
-        );
-      }
+    if (this.billingOrderId !== billingOrderId) {
+      throw new DomainError('vote is linked to a different billing order');
+    }
+    if (
+      this.finalizedAt &&
+      (this.status === VoteStatus.Finalized ||
+        this.status === VoteStatus.Open ||
+        this.status === VoteStatus.Closed)
+    ) {
       return;
     }
-    if (this.status !== VoteStatus.Draft) {
-      throw new DomainError('only draft votes can be finalized');
+    if (this.status !== VoteStatus.Draft || this.finalizedAt) {
+      throw new DomainError(
+        'only a billing-locked draft vote can be finalized',
+      );
     }
 
-    this.billingOrderId = billingOrderId;
+    this.status = VoteStatus.Finalized;
     this.finalizedAt = params.finalizedAt;
   }
 
-  cancelFinalized(canceledAt: Date): void {
-    if (this.status === VoteStatus.Canceled) return;
-    if (!this.finalizedAt || !this.billingOrderId) {
-      throw new DomainError('vote is not finalized');
+  assertBillingCancellationAllowed(billingOrderId: string): void {
+    if (this.billingOrderId !== createId(billingOrderId)) {
+      throw new DomainError('vote is linked to a different billing order');
     }
-    if (this.status !== VoteStatus.Draft) {
-      throw new DomainError('only unopened finalized votes can be canceled');
+    if (
+      this.status !== VoteStatus.Draft &&
+      this.status !== VoteStatus.Finalized
+    ) {
+      throw new DomainError('only unopened votes can cancel billing');
     }
+  }
 
-    this.status = VoteStatus.Canceled;
-    this.events.push(
-      VoteCanceled.of({ aggregateId: this.id, occurredAt: canceledAt }),
-    );
+  releaseBilling(billingOrderId: string): void {
+    const normalizedBillingOrderId = createId(billingOrderId);
+    if (
+      this.status === VoteStatus.Draft &&
+      !this.billingOrderId &&
+      !this.finalizedAt
+    ) {
+      return;
+    }
+    this.assertBillingCancellationAllowed(normalizedBillingOrderId);
+
+    this.status = VoteStatus.Draft;
+    this.billingOrderId = undefined;
+    this.finalizedAt = undefined;
   }
 
   pullEvents(): VoteDomainEvent[] {
@@ -290,7 +330,7 @@ export class VoteAggregate {
       throw new DomainError(`only draft votes can be ${action}`);
     }
     if (this.finalizedAt || this.billingOrderId) {
-      throw new DomainError('finalized vote setup cannot be changed');
+      throw new DomainError('billing-locked vote setup cannot be changed');
     }
   }
 
