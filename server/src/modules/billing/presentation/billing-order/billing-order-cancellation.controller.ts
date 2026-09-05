@@ -37,7 +37,7 @@ export class BillingOrderCancellationController {
   })
   @ApiOkResponse({ type: BillingOrderResponse })
   @ApiNotFoundResponse({ description: '주문이 없습니다.' })
-  @ApiForbiddenResponse({ description: '주문 위원회 활성 위원이 아닙니다.' })
+  @ApiForbiddenResponse({ description: '현재 사용자가 주문자가 아닙니다.' })
   @ApiConflictResponse({
     description: '취소 기한 만료, 투표 시작 또는 취소할 수 없는 주문 상태',
   })

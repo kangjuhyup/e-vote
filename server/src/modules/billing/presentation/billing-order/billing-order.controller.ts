@@ -33,7 +33,9 @@ export class BillingOrderController {
       'ELIGIBLE 선거인 수를 기준으로 100명당 3,000원을 계산하고 가격 근거를 주문에 스냅샷으로 저장합니다. 같은 투표에 대한 재요청은 기존 주문을 반환합니다.',
   })
   @ApiCreatedResponse({ type: BillingOrderResponse })
-  @ApiForbiddenResponse({ description: '투표 위원회 활성 위원이 아닙니다.' })
+  @ApiForbiddenResponse({
+    description: '현재 사용자가 투표 생성자가 아닙니다.',
+  })
   async create(
     @User() user: UserPrincipal,
     @Body() body: CreateVoteUsageBillingOrderBody,
@@ -56,7 +58,7 @@ export class BillingOrderController {
   @Get(':billingOrderId')
   @ApiOperation({ summary: '투표 이용료 주문 조회' })
   @ApiOkResponse({ type: GetBillingOrderResponse })
-  @ApiForbiddenResponse({ description: '주문 위원회 활성 위원이 아닙니다.' })
+  @ApiForbiddenResponse({ description: '현재 사용자가 주문자가 아닙니다.' })
   async get(
     @User() user: UserPrincipal,
     @Param() params: BillingOrderParam,

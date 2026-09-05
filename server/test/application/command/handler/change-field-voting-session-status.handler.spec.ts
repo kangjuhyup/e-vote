@@ -32,6 +32,7 @@ function createScheduledSessionFixture(): FieldVotingSessionAggregate {
     }),
     vote: VoteAggregate.create({
       id: 'vote-1',
+      createdByUserPrincipalId: 'user-1',
       commissionId: 'commission-1',
       title: 'Hybrid vote',
       votingChannels: [VotingChannel.Onsite],

@@ -68,7 +68,9 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     const em = orm.em.fork();
     await em
       .getConnection()
-      .execute('truncate table election_commissions, electoral_rolls cascade');
+      .execute(
+        'truncate table integration_outbox, election_commissions, electoral_rolls cascade',
+      );
     await seedFixtures(em);
   });
 
@@ -163,6 +165,61 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     });
   });
 
+  it('persists the authenticated vote creator and authorizes billing without commission membership', async () => {
+    const createdVote = await request(app.getHttpServer())
+      .post('/votes')
+      .set('authorization', 'Bearer create-vote')
+      .send({
+        commissionId: COMMISSION_ID,
+        title: 'Creator-owned vote',
+        votingChannels: ['ONLINE'],
+        defaultPolicy: {
+          privacyMode: 'SECRET',
+          participationUnit: 'INDIVIDUAL',
+          resultStorageMode: 'DATABASE',
+          voteWeightMode: 'EQUAL',
+        },
+        identityVerificationPolicy: { required: false },
+      })
+      .expect(201);
+    const voteId = (createdVote.body as { readonly id: string }).id;
+
+    await request(app.getHttpServer())
+      .put(`/votes/${voteId}/electoral-roll-snapshot`)
+      .set('authorization', 'Bearer attach-roll')
+      .send({ electoralRollId: ELECTORAL_ROLL_ID })
+      .expect(200);
+
+    const billingOrder = await request(app.getHttpServer())
+      .post('/billing/vote-usage-orders')
+      .set('authorization', 'Bearer create-billing-order')
+      .send({ voteId })
+      .expect(201);
+
+    expect(billingOrder.body).toMatchObject({
+      voteId,
+      electorCount: 1,
+      amount: 3_000,
+    });
+
+    const em = orm.em.fork();
+    const [persistedVote] = await em
+      .getConnection()
+      .execute<Array<{ created_by_user_principal_id: string | null }>>(
+        'select created_by_user_principal_id from votes where id = ?',
+        [voteId],
+      );
+    const [commissionMemberCount] = await em
+      .getConnection()
+      .execute<Array<{ member_count: number }>>(
+        'select count(*)::int as member_count from election_commission_members where commission_id = ?',
+        [COMMISSION_ID],
+      );
+
+    expect(persistedVote?.created_by_user_principal_id).toBe(USER_PRINCIPAL_ID);
+    expect(commissionMemberCount?.member_count).toBe(0);
+  });
+
   it('encrypts roll identity data and carries it through the immutable snapshot to electors', async () => {
     await request(app.getHttpServer())
       .put(`/electoral-rolls/${ELECTORAL_ROLL_ID}/members`)
@@ -246,7 +303,7 @@ describeDatabase('MikroORM collections in Nest request context', () => {
         .fork()
         .getConnection()
         .execute(
-          'truncate table election_commissions, electoral_rolls cascade',
+          'truncate table integration_outbox, election_commissions, electoral_rolls cascade',
         );
     }
     await app?.close();

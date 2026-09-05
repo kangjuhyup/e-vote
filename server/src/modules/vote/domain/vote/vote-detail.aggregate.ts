@@ -71,6 +71,22 @@ export class VoteDetailAggregate {
     return parentPolicy.overrideWith(this.overrides);
   }
 
+  belongsToVote(voteId: string): boolean {
+    return this.voteId === voteId;
+  }
+
+  assertParticipationAllowed(): void {
+    if (this.status !== VoteDetailStatus.Open) {
+      throw new DomainError('vote detail must be open for participation');
+    }
+  }
+
+  assertChildResourcesMutable(action: 'updated' | 'deleted'): void {
+    if (this.status !== VoteDetailStatus.Draft) {
+      throw new DomainError(`only draft vote resources can be ${action}`);
+    }
+  }
+
   updateSettings(params: {
     readonly title: string;
     readonly type: VoteDetailType;

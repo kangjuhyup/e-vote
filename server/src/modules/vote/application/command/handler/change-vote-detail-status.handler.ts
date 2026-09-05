@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DomainError } from '../../../../../shared/domain/domain-error';
 import {
   VOTE_DETAIL_REPOSITORY_PORT,
   type VoteDetailRepositoryPort,
@@ -32,17 +31,15 @@ export class ChangeVoteDetailStatusHandler {
     ]);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
     if (!detail) throw new ManagedResourceNotFoundError('vote detail');
-    if (detail.voteId !== vote.id)
+    if (!detail.belongsToVote(vote.id))
       throw new ManagedResourceScopeMismatchError();
     if (command.action === 'open') {
-      if (vote.status !== 'OPEN')
-        throw new DomainError('parent vote must be open');
+      vote.assertVoteDetailOpeningAllowed();
       detail.open(command.changedAt);
     } else if (command.action === 'close') {
       detail.close(command.changedAt);
     } else {
-      if (vote.status !== 'DRAFT')
-        throw new DomainError('only draft vote resources can be canceled');
+      vote.assertChildResourcesMutable('canceled');
       detail.cancel();
     }
     await this.details.save(detail);

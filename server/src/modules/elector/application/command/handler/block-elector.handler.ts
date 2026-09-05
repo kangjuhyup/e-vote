@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DomainError } from '../../../../../shared/domain/domain-error';
 import {
   ELECTOR_REPOSITORY_PORT,
   type ElectorRepositoryPort,
@@ -49,14 +48,7 @@ export class BlockElectorHandler {
     ]);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
     if (!elector) throw new ManagedResourceNotFoundError('elector');
-    if (vote.status !== 'DRAFT')
-      throw new DomainError('only draft vote resources can be deleted');
-    if (vote.finalizedAt !== undefined)
-      throw new DomainError('finalized vote electors cannot be changed');
-    if (vote.electoralRollSnapshotId !== undefined)
-      throw new DomainError(
-        'electors are managed by the attached electoral roll snapshot',
-      );
+    vote.assertElectorsMutable('deleted');
     elector.block();
     await this.electors.save(elector);
     return ManageElectorResult.of({

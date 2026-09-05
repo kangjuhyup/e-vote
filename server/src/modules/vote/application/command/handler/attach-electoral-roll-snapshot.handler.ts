@@ -67,7 +67,7 @@ export class AttachElectoralRollSnapshotHandler {
       throw new ElectoralRollIdentityVerificationDataRequiredError();
     }
 
-    if (vote.electoralRollSnapshotId === snapshot.id) {
+    if (vote.usesElectoralRollSnapshot(snapshot.id)) {
       return AttachElectoralRollSnapshotResult.of({
         voteId: vote.id,
         snapshotId: snapshot.id,
@@ -76,7 +76,7 @@ export class AttachElectoralRollSnapshotHandler {
     }
 
     if (
-      vote.electoralRollSnapshotId === undefined &&
+      !vote.hasElectoralRollSnapshot() &&
       (await this.snapshotRepository.hasVoteElectors(vote.id))
     ) {
       throw new VoteElectorsAlreadyExistError();

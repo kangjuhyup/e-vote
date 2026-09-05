@@ -27,6 +27,10 @@ export function createVoteEntities(
     tableName: 'votes',
     properties: {
       id: p.uuid().primary(),
+      createdByUserPrincipalId: p
+        .string()
+        .fieldName('created_by_user_principal_id')
+        .nullable(),
       commission: () =>
         p
           .manyToOne(getEntity(context, 'ElectionCommissionEntity'))

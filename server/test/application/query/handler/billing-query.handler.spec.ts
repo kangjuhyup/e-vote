@@ -2,7 +2,6 @@ import { GetBillingOrderQuery } from '../../../../src/modules/billing/applicatio
 import { BillingOrderView } from '../../../../src/modules/billing/application/query/dto/response/billing-order.view';
 import { GetBillingOrderHandler } from '../../../../src/modules/billing/application/query/handler/get-billing-order.handler';
 import type { BillingOrderReadRepositoryPort } from '../../../../src/modules/billing/application/port/persistence/query/billing-order-read-repository.port';
-import type { ElectionCommissionMembershipAccessPort } from '../../../../src/shared/application/port/capability/election-commission-membership-access.port';
 
 describe('billing query handler', () => {
   const view = BillingOrderView.of({
@@ -24,34 +23,31 @@ describe('billing query handler', () => {
     cancelableUntil: new Date('2026-09-06T00:00:00.000Z'),
   });
 
-  it('returns an order to an active commission member', async () => {
-    const handler = createHandler(true);
+  it('returns an order to the user who placed it without commission membership', async () => {
+    const handler = createHandler();
 
     await expect(handler.execute(query())).resolves.toBe(view);
   });
 
-  it('does not expose the order outside its commission membership', async () => {
-    const handler = createHandler(false);
+  it('does not expose the order to another active commission member', async () => {
+    const handler = createHandler();
 
-    await expect(handler.execute(query())).rejects.toThrow(
+    await expect(handler.execute(query('another-user'))).rejects.toThrow(
       'billing order access denied',
     );
   });
 
-  function createHandler(allowed: boolean): GetBillingOrderHandler {
+  function createHandler(): GetBillingOrderHandler {
     const repository: BillingOrderReadRepositoryPort = {
       findById: jest.fn().mockResolvedValue(view),
     };
-    const membership: ElectionCommissionMembershipAccessPort = {
-      isActiveMember: jest.fn().mockResolvedValue(allowed),
-    };
-    return new GetBillingOrderHandler(repository, membership);
+    return new GetBillingOrderHandler(repository);
   }
 
-  function query(): GetBillingOrderQuery {
+  function query(userPrincipalId = 'user-1'): GetBillingOrderQuery {
     return GetBillingOrderQuery.of({
       billingOrderId: view.id,
-      userPrincipalId: 'user-1',
+      userPrincipalId,
     });
   }
 });

@@ -56,6 +56,7 @@ describe('database mappers', () => {
     const vote = VoteMapper.toDomain({
       id: 'vote-1',
       commission: { id: 'commission-1' },
+      createdByUserPrincipalId: 'user-1',
       electoralRollSnapshot: { id: 'snapshot-1' },
       title: 'Board election',
       votingChannels: [{ channel: VotingChannel.Online }],
@@ -71,6 +72,7 @@ describe('database mappers', () => {
 
     expect(vote.status).toBe(VoteStatus.Open);
     expect(vote.commissionId).toBe('commission-1');
+    expect(vote.createdByUserPrincipalId).toBe('user-1');
     expect(vote.electoralRollSnapshotId).toBe('snapshot-1');
     expect(vote.votingChannels).toEqual([VotingChannel.Online]);
     expect(vote.defaultPolicy).toEqual({

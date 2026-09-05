@@ -18,11 +18,15 @@ describe('billing order domain', () => {
       unitPrice: 3_000,
       price: { amount: 3_000, currency: 'KRW' },
       status: BillingOrderStatus.PendingPayment,
+      version: 1,
       cancellationWindowDays: 7,
       cancelableUntil: new Date('2026-09-06T00:00:00.000Z'),
     });
-    expect(order.pullEvents()).toEqual([
-      expect.objectContaining({ type: 'BillingOrderIssued' }),
+    expect(order.domainEvents()).toEqual([
+      expect.objectContaining({
+        type: 'BillingOrderIssued',
+        aggregateVersion: 1,
+      }),
     ]);
   });
 
@@ -51,6 +55,13 @@ describe('billing order domain', () => {
     );
   });
 
+  it('identifies only the recorded orderer as the order owner', () => {
+    const order = issueOrder();
+
+    expect(order.isOrderedBy('user-1')).toBe(true);
+    expect(order.isOrderedBy('another-user')).toBe(false);
+  });
+
   it('marks the order paid only when amount and currency match', () => {
     const order = issueOrder();
 
@@ -71,6 +82,7 @@ describe('billing order domain', () => {
     });
 
     expect(order.status).toBe(BillingOrderStatus.Paid);
+    expect(order.version).toBe(2);
     expect(order.grantsVoteUsage()).toBe(true);
   });
 
@@ -84,10 +96,11 @@ describe('billing order domain', () => {
     };
 
     order.markPaid(payment);
-    order.pullEvents();
+    order.clearDomainEvents();
     order.markPaid(payment);
 
-    expect(order.pullEvents()).toEqual([]);
+    expect(order.version).toBe(2);
+    expect(order.domainEvents()).toEqual([]);
     expect(() =>
       order.markPaid({ ...payment, paymentId: 'payment-2' }),
     ).toThrow('already paid by another payment');
@@ -106,9 +119,13 @@ describe('billing order domain', () => {
       cancellationReason: '일정 변경',
       canceledAt: new Date('2026-09-06T00:00:00.000Z'),
     });
-    expect(order.pullEvents()).toEqual(
+    expect(order.version).toBe(2);
+    expect(order.domainEvents()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ type: 'BillingOrderCanceled' }),
+        expect.objectContaining({
+          type: 'BillingOrderCanceled',
+          aggregateVersion: 2,
+        }),
       ]),
     );
   });
@@ -129,10 +146,12 @@ describe('billing order domain', () => {
 
     expect(order).toMatchObject({
       status: BillingOrderStatus.RefundPending,
+      version: 3,
       refundRequestedAt: new Date('2026-09-01T00:00:00.000Z'),
     });
     order.markRefunded(new Date('2026-09-02T00:00:00.000Z'));
     expect(order.status).toBe(BillingOrderStatus.Refunded);
+    expect(order.version).toBe(4);
   });
 
   it('rejects cancellation after the snapshotted deadline', () => {
@@ -172,6 +191,7 @@ describe('billing order domain', () => {
       unitPrice: 3_000,
       amount: 3_000,
       currency: 'KRW',
+      version: 7,
       status: BillingOrderStatus.Refunded,
       paymentId: 'payment-1',
       issuedAt,
@@ -186,9 +206,11 @@ describe('billing order domain', () => {
 
     expect(order).toMatchObject({
       status: BillingOrderStatus.Refunded,
+      version: 7,
       cancellationReason: 'LEGACY_REFUND',
       refundedAt,
     });
+    expect(order.domainEvents()).toEqual([]);
   });
 
   function issueOrder(

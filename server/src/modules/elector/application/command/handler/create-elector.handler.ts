@@ -9,7 +9,6 @@ import {
   VOTE_ACCESS_PORT,
   type VoteAccessPort,
 } from '../../../../../shared/application/port/capability/vote-access.port';
-import { DomainError } from '../../../../../shared/domain/domain-error';
 import { ManagedResourceNotFoundError } from '../../../../../shared/application/error/managed-resource.error';
 import {
   VOTE_SETUP_LIFECYCLE_PORT,
@@ -46,17 +45,7 @@ export class CreateElectorHandler {
     await this.voteSetupLifecycle.lockVote(command.voteId);
     const vote = await this.voteRepository.findById(command.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
-    if (vote.status !== 'DRAFT') {
-      throw new DomainError('only draft vote resources can be created');
-    }
-    if (vote.finalizedAt !== undefined) {
-      throw new DomainError('finalized vote electors cannot be changed');
-    }
-    if (vote.electoralRollSnapshotId !== undefined) {
-      throw new DomainError(
-        'electors are managed by the attached electoral roll snapshot',
-      );
-    }
+    vote.assertElectorsMutable('created');
 
     const elector = ElectorAggregate.create({
       id: this.electorRepository.nextId(),

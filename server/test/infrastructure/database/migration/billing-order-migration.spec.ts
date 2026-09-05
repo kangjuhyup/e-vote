@@ -16,6 +16,13 @@ describe('billing order migration', () => {
     ),
     'utf8',
   );
+  const outboxMigrationSource = readFileSync(
+    join(
+      process.cwd(),
+      'src/platform/database/migration/Migration20260902010000.ts',
+    ),
+    'utf8',
+  );
 
   it('creates immutable-price billing orders with idempotency constraints', () => {
     expect(migrationSource).toContain('create table "billing_orders"');
@@ -52,6 +59,28 @@ describe('billing order migration', () => {
   it('drops the billing table on rollback', () => {
     expect(migrationSource).toContain(
       'drop table if exists "billing_orders" cascade',
+    );
+  });
+
+  it('adds versioned outbox storage without replaying historical orders', () => {
+    expect(outboxMigrationSource).toContain(
+      'alter table "billing_orders" add column "version" integer not null default 1',
+    );
+    expect(outboxMigrationSource).toContain(
+      'create table "integration_outbox"',
+    );
+    expect(outboxMigrationSource).toContain(
+      'integration_outbox_transition_unique',
+    );
+    expect(outboxMigrationSource).toContain('integration_outbox_pending_due');
+    expect(outboxMigrationSource).toContain(
+      'integration_outbox_processing_lease',
+    );
+    expect(outboxMigrationSource).toContain(
+      'integration_outbox_aggregate_order',
+    );
+    expect(outboxMigrationSource).not.toContain(
+      'insert into "integration_outbox"',
     );
   });
 });

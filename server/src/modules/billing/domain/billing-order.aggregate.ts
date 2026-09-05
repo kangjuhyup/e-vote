@@ -18,6 +18,7 @@ import { VoteUsageCancellationPolicy } from './vo/vote-usage-cancellation-policy
 
 type BillingOrderParams = {
   readonly id: string;
+  readonly version: number;
   readonly voteId: string;
   readonly commissionId: string;
   readonly orderedByUserPrincipalId: string;
@@ -46,6 +47,7 @@ export class BillingOrderAggregate {
 
   private constructor(
     readonly id: string,
+    public version: number,
     readonly voteId: string,
     readonly commissionId: string,
     readonly orderedByUserPrincipalId: string,
@@ -79,6 +81,7 @@ export class BillingOrderAggregate {
     const cancellationPolicy = VoteUsageCancellationPolicy.standard();
     const order = BillingOrderAggregate.build({
       id: params.id,
+      version: 1,
       voteId: params.voteId,
       commissionId: params.commissionId,
       orderedByUserPrincipalId: params.orderedByUserPrincipalId,
@@ -101,6 +104,7 @@ export class BillingOrderAggregate {
     order.events.push(
       BillingOrderIssued.of({
         aggregateId: order.id,
+        aggregateVersion: order.version,
         occurredAt: params.issuedAt,
       }),
     );
@@ -141,9 +145,11 @@ export class BillingOrderAggregate {
     this.status = BillingOrderStatus.Paid;
     this.paymentId = paymentId;
     this.paidAt = params.paidAt;
+    this.version += 1;
     this.events.push(
       BillingOrderPaid.of({
         aggregateId: this.id,
+        aggregateVersion: this.version,
         occurredAt: params.paidAt,
       }),
     );
@@ -159,9 +165,11 @@ export class BillingOrderAggregate {
 
     this.status = BillingOrderStatus.Refunded;
     this.refundedAt = refundedAt;
+    this.version += 1;
     this.events.push(
       BillingOrderRefunded.of({
         aggregateId: this.id,
+        aggregateVersion: this.version,
         occurredAt: refundedAt,
       }),
     );
@@ -169,6 +177,10 @@ export class BillingOrderAggregate {
 
   grantsVoteUsage(): boolean {
     return this.status === BillingOrderStatus.Paid;
+  }
+
+  isOrderedBy(userPrincipalId: string): boolean {
+    return this.orderedByUserPrincipalId === userPrincipalId;
   }
 
   requestCancellation(params: { reason: string; canceledAt: Date }): void {
@@ -208,9 +220,11 @@ export class BillingOrderAggregate {
     this.cancellationReason = reason;
     if (this.status === BillingOrderStatus.PendingPayment) {
       this.status = BillingOrderStatus.Canceled;
+      this.version += 1;
       this.events.push(
         BillingOrderCanceled.of({
           aggregateId: this.id,
+          aggregateVersion: this.version,
           occurredAt: params.canceledAt,
         }),
       );
@@ -222,18 +236,22 @@ export class BillingOrderAggregate {
 
     this.status = BillingOrderStatus.RefundPending;
     this.refundRequestedAt = params.canceledAt;
+    this.version += 1;
     this.events.push(
       BillingOrderRefundRequested.of({
         aggregateId: this.id,
+        aggregateVersion: this.version,
         occurredAt: params.canceledAt,
       }),
     );
   }
 
-  pullEvents(): BillingOrderDomainEvent[] {
-    const events = [...this.events];
+  domainEvents(): readonly BillingOrderDomainEvent[] {
+    return [...this.events];
+  }
+
+  clearDomainEvents(): void {
     this.events.length = 0;
-    return events;
   }
 
   private static build(params: BillingOrderParams): BillingOrderAggregate {
@@ -251,6 +269,9 @@ export class BillingOrderAggregate {
     }
     if (productCode.length === 0 || productName.length === 0) {
       throw new DomainError('billing order product snapshot is required');
+    }
+    if (!Number.isInteger(params.version) || params.version < 1) {
+      throw new DomainError('billing order version must be a positive integer');
     }
     if (
       (params.status === BillingOrderStatus.Paid ||
@@ -310,6 +331,7 @@ export class BillingOrderAggregate {
 
     return new BillingOrderAggregate(
       createId(params.id),
+      params.version,
       createId(params.voteId),
       createId(params.commissionId),
       orderedByUserPrincipalId,

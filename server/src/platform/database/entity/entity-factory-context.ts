@@ -29,6 +29,7 @@ export interface DatabaseEntityClasses {
   readonly SmsDispatchEntity: EntityClass<AnyEntity>;
   readonly SmsDeliveryEntity: EntityClass<AnyEntity>;
   readonly BillingOrderEntity: EntityClass<AnyEntity>;
+  readonly IntegrationOutboxEntity: EntityClass<AnyEntity>;
 }
 
 export interface DatabaseEntityFactoryContext {

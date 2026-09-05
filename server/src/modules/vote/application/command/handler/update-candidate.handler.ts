@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DomainError } from '../../../../../shared/domain/domain-error';
 import {
   CANDIDATE_REPOSITORY_PORT,
   type CandidateRepositoryPort,
@@ -40,12 +39,14 @@ export class UpdateCandidateHandler {
     if (!vote) throw new ManagedResourceNotFoundError('vote');
     if (!detail) throw new ManagedResourceNotFoundError('vote detail');
     if (!candidate) throw new ManagedResourceNotFoundError('candidate');
-    if (detail.voteId !== vote.id || candidate.voteDetailId !== detail.id) {
+    if (
+      !detail.belongsToVote(vote.id) ||
+      !candidate.belongsToVoteDetail(detail.id)
+    ) {
       throw new ManagedResourceScopeMismatchError();
     }
-    if (vote.status !== 'DRAFT' || detail.status !== 'DRAFT') {
-      throw new DomainError('only draft vote resources can be updated');
-    }
+    vote.assertChildResourcesMutable('updated');
+    detail.assertChildResourcesMutable('updated');
     candidate.update(command);
     await this.candidates.save(candidate);
     return ManageCandidateResult.of({

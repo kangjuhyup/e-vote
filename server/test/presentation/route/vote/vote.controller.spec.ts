@@ -243,6 +243,7 @@ describe('VoteController', () => {
     });
     expect(createVoteExecute).toHaveBeenCalledTimes(1);
     expect(createVoteExecute.mock.calls[0][0]).toMatchObject({
+      createdByUserPrincipalId: TEST_USER_PRINCIPAL.id,
       commissionId: 'commission-1',
       title: 'Board election',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],

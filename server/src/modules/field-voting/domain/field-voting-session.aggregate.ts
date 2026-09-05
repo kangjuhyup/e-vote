@@ -120,6 +120,10 @@ export class FieldVotingSessionAggregate {
     return this.managerIds.includes(memberId);
   }
 
+  belongsToVote(voteId: string): boolean {
+    return this.voteId === voteId;
+  }
+
   open(openedAt: Date): void {
     if (this.status !== FieldVotingSessionStatus.Scheduled) {
       throw new DomainError(
