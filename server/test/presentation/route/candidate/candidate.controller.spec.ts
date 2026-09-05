@@ -183,6 +183,7 @@ describe('CandidateController', () => {
     });
     expect(createCandidateExecute).toHaveBeenCalledTimes(1);
     expect(createCandidateExecute.mock.calls[0][0]).toMatchObject({
+      voteId: 'vote-1',
       voteDetailId: 'vote-detail-1',
       candidateNo: 1,
       name: 'Kim',

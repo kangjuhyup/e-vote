@@ -5,6 +5,9 @@ import { MarkBillingOrderPaidHandler } from '../../application/command/handler/m
 import { MarkBillingOrderRefundedHandler } from '../../application/command/handler/mark-billing-order-refunded.handler';
 import type { IntegrationEventEnvelope } from '../../../../shared/application/messaging/integration-event-envelope';
 import type { IntegrationEventPublisherPort } from '../../../../shared/application/port/messaging/integration-event-publisher.port';
+import type { MockPaymentRandomSource } from './payment-integration.config';
+
+const PAYMENT_SUCCESS_RATE = 0.9;
 
 const ACKNOWLEDGED_NOTIFICATION_EVENTS = new Set([
   'billing.order-paid.v1',
@@ -17,6 +20,7 @@ export class MockPaymentIntegrationEventPublisherAdapter implements IntegrationE
   constructor(
     private readonly markPaidHandler: MarkBillingOrderPaidHandler,
     private readonly markRefundedHandler: MarkBillingOrderRefundedHandler,
+    private readonly random: MockPaymentRandomSource = Math.random,
   ) {}
 
   async publish(message: IntegrationEventEnvelope): Promise<void> {
@@ -24,12 +28,20 @@ export class MockPaymentIntegrationEventPublisherAdapter implements IntegrationE
 
     if (message.eventType === 'billing.order-issued.v1') {
       const billingOrderId = this.billingOrderId(message);
+      const amount = this.positiveInteger(message.payload.amount, 'amount');
+      const currency = this.nonEmptyString(
+        message.payload.currency,
+        'currency',
+      );
+      if (this.random() >= PAYMENT_SUCCESS_RATE) {
+        throw new Error('mock payment attempt failed');
+      }
       await this.markPaidHandler.execute(
         MarkBillingOrderPaidCommand.of({
           billingOrderId,
           paymentId: `mock-payment-${billingOrderId}`,
-          amount: this.positiveInteger(message.payload.amount, 'amount'),
-          currency: this.nonEmptyString(message.payload.currency, 'currency'),
+          amount,
+          currency,
           paidAt: message.createdAt,
         }),
       );

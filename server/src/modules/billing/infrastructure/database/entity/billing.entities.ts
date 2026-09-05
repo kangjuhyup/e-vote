@@ -12,7 +12,6 @@ export function createBillingEntities(
     name: 'BillingOrderEntity',
     tableName: 'billing_orders',
     uniques: [
-      { name: 'billing_orders_vote_unique', properties: ['voteId'] },
       { name: 'billing_orders_payment_unique', properties: ['paymentId'] },
     ],
     properties: {

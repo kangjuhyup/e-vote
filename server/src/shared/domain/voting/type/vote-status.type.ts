@@ -1,5 +1,6 @@
 export const VoteStatus = {
   Draft: 'DRAFT',
+  Finalized: 'FINALIZED',
   Open: 'OPEN',
   Closed: 'CLOSED',
   Canceled: 'CANCELED',

@@ -133,9 +133,11 @@ import {
 } from './shared/application/port/messaging/outbox-message-repository.port';
 import type { IntegrationEventPublisherPort } from './shared/application/port/messaging/integration-event-publisher.port';
 import { MockPaymentIntegrationEventPublisherAdapter } from './modules/billing/infrastructure/payment/mock-payment-integration-event-publisher.adapter';
-import { MockPaymentOutboxPoller } from './modules/billing/infrastructure/payment/mock-payment-outbox.poller';
+import { MockPaymentOutboxWorker } from './modules/billing/infrastructure/payment/mock-payment-outbox.worker';
 import {
+  MOCK_PAYMENT_RANDOM_SOURCE,
   PAYMENT_INTEGRATION_MODE,
+  type MockPaymentRandomSource,
   type PaymentIntegrationMode,
   resolvePaymentIntegrationMode,
 } from './modules/billing/infrastructure/payment/payment-integration.config';
@@ -282,21 +284,28 @@ import {
         }),
     },
     {
+      provide: MOCK_PAYMENT_RANDOM_SOURCE,
+      useValue: Math.random,
+    },
+    {
       provide: INTEGRATION_EVENT_PUBLISHER_PORT,
       inject: [
         PAYMENT_INTEGRATION_MODE,
         MarkBillingOrderPaidHandler,
         MarkBillingOrderRefundedHandler,
+        MOCK_PAYMENT_RANDOM_SOURCE,
       ],
       useFactory: (
         mode: PaymentIntegrationMode,
         markPaidHandler: MarkBillingOrderPaidHandler,
         markRefundedHandler: MarkBillingOrderRefundedHandler,
+        random: MockPaymentRandomSource,
       ): IntegrationEventPublisherPort =>
         mode === 'mock'
           ? new MockPaymentIntegrationEventPublisherAdapter(
               markPaidHandler,
               markRefundedHandler,
+              random,
             )
           : new NotConfiguredIntegrationEventPublisherAdapter(),
     },
@@ -311,7 +320,7 @@ import {
         publisher: IntegrationEventPublisherPort,
       ) => new IntegrationEventOutboxDispatcher(repository, publisher),
     },
-    MockPaymentOutboxPoller,
+    MockPaymentOutboxWorker,
     {
       provide: ELECTOR_IDENTITY_VERIFICATION_PORT,
       useClass: NotConfiguredElectorIdentityVerificationAdapter,

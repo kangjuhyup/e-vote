@@ -15,6 +15,11 @@ import {
 } from '../../port/persistence/command/billing-order-repository.port';
 import { MarkBillingOrderRefundedCommand } from '../dto/request/mark-billing-order-refunded.command';
 import { BillingOrderResult } from '../dto/response/billing-order-result.dto';
+import {
+  VOTE_SETUP_LIFECYCLE_PORT,
+  type VoteSetupLifecyclePort,
+} from '../../../../../shared/application/port/capability/vote-billing.port';
+import { BillingOrderStatus } from '../../../domain/type/billing-order-status.type';
 
 @Injectable()
 export class MarkBillingOrderRefundedHandler {
@@ -23,6 +28,8 @@ export class MarkBillingOrderRefundedHandler {
   constructor(
     @Inject(BILLING_ORDER_REPOSITORY_PORT)
     private readonly repository: BillingOrderRepositoryPort,
+    @Inject(VOTE_SETUP_LIFECYCLE_PORT)
+    private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
     private readonly outboxRecorder: BillingOrderOutboxRecorder,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
@@ -34,12 +41,21 @@ export class MarkBillingOrderRefundedHandler {
   async execute(
     command: MarkBillingOrderRefundedCommand,
   ): Promise<BillingOrderResult> {
-    const order = await this.repository.findByIdForUpdate(
-      command.billingOrderId,
-    );
+    const existing = await this.repository.findById(command.billingOrderId);
+    if (!existing) throw new BillingOrderNotFoundError();
+
+    await this.voteSetupLifecycle.lockVote(existing.voteId);
+    const order = await this.repository.findByIdForUpdate(existing.id);
     if (!order) throw new BillingOrderNotFoundError();
 
+    const wasRefunded = order.status === BillingOrderStatus.Refunded;
     order.markRefunded(command.refundedAt);
+    if (!wasRefunded) {
+      await this.voteSetupLifecycle.releaseBilling({
+        voteId: order.voteId,
+        billingOrderId: order.id,
+      });
+    }
     await this.repository.save(order);
     await this.outboxRecorder.record(order);
 

@@ -31,7 +31,8 @@ describe('vote management domain behavior', () => {
       }),
     });
     expect(vote.title).toBe('Updated');
-    vote.finalizeForBilling({
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
       billingOrderId: 'billing-order-1',
       finalizedAt: new Date(),
     });
@@ -48,51 +49,42 @@ describe('vote management domain behavior', () => {
     ).toThrow(DomainError);
   });
 
-  it('locks setup at billing finalization and only cancels before opening', () => {
+  it('locks setup while payment is pending and releases it after cancellation', () => {
     const vote = createVote();
     expect(() => vote.assertElectorsMutable('updated')).not.toThrow();
-    vote.finalizeForBilling({
-      billingOrderId: 'billing-order-1',
-      finalizedAt: new Date('2026-08-31T00:00:00.000Z'),
-    });
+    vote.lockForBilling('billing-order-1');
 
     expect(() => vote.attachElectoralRollSnapshot('snapshot-1')).toThrow(
-      'finalized vote setup cannot be changed',
+      'billing-locked vote setup cannot be changed',
     );
     expect(() => vote.assertElectorsMutable('updated')).toThrow(
-      'finalized vote electors cannot be changed',
+      'billing-locked vote electors cannot be changed',
     );
-    vote.cancelFinalized(new Date('2026-09-01T00:00:00.000Z'));
-    expect(vote.status).toBe(VoteStatus.Canceled);
+    vote.assertBillingCancellationAllowed('billing-order-1');
+    vote.releaseBilling('billing-order-1');
+    expect(vote.status).toBe(VoteStatus.Draft);
+    expect(() => vote.attachElectoralRollSnapshot('snapshot-1')).not.toThrow();
   });
 
-  it('rejects partial or conflicting vote finalization data', () => {
-    expect(() =>
-      VoteAggregate.reconstitute({
-        id: 'vote-1',
-        commissionId: 'commission-1',
-        title: 'Vote',
-        votingChannels: [VotingChannel.Online],
-        defaultPolicy: policy(),
-        identityVerificationPolicy: IdentityVerificationPolicy.of({
-          required: false,
-        }),
-        billingOrderId: 'billing-order-1',
-        status: VoteStatus.Draft,
-      }),
-    ).toThrow('must be set together');
-
+  it('rejects payment finalization without its billing lock or with another order', () => {
     const vote = createVote();
-    vote.finalizeForBilling({
+    expect(() =>
+      vote.finalizePaidBilling({
+        billingOrderId: 'billing-order-1',
+        finalizedAt: new Date('2026-08-31T00:00:00.000Z'),
+      }),
+    ).toThrow('linked to a different billing order');
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
       billingOrderId: 'billing-order-1',
       finalizedAt: new Date('2026-08-31T00:00:00.000Z'),
     });
     expect(() =>
-      vote.finalizeForBilling({
-        billingOrderId: 'billing-order-1',
+      vote.finalizePaidBilling({
+        billingOrderId: 'billing-order-2',
         finalizedAt: new Date('2026-08-31T00:00:01.000Z'),
       }),
-    ).toThrow('different billing data');
+    ).toThrow('linked to a different billing order');
   });
 
   it('updates and cancels only draft child votes', () => {

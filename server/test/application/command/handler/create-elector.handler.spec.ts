@@ -114,7 +114,7 @@ describe('CreateElectorHandler', () => {
           identifier: 'member-1',
         }),
       ),
-    ).rejects.toThrow('finalized vote electors cannot be changed');
+    ).rejects.toThrow('billing-locked vote electors cannot be changed');
     expect(lifecycle.lockVote.mock.calls).toContainEqual(['vote-1']);
     expect((electors.save as jest.Mock).mock.calls).toHaveLength(0);
   });
@@ -142,7 +142,8 @@ function voteRepository(
     electoralRollSnapshotId,
   });
   if (finalized) {
-    vote.finalizeForBilling({
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
       billingOrderId: 'billing-order-1',
       finalizedAt: new Date('2026-08-31T00:00:00.000Z'),
     });
@@ -158,8 +159,10 @@ function voteRepository(
 function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
   return {
     lockVote: jest.fn().mockResolvedValue(undefined),
-    finalizeForBilling: jest.fn().mockResolvedValue(undefined),
-    cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
+    lockForBilling: jest.fn().mockResolvedValue(undefined),
+    finalizePaidBilling: jest.fn().mockResolvedValue(undefined),
+    assertBillingCancellationAllowed: jest.fn().mockResolvedValue(undefined),
+    releaseBilling: jest.fn().mockResolvedValue(undefined),
   };
 }
 

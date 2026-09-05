@@ -611,8 +611,10 @@ function immediateTransactionManager(): jest.Mocked<DatabaseTransactionManager> 
 function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
   return {
     lockVote: jest.fn().mockResolvedValue(undefined),
-    finalizeForBilling: jest.fn().mockResolvedValue(undefined),
-    cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
+    lockForBilling: jest.fn().mockResolvedValue(undefined),
+    finalizePaidBilling: jest.fn().mockResolvedValue(undefined),
+    assertBillingCancellationAllowed: jest.fn().mockResolvedValue(undefined),
+    releaseBilling: jest.fn().mockResolvedValue(undefined),
   };
 }
 

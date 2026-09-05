@@ -1,6 +1,9 @@
 export type PaymentIntegrationMode = 'disabled' | 'mock';
 
 export const PAYMENT_INTEGRATION_MODE = Symbol('PAYMENT_INTEGRATION_MODE');
+export const MOCK_PAYMENT_RANDOM_SOURCE = Symbol('MOCK_PAYMENT_RANDOM_SOURCE');
+
+export type MockPaymentRandomSource = () => number;
 
 type PaymentIntegrationEnvironment = Readonly<
   Record<string, string | undefined>

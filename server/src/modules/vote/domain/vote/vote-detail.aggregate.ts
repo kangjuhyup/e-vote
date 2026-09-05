@@ -81,7 +81,7 @@ export class VoteDetailAggregate {
     }
   }
 
-  assertChildResourcesMutable(action: 'updated' | 'deleted'): void {
+  assertChildResourcesMutable(action: 'created' | 'updated' | 'deleted'): void {
     if (this.status !== VoteDetailStatus.Draft) {
       throw new DomainError(`only draft vote resources can be ${action}`);
     }

@@ -12,6 +12,7 @@ describe('mock payment integration event publisher adapter', () => {
     const adapter = new MockPaymentIntegrationEventPublisherAdapter(
       paidHandler as unknown as MarkBillingOrderPaidHandler,
       refundedHandler as unknown as MarkBillingOrderRefundedHandler,
+      () => 0.899_999,
     );
 
     await adapter.publish(
@@ -34,12 +35,35 @@ describe('mock payment integration event publisher adapter', () => {
     expect(refundedHandler.execute).not.toHaveBeenCalled();
   });
 
+  it('fails a payment attempt when the success roll is outside 90 percent', async () => {
+    const paidHandler = { execute: jest.fn().mockResolvedValue(undefined) };
+    const refundedHandler = { execute: jest.fn().mockResolvedValue(undefined) };
+    const adapter = new MockPaymentIntegrationEventPublisherAdapter(
+      paidHandler as unknown as MarkBillingOrderPaidHandler,
+      refundedHandler as unknown as MarkBillingOrderRefundedHandler,
+      () => 0.9,
+    );
+
+    await expect(
+      adapter.publish(
+        envelope('billing.order-issued.v1', {
+          billingOrderId: 'billing-order-1',
+          amount: 6_000,
+          currency: 'KRW',
+        }),
+      ),
+    ).rejects.toThrow('mock payment attempt failed');
+    expect(paidHandler.execute).not.toHaveBeenCalled();
+    expect(refundedHandler.execute).not.toHaveBeenCalled();
+  });
+
   it('completes a requested refund and acknowledges notification events', async () => {
     const paidHandler = { execute: jest.fn().mockResolvedValue(undefined) };
     const refundedHandler = { execute: jest.fn().mockResolvedValue(undefined) };
     const adapter = new MockPaymentIntegrationEventPublisherAdapter(
       paidHandler as unknown as MarkBillingOrderPaidHandler,
       refundedHandler as unknown as MarkBillingOrderRefundedHandler,
+      () => 0.999,
     );
 
     await adapter.publish(

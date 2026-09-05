@@ -22,7 +22,7 @@ describe('VoteSmsPolicy', () => {
   it.each<readonly [VoteSmsMessagePurpose, VoteStatus]>([
     [SmsMessagePurpose.VoteParticipationReminder, VoteStatus.Open],
     [SmsMessagePurpose.VoteResultNotice, VoteStatus.Closed],
-    [SmsMessagePurpose.UpcomingVoteNotice, VoteStatus.Draft],
+    [SmsMessagePurpose.UpcomingVoteNotice, VoteStatus.Finalized],
   ])('allows %s only for its required vote status', (purpose, status) => {
     expect(() =>
       VoteSmsPolicy.assertVoteMessageAllowed(createVote(status), purpose),
@@ -105,6 +105,12 @@ function createVote(
     identityVerificationPolicy: IdentityVerificationPolicy.of({
       required: false,
     }),
+    ...(status === VoteStatus.Finalized
+      ? {
+          billingOrderId: 'billing-order-1',
+          finalizedAt: new Date('2026-09-05T00:00:00.000Z'),
+        }
+      : {}),
     status,
   });
 }

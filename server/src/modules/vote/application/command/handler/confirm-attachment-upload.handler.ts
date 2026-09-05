@@ -11,6 +11,14 @@ import {
 } from '../attachment-upload.policy';
 import { ConfirmAttachmentUploadCommand } from '../dto/request/confirm-attachment-upload.command';
 import { ConfirmAttachmentUploadResult } from '../dto/response/confirm-attachment-upload-result.dto';
+import {
+  VOTE_SETUP_LIFECYCLE_PORT,
+  type VoteSetupLifecyclePort,
+} from '../../../../../shared/application/port/capability/vote-billing.port';
+import {
+  DATABASE_TRANSACTION_MANAGER,
+  type DatabaseTransactionManager,
+} from '../../../../../shared/application/port/persistence/transaction/database-transaction-manager.port';
 
 export class UploadedAttachmentObjectNotFoundError extends Error {
   constructor() {
@@ -32,6 +40,10 @@ export class ConfirmAttachmentUploadHandler {
     @Inject(ATTACHMENT_REPOSITORY_PORT)
     private readonly attachmentRepository: AttachmentRepositoryPort,
     private readonly attachmentTargetValidator: AttachmentTargetValidator,
+    @Inject(VOTE_SETUP_LIFECYCLE_PORT)
+    private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
+    @Inject(DATABASE_TRANSACTION_MANAGER)
+    private readonly transactionManager: DatabaseTransactionManager,
   ) {}
 
   async execute(
@@ -55,18 +67,26 @@ export class ConfirmAttachmentUploadHandler {
       throw new UploadedAttachmentMetadataMismatchError();
     }
 
-    const attachment = await this.attachmentRepository.saveAttachedFile({
-      target: command.target,
-      attachmentType: command.attachmentType,
-      sortOrder: command.sortOrder,
-      file: {
-        storageKey: command.storageKey,
-        originalName: command.originalName.trim(),
-        mimeType: normalizeMimeType(command.mimeType),
-        sizeBytes: command.sizeBytes,
-        checksum: command.checksum,
+    const attachment = await this.transactionManager.runInTransaction(
+      async () => {
+        await this.voteSetupLifecycle.lockVote(command.target.voteId);
+        await this.attachmentTargetValidator.assertMutable(command.target);
+
+        return this.attachmentRepository.saveAttachedFile({
+          target: command.target,
+          attachmentType: command.attachmentType,
+          sortOrder: command.sortOrder,
+          file: {
+            storageKey: command.storageKey,
+            originalName: command.originalName.trim(),
+            mimeType: normalizeMimeType(command.mimeType),
+            sizeBytes: command.sizeBytes,
+            checksum: command.checksum,
+          },
+        });
       },
-    });
+      { isolationLevel: 'serializable' },
+    );
 
     return ConfirmAttachmentUploadResult.of(attachment);
   }
