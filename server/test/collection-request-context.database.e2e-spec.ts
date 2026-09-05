@@ -19,9 +19,12 @@ describeDatabase('MikroORM collections in Nest request context', () => {
   let app: INestApplication<App>;
   let moduleRef: TestingModule;
   let orm: MikroORM;
+  let previousPaymentMode: string | undefined;
 
   beforeAll(async () => {
     assertDedicatedTestDatabase();
+    previousPaymentMode = process.env.BILLING_PAYMENT_MODE;
+    process.env.BILLING_PAYMENT_MODE = 'mock';
     moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(OIDC_AUTHENTICATION_CONFIG)
       .useValue({})
@@ -200,7 +203,22 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       voteId,
       electorCount: 1,
       amount: 3_000,
+      status: 'PENDING_PAYMENT',
     });
+    const billingOrderId = (billingOrder.body as { readonly id: string }).id;
+
+    await expectBillingOrderStatus(billingOrderId, 'PAID');
+
+    await request(app.getHttpServer())
+      .post(`/billing/vote-usage-orders/${billingOrderId}/cancellation`)
+      .set('authorization', 'Bearer cancel-billing-order')
+      .send({ reason: 'mock payment refund regression' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ status: 'REFUND_PENDING' });
+      });
+
+    await expectBillingOrderStatus(billingOrderId, 'REFUNDED');
 
     const em = orm.em.fork();
     const [persistedVote] = await em
@@ -307,7 +325,32 @@ describeDatabase('MikroORM collections in Nest request context', () => {
         );
     }
     await app?.close();
+    if (previousPaymentMode === undefined) {
+      delete process.env.BILLING_PAYMENT_MODE;
+    } else {
+      process.env.BILLING_PAYMENT_MODE = previousPaymentMode;
+    }
   });
+
+  async function expectBillingOrderStatus(
+    billingOrderId: string,
+    expectedStatus: string,
+  ): Promise<void> {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const response = await request(app.getHttpServer())
+        .get(`/billing/vote-usage-orders/${billingOrderId}`)
+        .set('authorization', 'Bearer get-billing-order')
+        .expect(200);
+      if (
+        (response.body as { readonly status?: string }).status ===
+        expectedStatus
+      ) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error(`billing order did not reach ${expectedStatus}`);
+  }
 });
 
 const USER_PRINCIPAL_ID = 'collection-request-context-user';

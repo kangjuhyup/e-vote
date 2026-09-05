@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
 import { ConfirmAttachmentUploadHandler } from './modules/vote/application/command/handler/confirm-attachment-upload.handler';
 import { AddElectoralRollMembersHandler } from './modules/electoral-roll/application/command/handler/add-electoral-roll-members.handler';
@@ -113,6 +114,7 @@ import { SMS_RECIPIENT_ACCESS_PORT } from './shared/application/port/capability/
 import { BillingOrderController } from './modules/billing/presentation/billing-order/billing-order.controller';
 import { CreateVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/create-vote-usage-billing-order.handler';
 import { MarkBillingOrderPaidHandler } from './modules/billing/application/command/handler/mark-billing-order-paid.handler';
+import { MarkBillingOrderRefundedHandler } from './modules/billing/application/command/handler/mark-billing-order-refunded.handler';
 import { GetBillingOrderHandler } from './modules/billing/application/query/handler/get-billing-order.handler';
 import { BillingOrderCancellationController } from './modules/billing/presentation/billing-order/billing-order-cancellation.controller';
 import { CancelVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
@@ -130,6 +132,13 @@ import {
   type OutboxMessageRepositoryPort,
 } from './shared/application/port/messaging/outbox-message-repository.port';
 import type { IntegrationEventPublisherPort } from './shared/application/port/messaging/integration-event-publisher.port';
+import { MockPaymentIntegrationEventPublisherAdapter } from './modules/billing/infrastructure/payment/mock-payment-integration-event-publisher.adapter';
+import { MockPaymentOutboxPoller } from './modules/billing/infrastructure/payment/mock-payment-outbox.poller';
+import {
+  PAYMENT_INTEGRATION_MODE,
+  type PaymentIntegrationMode,
+  resolvePaymentIntegrationMode,
+} from './modules/billing/infrastructure/payment/payment-integration.config';
 
 @Module({
   imports: [
@@ -259,10 +268,37 @@ import type { IntegrationEventPublisherPort } from './shared/application/port/me
     CreateVoteUsageBillingOrderHandler,
     CancelVoteUsageBillingOrderHandler,
     MarkBillingOrderPaidHandler,
+    MarkBillingOrderRefundedHandler,
     GetBillingOrderHandler,
     {
+      provide: PAYMENT_INTEGRATION_MODE,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): PaymentIntegrationMode =>
+        resolvePaymentIntegrationMode({
+          NODE_ENV: configService.get<string>('NODE_ENV'),
+          BILLING_PAYMENT_MODE: configService.get<string>(
+            'BILLING_PAYMENT_MODE',
+          ),
+        }),
+    },
+    {
       provide: INTEGRATION_EVENT_PUBLISHER_PORT,
-      useClass: NotConfiguredIntegrationEventPublisherAdapter,
+      inject: [
+        PAYMENT_INTEGRATION_MODE,
+        MarkBillingOrderPaidHandler,
+        MarkBillingOrderRefundedHandler,
+      ],
+      useFactory: (
+        mode: PaymentIntegrationMode,
+        markPaidHandler: MarkBillingOrderPaidHandler,
+        markRefundedHandler: MarkBillingOrderRefundedHandler,
+      ): IntegrationEventPublisherPort =>
+        mode === 'mock'
+          ? new MockPaymentIntegrationEventPublisherAdapter(
+              markPaidHandler,
+              markRefundedHandler,
+            )
+          : new NotConfiguredIntegrationEventPublisherAdapter(),
     },
     {
       provide: IntegrationEventOutboxDispatcher,
@@ -275,6 +311,7 @@ import type { IntegrationEventPublisherPort } from './shared/application/port/me
         publisher: IntegrationEventPublisherPort,
       ) => new IntegrationEventOutboxDispatcher(repository, publisher),
     },
+    MockPaymentOutboxPoller,
     {
       provide: ELECTOR_IDENTITY_VERIFICATION_PORT,
       useClass: NotConfiguredElectorIdentityVerificationAdapter,

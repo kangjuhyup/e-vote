@@ -143,6 +143,28 @@ Content-Type: application/json
 `PAID`로 바꾸는 엔드포인트는 제공하지 않습니다. 주문 금액 및 통화가 Payment
 결과와 정확히 일치할 때만 상태가 변경됩니다.
 
+실제 Payment 서비스가 없는 개발 환경에서는 in-process mock Payment 어댑터가
+기본으로 활성화됩니다. 주문 트랜잭션에서 직접 결제 처리하지 않고, 커밋된
+`billing.order-issued.v1` outbox를 500ms 간격의 background dispatcher가 전달하면
+mock 어댑터가 동일한 내부 결제완료 핸들러를 호출합니다. 따라서 주문 생성 응답은
+`PENDING_PAYMENT`일 수 있으며 이후 조회에서 `PAID`로 전이됩니다. 카드번호나 실제
+결제수단 정보는 받거나 저장하지 않습니다.
+
+결제된 주문의 `billing.refund-requested.v1`도 같은 방식으로 처리되어
+`REFUND_PENDING`에서 `REFUNDED`로 전이됩니다. 재전달 시 주문별로 동일한 mock
+payment ID를 사용하며 도메인의 멱등 전이를 그대로 적용합니다.
+
+`BILLING_PAYMENT_MODE` 설정은 다음 두 값만 허용합니다.
+
+- `mock`: 개발용 자동 승인·환불 어댑터와 outbox poller 활성화
+- `disabled`: publisher와 poller를 비활성화하고 outbox를 `PENDING`으로 유지
+
+설정이 없으면 development에서는 `mock`, test와 production에서는 `disabled`입니다.
+테스트는 필요한 suite에서만 `mock`을 명시적으로 선택할 수 있습니다. production에서
+`mock`을 지정하면 서버가 기동을 거부하므로 개발용 가짜 결제가 운영에서 승인으로
+처리되지 않습니다. 실제 Payment transport가 구현되기 전에는 `real` 같은 별도 모드는
+지원하지 않습니다.
+
 결제된 주문의 취소 요청은 `BillingOrderRefundRequested` 도메인 이벤트를
 발행하며 주문을 `REFUND_PENDING`으로 유지합니다. 향후 Payment 서비스는 이
 이벤트를 멱등하게 소비해 환불하고, 환불 완료 결과를 Billing에 전달해야 합니다.
@@ -160,6 +182,6 @@ Billing 상태 변경과 Payment용 integration event는 같은 PostgreSQL 트�
 
 envelope에는 `id`, `source`, `eventType`, `schemaVersion`, aggregate 식별자와 버전,
 발생·생성 시각 및 최소 payload가 포함됩니다. 사용자 principal과 자유 입력 취소
-사유는 Payment payload에 포함하지 않습니다. 실제 transport와 scheduler가 구성되기
-전에는 dispatcher를 자동 실행하지 않으며, 기존 주문을 side-effect event로
-backfill하지 않습니다.
+사유는 Payment payload에 포함하지 않습니다. 실제 transport가 구성되기 전에도
+개발 mock에서만 dispatcher를 실행하며, 기존 주문을 side-effect event로 backfill하지
+않습니다.
