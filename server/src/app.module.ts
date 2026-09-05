@@ -121,6 +121,15 @@ import {
   VOTE_SETUP_LIFECYCLE_PORT,
   VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
 } from './shared/application/port/capability/vote-billing.port';
+import { BillingOrderOutboxRecorder } from './modules/billing/application/event/billing-order-outbox.recorder';
+import { IntegrationEventOutboxDispatcher } from './shared/application/messaging/integration-event-outbox.dispatcher';
+import { INTEGRATION_EVENT_PUBLISHER_PORT } from './shared/application/port/messaging/integration-event-publisher.port';
+import { NotConfiguredIntegrationEventPublisherAdapter } from './platform/outbox/infrastructure/messaging/not-configured-integration-event-publisher.adapter';
+import {
+  OUTBOX_MESSAGE_REPOSITORY_PORT,
+  type OutboxMessageRepositoryPort,
+} from './shared/application/port/messaging/outbox-message-repository.port';
+import type { IntegrationEventPublisherPort } from './shared/application/port/messaging/integration-event-publisher.port';
 
 @Module({
   imports: [
@@ -246,10 +255,26 @@ import {
     GetElectorPageHandler,
     GetVoteTurnoutHandler,
     GetVoteResultHandler,
+    BillingOrderOutboxRecorder,
     CreateVoteUsageBillingOrderHandler,
     CancelVoteUsageBillingOrderHandler,
     MarkBillingOrderPaidHandler,
     GetBillingOrderHandler,
+    {
+      provide: INTEGRATION_EVENT_PUBLISHER_PORT,
+      useClass: NotConfiguredIntegrationEventPublisherAdapter,
+    },
+    {
+      provide: IntegrationEventOutboxDispatcher,
+      inject: [
+        OUTBOX_MESSAGE_REPOSITORY_PORT,
+        INTEGRATION_EVENT_PUBLISHER_PORT,
+      ],
+      useFactory: (
+        repository: OutboxMessageRepositoryPort,
+        publisher: IntegrationEventPublisherPort,
+      ) => new IntegrationEventOutboxDispatcher(repository, publisher),
+    },
     {
       provide: ELECTOR_IDENTITY_VERIFICATION_PORT,
       useClass: NotConfiguredElectorIdentityVerificationAdapter,

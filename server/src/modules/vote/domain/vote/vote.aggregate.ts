@@ -11,8 +11,9 @@ import { VotePolicy } from '../../../../shared/domain/voting/vo/vote-policy.vo';
 import { VoteStatus } from '../../../../shared/domain/voting/type/vote-status.type';
 import { VotingChannel } from '../../../../shared/domain/voting/type/voting-channel.type';
 
-interface CreateVoteParams {
+interface VoteStateParams {
   readonly id: string;
+  readonly createdByUserPrincipalId?: string;
   readonly commissionId: string;
   readonly title: string;
   readonly votingChannels: readonly VotingChannel[];
@@ -24,7 +25,11 @@ interface CreateVoteParams {
   readonly status?: VoteStatus;
 }
 
-type ReconstituteVoteParams = Omit<CreateVoteParams, 'status'> & {
+type CreateVoteParams = Omit<VoteStateParams, 'createdByUserPrincipalId'> & {
+  readonly createdByUserPrincipalId: string;
+};
+
+type ReconstituteVoteParams = Omit<VoteStateParams, 'status'> & {
   readonly status: VoteStatus;
 };
 
@@ -33,6 +38,7 @@ export class VoteAggregate {
 
   private constructor(
     readonly id: string,
+    readonly createdByUserPrincipalId: string | undefined,
     readonly commissionId: string,
     public title: string,
     public votingChannels: readonly VotingChannel[],
@@ -45,10 +51,25 @@ export class VoteAggregate {
   ) {}
 
   static create(params: CreateVoteParams): VoteAggregate {
+    return VoteAggregate.build(params);
+  }
+
+  static reconstitute(params: ReconstituteVoteParams): VoteAggregate {
+    return VoteAggregate.build(params);
+  }
+
+  private static build(params: VoteStateParams): VoteAggregate {
     const id = createId(params.id);
     const commissionId = createId(params.commissionId);
+    const createdByUserPrincipalId = params.createdByUserPrincipalId?.trim();
     const title = params.title.trim();
 
+    if (
+      params.createdByUserPrincipalId !== undefined &&
+      !createdByUserPrincipalId
+    ) {
+      throw new DomainError('vote creator user principal id must not be empty');
+    }
     if (title.length === 0) {
       throw new DomainError('vote title must not be empty');
     }
@@ -65,6 +86,7 @@ export class VoteAggregate {
 
     return new VoteAggregate(
       id,
+      createdByUserPrincipalId,
       commissionId,
       title,
       [...params.votingChannels],
@@ -79,12 +101,57 @@ export class VoteAggregate {
     );
   }
 
-  static reconstitute(params: ReconstituteVoteParams): VoteAggregate {
-    return VoteAggregate.create(params);
-  }
-
   allowsVotingChannel(channel: VotingChannel): boolean {
     return this.votingChannels.includes(channel);
+  }
+
+  isCreatedBy(userPrincipalId: string): boolean {
+    return this.createdByUserPrincipalId === userPrincipalId;
+  }
+
+  assertElectorsMutable(action: 'created' | 'updated' | 'deleted'): void {
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError(`only draft vote resources can be ${action}`);
+    }
+    if (this.finalizedAt !== undefined) {
+      throw new DomainError('finalized vote electors cannot be changed');
+    }
+    if (this.electoralRollSnapshotId !== undefined) {
+      throw new DomainError(
+        'electors are managed by the attached electoral roll snapshot',
+      );
+    }
+  }
+
+  assertParticipationAllowed(channel: VotingChannel): void {
+    if (this.status !== VoteStatus.Open) {
+      throw new DomainError('vote must be open for participation');
+    }
+    if (!this.allowsVotingChannel(channel)) {
+      throw new DomainError('vote does not allow requested voting channel');
+    }
+  }
+
+  assertChildResourcesMutable(
+    action: 'updated' | 'deleted' | 'canceled',
+  ): void {
+    if (this.status !== VoteStatus.Draft) {
+      throw new DomainError(`only draft vote resources can be ${action}`);
+    }
+  }
+
+  assertVoteDetailOpeningAllowed(): void {
+    if (this.status !== VoteStatus.Open) {
+      throw new DomainError('parent vote must be open');
+    }
+  }
+
+  hasElectoralRollSnapshot(): boolean {
+    return this.electoralRollSnapshotId !== undefined;
+  }
+
+  usesElectoralRollSnapshot(snapshotId: string): boolean {
+    return this.electoralRollSnapshotId === snapshotId;
   }
 
   updateSettings(params: {

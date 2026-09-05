@@ -40,6 +40,7 @@ export class CreateVoteHandler {
 
     const vote = VoteAggregate.create({
       id: this.voteRepository.nextId(),
+      createdByUserPrincipalId: command.createdByUserPrincipalId,
       commissionId: command.commissionId,
       title: command.title,
       votingChannels: command.votingChannels,

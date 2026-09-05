@@ -52,6 +52,7 @@ export class BillingOrderRepositoryAdapter
       BillingOrderEntity,
       order.id,
       {
+        version: order.version,
         voteId: order.voteId,
         commissionId: order.commissionId,
         orderedByUserPrincipalId: order.orderedByUserPrincipalId,
@@ -68,6 +69,7 @@ export class BillingOrderRepositoryAdapter
         cancelableUntil: order.cancelableUntil,
       },
       {
+        version: order.version,
         status: order.status,
         paymentId: order.paymentId ?? null,
         paidAt: order.paidAt ?? null,

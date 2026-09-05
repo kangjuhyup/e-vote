@@ -1,12 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ParticipationAggregate } from '../../../domain/participation.aggregate';
 import { ParticipationEligibilityPolicy } from '../../../domain/participation-eligibility.policy';
-import { CandidateStatus } from '../../../../../shared/domain/voting/type/candidate-status.type';
-import {
-  VoteDetailStatus,
-  VoteStatus,
-} from '../../../../../shared/domain/voting/type/vote-status.type';
-import { DomainError } from '../../../../../shared/domain/domain-error';
 import {
   CANDIDATE_ACCESS_PORT,
   VOTE_ACCESS_PORT,
@@ -112,37 +106,25 @@ export class CastParticipationHandler {
       throw new VoteNotFoundError();
     }
 
-    if (vote.status !== VoteStatus.Open) {
-      throw new DomainError('vote must be open for participation');
-    }
+    vote.assertParticipationAllowed(command.votingChannel);
 
-    if (!vote.allowsVotingChannel(command.votingChannel)) {
-      throw new DomainError('vote does not allow requested voting channel');
-    }
-
-    if (!voteDetail || voteDetail.voteId !== vote.id) {
+    if (!voteDetail || !voteDetail.belongsToVote(vote.id)) {
       throw new VoteDetailNotFoundError();
     }
 
-    if (voteDetail.status !== VoteDetailStatus.Open) {
-      throw new DomainError('vote detail must be open for participation');
-    }
+    voteDetail.assertParticipationAllowed();
 
     if (!elector) {
       throw new ElectorNotFoundError();
     }
 
-    if (
-      !candidate ||
-      candidate.voteDetailId !== voteDetail.id ||
-      candidate.status !== CandidateStatus.Active
-    ) {
+    if (!candidate || !candidate.isSelectableForVoteDetail(voteDetail.id)) {
       throw new CandidateNotFoundError();
     }
 
     const fieldVotingSession = await this.findFieldVotingSession(command);
 
-    if (fieldVotingSession && fieldVotingSession.voteId !== vote.id) {
+    if (fieldVotingSession && !fieldVotingSession.belongsToVote(vote.id)) {
       throw new FieldVotingSessionNotFoundError();
     }
 

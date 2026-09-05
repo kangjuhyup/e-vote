@@ -4,6 +4,7 @@ import type { VotePolicyProps } from '../../../../../../shared/domain/voting/vo/
 
 export class CreateVoteCommand {
   private constructor(
+    readonly createdByUserPrincipalId: string,
     readonly commissionId: string,
     readonly title: string,
     readonly votingChannels: readonly VotingChannel[],
@@ -12,6 +13,7 @@ export class CreateVoteCommand {
   ) {}
 
   static of(params: {
+    createdByUserPrincipalId: string;
     commissionId: string;
     title: string;
     votingChannels: readonly VotingChannel[];
@@ -19,6 +21,7 @@ export class CreateVoteCommand {
     identityVerificationPolicy: IdentityVerificationPolicyProps;
   }): CreateVoteCommand {
     return new CreateVoteCommand(
+      params.createdByUserPrincipalId,
       params.commissionId,
       params.title,
       params.votingChannels,

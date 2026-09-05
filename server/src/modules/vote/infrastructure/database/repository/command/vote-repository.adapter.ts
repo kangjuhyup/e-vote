@@ -83,6 +83,7 @@ export class VoteRepositoryAdapter
         createdAt: now,
       },
       {
+        createdByUserPrincipalId: vote.createdByUserPrincipalId ?? null,
         commission: entityReference(
           this.em,
           ElectionCommissionEntity,
@@ -158,6 +159,7 @@ export class VoteRepositoryAdapter
   private toDomain(entity: VoteEntityPersistence): VoteAggregate {
     return VoteMapper.toDomain({
       id: entity.id,
+      createdByUserPrincipalId: entity.createdByUserPrincipalId,
       commission: entity.commission,
       electoralRollSnapshot: entity.electoralRollSnapshot,
       billingOrderId: entity.billingOrderId,

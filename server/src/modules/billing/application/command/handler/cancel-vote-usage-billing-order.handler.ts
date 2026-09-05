@@ -1,9 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  ELECTION_COMMISSION_MEMBERSHIP_ACCESS_PORT,
-  type ElectionCommissionMembershipAccessPort,
-} from '../../../../../shared/application/port/capability/election-commission-membership-access.port';
-import {
   VOTE_SETUP_LIFECYCLE_PORT,
   type VoteSetupLifecyclePort,
 } from '../../../../../shared/application/port/capability/vote-billing.port';
@@ -25,6 +21,7 @@ import {
 } from '../../port/persistence/command/billing-order-repository.port';
 import { CancelVoteUsageBillingOrderCommand } from '../dto/request/cancel-vote-usage-billing-order.command';
 import { BillingOrderResult } from '../dto/response/billing-order-result.dto';
+import { BillingOrderOutboxRecorder } from '../../event/billing-order-outbox.recorder';
 
 @Injectable()
 export class CancelVoteUsageBillingOrderHandler {
@@ -33,10 +30,9 @@ export class CancelVoteUsageBillingOrderHandler {
   constructor(
     @Inject(BILLING_ORDER_REPOSITORY_PORT)
     private readonly billingOrders: BillingOrderRepositoryPort,
-    @Inject(ELECTION_COMMISSION_MEMBERSHIP_ACCESS_PORT)
-    private readonly membershipAccess: ElectionCommissionMembershipAccessPort,
     @Inject(VOTE_SETUP_LIFECYCLE_PORT)
     private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
+    private readonly outboxRecorder: BillingOrderOutboxRecorder,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
   ) {
@@ -50,11 +46,9 @@ export class CancelVoteUsageBillingOrderHandler {
     const order = await this.billingOrders.findById(command.billingOrderId);
     if (!order) throw new BillingOrderNotFoundError();
 
-    const canCancel = await this.membershipAccess.isActiveMember(
-      order.commissionId,
-      command.userPrincipalId,
-    );
-    if (!canCancel) throw new VoteBillingAccessDeniedError();
+    if (!order.isOrderedBy(command.userPrincipalId)) {
+      throw new VoteBillingAccessDeniedError();
+    }
 
     await this.voteSetupLifecycle.lockVote(order.voteId);
     const lockedOrder = await this.billingOrders.findByIdForUpdate(order.id);
@@ -69,6 +63,7 @@ export class CancelVoteUsageBillingOrderHandler {
       canceledAt: command.canceledAt,
     });
     await this.billingOrders.save(lockedOrder);
+    await this.outboxRecorder.record(lockedOrder);
 
     return BillingOrderResult.of(lockedOrder);
   }

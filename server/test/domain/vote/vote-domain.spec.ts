@@ -24,9 +24,53 @@ import {
 import { VotingChannel } from '../../../src/shared/domain/voting/type/voting-channel.type';
 
 describe('vote domain aggregates', () => {
+  it('requires an authenticated creator for newly created votes', () => {
+    expect(() =>
+      VoteAggregate.create({
+        id: 'vote-without-creator',
+        createdByUserPrincipalId: '   ',
+        commissionId: 'commission-1',
+        title: 'Board election',
+        votingChannels: [VotingChannel.Online],
+        defaultPolicy: VotePolicy.of({
+          privacyMode: PrivacyMode.Secret,
+          participationUnit: ParticipationUnit.Individual,
+          resultStorageMode: ResultStorageMode.Database,
+          voteWeightMode: VoteWeightMode.Equal,
+        }),
+        identityVerificationPolicy: IdentityVerificationPolicy.of({
+          required: false,
+        }),
+      }),
+    ).toThrow('vote creator user principal id must not be empty');
+  });
+
+  it('allows legacy persisted votes to be reconstituted without a creator', () => {
+    const vote = VoteAggregate.reconstitute({
+      id: 'legacy-vote',
+      commissionId: 'commission-1',
+      title: 'Legacy vote',
+      votingChannels: [VotingChannel.Online],
+      defaultPolicy: VotePolicy.of({
+        privacyMode: PrivacyMode.Secret,
+        participationUnit: ParticipationUnit.Individual,
+        resultStorageMode: ResultStorageMode.Database,
+        voteWeightMode: VoteWeightMode.Equal,
+      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of({
+        required: false,
+      }),
+      status: VoteStatus.Draft,
+    });
+
+    expect(vote.createdByUserPrincipalId).toBeUndefined();
+    expect(vote.isCreatedBy('user-1')).toBe(false);
+  });
+
   it('calculates effective vote detail policy from parent defaults and overrides', () => {
     const vote = VoteAggregate.create({
       id: 'vote-1',
+      createdByUserPrincipalId: 'user-1',
       commissionId: 'commission-1',
       title: 'Board election',
       votingChannels: [VotingChannel.Online],
@@ -64,12 +108,15 @@ describe('vote domain aggregates', () => {
     expect(detail.getEffectivePolicy(vote.defaultPolicy)).toBeInstanceOf(
       VotePolicy,
     );
+    expect(vote.isCreatedBy('user-1')).toBe(true);
+    expect(detail.belongsToVote(vote.id)).toBe(true);
   });
 
   it('validates identity verification policy consistency', () => {
     expect(() =>
       VoteAggregate.create({
         id: 'vote-2',
+        createdByUserPrincipalId: 'user-1',
         commissionId: 'commission-1',
         title: 'Invalid',
         votingChannels: [VotingChannel.Online],
@@ -90,6 +137,7 @@ describe('vote domain aggregates', () => {
   it('emits vote lifecycle events for valid status transitions', () => {
     const vote = VoteAggregate.create({
       id: 'vote-3',
+      createdByUserPrincipalId: 'user-1',
       commissionId: 'commission-1',
       title: 'Lifecycle',
       votingChannels: [VotingChannel.Online],
@@ -142,12 +190,15 @@ describe('vote domain aggregates', () => {
 
     expect(elector.voteWeight).toBe(2.5);
     expect(candidate.status).toBe(CandidateStatus.Active);
+    expect(candidate.belongsToVoteDetail('detail-1')).toBe(true);
+    expect(candidate.isSelectableForVoteDetail('detail-1')).toBe(true);
   });
 
   it('requires at least one voting channel', () => {
     expect(() =>
       VoteAggregate.create({
         id: 'vote-channels-1',
+        createdByUserPrincipalId: 'user-1',
         commissionId: 'commission-1',
         title: 'Field vote',
         votingChannels: [],
@@ -168,6 +219,7 @@ describe('vote domain aggregates', () => {
   it('checks parent-vote-level voting channel allowance', () => {
     const vote = VoteAggregate.create({
       id: 'vote-channels-2',
+      createdByUserPrincipalId: 'user-1',
       commissionId: 'commission-1',
       title: 'Hybrid vote',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],

@@ -302,6 +302,11 @@ function createVote(
     }),
     identityVerificationPolicy: { required: false },
     allowsVotingChannel: (channel) => votingChannels.includes(channel),
+    isCreatedBy: () => false,
+    hasElectoralRollSnapshot: () => false,
+    usesElectoralRollSnapshot: () => false,
+    assertElectorsMutable: () => undefined,
+    assertParticipationAllowed: () => undefined,
   };
 }
 
@@ -313,6 +318,7 @@ function createSession(channel: VotingChannel): FieldVotingSessionReference {
     channel,
     status: FieldVotingSessionStatus.Scheduled,
     hasAssignedManager: () => true,
+    belongsToVote: (voteId) => voteId === 'vote-1',
   };
 }
 
