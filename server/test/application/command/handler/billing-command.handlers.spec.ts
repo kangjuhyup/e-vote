@@ -1,7 +1,9 @@
 import { CreateVoteUsageBillingOrderCommand } from '../../../../src/modules/billing/application/command/dto/request/create-vote-usage-billing-order.command';
 import { MarkBillingOrderPaidCommand } from '../../../../src/modules/billing/application/command/dto/request/mark-billing-order-paid.command';
+import { MarkBillingOrderRefundedCommand } from '../../../../src/modules/billing/application/command/dto/request/mark-billing-order-refunded.command';
 import { CreateVoteUsageBillingOrderHandler } from '../../../../src/modules/billing/application/command/handler/create-vote-usage-billing-order.handler';
 import { MarkBillingOrderPaidHandler } from '../../../../src/modules/billing/application/command/handler/mark-billing-order-paid.handler';
+import { MarkBillingOrderRefundedHandler } from '../../../../src/modules/billing/application/command/handler/mark-billing-order-refunded.handler';
 import type { BillingOrderRepositoryPort } from '../../../../src/modules/billing/application/port/persistence/command/billing-order-repository.port';
 import { BillingOrderAggregate } from '../../../../src/modules/billing/domain/billing-order.aggregate';
 import { VoteUsagePrice } from '../../../../src/modules/billing/domain/vo/vote-usage-price.vo';
@@ -210,6 +212,46 @@ describe('billing command handlers', () => {
         expect.objectContaining({
           eventType: 'billing.refund-requested.v1',
           aggregateVersion: 3,
+        }),
+      ],
+    ]);
+  });
+
+  it('applies a mock payment refund result through the internal handler', async () => {
+    const existing = order();
+    existing.markPaid({
+      paymentId: 'payment-1',
+      paidAmount: 6_000,
+      paidCurrency: 'KRW',
+      paidAt: now,
+    });
+    existing.requestCancellation({
+      reason: '일정 변경',
+      canceledAt: new Date('2026-09-01T00:00:00.000Z'),
+    });
+    existing.clearDomainEvents();
+    const repository = repositoryStub(existing);
+    const outbox = outboxStub();
+    const refundedAt = new Date('2026-09-01T00:01:00.000Z');
+
+    const result = await new MarkBillingOrderRefundedHandler(
+      repository,
+      new BillingOrderOutboxRecorder(outbox),
+      transactionManagerStub(),
+    ).execute(
+      MarkBillingOrderRefundedCommand.of({
+        billingOrderId: existing.id,
+        refundedAt,
+      }),
+    );
+
+    expect(result).toMatchObject({ status: 'REFUNDED', refundedAt });
+    expect(repository.save.mock.calls).toEqual([[existing]]);
+    expect(outbox.append.mock.calls).toContainEqual([
+      [
+        expect.objectContaining({
+          eventType: 'billing.order-refunded.v1',
+          aggregateVersion: 4,
         }),
       ],
     ]);
