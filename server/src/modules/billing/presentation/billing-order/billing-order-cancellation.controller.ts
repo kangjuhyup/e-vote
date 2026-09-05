@@ -2,6 +2,8 @@ import {
   BadRequestException,
   Body,
   Controller,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
 } from '@nestjs/common';
@@ -30,6 +32,7 @@ export class BillingOrderCancellationController {
   ) {}
 
   @Post(':billingOrderId/cancellation')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '투표 이용료 주문 및 확정 투표 취소',
     description:
