@@ -10,9 +10,11 @@ Vote 서비스의 Billing은 투표 이용료의 상품·가격 정책과 주문
 주문의 멱등 재조회와 조회·취소는 주문에 기록된 `orderedByUserPrincipalId`와 현재
 사용자가 일치할 때만 허용됩니다.
 
-주문 생성은 곧 투표 확정입니다. 주문과 투표 확정은 같은 트랜잭션으로
-처리되며, 확정 이후에는 투표 설정·선거인·연결된 선거인명부 스냅샷을 변경할
-수 없습니다. 변경이 필요하면 취소 후 새 투표를 생성해야 합니다.
+주문 생성과 투표 확정은 구분됩니다. `PENDING_PAYMENT` 주문을 생성하면 투표는
+`DRAFT`를 유지하지만 결제 중복과 금액 스냅샷 변경을 막기 위해 즉시 편집
+잠금을 겁니다. 결제가 `PAID`가 되는 같은 트랜잭션에서 투표가
+`FINALIZED`(확정됨, 아직 개시 전)로 전이합니다. 두 상태 모두 투표 설정·선거인·
+연결된 선거인명부 스냅샷을 변경할 수 없습니다.
 
 ## 투표 이용료 주문 생성
 
@@ -31,7 +33,8 @@ Content-Type: application/json
 스냅샷으로 저장되므로 이후 선거인이 변경되어도 기존 주문 금액은 변하지
 않습니다. 같은 투표의 주문자가 다시 요청하면 새로운 주문을 만들지 않고 기존
 주문을 반환합니다. 이 멱등 경로는 투표 생성자 필드가 없는 레거시 투표도 주문에
-기록된 주문자를 권한 기준으로 사용합니다.
+기록된 주문자를 권한 기준으로 사용합니다. `CANCELED` 또는 `REFUNDED`로 종료된
+주문은 이력으로 보존하며, 투표 생성자는 새 주문을 만들 수 있습니다.
 
 ```json
 {
@@ -79,12 +82,13 @@ Content-Type: application/json
 다음 조건을 모두 만족할 때만 취소할 수 있습니다.
 
 - 요청 사용자가 주문에 기록된 주문자임
-- 투표가 확정된 `DRAFT` 상태이며 아직 시작되지 않음
+- 투표가 결제 대기 중인 `DRAFT` 또는 결제 완료된 `FINALIZED` 상태이며 아직 시작되지 않음
 - 주문 생성 시점에 스냅샷된 `cancelableUntil` 이내임(현재 표준 정책은 7일)
 
-미결제 주문은 즉시 `CANCELED`가 됩니다. 결제된 주문은
-`REFUND_PENDING`이 되며, 추후 Payment 서비스가 실제 환불을 완료한 뒤
-`REFUNDED`로 전이합니다. 취소된 투표는 다시 열거나 수정하지 않습니다.
+미결제 주문은 즉시 `CANCELED`가 되고 투표는 편집 가능한 `DRAFT`로 잠금 해제됩니다.
+결제된 주문은 `REFUND_PENDING`이 되며 투표는 `FINALIZED`로 잠금을 유지합니다.
+Payment 서비스가 환불을 완료해 주문이 `REFUNDED`로 전이하면 투표는
+`DRAFT`로 돌아가고 다시 편집·결제할 수 있습니다.
 
 ```json
 {
@@ -118,7 +122,8 @@ Content-Type: application/json
 
 ## 투표 시작 조건
 
-확정된 투표를 `OPEN`으로 변경하려면 주문 상태가 `PAID`여야 합니다.
+투표는 `FINALIZED`에서만 `OPEN`으로 변경할 수 있으며, 연결된 주문 상태가
+`PAID`여야 합니다.
 `PENDING_PAYMENT`, `CANCELED`, `REFUND_PENDING`, `REFUNDED` 주문은 투표 이용
 권한을 부여하지 않습니다. 확정된 투표의 취소는 일반 투표 상태 변경 API가
 아니라 위 취소 API로만 수행합니다.
@@ -145,8 +150,12 @@ Content-Type: application/json
 
 실제 Payment 서비스가 없는 개발 환경에서는 in-process mock Payment 어댑터가
 기본으로 활성화됩니다. 주문 트랜잭션에서 직접 결제 처리하지 않고, 커밋된
-`billing.order-issued.v1` outbox를 500ms 간격의 background dispatcher가 전달하면
-mock 어댑터가 동일한 내부 결제완료 핸들러를 호출합니다. 따라서 주문 생성 응답은
+`billing.order-issued.v1` outbox를 `@rvkang/batch-core/polling` 기반 background
+worker가 전달하면 mock 어댑터가 동일한 내부 결제완료 핸들러를 호출합니다. worker는
+대기 상태에서는 500ms 간격으로 확인하고, 처리할 메시지가 남아 있으면 다음 batch를
+즉시 가져옵니다. mock 결제 시도는 90% 확률로 성공하며, 나머지 10%는 일시적
+실패로 처리되어 기존 outbox backoff 정책에 따라 같은 메시지 ID로 재시도됩니다.
+따라서 주문 생성 응답은
 `PENDING_PAYMENT`일 수 있으며 이후 조회에서 `PAID`로 전이됩니다. 카드번호나 실제
 결제수단 정보는 받거나 저장하지 않습니다.
 
@@ -156,8 +165,8 @@ payment ID를 사용하며 도메인의 멱등 전이를 그대로 적용합니�
 
 `BILLING_PAYMENT_MODE` 설정은 다음 두 값만 허용합니다.
 
-- `mock`: 개발용 자동 승인·환불 어댑터와 outbox poller 활성화
-- `disabled`: publisher와 poller를 비활성화하고 outbox를 `PENDING`으로 유지
+- `mock`: 개발용 자동 승인·환불 어댑터와 outbox worker 활성화
+- `disabled`: publisher와 worker를 비활성화하고 outbox를 `PENDING`으로 유지
 
 설정이 없으면 development에서는 `mock`, test와 production에서는 `disabled`입니다.
 테스트는 필요한 suite에서만 `mock`을 명시적으로 선택할 수 있습니다. production에서

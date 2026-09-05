@@ -20,6 +20,11 @@ import {
 } from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
 import { RequestAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/request-attachment-upload.command';
 import { RequestAttachmentUploadHandler } from '../../../../src/modules/vote/application/command/handler/request-attachment-upload.handler';
+import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
+import type {
+  DatabaseTransactionManager,
+  DatabaseTransactionOptions,
+} from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 
 describe('attachment upload handlers', () => {
   it('creates a presigned upload URL after validating target and upload metadata', async () => {
@@ -112,6 +117,8 @@ describe('attachment upload handlers', () => {
       createTargetValidator({
         vote: { id: 'vote-1' },
       }),
+      voteLifecycleStub(),
+      transactionManagerStub(),
     );
 
     await expect(
@@ -158,6 +165,8 @@ describe('attachment upload handlers', () => {
           voteDetailId: 'detail-1',
         },
       }),
+      voteLifecycleStub(),
+      transactionManagerStub(),
     );
 
     const result = await handler.execute(
@@ -200,6 +209,55 @@ describe('attachment upload handlers', () => {
         checksum: 'sha256:poster',
       },
     });
+  });
+
+  it('revalidates mutability under the vote lock before persisting metadata', async () => {
+    const storage = createStoragePort();
+    storage.getObjectMetadata.mockResolvedValue({
+      storageKey: 'attachments/notice-key',
+      contentType: 'application/pdf',
+      contentLength: 1024,
+    });
+    const attachmentRepository = createAttachmentRepository();
+    const validator = {
+      assertExists: jest.fn().mockResolvedValue(undefined),
+      assertMutable: jest
+        .fn()
+        .mockRejectedValue(
+          new Error('billing-locked vote resources cannot be created'),
+        ),
+    } as unknown as AttachmentTargetValidator;
+    const lifecycle = voteLifecycleStub();
+    const transactionManager = transactionManagerStub();
+    const handler = new ConfirmAttachmentUploadHandler(
+      storage,
+      attachmentRepository,
+      validator,
+      lifecycle,
+      transactionManager,
+    );
+
+    await expect(
+      handler.execute(
+        ConfirmAttachmentUploadCommand.of({
+          target: {
+            targetType: AttachmentTargetType.Vote,
+            voteId: 'vote-1',
+          },
+          attachmentType: VoteAttachmentType.Notice,
+          storageKey: 'attachments/notice-key',
+          originalName: 'notice.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        }),
+      ),
+    ).rejects.toThrow('billing-locked vote resources cannot be created');
+
+    expect(lifecycle.lockVote.mock.calls).toEqual([['vote-1']]);
+    expect(attachmentRepository.saveAttachedFile.mock.calls).toHaveLength(0);
+    expect(transactionManager.calls.mock.calls).toEqual([
+      [expect.any(Function), { isolationLevel: 'serializable' }],
+    ]);
   });
 
   it('rejects targets outside the requested parent hierarchy', async () => {
@@ -246,19 +304,47 @@ function createTargetValidator(records: {
     readonly voteDetailId: string;
   };
 }): AttachmentTargetValidator {
+  const vote =
+    records.vote ??
+    (records.voteDetail
+      ? {
+          id: records.voteDetail.voteId,
+        }
+      : undefined);
+  const voteRecord = vote
+    ? {
+        ...vote,
+        assertChildResourcesMutable: jest.fn(),
+      }
+    : undefined;
+  const voteDetailRecord = records.voteDetail
+    ? {
+        ...records.voteDetail,
+        belongsToVote: (voteId: string) =>
+          records.voteDetail?.voteId === voteId,
+        assertChildResourcesMutable: jest.fn(),
+      }
+    : undefined;
+  const candidateRecord = records.candidate
+    ? {
+        ...records.candidate,
+        belongsToVoteDetail: (voteDetailId: string) =>
+          records.candidate?.voteDetailId === voteDetailId,
+      }
+    : undefined;
   const voteRepository: VoteRepositoryPort = {
     nextId: () => 'vote-id',
-    findById: jest.fn().mockResolvedValue(records.vote),
+    findById: jest.fn().mockResolvedValue(voteRecord),
     save: jest.fn(),
   };
   const voteDetailRepository: VoteDetailRepositoryPort = {
     nextId: () => 'vote-detail-id',
-    findById: jest.fn().mockResolvedValue(records.voteDetail),
+    findById: jest.fn().mockResolvedValue(voteDetailRecord),
     save: jest.fn(),
   };
   const candidateRepository: CandidateRepositoryPort = {
     nextId: () => 'candidate-id',
-    findById: jest.fn().mockResolvedValue(records.candidate),
+    findById: jest.fn().mockResolvedValue(candidateRecord),
     save: jest.fn(),
   };
 
@@ -267,4 +353,37 @@ function createTargetValidator(records: {
     voteDetailRepository,
     candidateRepository,
   );
+}
+
+function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
+  return {
+    lockVote: jest.fn().mockResolvedValue(undefined),
+    lockForBilling: jest.fn(),
+    finalizePaidBilling: jest.fn(),
+    assertBillingCancellationAllowed: jest.fn(),
+    releaseBilling: jest.fn(),
+  };
+}
+
+function transactionManagerStub(): DatabaseTransactionManager & {
+  readonly calls: jest.Mock<
+    void,
+    [unknown, DatabaseTransactionOptions | undefined]
+  >;
+} {
+  const calls = jest.fn<
+    void,
+    [unknown, DatabaseTransactionOptions | undefined]
+  >();
+
+  return {
+    calls,
+    runInTransaction<T>(
+      work: () => Promise<T>,
+      options?: DatabaseTransactionOptions,
+    ): Promise<T> {
+      calls(work, options);
+      return work();
+    },
+  };
 }

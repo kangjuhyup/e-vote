@@ -45,7 +45,8 @@ describe('vote management command handlers', () => {
         identityVerificationPolicy: { required: false },
       }),
     );
-    vote.finalizeForBilling({
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
       billingOrderId: 'billing-order-1',
       finalizedAt: new Date(),
     });
@@ -67,7 +68,8 @@ describe('vote management command handlers', () => {
 
   it('rejects opening without a paid billing entitlement', async () => {
     const vote = createVote();
-    vote.finalizeForBilling({
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
       billingOrderId: 'billing-order-1',
       finalizedAt: new Date(),
     });
@@ -120,6 +122,8 @@ describe('vote management command handlers', () => {
         voteRepository(vote),
         details,
         candidates,
+        voteLifecycleStub(),
+        transactionManagerStub(),
       ).execute(
         UpdateCandidateCommand.of({
           voteId: vote.id,
@@ -177,7 +181,9 @@ function transactionManagerStub(): DatabaseTransactionManager {
 function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
   return {
     lockVote: jest.fn().mockResolvedValue(undefined),
-    finalizeForBilling: jest.fn().mockResolvedValue(undefined),
-    cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
+    lockForBilling: jest.fn().mockResolvedValue(undefined),
+    finalizePaidBilling: jest.fn().mockResolvedValue(undefined),
+    assertBillingCancellationAllowed: jest.fn().mockResolvedValue(undefined),
+    releaseBilling: jest.fn().mockResolvedValue(undefined),
   };
 }

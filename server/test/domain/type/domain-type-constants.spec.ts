@@ -28,6 +28,7 @@ describe('domain type constants', () => {
     expect(Object.values(VoteWeightMode)).toEqual(['EQUAL', 'SHARE']);
     expect(Object.values(VoteStatus)).toEqual([
       'DRAFT',
+      'FINALIZED',
       'OPEN',
       'CLOSED',
       'CANCELED',

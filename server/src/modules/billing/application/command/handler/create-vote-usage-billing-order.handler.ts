@@ -55,22 +55,16 @@ export class CreateVoteUsageBillingOrderHandler {
   async execute(
     command: CreateVoteUsageBillingOrderCommand,
   ): Promise<BillingOrderResult> {
+    await this.voteSetupLifecycle.lockVote(command.voteId);
     const vote = await this.voteAccess.findById(command.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
 
-    await this.voteSetupLifecycle.lockVote(vote.id);
-    const existing = await this.billingOrderRepository.findByVoteIdForUpdate(
-      vote.id,
-    );
+    const existing =
+      await this.billingOrderRepository.findActiveByVoteIdForUpdate(vote.id);
     if (existing) {
       if (!existing.isOrderedBy(command.orderedByUserPrincipalId)) {
         throw new VoteBillingAccessDeniedError();
       }
-      await this.voteSetupLifecycle.finalizeForBilling({
-        voteId: vote.id,
-        billingOrderId: existing.id,
-        finalizedAt: existing.issuedAt,
-      });
       return BillingOrderResult.of(existing);
     }
 
@@ -79,10 +73,9 @@ export class CreateVoteUsageBillingOrderHandler {
     }
 
     const billingOrderId = this.billingOrderRepository.nextId();
-    await this.voteSetupLifecycle.finalizeForBilling({
+    await this.voteSetupLifecycle.lockForBilling({
       voteId: vote.id,
       billingOrderId,
-      finalizedAt: command.issuedAt,
     });
     const electorCount = await this.electorCountAccess.countEligibleElectors(
       vote.id,

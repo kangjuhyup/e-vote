@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 const VoteStatusResponse = {
   Draft: 'DRAFT',
+  Finalized: 'FINALIZED',
   Open: 'OPEN',
   Closed: 'CLOSED',
   Canceled: 'CANCELED',

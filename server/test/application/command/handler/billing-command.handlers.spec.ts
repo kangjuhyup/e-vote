@@ -56,11 +56,10 @@ describe('billing command handlers', () => {
     expect(repository.save.mock.invocationCallOrder[0]).toBeLessThan(
       outbox.append.mock.invocationCallOrder[0],
     );
-    expect(voteLifecycle.finalizeForBilling.mock.calls).toContainEqual([
+    expect(voteLifecycle.lockForBilling.mock.calls).toContainEqual([
       {
         voteId: 'vote-1',
         billingOrderId: 'billing-order-1',
-        finalizedAt: now,
       },
     ]);
   });
@@ -72,7 +71,7 @@ describe('billing command handlers', () => {
     const outbox = outboxStub();
     const handler = new CreateVoteUsageBillingOrderHandler(
       repository,
-      voteAccessStub({}),
+      voteAccessStub({ billingOrderId: existing.id }),
       { countEligibleElectors },
       voteLifecycleStub(),
       new BillingOrderOutboxRecorder(outbox),
@@ -92,7 +91,10 @@ describe('billing command handlers', () => {
     const repository = repositoryStub(existing);
     const handler = new CreateVoteUsageBillingOrderHandler(
       repository,
-      voteAccessStub({ createdByUserPrincipalId: 'user-1' }),
+      voteAccessStub({
+        createdByUserPrincipalId: 'user-1',
+        billingOrderId: existing.id,
+      }),
       electorCountStub(120),
       voteLifecycleStub(),
       new BillingOrderOutboxRecorder(outboxStub()),
@@ -144,10 +146,12 @@ describe('billing command handlers', () => {
   it('applies a matching payment result through the internal handler', async () => {
     const existing = order();
     const repository = repositoryStub(existing);
+    const voteLifecycle = voteLifecycleStub();
     const outbox = outboxStub();
 
     const result = await new MarkBillingOrderPaidHandler(
       repository,
+      voteLifecycle,
       new BillingOrderOutboxRecorder(outbox),
       transactionManagerStub(),
     ).execute(
@@ -161,6 +165,15 @@ describe('billing command handlers', () => {
     );
 
     expect(result).toMatchObject({ status: 'PAID', paymentId: 'payment-1' });
+    expect(voteLifecycle.finalizePaidBilling.mock.calls).toEqual([
+      [
+        {
+          voteId: 'vote-1',
+          billingOrderId: 'billing-order-1',
+          finalizedAt: now,
+        },
+      ],
+    ]);
     expect(repository.save.mock.calls).toEqual([[existing]]);
     expect(outbox.append.mock.calls).toContainEqual([
       [
@@ -200,12 +213,10 @@ describe('billing command handlers', () => {
     );
 
     expect(result.status).toBe('REFUND_PENDING');
-    expect(voteLifecycle.cancelFinalizedVote.mock.calls).toContainEqual([
-      {
-        voteId: 'vote-1',
-        canceledAt: new Date('2026-09-01T00:00:00.000Z'),
-      },
-    ]);
+    expect(
+      voteLifecycle.assertBillingCancellationAllowed.mock.calls,
+    ).toContainEqual([{ voteId: 'vote-1', billingOrderId: 'billing-order-1' }]);
+    expect(voteLifecycle.releaseBilling.mock.calls).toHaveLength(0);
     expect(repository.save.mock.calls).toContainEqual([existing]);
     expect(outbox.append.mock.calls).toContainEqual([
       [
@@ -216,6 +227,49 @@ describe('billing command handlers', () => {
       ],
     ]);
   });
+
+  it.each(['REFUND_PENDING', 'REFUNDED'] as const)(
+    'does not finalize the vote when payment success is replayed for a %s order',
+    async (status) => {
+      const existing = order();
+      existing.markPaid({
+        paymentId: 'payment-1',
+        paidAmount: 6_000,
+        paidCurrency: 'KRW',
+        paidAt: now,
+      });
+      existing.requestCancellation({
+        reason: '일정 변경',
+        canceledAt: new Date('2026-09-01T00:00:00.000Z'),
+      });
+      if (status === 'REFUNDED') {
+        existing.markRefunded(new Date('2026-09-01T00:01:00.000Z'));
+      }
+      existing.clearDomainEvents();
+      const repository = repositoryStub(existing);
+      const lifecycle = voteLifecycleStub();
+      const outbox = outboxStub();
+
+      await new MarkBillingOrderPaidHandler(
+        repository,
+        lifecycle,
+        new BillingOrderOutboxRecorder(outbox),
+        transactionManagerStub(),
+      ).execute(
+        MarkBillingOrderPaidCommand.of({
+          billingOrderId: existing.id,
+          paymentId: 'payment-1',
+          amount: 6_000,
+          currency: 'KRW',
+          paidAt: now,
+        }),
+      );
+
+      expect(existing.status).toBe(status);
+      expect(lifecycle.finalizePaidBilling.mock.calls).toHaveLength(0);
+      expect(outbox.append.mock.calls).toHaveLength(0);
+    },
+  );
 
   it('applies a mock payment refund result through the internal handler', async () => {
     const existing = order();
@@ -231,11 +285,13 @@ describe('billing command handlers', () => {
     });
     existing.clearDomainEvents();
     const repository = repositoryStub(existing);
+    const voteLifecycle = voteLifecycleStub();
     const outbox = outboxStub();
     const refundedAt = new Date('2026-09-01T00:01:00.000Z');
 
     const result = await new MarkBillingOrderRefundedHandler(
       repository,
+      voteLifecycle,
       new BillingOrderOutboxRecorder(outbox),
       transactionManagerStub(),
     ).execute(
@@ -246,6 +302,14 @@ describe('billing command handlers', () => {
     );
 
     expect(result).toMatchObject({ status: 'REFUNDED', refundedAt });
+    expect(voteLifecycle.releaseBilling.mock.calls).toEqual([
+      [
+        {
+          voteId: 'vote-1',
+          billingOrderId: 'billing-order-1',
+        },
+      ],
+    ]);
     expect(repository.save.mock.calls).toEqual([[existing]]);
     expect(outbox.append.mock.calls).toContainEqual([
       [
@@ -255,6 +319,40 @@ describe('billing command handlers', () => {
         }),
       ],
     ]);
+  });
+
+  it('keeps a replacement billing lock untouched when a refunded event is replayed', async () => {
+    const existing = order();
+    existing.markPaid({
+      paymentId: 'payment-1',
+      paidAmount: 6_000,
+      paidCurrency: 'KRW',
+      paidAt: now,
+    });
+    existing.requestCancellation({
+      reason: '일정 변경',
+      canceledAt: new Date('2026-09-01T00:00:00.000Z'),
+    });
+    existing.markRefunded(new Date('2026-09-01T00:01:00.000Z'));
+    existing.clearDomainEvents();
+    const repository = repositoryStub(existing);
+    const voteLifecycle = voteLifecycleStub();
+    const outbox = outboxStub();
+
+    await new MarkBillingOrderRefundedHandler(
+      repository,
+      voteLifecycle,
+      new BillingOrderOutboxRecorder(outbox),
+      transactionManagerStub(),
+    ).execute(
+      MarkBillingOrderRefundedCommand.of({
+        billingOrderId: existing.id,
+        refundedAt: new Date('2026-09-01T00:02:00.000Z'),
+      }),
+    );
+
+    expect(voteLifecycle.releaseBilling.mock.calls).toHaveLength(0);
+    expect(outbox.append.mock.calls).toHaveLength(0);
   });
 
   it('cancels an unpaid order only for the recorded order owner', async () => {
@@ -293,10 +391,45 @@ describe('billing command handlers', () => {
         transactionManagerStub(),
       ).execute(ownerCommand),
     ).resolves.toMatchObject({ status: 'CANCELED' });
+    expect(lifecycle.releaseBilling.mock.calls).toContainEqual([
+      { voteId: 'vote-1', billingOrderId: 'billing-order-1' },
+    ]);
     expect(repository.findByIdForUpdate.mock.calls).toHaveLength(1);
     expect(outbox.append.mock.calls).toContainEqual([
       [expect.objectContaining({ eventType: 'billing.order-canceled.v1' })],
     ]);
+  });
+
+  it('does not release a later billing lock when cancellation is replayed', async () => {
+    const existing = order();
+    existing.requestCancellation({
+      reason: '일정 변경',
+      canceledAt: new Date('2026-09-01T00:00:00.000Z'),
+    });
+    existing.clearDomainEvents();
+    const repository = repositoryStub(existing);
+    const lifecycle = voteLifecycleStub();
+    const outbox = outboxStub();
+
+    await new CancelVoteUsageBillingOrderHandler(
+      repository,
+      lifecycle,
+      new BillingOrderOutboxRecorder(outbox),
+      transactionManagerStub(),
+    ).execute(
+      CancelVoteUsageBillingOrderCommand.of({
+        billingOrderId: existing.id,
+        userPrincipalId: 'user-1',
+        reason: '일정 변경',
+        canceledAt: new Date('2026-09-01T00:01:00.000Z'),
+      }),
+    );
+
+    expect(lifecycle.assertBillingCancellationAllowed.mock.calls).toHaveLength(
+      0,
+    );
+    expect(lifecycle.releaseBilling.mock.calls).toHaveLength(0);
+    expect(outbox.append.mock.calls).toHaveLength(0);
   });
 
   it('does not persist cancellation when the finalized vote has opened', async () => {
@@ -304,8 +437,8 @@ describe('billing command handlers', () => {
     const repository = repositoryStub(existing);
     const lifecycle = voteLifecycleStub();
     const outbox = outboxStub();
-    lifecycle.cancelFinalizedVote.mockRejectedValue(
-      new Error('only unopened finalized votes can be canceled'),
+    lifecycle.assertBillingCancellationAllowed.mockRejectedValue(
+      new Error('only unopened votes can cancel billing'),
     );
 
     await expect(
@@ -322,7 +455,7 @@ describe('billing command handlers', () => {
           canceledAt: new Date('2026-09-01T00:00:00.000Z'),
         }),
       ),
-    ).rejects.toThrow('only unopened finalized votes can be canceled');
+    ).rejects.toThrow('only unopened votes can cancel billing');
     expect(repository.save.mock.calls).toHaveLength(0);
     expect(outbox.append.mock.calls).toHaveLength(0);
   });
@@ -376,14 +509,16 @@ describe('billing command handlers', () => {
       nextId: jest.fn().mockReturnValue('billing-order-1'),
       findById: jest.fn().mockResolvedValue(existing),
       findByIdForUpdate: jest.fn().mockResolvedValue(existing),
-      findByVoteId: jest.fn().mockResolvedValue(existing),
-      findByVoteIdForUpdate: jest.fn().mockResolvedValue(existing),
+      findActiveByVoteIdForUpdate: jest.fn().mockResolvedValue(existing),
       save: jest.fn().mockResolvedValue(undefined),
     };
   }
 
   function voteAccessStub(
-    options: { readonly createdByUserPrincipalId?: string } = {
+    options: {
+      readonly createdByUserPrincipalId?: string;
+      readonly billingOrderId?: string;
+    } = {
       createdByUserPrincipalId: 'user-1',
     },
   ): VoteAccessPort {
@@ -392,6 +527,7 @@ describe('billing command handlers', () => {
         id: 'vote-1',
         commissionId: 'commission-1',
         createdByUserPrincipalId: options.createdByUserPrincipalId,
+        billingOrderId: options.billingOrderId,
         isCreatedBy: (userPrincipalId) =>
           options.createdByUserPrincipalId === userPrincipalId,
       }),
@@ -419,8 +555,10 @@ describe('billing command handlers', () => {
   function voteLifecycleStub(): jest.Mocked<VoteSetupLifecyclePort> {
     return {
       lockVote: jest.fn().mockResolvedValue(undefined),
-      finalizeForBilling: jest.fn().mockResolvedValue(undefined),
-      cancelFinalizedVote: jest.fn().mockResolvedValue(undefined),
+      lockForBilling: jest.fn().mockResolvedValue(undefined),
+      finalizePaidBilling: jest.fn().mockResolvedValue(undefined),
+      assertBillingCancellationAllowed: jest.fn().mockResolvedValue(undefined),
+      releaseBilling: jest.fn().mockResolvedValue(undefined),
     };
   }
 });

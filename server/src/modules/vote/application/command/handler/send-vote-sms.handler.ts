@@ -15,6 +15,11 @@ import {
   VOTE_ACCESS_PORT,
   type VoteAccessPort,
 } from '../../../../../shared/application/port/capability/vote-access.port';
+import {
+  VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
+  type VoteUsageEntitlementAccessPort,
+} from '../../../../../shared/application/port/capability/vote-billing.port';
+import { DomainError } from '../../../../../shared/domain/domain-error';
 import { SmsMessagePurpose } from '../../../../../shared/domain/voting/type/sms-message-purpose.type';
 import { VoteSmsPolicy } from '../../../../../shared/domain/voting/vote-sms.policy';
 import { SendVoteSmsCommand } from '../dto/request/send-vote-sms.command';
@@ -25,6 +30,8 @@ export class SendVoteSmsHandler {
   constructor(
     @Inject(VOTE_ACCESS_PORT)
     private readonly voteRepository: VoteAccessPort,
+    @Inject(VOTE_USAGE_ENTITLEMENT_ACCESS_PORT)
+    private readonly voteUsageEntitlement: VoteUsageEntitlementAccessPort,
     @Inject(SMS_DISPATCH_REPOSITORY_PORT)
     private readonly smsDispatchRepository: SmsDispatchRepositoryPort,
     @Optional()
@@ -37,6 +44,14 @@ export class SendVoteSmsHandler {
     if (!vote) throw new ManagedResourceNotFoundError('vote');
 
     VoteSmsPolicy.assertVoteMessageAllowed(vote, command.purpose);
+    if (
+      command.purpose === SmsMessagePurpose.UpcomingVoteNotice &&
+      !(await this.voteUsageEntitlement.hasPaidOrder(vote.id))
+    ) {
+      throw new DomainError(
+        'upcoming vote notices require an active paid billing order',
+      );
+    }
 
     if (!this.smsSender) throw new SmsSenderNotConfiguredError();
 

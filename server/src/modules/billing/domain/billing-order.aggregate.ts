@@ -130,7 +130,11 @@ export class BillingOrderAggregate {
     if (!this.price.equals(paidPrice)) {
       throw new DomainError('paid amount does not match billing order price');
     }
-    if (this.status === BillingOrderStatus.Paid) {
+    if (
+      this.status === BillingOrderStatus.Paid ||
+      this.status === BillingOrderStatus.RefundPending ||
+      this.status === BillingOrderStatus.Refunded
+    ) {
       if (this.paymentId !== paymentId) {
         throw new DomainError(
           'billing order is already paid by another payment',

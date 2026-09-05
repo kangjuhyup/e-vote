@@ -73,6 +73,7 @@ export class CandidateController {
   ): Promise<CreateCandidateResponse> {
     const result = await this.createCandidateHandler.execute(
       CreateCandidateCommand.of({
+        voteId: params.voteId,
         voteDetailId: params.voteDetailId,
         candidateNo: body.candidateNo,
         name: body.name,

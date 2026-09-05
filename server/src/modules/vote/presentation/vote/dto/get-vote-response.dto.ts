@@ -28,6 +28,14 @@ const VotingChannelResponse = {
 
 const VoteStatusResponse = {
   Draft: 'DRAFT',
+  Finalized: 'FINALIZED',
+  Open: 'OPEN',
+  Closed: 'CLOSED',
+  Canceled: 'CANCELED',
+} as const;
+
+const VoteDetailStatusResponse = {
+  Draft: 'DRAFT',
   Open: 'OPEN',
   Closed: 'CLOSED',
   Canceled: 'CANCELED',
@@ -472,8 +480,8 @@ class VoteDetailResponse {
   readonly sortOrder: number;
 
   @ApiProperty({
-    enum: Object.values(VoteStatusResponse),
-    example: VoteStatusResponse.Draft,
+    enum: Object.values(VoteDetailStatusResponse),
+    example: VoteDetailStatusResponse.Draft,
     description: '자식 투표 상태입니다.',
   })
   readonly status: string;

@@ -15,8 +15,11 @@ import { BillingOrderCancellationController } from '../src/modules/billing/prese
 import { CancelVoteUsageBillingOrderHandler } from '../src/modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
 import { DATABASE_HEALTH_PORT } from '../src/shared/application/port/health/database-health.port';
 import { MarkBillingOrderRefundedHandler } from '../src/modules/billing/application/command/handler/mark-billing-order-refunded.handler';
-import { MockPaymentOutboxPoller } from '../src/modules/billing/infrastructure/payment/mock-payment-outbox.poller';
-import { PAYMENT_INTEGRATION_MODE } from '../src/modules/billing/infrastructure/payment/payment-integration.config';
+import { MockPaymentOutboxWorker } from '../src/modules/billing/infrastructure/payment/mock-payment-outbox.worker';
+import {
+  MOCK_PAYMENT_RANDOM_SOURCE,
+  PAYMENT_INTEGRATION_MODE,
+} from '../src/modules/billing/infrastructure/payment/payment-integration.config';
 import { INTEGRATION_EVENT_PUBLISHER_PORT } from '../src/shared/application/port/messaging/integration-event-publisher.port';
 
 describe('AppModule', () => {
@@ -90,8 +93,9 @@ describe('AppModule', () => {
     expect(providers).toEqual(
       expect.arrayContaining([
         MarkBillingOrderRefundedHandler,
-        MockPaymentOutboxPoller,
+        MockPaymentOutboxWorker,
         expect.objectContaining({ provide: PAYMENT_INTEGRATION_MODE }),
+        expect.objectContaining({ provide: MOCK_PAYMENT_RANDOM_SOURCE }),
         expect.objectContaining({ provide: INTEGRATION_EVENT_PUBLISHER_PORT }),
       ]),
     );

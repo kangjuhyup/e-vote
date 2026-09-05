@@ -23,6 +23,13 @@ describe('billing order migration', () => {
     ),
     'utf8',
   );
+  const finalizationMigrationSource = readFileSync(
+    join(
+      process.cwd(),
+      'src/platform/database/migration/Migration20260905010000.ts',
+    ),
+    'utf8',
+  );
 
   it('creates immutable-price billing orders with idempotency constraints', () => {
     expect(migrationSource).toContain('create table "billing_orders"');
@@ -81,6 +88,22 @@ describe('billing order migration', () => {
     );
     expect(outboxMigrationSource).not.toContain(
       'insert into "integration_outbox"',
+    );
+  });
+
+  it('models paid vote finalization and permits a new order after a terminal cancellation', () => {
+    expect(finalizationMigrationSource).toContain(
+      'billing_orders_vote_active_unique',
+    );
+    expect(finalizationMigrationSource).toContain(
+      "where \"status\" in ('PENDING_PAYMENT', 'PAID', 'REFUND_PENDING')",
+    );
+    expect(finalizationMigrationSource).toContain("'FINALIZED'");
+    expect(finalizationMigrationSource).toContain(
+      'and "bo"."status" in (\'CANCELED\', \'REFUNDED\')',
+    );
+    expect(finalizationMigrationSource).not.toContain(
+      'delete from "billing_orders"',
     );
   });
 });

@@ -10,8 +10,7 @@ export interface BillingOrderRepositoryPort {
   findByIdForUpdate(
     orderId: string,
   ): Promise<BillingOrderAggregate | undefined>;
-  findByVoteId(voteId: string): Promise<BillingOrderAggregate | undefined>;
-  findByVoteIdForUpdate(
+  findActiveByVoteIdForUpdate(
     voteId: string,
   ): Promise<BillingOrderAggregate | undefined>;
   save(order: BillingOrderAggregate): Promise<void>;
