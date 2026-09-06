@@ -41,6 +41,19 @@ const config: WasabiStorageConfig = {
 const now = new Date('2026-08-13T00:00:00.000Z');
 
 describe('WasabiStorageAdapter', () => {
+  it('does not sign an empty-payload checksum into presigned PUT URLs', async () => {
+    const adapter = WasabiStorageAdapter.create(config);
+
+    const result = await adapter.createPresignedPutObjectUrl({
+      contentType: 'application/pdf',
+      contentLength: 4,
+    });
+    const searchParams = new URL(result.url).searchParams;
+
+    expect(searchParams.has('x-amz-checksum-crc32')).toBe(false);
+    expect(searchParams.has('x-amz-sdk-checksum-algorithm')).toBe(false);
+  });
+
   it('creates a presigned PUT URL with an opaque generated storage key', async () => {
     const presign = jest
       .fn<PresignStorageUrl>()
