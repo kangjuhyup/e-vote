@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 describe('worker bootstrap', () => {
   beforeEach(() => {
     jest.resetModules();
@@ -33,5 +36,20 @@ describe('worker bootstrap', () => {
 
     expect(createApplicationContext).toHaveBeenCalledWith(WorkerModuleStub);
     expect(app.enableShutdownHooks).toHaveBeenCalledWith(['SIGTERM', 'SIGINT']);
+  });
+});
+
+describe('worker scripts', () => {
+  it('uses the Nest compiler in watch mode so decorator metadata is emitted', () => {
+    const packageJson = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
+    ) as { scripts: Record<string, string> };
+
+    expect(packageJson.scripts['start:worker:dev']).toBe(
+      'nest start --watch --entryFile worker',
+    );
+    expect(packageJson.scripts['start:worker:prod']).toBe(
+      'node dist/src/worker',
+    );
   });
 });
