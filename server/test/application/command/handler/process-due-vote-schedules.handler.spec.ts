@@ -1,0 +1,115 @@
+import { ProcessDueVoteSchedulesCommand } from '../../../../src/modules/vote/application/command/dto/request/process-due-vote-schedules.command';
+import { ProcessDueVoteSchedulesHandler } from '../../../../src/modules/vote/application/command/handler/process-due-vote-schedules.handler';
+import type { VoteScheduleRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-schedule-repository.port';
+import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
+import type { VoteUsageEntitlementAccessPort } from '../../../../src/shared/application/port/capability/vote-billing.port';
+import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
+import {
+  ParticipationUnit,
+  PrivacyMode,
+  ResultStorageMode,
+  VoteWeightMode,
+} from '../../../../src/shared/domain/voting/type/vote-policy.type';
+import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting/vo/identity-verification-policy.vo';
+import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
+
+describe('ProcessDueVoteSchedulesHandler', () => {
+  it('opens only paid due votes and closes due open votes in one transaction', async () => {
+    const now = new Date('2026-09-06T10:00:00.000Z');
+    const paid = finalizedVote('paid', now);
+    const unpaid = finalizedVote('unpaid', now);
+    const closing = finalizedVote(
+      'closing',
+      new Date('2026-09-06T09:00:00.000Z'),
+    );
+    closing.open(new Date('2026-09-06T09:00:00.000Z'));
+    const repository = repositoryStub([paid, unpaid], [closing]);
+    const entitlement: jest.Mocked<VoteUsageEntitlementAccessPort> = {
+      hasPaidOrder: jest.fn(),
+      findPaidVoteIds: jest.fn().mockResolvedValue(new Set([paid.id])),
+    };
+    const transactionManager: DatabaseTransactionManager = {
+      runInTransaction: jest.fn(async (work) => work()),
+    };
+
+    const result = await new ProcessDueVoteSchedulesHandler(
+      repository,
+      entitlement,
+      transactionManager,
+    ).execute(ProcessDueVoteSchedulesCommand.of({ now, batchSize: 20 }));
+
+    expect(result).toEqual({ openedCount: 1, closedCount: 1 });
+    expect(paid.status).toBe('OPEN');
+    expect(unpaid.status).toBe('FINALIZED');
+    expect(closing.status).toBe('CLOSED');
+    expect(repository.save.mock.calls.map(([vote]) => vote.id)).toEqual([
+      paid.id,
+      closing.id,
+    ]);
+    expect(entitlement.findPaidVoteIds.mock.calls).toEqual([
+      [[paid.id, unpaid.id]],
+    ]);
+    expect(entitlement.hasPaidOrder.mock.calls).toHaveLength(0);
+  });
+
+  it('is idempotent when no schedule is due', async () => {
+    const repository = repositoryStub([], []);
+    const entitlement: jest.Mocked<VoteUsageEntitlementAccessPort> = {
+      hasPaidOrder: jest.fn(),
+      findPaidVoteIds: jest.fn().mockResolvedValue(new Set()),
+    };
+
+    const result = await new ProcessDueVoteSchedulesHandler(
+      repository,
+      entitlement,
+      { runInTransaction: jest.fn(async (work) => work()) },
+    ).execute(
+      ProcessDueVoteSchedulesCommand.of({
+        now: new Date('2026-09-06T10:00:00.000Z'),
+        batchSize: 20,
+      }),
+    );
+
+    expect(result).toEqual({ openedCount: 0, closedCount: 0 });
+    expect(repository.save.mock.calls).toHaveLength(0);
+  });
+});
+
+function finalizedVote(id: string, startedAt: Date): VoteAggregate {
+  const vote = VoteAggregate.create({
+    id,
+    createdByUserPrincipalId: 'user-1',
+    commissionId: 'commission-1',
+    title: id,
+    votingChannels: [VotingChannel.Online],
+    defaultPolicy: VotePolicy.of({
+      privacyMode: PrivacyMode.Secret,
+      participationUnit: ParticipationUnit.Individual,
+      resultStorageMode: ResultStorageMode.Database,
+      voteWeightMode: VoteWeightMode.Equal,
+    }),
+    identityVerificationPolicy: IdentityVerificationPolicy.of({
+      required: false,
+    }),
+    startedAt,
+    endedAt: new Date('2026-09-06T10:00:00.000Z'),
+  });
+  vote.lockForBilling(`order-${id}`);
+  vote.finalizePaidBilling({
+    billingOrderId: `order-${id}`,
+    finalizedAt: new Date('2026-09-06T08:00:00.000Z'),
+  });
+  return vote;
+}
+
+function repositoryStub(
+  opening: VoteAggregate[],
+  closing: VoteAggregate[],
+): jest.Mocked<VoteScheduleRepositoryPort> {
+  return {
+    findDueForOpening: jest.fn().mockResolvedValue(opening),
+    findDueForClosing: jest.fn().mockResolvedValue(closing),
+    save: jest.fn().mockResolvedValue(undefined),
+  };
+}

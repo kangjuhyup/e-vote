@@ -10,6 +10,8 @@ export class CreateVoteCommand {
     readonly votingChannels: readonly VotingChannel[],
     readonly defaultPolicy: VotePolicyProps,
     readonly identityVerificationPolicy: IdentityVerificationPolicyProps,
+    readonly startedAt: Date,
+    readonly endedAt: Date,
   ) {}
 
   static of(params: {
@@ -19,6 +21,8 @@ export class CreateVoteCommand {
     votingChannels: readonly VotingChannel[];
     defaultPolicy: VotePolicyProps;
     identityVerificationPolicy: IdentityVerificationPolicyProps;
+    startedAt: Date;
+    endedAt: Date;
   }): CreateVoteCommand {
     return new CreateVoteCommand(
       params.createdByUserPrincipalId,
@@ -27,6 +31,8 @@ export class CreateVoteCommand {
       params.votingChannels,
       params.defaultPolicy,
       params.identityVerificationPolicy,
+      params.startedAt,
+      params.endedAt,
     );
   }
 }

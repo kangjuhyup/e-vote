@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsISO8601, IsOptional } from 'class-validator';
 import type { CreateVoteBody } from './create-vote-request.dto';
 
 export class UpdateVoteBody {
@@ -8,6 +9,16 @@ export class UpdateVoteBody {
   @ApiProperty() readonly defaultPolicy!: CreateVoteBody['defaultPolicy'];
   @ApiProperty()
   readonly identityVerificationPolicy!: CreateVoteBody['identityVerificationPolicy'];
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  @ApiProperty({ required: false, format: 'date-time' })
+  readonly startedAt?: string;
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  @ApiProperty({ required: false, format: 'date-time' })
+  readonly endedAt?: string;
 }
 
 export class ChangeVoteStatusBody {

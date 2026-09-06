@@ -46,6 +46,7 @@ type MockEntityManager = {
     [(em: MockEntityManager) => Promise<unknown>]
   >;
   readonly getTransactionContext: jest.Mock<string, []>;
+  readonly getContext: jest.Mock<MockEntityManager, []>;
   readonly getConnection: jest.Mock<
     {
       execute: jest.Mock<
@@ -75,6 +76,8 @@ describe('database repository adapters', () => {
       identityVerificationPolicy: IdentityVerificationPolicy.of({
         required: false,
       }),
+      startedAt: new Date('2026-09-06T10:00:00.000Z'),
+      endedAt: new Date('2026-09-06T11:00:00.000Z'),
     });
 
     await new VoteRepositoryAdapter(em as any).save(vote);
@@ -82,7 +85,49 @@ describe('database repository adapters', () => {
     expect(createdData(em, 0)).toMatchObject({
       id: 'vote-1',
       createdByUserPrincipalId: 'user-1',
+      startedAt: new Date('2026-09-06T10:00:00.000Z'),
+      endedAt: new Date('2026-09-06T11:00:00.000Z'),
     });
+  });
+
+  it('claims due vote schedules with skip-locked row locks', async () => {
+    const em = createMockEntityManager();
+    const repository = new VoteRepositoryAdapter(em as any);
+    const now = new Date('2026-09-06T10:00:00.000Z');
+
+    await expect(repository.findDueForOpening(now, 20)).resolves.toEqual([]);
+    await expect(repository.findDueForClosing(now, 20)).resolves.toEqual([]);
+
+    expect(em.getConnection().execute.mock.calls).toEqual([
+      [
+        expect.stringMatching(
+          /status.*FINALIZED|select[\s\S]*started_at[\s\S]*for update skip locked/,
+        ),
+        ['FINALIZED', now, 20],
+        'all',
+        'transaction-context',
+      ],
+      [
+        expect.stringMatching(
+          /status.*OPEN|select[\s\S]*ended_at[\s\S]*for update skip locked/,
+        ),
+        ['OPEN', now, 20],
+        'all',
+        'transaction-context',
+      ],
+    ]);
+    expect(em.getConnection().execute.mock.calls[0][0]).toContain(
+      `"billing_order"."status" = 'PAID'`,
+    );
+    expect(em.getConnection().execute.mock.calls[0][0]).toContain(
+      `"vote"."ended_at" > "vote"."started_at"`,
+    );
+    expect(em.getConnection().execute.mock.calls[1][0]).toContain(
+      `"vote"."ended_at" > "vote"."started_at"`,
+    );
+    expect(em.getConnection().execute.mock.calls[1][0]).not.toContain(
+      'billing_orders',
+    );
   });
 
   it('persists the user principal binding for a commission member', async () => {
@@ -455,6 +500,7 @@ function createMockEntityManager(): MockEntityManager {
     getTransactionContext: jest
       .fn<string, []>()
       .mockReturnValue('transaction-context'),
+    getContext: jest.fn<MockEntityManager, []>(),
     getConnection: jest
       .fn<
         {
@@ -467,6 +513,7 @@ function createMockEntityManager(): MockEntityManager {
       >()
       .mockReturnValue({ execute }),
   } as MockEntityManager;
+  em.getContext.mockReturnValue(em);
   em.transactional.mockImplementation((work) => work(em));
 
   return em;

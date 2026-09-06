@@ -52,14 +52,17 @@ pnpm start:dev
 # production mode
 pnpm start:prod
 
-# payment outbox worker development mode
+# payment outbox and vote schedule worker development mode
 pnpm start:worker:dev
 
-# payment outbox worker production mode
+# payment outbox and vote schedule worker production mode
 pnpm start:worker:prod
 ```
 
-The API and payment outbox worker are independent process entrypoints. Scale
+The API and background worker are independent process entrypoints. The worker
+dispatches payment outbox messages and automatically changes a paid
+`FINALIZED` vote to `OPEN` when `startedAt` is reached, then changes it to
+`CLOSED` when `endedAt` is reached. Scale
 only the API deployment with an HPA by running `start:prod`; run
 `start:worker:prod` in a separate worker deployment with its own replica
 policy. Increasing API replicas never creates additional polling loops.
@@ -67,6 +70,13 @@ policy. Increasing API replicas never creates additional polling loops.
 Worker delivery remains at-least-once. More than one worker replica can safely
 claim different messages through PostgreSQL leases and `FOR UPDATE SKIP
 LOCKED`, but worker concurrency must be scaled independently from HTTP load.
+
+`POST /votes` and `PATCH /votes/:voteId` accept optional ISO 8601 `startedAt`
+and `endedAt` fields. Automatic transitions require an explicit positive window
+(`endedAt > startedAt`). A create request that omits the schedule retains the
+legacy zero-length window and is not auto-transitioned; an update that omits
+either field preserves its stored value. Payment completion finalizes the vote
+but does not open it early—the worker owns the time-based transition.
 
 ### Server APIs
 

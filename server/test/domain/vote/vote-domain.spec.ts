@@ -60,6 +60,8 @@ describe('vote domain aggregates', () => {
       identityVerificationPolicy: IdentityVerificationPolicy.of({
         required: false,
       }),
+      startedAt: new Date('2026-08-09T00:00:00.000Z'),
+      endedAt: new Date('2026-08-10T00:00:00.000Z'),
       status: VoteStatus.Draft,
     });
 
@@ -150,6 +152,8 @@ describe('vote domain aggregates', () => {
       identityVerificationPolicy: IdentityVerificationPolicy.of({
         required: false,
       }),
+      startedAt: new Date('2026-08-09T00:00:00.000Z'),
+      endedAt: new Date('2026-08-10T00:00:00.000Z'),
       status: VoteStatus.Draft,
     });
 
@@ -187,6 +191,64 @@ describe('vote domain aggregates', () => {
     ]);
     expect(events[0]).toBeInstanceOf(VoteOpened);
     expect(events[1]).toBeInstanceOf(VoteClosed);
+  });
+
+  it('opens and closes only when the configured voting window is due', () => {
+    const vote = VoteAggregate.create({
+      id: 'scheduled-vote',
+      createdByUserPrincipalId: 'user-1',
+      commissionId: 'commission-1',
+      title: 'Scheduled lifecycle',
+      votingChannels: [VotingChannel.Online],
+      defaultPolicy: VotePolicy.of({
+        privacyMode: PrivacyMode.Secret,
+        participationUnit: ParticipationUnit.Individual,
+        resultStorageMode: ResultStorageMode.Database,
+        voteWeightMode: VoteWeightMode.Equal,
+      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of({
+        required: false,
+      }),
+      startedAt: new Date('2026-09-06T10:00:00.000Z'),
+      endedAt: new Date('2026-09-06T11:00:00.000Z'),
+    });
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date('2026-09-06T09:00:00.000Z'),
+    });
+
+    expect(vote.openWhenDue(new Date('2026-09-06T09:59:59.999Z'))).toBe(false);
+    expect(vote.status).toBe(VoteStatus.Finalized);
+    expect(vote.openWhenDue(new Date('2026-09-06T10:00:00.000Z'))).toBe(true);
+    expect(vote.openWhenDue(new Date('2026-09-06T10:00:00.000Z'))).toBe(false);
+    expect(vote.closeWhenDue(new Date('2026-09-06T10:59:59.999Z'))).toBe(false);
+    expect(vote.closeWhenDue(new Date('2026-09-06T11:00:00.000Z'))).toBe(true);
+    expect(vote.closeWhenDue(new Date('2026-09-06T11:00:00.000Z'))).toBe(false);
+    expect(vote.status).toBe(VoteStatus.Closed);
+  });
+
+  it('rejects an inverted voting window', () => {
+    expect(() =>
+      VoteAggregate.create({
+        id: 'invalid-scheduled-vote',
+        createdByUserPrincipalId: 'user-1',
+        commissionId: 'commission-1',
+        title: 'Invalid schedule',
+        votingChannels: [VotingChannel.Online],
+        defaultPolicy: VotePolicy.of({
+          privacyMode: PrivacyMode.Secret,
+          participationUnit: ParticipationUnit.Individual,
+          resultStorageMode: ResultStorageMode.Database,
+          voteWeightMode: VoteWeightMode.Equal,
+        }),
+        identityVerificationPolicy: IdentityVerificationPolicy.of({
+          required: false,
+        }),
+        startedAt: new Date('2026-09-06T11:00:00.000Z'),
+        endedAt: new Date('2026-09-06T10:00:00.000Z'),
+      }),
+    ).toThrow('vote end time must not be before start time');
   });
 
   it('keeps a paid vote locked until terminal refund and then allows another billing order', () => {

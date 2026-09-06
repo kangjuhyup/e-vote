@@ -48,6 +48,8 @@ export class UpdateVoteHandler {
       identityVerificationPolicy: IdentityVerificationPolicy.of(
         command.identityVerificationPolicy,
       ),
+      startedAt: command.startedAt,
+      endedAt: command.endedAt,
     });
     await this.repository.save(vote);
     return ManageVoteResult.of({ id: vote.id, status: vote.status });

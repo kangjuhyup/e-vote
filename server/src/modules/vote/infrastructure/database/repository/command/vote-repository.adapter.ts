@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
 import type { VoteRepositoryPort } from '../../../../application/port/persistence/command/vote-repository.port';
+import type { VoteScheduleRepositoryPort } from '../../../../application/port/persistence/command/vote-schedule-repository.port';
 import type { VoteAggregate } from '../../../../domain/vote/vote.aggregate';
 import type { VoteSetupLifecyclePort } from '../../../../../../shared/application/port/capability/vote-billing.port';
 import { ManagedResourceNotFoundError } from '../../../../../../shared/application/error/managed-resource.error';
@@ -29,7 +30,10 @@ type VoteEntityPersistence = Omit<VotePersistence, 'votingChannels'> & {
 
 @Injectable()
 export class VoteRepositoryAdapter
-  implements VoteRepositoryPort, VoteSetupLifecyclePort
+  implements
+    VoteRepositoryPort,
+    VoteScheduleRepositoryPort,
+    VoteSetupLifecyclePort
 {
   constructor(private readonly em: EntityManager) {}
 
@@ -49,6 +53,14 @@ export class VoteRepositoryAdapter
     )) as unknown as VoteEntityPersistence | null;
 
     return entity ? this.toDomain(entity) : undefined;
+  }
+
+  async findDueForOpening(now: Date, limit: number): Promise<VoteAggregate[]> {
+    return this.findDue('FINALIZED', 'started_at', now, limit, true);
+  }
+
+  async findDueForClosing(now: Date, limit: number): Promise<VoteAggregate[]> {
+    return this.findDue('OPEN', 'ended_at', now, limit);
   }
 
   async lockVote(voteId: string): Promise<void> {
@@ -78,8 +90,8 @@ export class VoteRepositoryAdapter
       vote.id,
       {
         description: '',
-        startedAt: now,
-        endedAt: now,
+        startedAt: vote.startedAt,
+        endedAt: vote.endedAt,
         createdAt: now,
       },
       {
@@ -98,6 +110,8 @@ export class VoteRepositoryAdapter
           : null,
         billingOrderId: vote.billingOrderId ?? null,
         finalizedAt: vote.finalizedAt ?? null,
+        startedAt: vote.startedAt,
+        endedAt: vote.endedAt,
         title: vote.title,
         defaultPrivacyMode: vote.defaultPolicy.privacyMode,
         defaultParticipationUnit: vote.defaultPolicy.participationUnit,
@@ -181,6 +195,8 @@ export class VoteRepositoryAdapter
       electoralRollSnapshot: entity.electoralRollSnapshot,
       billingOrderId: entity.billingOrderId,
       finalizedAt: entity.finalizedAt,
+      startedAt: entity.startedAt,
+      endedAt: entity.endedAt,
       title: entity.title,
       votingChannels: loadedItems<VotePersistence['votingChannels'][number]>(
         entity.votingChannels,
@@ -194,5 +210,58 @@ export class VoteRepositoryAdapter
       identityVerificationMethod: entity.identityVerificationMethod,
       status: entity.status,
     } satisfies VotePersistence);
+  }
+
+  private async findDue(
+    status: 'FINALIZED' | 'OPEN',
+    dueColumn: 'started_at' | 'ended_at',
+    now: Date,
+    limit: number,
+    requirePaidOrder = false,
+  ): Promise<VoteAggregate[]> {
+    const em = this.em.getContext();
+    const rows = await em
+      .getConnection()
+      .execute<Array<{ readonly id: string }>>(
+        `
+          select "vote"."id"
+          from "votes" as "vote"
+          where "vote"."status" = ?
+            and "vote"."${dueColumn}" <= ?
+            and "vote"."ended_at" > "vote"."started_at"
+          ${
+            requirePaidOrder
+              ? `and exists (
+                  select 1
+                  from "billing_orders" as "billing_order"
+                  where "billing_order"."id" = "vote"."billing_order_id"
+                    and "billing_order"."vote_id" = "vote"."id"
+                    and "billing_order"."status" = 'PAID'
+                )`
+              : ''
+          }
+          order by "vote"."${dueColumn}", "vote"."id"
+          limit ?
+          for update skip locked
+        `,
+        [status, now, limit],
+        'all',
+        em.getTransactionContext(),
+      );
+    if (rows.length === 0) return [];
+
+    const { VoteEntity } = await getDatabaseEntities();
+    const ids = rows.map((row) => row.id);
+    const entities = (await em.find(
+      VoteEntity as any,
+      { id: { $in: ids } } as any,
+      {
+        populate: VOTE_RELATIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
+      },
+    )) as unknown as VoteEntityPersistence[];
+    const byId = new Map(entities.map((entity) => [entity.id, entity]));
+
+    return ids.map((id) => this.toDomain(byId.get(id)!));
   }
 }
