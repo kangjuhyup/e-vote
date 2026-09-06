@@ -26,7 +26,7 @@ export function BillingPriceBreakdown({
       />
       {order.identityVerificationRequired ? (
         <PriceRow
-          description={`1회 × ${formatBillingAmount(order.identityVerificationUnitPrice, order.currency)}`}
+          description={`${order.pricingUnitCount.toLocaleString()}구간 × ${formatBillingAmount(order.identityVerificationUnitPrice, order.currency)}`}
           label="본인인증 필수"
           value={formatBillingAmount(
             order.identityVerificationAmount,

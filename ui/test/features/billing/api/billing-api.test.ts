@@ -15,7 +15,7 @@ function jsonResponse(data: unknown, status = 200) {
 
 function billingOrder(overrides: Record<string, unknown> = {}) {
   return {
-    amount: 15_000,
+    amount: 18_000,
     baseAmount: 6_000,
     blockchainStorageAmount: 6_000,
     blockchainStorageCount: 2,
@@ -25,7 +25,7 @@ function billingOrder(overrides: Record<string, unknown> = {}) {
     currency: "KRW",
     electorCount: 120,
     id: "billing-order-1",
-    identityVerificationAmount: 3_000,
+    identityVerificationAmount: 6_000,
     identityVerificationRequired: true,
     identityVerificationUnitPrice: 3_000,
     issuedAt: "2026-08-31T00:00:00.000Z",
@@ -51,13 +51,13 @@ describe("billing api", () => {
     });
 
     await expect(client.createVoteUsageOrder("vote/1")).resolves.toMatchObject({
-      amount: 15_000,
+      amount: 18_000,
       baseAmount: 6_000,
       blockchainStorageAmount: 6_000,
       blockchainStorageCount: 2,
       blockchainStorageUnitPrice: 3_000,
       id: "billing-order-1",
-      identityVerificationAmount: 3_000,
+      identityVerificationAmount: 6_000,
       identityVerificationRequired: true,
       identityVerificationUnitPrice: 3_000,
     });
@@ -102,12 +102,12 @@ describe("billing api", () => {
         reason: "투표 일정 변경",
       }),
     ).resolves.toMatchObject({
-      amount: 15_000,
+      amount: 18_000,
       baseAmount: 6_000,
       blockchainStorageAmount: 6_000,
       blockchainStorageCount: 2,
       blockchainStorageUnitPrice: 3_000,
-      identityVerificationAmount: 3_000,
+      identityVerificationAmount: 6_000,
       identityVerificationRequired: true,
       identityVerificationUnitPrice: 3_000,
     });
