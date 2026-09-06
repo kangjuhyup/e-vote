@@ -60,7 +60,8 @@ describe('ParticipationController', () => {
       selectedCandidateId: 'candidate-1',
       votingChannel: 'ONSITE',
       fieldVotingSessionId: 'session-1',
-      participatedAt: new Date('2026-08-20T01:00:00.000Z'),
+      participatedAt: expect.any(Date) as Date,
+      userPrincipalId: TEST_USER_PRINCIPAL.id,
     });
   });
 

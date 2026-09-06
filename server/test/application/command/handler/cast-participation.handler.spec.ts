@@ -125,6 +125,19 @@ function createOpenFieldVotingSessionFixture(): FieldVotingSessionAggregate {
 }
 
 describe('CastParticipationHandler', () => {
+  it('rejects another principal or an unverified elector before saving a ballot', async () => {
+    const f = createHandlerFixture();
+    f.participantAccess.isAuthorized.mockResolvedValue(false);
+    await expect(f.handler.execute(createCastCommand())).rejects.toThrow(
+      'does not own this elector',
+    );
+    expect(f.participantAccess.isAuthorized).toHaveBeenCalledWith(
+      'vote-1',
+      'elector-1',
+      'user-1',
+    );
+    expect(f.saveCastWithResult).not.toHaveBeenCalled();
+  });
   it('casts onsite participation through an open field voting session', async () => {
     const fixture = createHandlerFixture();
 
@@ -282,7 +295,9 @@ function createHandlerFixture(options: HandlerFixtureOptions = {}) {
     save: jest.fn().mockResolvedValue(undefined),
   };
 
+  const participantAccess = { isAuthorized: jest.fn().mockResolvedValue(true) };
   return {
+    participantAccess,
     handler: new CastParticipationHandler(
       voteRepository,
       voteDetailRepository,
@@ -290,6 +305,7 @@ function createHandlerFixture(options: HandlerFixtureOptions = {}) {
       candidateRepository,
       participationRepository,
       fieldVotingSessionRepository,
+      participantAccess,
     ),
     runCastTransaction,
     save,
@@ -304,6 +320,7 @@ function createCastCommand(
   }> = {},
 ): CastParticipationCommand {
   return CastParticipationCommand.of({
+    userPrincipalId: 'user-1',
     voteId: 'vote-1',
     voteDetailId: 'detail-1',
     electorId: 'elector-1',

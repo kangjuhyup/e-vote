@@ -10,6 +10,7 @@ export const ELECTOR_IDENTITY_VERIFICATION_PORT = Symbol(
 
 export type ElectorIdentityVerificationRequest = {
   readonly voteId: string;
+  readonly userPrincipalId: string;
   readonly elector: ElectorAggregate;
   readonly evidence: ElectorIdentityVerificationEvidence;
 };
@@ -18,4 +19,10 @@ export interface ElectorIdentityVerificationPort {
   verify(
     request: ElectorIdentityVerificationRequest,
   ): Promise<ElectorIdentityVerificationResult>;
+}
+
+export class ElectorIdentityVerificationUnavailableError extends Error {
+  constructor() {
+    super('elector identity verification provider is not configured');
+  }
 }

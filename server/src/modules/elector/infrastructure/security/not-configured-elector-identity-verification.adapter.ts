@@ -1,3 +1,4 @@
+import { ElectorIdentityVerificationUnavailableError } from '../../application/port/gateway/elector-identity-verification.port';
 import { Injectable } from '@nestjs/common';
 import type { ElectorIdentityVerificationPort } from '../../application/port/gateway/elector-identity-verification.port';
 import type { ElectorIdentityVerificationResult } from '../../domain/vo/elector-identity-verification.vo';
@@ -5,6 +6,6 @@ import type { ElectorIdentityVerificationResult } from '../../domain/vo/elector-
 @Injectable()
 export class NotConfiguredElectorIdentityVerificationAdapter implements ElectorIdentityVerificationPort {
   verify(): Promise<ElectorIdentityVerificationResult> {
-    throw new Error('elector identity verification provider is not configured');
+    throw new ElectorIdentityVerificationUnavailableError();
   }
 }

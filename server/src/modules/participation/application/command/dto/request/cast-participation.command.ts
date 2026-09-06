@@ -2,6 +2,7 @@ import type { VotingChannel } from '../../../../../../shared/domain/voting/type/
 
 export class CastParticipationCommand {
   private constructor(
+    readonly userPrincipalId: string,
     readonly voteId: string,
     readonly voteDetailId: string,
     readonly electorId: string,
@@ -12,6 +13,7 @@ export class CastParticipationCommand {
   ) {}
 
   static of(params: {
+    userPrincipalId: string;
     voteId: string;
     voteDetailId: string;
     electorId: string;
@@ -21,6 +23,7 @@ export class CastParticipationCommand {
     participatedAt: Date;
   }): CastParticipationCommand {
     return new CastParticipationCommand(
+      params.userPrincipalId,
       params.voteId,
       params.voteDetailId,
       params.electorId,

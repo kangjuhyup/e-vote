@@ -66,7 +66,7 @@ import {
   databaseRepositoryPortTokens,
   databaseRepositoryProviders,
 } from './composition/database-repository.providers';
-import { NotConfiguredElectorIdentityVerificationAdapter } from './modules/elector/infrastructure/security/not-configured-elector-identity-verification.adapter';
+import { createElectorIdentityVerificationAdapter } from './modules/elector/infrastructure/security/elector-identity-verification.config';
 import { RandomSmsSenderAdapter } from './shared/infrastructure/sms/random-sms-sender.adapter';
 import { ElectorSmsRecipientAccessAdapter } from './modules/elector/infrastructure/sms/elector-sms-recipient-access.adapter';
 import { CandidateAttachmentController } from './modules/vote/presentation/candidate/candidate-attachment.controller';
@@ -266,7 +266,7 @@ import { BillingOrderOutboxRecorder } from './modules/billing/application/event/
     GetBillingOrderHandler,
     {
       provide: ELECTOR_IDENTITY_VERIFICATION_PORT,
-      useClass: NotConfiguredElectorIdentityVerificationAdapter,
+      useFactory: createElectorIdentityVerificationAdapter,
     },
     {
       provide: SMS_SENDER_PORT,

@@ -83,6 +83,8 @@ export function createElectorEntities(
           .fieldName('elector_id')
           .inversedBy('identityVerifications')
           .deleteRule('cascade'),
+      userPrincipalId: p.string().fieldName('user_principal_id').nullable(),
+      isMock: p.boolean().fieldName('is_mock').default(false),
       provider: p.string().$type<IdentityVerificationProvider>(),
       method: p.string().$type<IdentityVerificationMethod>(),
       status: p.string().$type<IdentityVerificationStatus>(),
