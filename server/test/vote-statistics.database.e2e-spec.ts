@@ -751,7 +751,9 @@ async function authenticateParticipant(
 ) {
   return new AuthenticateElectorHandler(
     new ElectorRepositoryAdapter(em),
-    new MockElectorIdentityVerificationAdapter(),
+    new MockElectorIdentityVerificationAdapter(() =>
+      transactionId.startsWith('mock-failure:') ? 1 : 0,
+    ),
     new ElectorVerificationRepositoryAdapter(em),
   ).execute(
     AuthenticateElectorCommand.of({
