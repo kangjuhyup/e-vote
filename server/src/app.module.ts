@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
 import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
 import { ConfirmAttachmentUploadHandler } from './modules/vote/application/command/handler/confirm-attachment-upload.handler';
 import { AddElectoralRollMembersHandler } from './modules/electoral-roll/application/command/handler/add-electoral-roll-members.handler';
@@ -113,8 +112,6 @@ import { SMS_SENDER_PORT } from './shared/application/port/gateway/sms-sender.po
 import { SMS_RECIPIENT_ACCESS_PORT } from './shared/application/port/capability/sms-recipient-access.port';
 import { BillingOrderController } from './modules/billing/presentation/billing-order/billing-order.controller';
 import { CreateVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/create-vote-usage-billing-order.handler';
-import { MarkBillingOrderPaidHandler } from './modules/billing/application/command/handler/mark-billing-order-paid.handler';
-import { MarkBillingOrderRefundedHandler } from './modules/billing/application/command/handler/mark-billing-order-refunded.handler';
 import { GetBillingOrderHandler } from './modules/billing/application/query/handler/get-billing-order.handler';
 import { BillingOrderCancellationController } from './modules/billing/presentation/billing-order/billing-order-cancellation.controller';
 import { CancelVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
@@ -124,23 +121,6 @@ import {
   VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
 } from './shared/application/port/capability/vote-billing.port';
 import { BillingOrderOutboxRecorder } from './modules/billing/application/event/billing-order-outbox.recorder';
-import { IntegrationEventOutboxDispatcher } from './shared/application/messaging/integration-event-outbox.dispatcher';
-import { INTEGRATION_EVENT_PUBLISHER_PORT } from './shared/application/port/messaging/integration-event-publisher.port';
-import { NotConfiguredIntegrationEventPublisherAdapter } from './platform/outbox/infrastructure/messaging/not-configured-integration-event-publisher.adapter';
-import {
-  OUTBOX_MESSAGE_REPOSITORY_PORT,
-  type OutboxMessageRepositoryPort,
-} from './shared/application/port/messaging/outbox-message-repository.port';
-import type { IntegrationEventPublisherPort } from './shared/application/port/messaging/integration-event-publisher.port';
-import { MockPaymentIntegrationEventPublisherAdapter } from './modules/billing/infrastructure/payment/mock-payment-integration-event-publisher.adapter';
-import { MockPaymentOutboxWorker } from './modules/billing/infrastructure/payment/mock-payment-outbox.worker';
-import {
-  MOCK_PAYMENT_RANDOM_SOURCE,
-  PAYMENT_INTEGRATION_MODE,
-  type MockPaymentRandomSource,
-  type PaymentIntegrationMode,
-  resolvePaymentIntegrationMode,
-} from './modules/billing/infrastructure/payment/payment-integration.config';
 
 @Module({
   imports: [
@@ -269,58 +249,7 @@ import {
     BillingOrderOutboxRecorder,
     CreateVoteUsageBillingOrderHandler,
     CancelVoteUsageBillingOrderHandler,
-    MarkBillingOrderPaidHandler,
-    MarkBillingOrderRefundedHandler,
     GetBillingOrderHandler,
-    {
-      provide: PAYMENT_INTEGRATION_MODE,
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService): PaymentIntegrationMode =>
-        resolvePaymentIntegrationMode({
-          NODE_ENV: configService.get<string>('NODE_ENV'),
-          BILLING_PAYMENT_MODE: configService.get<string>(
-            'BILLING_PAYMENT_MODE',
-          ),
-        }),
-    },
-    {
-      provide: MOCK_PAYMENT_RANDOM_SOURCE,
-      useValue: Math.random,
-    },
-    {
-      provide: INTEGRATION_EVENT_PUBLISHER_PORT,
-      inject: [
-        PAYMENT_INTEGRATION_MODE,
-        MarkBillingOrderPaidHandler,
-        MarkBillingOrderRefundedHandler,
-        MOCK_PAYMENT_RANDOM_SOURCE,
-      ],
-      useFactory: (
-        mode: PaymentIntegrationMode,
-        markPaidHandler: MarkBillingOrderPaidHandler,
-        markRefundedHandler: MarkBillingOrderRefundedHandler,
-        random: MockPaymentRandomSource,
-      ): IntegrationEventPublisherPort =>
-        mode === 'mock'
-          ? new MockPaymentIntegrationEventPublisherAdapter(
-              markPaidHandler,
-              markRefundedHandler,
-              random,
-            )
-          : new NotConfiguredIntegrationEventPublisherAdapter(),
-    },
-    {
-      provide: IntegrationEventOutboxDispatcher,
-      inject: [
-        OUTBOX_MESSAGE_REPOSITORY_PORT,
-        INTEGRATION_EVENT_PUBLISHER_PORT,
-      ],
-      useFactory: (
-        repository: OutboxMessageRepositoryPort,
-        publisher: IntegrationEventPublisherPort,
-      ) => new IntegrationEventOutboxDispatcher(repository, publisher),
-    },
-    MockPaymentOutboxWorker,
     {
       provide: ELECTOR_IDENTITY_VERIFICATION_PORT,
       useClass: NotConfiguredElectorIdentityVerificationAdapter,

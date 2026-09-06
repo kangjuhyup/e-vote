@@ -14,13 +14,7 @@ import { ElectorSmsRecipientAccessAdapter } from '../src/modules/elector/infrast
 import { BillingOrderCancellationController } from '../src/modules/billing/presentation/billing-order/billing-order-cancellation.controller';
 import { CancelVoteUsageBillingOrderHandler } from '../src/modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
 import { DATABASE_HEALTH_PORT } from '../src/shared/application/port/health/database-health.port';
-import { MarkBillingOrderRefundedHandler } from '../src/modules/billing/application/command/handler/mark-billing-order-refunded.handler';
 import { MockPaymentOutboxWorker } from '../src/modules/billing/infrastructure/payment/mock-payment-outbox.worker';
-import {
-  MOCK_PAYMENT_RANDOM_SOURCE,
-  PAYMENT_INTEGRATION_MODE,
-} from '../src/modules/billing/infrastructure/payment/payment-integration.config';
-import { INTEGRATION_EVENT_PUBLISHER_PORT } from '../src/shared/application/port/messaging/integration-event-publisher.port';
 
 describe('AppModule', () => {
   it('registers vote statistics query endpoints and handlers', () => {
@@ -84,21 +78,13 @@ describe('AppModule', () => {
     expect(providers).toContain(CancelVoteUsageBillingOrderHandler);
   });
 
-  it('registers development mock payment dispatch behind the payment mode', () => {
+  it('does not register the payment outbox worker in the HTTP API process', () => {
     const providers = Reflect.getMetadata(
       MODULE_METADATA.PROVIDERS,
       AppModule,
     ) as unknown[];
 
-    expect(providers).toEqual(
-      expect.arrayContaining([
-        MarkBillingOrderRefundedHandler,
-        MockPaymentOutboxWorker,
-        expect.objectContaining({ provide: PAYMENT_INTEGRATION_MODE }),
-        expect.objectContaining({ provide: MOCK_PAYMENT_RANDOM_SOURCE }),
-        expect.objectContaining({ provide: INTEGRATION_EVENT_PUBLISHER_PORT }),
-      ]),
-    );
+    expect(providers).not.toContain(MockPaymentOutboxWorker);
   });
 
   it('does not override the database health port owned by DatabaseModule', () => {

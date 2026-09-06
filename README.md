@@ -17,7 +17,7 @@ pnpm install
 
 ```bash
 # start PostgreSQL, Redis, the OIDC auth service and admin UI, the API server,
-# and the vote UI
+# payment outbox worker, and the vote UI as separate processes
 pnpm dev
 ```
 
@@ -51,7 +51,22 @@ pnpm start:dev
 
 # production mode
 pnpm start:prod
+
+# payment outbox worker development mode
+pnpm start:worker:dev
+
+# payment outbox worker production mode
+pnpm start:worker:prod
 ```
+
+The API and payment outbox worker are independent process entrypoints. Scale
+only the API deployment with an HPA by running `start:prod`; run
+`start:worker:prod` in a separate worker deployment with its own replica
+policy. Increasing API replicas never creates additional polling loops.
+
+Worker delivery remains at-least-once. More than one worker replica can safely
+claim different messages through PostgreSQL leases and `FOR UPDATE SKIP
+LOCKED`, but worker concurrency must be scaled independently from HTTP load.
 
 ### Server APIs
 
