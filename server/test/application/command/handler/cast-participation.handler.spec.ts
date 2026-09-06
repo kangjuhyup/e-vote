@@ -166,6 +166,41 @@ describe('CastParticipationHandler', () => {
     });
   });
 
+  it('rejects participation until the elector signature upload is confirmed', async () => {
+    const fixture = createHandlerFixture({ signatureConfirmed: false });
+
+    await expect(fixture.handler.execute(createCastCommand())).rejects.toThrow(
+      'confirmed elector signature is required for participation',
+    );
+    expect(fixture.signatureAccess.hasConfirmedSignature).toHaveBeenCalledWith(
+      'vote-1',
+      'elector-1',
+    );
+    expect(fixture.saveCastWithResult).not.toHaveBeenCalled();
+  });
+
+  it('also requires a confirmed image signature for online participation', async () => {
+    const fixture = createHandlerFixture({
+      signatureConfirmed: false,
+      votingChannels: [VotingChannel.Online],
+    });
+
+    await expect(
+      fixture.handler.execute(
+        createCastCommand({
+          votingChannel: VotingChannel.Online,
+          fieldVotingSessionId: undefined,
+        }),
+      ),
+    ).rejects.toThrow('confirmed elector signature is required');
+
+    expect(fixture.signatureAccess.hasConfirmedSignature).toHaveBeenCalledWith(
+      'vote-1',
+      'elector-1',
+    );
+    expect(fixture.saveCastWithResult).not.toHaveBeenCalled();
+  });
+
   it.each([VoteStatus.Draft, VoteStatus.Closed, VoteStatus.Canceled])(
     'rejects participation while the parent vote is %s',
     async (status) => {
@@ -229,6 +264,8 @@ type HandlerFixtureOptions = {
   readonly voteStatus?: VoteStatus;
   readonly voteDetailStatus?: VoteDetailStatus;
   readonly candidate?: CandidateAggregate;
+  readonly signatureConfirmed?: boolean;
+  readonly votingChannels?: readonly VotingChannel[];
 };
 
 function createHandlerFixture(options: HandlerFixtureOptions = {}) {
@@ -246,7 +283,9 @@ function createHandlerFixture(options: HandlerFixtureOptions = {}) {
     nextId: jest.fn().mockReturnValue('vote-unused'),
     findById: jest
       .fn()
-      .mockResolvedValue(createVoteFixture(options.voteStatus)),
+      .mockResolvedValue(
+        createVoteFixture(options.voteStatus, options.votingChannels),
+      ),
     save: jest.fn().mockResolvedValue(undefined),
   };
   const voteDetailRepository: VoteDetailRepositoryPort = {
@@ -296,8 +335,14 @@ function createHandlerFixture(options: HandlerFixtureOptions = {}) {
   };
 
   const participantAccess = { isAuthorized: jest.fn().mockResolvedValue(true) };
+  const signatureAccess = {
+    hasConfirmedSignature: jest
+      .fn()
+      .mockResolvedValue(options.signatureConfirmed ?? true),
+  };
   return {
     participantAccess,
+    signatureAccess,
     handler: new CastParticipationHandler(
       voteRepository,
       voteDetailRepository,
@@ -306,6 +351,7 @@ function createHandlerFixture(options: HandlerFixtureOptions = {}) {
       participationRepository,
       fieldVotingSessionRepository,
       participantAccess,
+      signatureAccess,
     ),
     runCastTransaction,
     save,

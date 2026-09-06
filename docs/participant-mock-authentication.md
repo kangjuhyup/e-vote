@@ -28,7 +28,38 @@ Content-Type: application/json
 
 Use a fresh identifier per attempt. `mock-success:<unique-id>` succeeds; `mock-failure:<unique-id>` records a failed attempt and returns `identityVerified: false`. The identifier after the colon accepts 8–100 ASCII letters, digits or hyphens. Reusing a consumed transaction returns 409, including failed transactions. A previously authenticated elector cannot be rebound to another account (403).
 
-4. Submit a ballot using the same login:
+4. Request a signature upload URL with the same login, PUT the exact image bytes to the returned `uploadUrl`, and confirm the upload. PNG, JPEG and WebP images up to 5 MiB are accepted.
+
+```http
+POST /votes/{voteId}/electors/{electorId}/signature/upload-url
+Authorization: Bearer <access-token>
+Content-Type: application/json
+
+{
+  "originalName": "signature.png",
+  "mimeType": "image/png",
+  "sizeBytes": 1024
+}
+```
+
+After uploading, confirm the same metadata and returned opaque key:
+
+```http
+POST /votes/{voteId}/electors/{electorId}/signature/confirm
+Authorization: Bearer <access-token>
+Content-Type: application/json
+
+{
+  "storageKey": "<returned storage key>",
+  "originalName": "signature.png",
+  "mimeType": "image/png",
+  "sizeBytes": 1024
+}
+```
+
+The confirm response includes the persisted `fileId`. Uploading bytes alone is not sufficient; confirm must return HTTP 201 before participation can be submitted.
+
+5. Submit a ballot using the same login:
 
 ```http
 POST /participations
@@ -44,11 +75,11 @@ Content-Type: application/json
 }
 ```
 
-Success returns HTTP 201 and the participation identifier, child vote identifier and status. The existing response envelope wraps endpoint data. The parent and child vote must be open, the channel enabled, and the candidate selectable. Duplicate individual/group participation remains rejected. Secret ballots keep candidate selections out of participation records.
+Success returns HTTP 201 and the participation identifier, child vote identifier and status. The existing response envelope wraps endpoint data. The parent and child vote must be open, the channel enabled, the candidate selectable, and the elector signature confirmed. Duplicate individual/group participation remains rejected. Secret ballots keep candidate selections out of participation records.
 
 `verifiedAt` and `participatedAt` are optional compatibility fields. Supplied values are not trusted: timestamps are recorded by the server. The authenticated principal always comes from the Bearer token, never a request-body user ID.
 
-All participation channels now require the caller's own verified elector binding, even if the vote does not require external identity verification. Onsite/visit participation still requires the appropriate field session; this API does not grant operators authority to submit on another participant's behalf.
+All participation channels now require the caller's own verified elector binding and confirmed signature, even if the vote does not require external identity verification. Onsite/visit participation still requires the appropriate field session; this API does not grant operators authority to submit on another participant's behalf.
 
 401 means login is missing/invalid; 403 means there is no matching participant binding; 409 covers state conflicts and duplicate/replayed requests; 503 means no identity provider is configured. Turning Mock mode off also makes persisted Mock bindings unusable for participation.
 

@@ -26,6 +26,10 @@ import { PARTICIPATION_REPOSITORY_PORT } from '../../port/persistence/command/pa
 import type { ParticipationRepositoryPort } from '../../port/persistence/command/participation-repository.port';
 import { CastParticipationCommand } from '../dto/request/cast-participation.command';
 import { CastParticipationResult } from '../dto/response/cast-participation-result.dto';
+import {
+  ELECTOR_SIGNATURE_ACCESS_PORT,
+  type ElectorSignatureAccessPort,
+} from '../../../../../shared/application/port/capability/elector-signature-access.port';
 
 export class VoteNotFoundError extends Error {
   constructor() {
@@ -57,6 +61,12 @@ export class CandidateNotFoundError extends Error {
   }
 }
 
+export class ParticipationSignatureRequiredError extends Error {
+  constructor() {
+    super('confirmed elector signature is required for participation');
+  }
+}
+
 @Injectable()
 export class CastParticipationHandler {
   private readonly eligibilityPolicy = new ParticipationEligibilityPolicy();
@@ -76,6 +86,8 @@ export class CastParticipationHandler {
     private readonly fieldVotingSessionRepository: FieldVotingSessionAccessPort,
     @Inject(ELECTOR_PARTICIPANT_ACCESS_PORT)
     private readonly participantAccess: ElectorParticipantAccessPort,
+    @Inject(ELECTOR_SIGNATURE_ACCESS_PORT)
+    private readonly signatureAccess: ElectorSignatureAccessPort,
   ) {}
 
   async execute(
@@ -133,6 +145,15 @@ export class CastParticipationHandler {
 
     if (!elector) {
       throw new ElectorNotFoundError();
+    }
+
+    if (
+      !(await this.signatureAccess.hasConfirmedSignature(
+        command.voteId,
+        command.electorId,
+      ))
+    ) {
+      throw new ParticipationSignatureRequiredError();
     }
 
     if (!candidate || !candidate.isSelectableForVoteDetail(voteDetail.id)) {

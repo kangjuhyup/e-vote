@@ -25,6 +25,7 @@ import {
   CastParticipationHandler,
   ElectorNotFoundError,
   FieldVotingSessionNotFoundError,
+  ParticipationSignatureRequiredError,
   VoteDetailNotFoundError,
   VoteNotFoundError,
 } from '../../application/command/handler/cast-participation.handler';
@@ -104,7 +105,11 @@ function throwParticipationHttpError(error: unknown): never {
     throw new NotFoundException(error.message);
   }
 
-  if (error instanceof DomainError || isUniqueConstraintError(error)) {
+  if (
+    error instanceof ParticipationSignatureRequiredError ||
+    error instanceof DomainError ||
+    isUniqueConstraintError(error)
+  ) {
     throw new ConflictException(
       error instanceof Error ? error.message : 'participation already exists',
     );
