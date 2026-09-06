@@ -8,6 +8,7 @@ import { CastParticipationCommand } from '../../../../src/modules/participation/
 import {
   CandidateNotFoundError,
   CastParticipationHandler,
+  ParticipationSignatureRequiredError,
 } from '../../../../src/modules/participation/application/command/handler/cast-participation.handler';
 import { ParticipationStatus } from '../../../../src/shared/domain/voting/type/participation-status.type';
 import { DomainError } from '../../../../src/shared/domain/domain-error';
@@ -95,6 +96,7 @@ describe('ParticipationController', () => {
   });
 
   it.each([
+    new ParticipationSignatureRequiredError(),
     new DomainError('vote must be open for participation'),
     Object.assign(new Error('duplicate participation'), { code: '23505' }),
   ])('maps a participation conflict to HTTP 409', async (error) => {

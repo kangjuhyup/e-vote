@@ -26,6 +26,9 @@ import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from './modules/participation/ap
 import { AppModule } from './app.module';
 import { PlatformModule } from './platform/platform.module';
 import { VoteScheduleWorker } from './modules/vote/infrastructure/scheduling/vote-schedule.worker';
+import { ParticipationController } from './modules/participation/presentation/participation/participation.controller';
+import { ElectorSignatureController } from './modules/elector/presentation/elector/elector-signature.controller';
+import { CastParticipationHandler } from './modules/participation/application/command/handler/cast-participation.handler';
 
 @Module({
   providers: [
@@ -196,6 +199,27 @@ import { VoteScheduleWorker } from './modules/vote/infrastructure/scheduling/vot
 class PlatformModuleStub {}
 
 describe('AppModule', () => {
+  it('registers signature upload and participation submission in the API root', () => {
+    const controllers =
+      (Reflect.getMetadata(
+        MODULE_METADATA.CONTROLLERS,
+        AppModule,
+      ) as unknown[]) ?? [];
+    const providers =
+      (Reflect.getMetadata(
+        MODULE_METADATA.PROVIDERS,
+        AppModule,
+      ) as unknown[]) ?? [];
+
+    expect(controllers).toEqual(
+      expect.arrayContaining([
+        ElectorSignatureController,
+        ParticipationController,
+      ]),
+    );
+    expect(providers).toContain(CastParticipationHandler);
+  });
+
   it('does not register background schedule polling in the API root', () => {
     const providers =
       (Reflect.getMetadata(
