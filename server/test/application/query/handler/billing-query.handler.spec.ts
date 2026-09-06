@@ -15,6 +15,8 @@ describe('billing query handler', () => {
     pricingUnitSize: 100,
     pricingUnitCount: 2,
     unitPrice: 3_000,
+    blockchainStorageCount: 0,
+    blockchainStorageUnitPrice: 3_000,
     amount: 6_000,
     currency: 'KRW',
     status: 'PENDING_PAYMENT',

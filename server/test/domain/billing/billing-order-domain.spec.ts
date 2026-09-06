@@ -49,6 +49,36 @@ describe('billing order domain', () => {
     },
   );
 
+  it('adds 3,000 KRW for each blockchain result storage', () => {
+    expect(VoteUsagePrice.forElectorCount(120, 2)).toMatchObject({
+      electorCount: 120,
+      pricingUnitCount: 2,
+      unitPrice: { amount: 3_000, currency: 'KRW' },
+      baseAmount: 6_000,
+      blockchainStorageCount: 2,
+      blockchainStorageUnitPrice: 3_000,
+      blockchainStorageAmount: 6_000,
+      money: { amount: 12_000, currency: 'KRW' },
+    });
+  });
+
+  it('rejects a price snapshot whose total excludes the blockchain surcharge', () => {
+    expect(() =>
+      VoteUsagePrice.reconstitute({
+        productCode: 'VOTE_USAGE',
+        productName: '투표 개설 이용료',
+        electorCount: 120,
+        pricingUnitSize: 100,
+        pricingUnitCount: 2,
+        unitPrice: 3_000,
+        blockchainStorageCount: 2,
+        blockchainStorageUnitPrice: 3_000,
+        amount: 6_000,
+        currency: 'KRW',
+      }),
+    ).toThrow('vote usage total price is invalid');
+  });
+
   it('rejects an order for a vote without eligible electors', () => {
     expect(() => VoteUsagePrice.forElectorCount(0)).toThrow(
       'elector count must be positive',
@@ -84,6 +114,28 @@ describe('billing order domain', () => {
     expect(order.status).toBe(BillingOrderStatus.Paid);
     expect(order.version).toBe(2);
     expect(order.grantsVoteUsage()).toBe(true);
+  });
+
+  it('requires payment of the blockchain surcharge in the final total', () => {
+    const order = issueOrder(VoteUsagePrice.forElectorCount(120, 2));
+
+    expect(() =>
+      order.markPaid({
+        paymentId: 'payment-1',
+        paidAmount: 6_000,
+        paidCurrency: 'KRW',
+        paidAt: issuedAt,
+      }),
+    ).toThrow('paid amount does not match');
+
+    order.markPaid({
+      paymentId: 'payment-1',
+      paidAmount: 12_000,
+      paidCurrency: 'KRW',
+      paidAt: issuedAt,
+    });
+
+    expect(order.status).toBe(BillingOrderStatus.Paid);
   });
 
   it('handles the same payment success idempotently', () => {
@@ -221,6 +273,8 @@ describe('billing order domain', () => {
       pricingUnitSize: 100,
       pricingUnitCount: 1,
       unitPrice: 3_000,
+      blockchainStorageCount: 0,
+      blockchainStorageUnitPrice: 3_000,
       amount: 3_000,
       currency: 'KRW',
       version: 7,

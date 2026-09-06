@@ -10,6 +10,10 @@ type GetBillingOrderResponseSource = {
   readonly pricingUnitSize: number;
   readonly pricingUnitCount: number;
   readonly unitPrice: number;
+  readonly baseAmount: number;
+  readonly blockchainStorageCount: number;
+  readonly blockchainStorageUnitPrice: number;
+  readonly blockchainStorageAmount: number;
   readonly amount: number;
   readonly currency: string;
   readonly status: string;
@@ -35,6 +39,10 @@ export class GetBillingOrderResponse {
   @ApiProperty() readonly pricingUnitSize: number;
   @ApiProperty() readonly pricingUnitCount: number;
   @ApiProperty() readonly unitPrice: number;
+  @ApiProperty() readonly baseAmount: number;
+  @ApiProperty() readonly blockchainStorageCount: number;
+  @ApiProperty() readonly blockchainStorageUnitPrice: number;
+  @ApiProperty() readonly blockchainStorageAmount: number;
   @ApiProperty() readonly amount: number;
   @ApiProperty() readonly currency: string;
   @ApiProperty({
@@ -66,6 +74,10 @@ export class GetBillingOrderResponse {
     this.pricingUnitSize = source.pricingUnitSize;
     this.pricingUnitCount = source.pricingUnitCount;
     this.unitPrice = source.unitPrice;
+    this.baseAmount = source.baseAmount;
+    this.blockchainStorageCount = source.blockchainStorageCount;
+    this.blockchainStorageUnitPrice = source.blockchainStorageUnitPrice;
+    this.blockchainStorageAmount = source.blockchainStorageAmount;
     this.amount = source.amount;
     this.currency = source.currency;
     this.status = source.status;

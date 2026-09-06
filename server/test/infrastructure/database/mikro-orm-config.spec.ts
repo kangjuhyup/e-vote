@@ -1,6 +1,6 @@
 import mikroOrmConfig from '../../../mikro-orm.config';
 import { createDatabaseConfig } from '../../../src/platform/database/database.config';
-import { createDatabaseEntityRegistry } from '../../../src/composition/database-entity.registry';
+import { createDatabaseEntityRegistry } from '../../../src/composition/persistence/database-entity.registry';
 
 describe('mikro orm cli config', () => {
   it('reuses the database config mapping and attaches the PostgreSQL driver', async () => {

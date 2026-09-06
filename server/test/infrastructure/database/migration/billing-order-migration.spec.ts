@@ -30,6 +30,13 @@ describe('billing order migration', () => {
     ),
     'utf8',
   );
+  const blockchainPricingMigrationSource = readFileSync(
+    join(
+      process.cwd(),
+      'src/platform/database/migration/Migration20260906030000.ts',
+    ),
+    'utf8',
+  );
 
   it('creates immutable-price billing orders with idempotency constraints', () => {
     expect(migrationSource).toContain('create table "billing_orders"');
@@ -104,6 +111,24 @@ describe('billing order migration', () => {
     );
     expect(finalizationMigrationSource).not.toContain(
       'delete from "billing_orders"',
+    );
+  });
+
+  it('adds immutable blockchain result storage pricing snapshots', () => {
+    expect(blockchainPricingMigrationSource).toContain(
+      '"blockchain_storage_count" integer not null default 0',
+    );
+    expect(blockchainPricingMigrationSource).toContain(
+      '"blockchain_storage_unit_price" integer not null default 3000',
+    );
+    expect(blockchainPricingMigrationSource).toContain(
+      'billing_orders_blockchain_storage_count_non_negative',
+    );
+    expect(blockchainPricingMigrationSource).toContain(
+      '"blockchain_storage_unit_price" * "blockchain_storage_count"',
+    );
+    expect(blockchainPricingMigrationSource).toContain(
+      'cannot remove blockchain billing snapshots',
     );
   });
 });

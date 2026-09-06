@@ -9,12 +9,21 @@ export class VoteUsagePrice {
     readonly pricingUnitSize: number,
     readonly pricingUnitCount: number,
     readonly unitPrice: Money,
+    readonly baseAmount: number,
+    readonly blockchainStorageCount: number,
+    readonly blockchainStorageUnitPrice: number,
+    readonly blockchainStorageAmount: number,
     readonly money: Money,
   ) {}
 
-  static forElectorCount(electorCount: number): VoteUsagePrice {
+  static forElectorCount(
+    electorCount: number,
+    blockchainStorageCount = 0,
+  ): VoteUsagePrice {
     const pricingUnitSize = 100;
     const pricingUnitCount = Math.ceil(electorCount / pricingUnitSize);
+    const unitPrice = 3_000;
+    const blockchainStorageUnitPrice = 3_000;
 
     return VoteUsagePrice.reconstitute({
       productCode: 'VOTE_USAGE',
@@ -22,8 +31,12 @@ export class VoteUsagePrice {
       electorCount,
       pricingUnitSize,
       pricingUnitCount,
-      unitPrice: 3_000,
-      amount: pricingUnitCount * 3_000,
+      unitPrice,
+      blockchainStorageCount,
+      blockchainStorageUnitPrice,
+      amount:
+        pricingUnitCount * unitPrice +
+        blockchainStorageCount * blockchainStorageUnitPrice,
       currency: 'KRW',
     });
   }
@@ -35,6 +48,8 @@ export class VoteUsagePrice {
     pricingUnitSize: number;
     pricingUnitCount: number;
     unitPrice: number;
+    blockchainStorageCount: number;
+    blockchainStorageUnitPrice: number;
     amount: number;
     currency: string;
   }): VoteUsagePrice {
@@ -68,6 +83,22 @@ export class VoteUsagePrice {
     ) {
       throw new DomainError('vote usage pricing unit count is invalid');
     }
+    if (
+      !Number.isSafeInteger(params.blockchainStorageCount) ||
+      params.blockchainStorageCount < 0
+    ) {
+      throw new DomainError(
+        'vote usage blockchain storage count must be non-negative',
+      );
+    }
+    if (
+      !Number.isSafeInteger(params.blockchainStorageUnitPrice) ||
+      params.blockchainStorageUnitPrice <= 0
+    ) {
+      throw new DomainError(
+        'vote usage blockchain storage unit price must be positive',
+      );
+    }
 
     const unitPrice = Money.of({
       amount: params.unitPrice,
@@ -77,7 +108,10 @@ export class VoteUsagePrice {
       amount: params.amount,
       currency: params.currency,
     });
-    if (money.amount !== unitPrice.amount * params.pricingUnitCount) {
+    const baseAmount = unitPrice.amount * params.pricingUnitCount;
+    const blockchainStorageAmount =
+      params.blockchainStorageUnitPrice * params.blockchainStorageCount;
+    if (money.amount !== baseAmount + blockchainStorageAmount) {
       throw new DomainError('vote usage total price is invalid');
     }
 
@@ -89,6 +123,10 @@ export class VoteUsagePrice {
         params.pricingUnitSize,
         params.pricingUnitCount,
         unitPrice,
+        baseAmount,
+        params.blockchainStorageCount,
+        params.blockchainStorageUnitPrice,
+        blockchainStorageAmount,
         money,
       ),
     );

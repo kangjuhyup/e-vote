@@ -1,4 +1,4 @@
-import { createDatabaseEntityRegistry } from '../src/composition/database-entity.registry';
+import { createDatabaseEntityRegistry } from '../src/composition/persistence/database-entity.registry';
 import { configureDatabaseEntityRegistryFactory } from '../src/platform/database/repository/database-repository.util';
 import { ElectorVerificationRepositoryAdapter } from '../src/modules/elector/infrastructure/database/repository/command/elector-verification-repository.adapter';
 import { AuthenticateElectorHandler } from '../src/modules/elector/application/command/handler/authenticate-elector.handler';

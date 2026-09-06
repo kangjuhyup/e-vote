@@ -9,6 +9,7 @@ import { BillingOrderAggregate } from '../../../../src/modules/billing/domain/bi
 import { VoteUsagePrice } from '../../../../src/modules/billing/domain/vo/vote-usage-price.vo';
 import type { VoteAccessPort } from '../../../../src/shared/application/port/capability/vote-access.port';
 import type { VoteElectorCountAccessPort } from '../../../../src/shared/application/port/capability/vote-elector-count-access.port';
+import type { VoteResultStoragePricingAccessPort } from '../../../../src/shared/application/port/capability/vote-result-storage-pricing-access.port';
 import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
 import { CancelVoteUsageBillingOrderCommand } from '../../../../src/modules/billing/application/command/dto/request/cancel-vote-usage-billing-order.command';
@@ -27,6 +28,7 @@ describe('billing command handlers', () => {
       repository,
       voteAccessStub(),
       electorCountStub(120),
+      blockchainStorageCountStub(2),
       voteLifecycle,
       new BillingOrderOutboxRecorder(outbox),
       transactionManagerStub(),
@@ -40,7 +42,11 @@ describe('billing command handlers', () => {
       electorCount: 120,
       pricingUnitCount: 2,
       unitPrice: 3_000,
-      amount: 6_000,
+      baseAmount: 6_000,
+      blockchainStorageCount: 2,
+      blockchainStorageUnitPrice: 3_000,
+      blockchainStorageAmount: 6_000,
+      amount: 12_000,
       currency: 'KRW',
       status: 'PENDING_PAYMENT',
     });
@@ -68,11 +74,13 @@ describe('billing command handlers', () => {
     const existing = order();
     const repository = repositoryStub(existing);
     const countEligibleElectors = jest.fn();
+    const countBlockchainVoteDetails = jest.fn();
     const outbox = outboxStub();
     const handler = new CreateVoteUsageBillingOrderHandler(
       repository,
       voteAccessStub({ billingOrderId: existing.id }),
       { countEligibleElectors },
+      { countBlockchainVoteDetails },
       voteLifecycleStub(),
       new BillingOrderOutboxRecorder(outbox),
       transactionManagerStub(),
@@ -82,6 +90,7 @@ describe('billing command handlers', () => {
       id: existing.id,
     });
     expect(countEligibleElectors).not.toHaveBeenCalled();
+    expect(countBlockchainVoteDetails).not.toHaveBeenCalled();
     expect(repository.save.mock.calls).toHaveLength(0);
     expect(outbox.append.mock.calls).toHaveLength(0);
   });
@@ -96,6 +105,7 @@ describe('billing command handlers', () => {
         billingOrderId: existing.id,
       }),
       electorCountStub(120),
+      blockchainStorageCountStub(0),
       voteLifecycleStub(),
       new BillingOrderOutboxRecorder(outboxStub()),
       transactionManagerStub(),
@@ -114,6 +124,7 @@ describe('billing command handlers', () => {
       repository,
       voteAccessStub({ createdByUserPrincipalId: 'another-user' }),
       electorCountStub(120),
+      blockchainStorageCountStub(0),
       voteLifecycleStub(),
       new BillingOrderOutboxRecorder(outbox),
       transactionManagerStub(),
@@ -132,6 +143,7 @@ describe('billing command handlers', () => {
       repository,
       voteAccessStub({}),
       electorCountStub(120),
+      blockchainStorageCountStub(0),
       voteLifecycleStub(),
       new BillingOrderOutboxRecorder(outboxStub()),
       transactionManagerStub(),
@@ -468,6 +480,7 @@ describe('billing command handlers', () => {
       repository,
       voteAccessStub(),
       electorCountStub(120),
+      blockchainStorageCountStub(0),
       voteLifecycleStub(),
       new BillingOrderOutboxRecorder(outbox),
       transactionManagerStub(),
@@ -537,6 +550,14 @@ describe('billing command handlers', () => {
   function electorCountStub(count: number): VoteElectorCountAccessPort {
     return {
       countEligibleElectors: jest.fn().mockResolvedValue(count),
+    };
+  }
+
+  function blockchainStorageCountStub(
+    count: number,
+  ): VoteResultStoragePricingAccessPort {
+    return {
+      countBlockchainVoteDetails: jest.fn().mockResolvedValue(count),
     };
   }
 

@@ -69,6 +69,8 @@ export class BillingOrderRepositoryAdapter
         pricingUnitSize: order.pricingUnitSize,
         pricingUnitCount: order.pricingUnitCount,
         unitPrice: order.unitPrice,
+        blockchainStorageCount: order.blockchainStorageCount,
+        blockchainStorageUnitPrice: order.blockchainStorageUnitPrice,
         amount: order.price.amount,
         currency: order.price.currency,
         issuedAt: order.issuedAt,

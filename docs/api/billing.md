@@ -70,12 +70,19 @@ Content-Type: application/json
 
 클라이언트는 금액을 지정할 수 없습니다. 서버가 주문 생성 시점의 `ELIGIBLE`
 선거인 수를 조회하고, 시작된 100명 구간마다 3,000원을 계산합니다. 예를 들어
-1–100명은 3,000원, 101–200명은 6,000원입니다. 선거인 수와 계산 근거는 주문에
-스냅샷으로 저장되므로 이후 선거인이 변경되어도 기존 주문 금액은 변하지
-않습니다. 같은 투표의 주문자가 다시 요청하면 새로운 주문을 만들지 않고 기존
-주문을 반환합니다. 이 멱등 경로는 투표 생성자 필드가 없는 레거시 투표도 주문에
-기록된 주문자를 권한 기준으로 사용합니다. `CANCELED` 또는 `REFUNDED`로 종료된
-주문은 이력으로 보존하며, 투표 생성자는 새 주문을 만들 수 있습니다.
+1–100명은 3,000원, 101–200명은 6,000원입니다. 여기에 유효 결과 저장 방식이
+`BLOCKCHAIN`인 하위 투표마다 3,000원을 추가합니다. 하위 투표에 저장 방식 재정의가
+있으면 그 값을 사용하고, 없으면 상위 투표의 기본 저장 방식을 사용합니다. 취소된
+하위 투표는 추가금 대상에서 제외합니다.
+
+선거인 수, 블록체인 저장 대상 수와 각 단가는 주문에 스냅샷으로 저장되므로 이후
+정책이 변경되어도 기존 주문 금액은 변하지 않습니다. `baseAmount`는 선거인 구간
+기본 요금, `blockchainStorageAmount`는 블록체인 저장 추가금이며 `amount`는 둘을
+합친 최종 결제 금액입니다. 같은 투표의 주문자가 다시 요청하면 새로운 주문을
+만들지 않고 기존 주문을 반환합니다. 이 멱등 경로는 투표 생성자 필드가 없는
+레거시 투표도 주문에 기록된 주문자를 권한 기준으로 사용합니다. `CANCELED` 또는
+`REFUNDED`로 종료된 주문은 이력으로 보존하며, 투표 생성자는 새 주문을 만들 수
+있습니다.
 
 ```json
 {
@@ -87,7 +94,11 @@ Content-Type: application/json
   "pricingUnitSize": 100,
   "pricingUnitCount": 2,
   "unitPrice": 3000,
-  "amount": 6000,
+  "baseAmount": 6000,
+  "blockchainStorageCount": 2,
+  "blockchainStorageUnitPrice": 3000,
+  "blockchainStorageAmount": 6000,
+  "amount": 12000,
   "currency": "KRW",
   "status": "PENDING_PAYMENT",
   "issuedAt": "2026-08-30T10:00:00.000Z",
@@ -107,7 +118,8 @@ Content-Type: application/json
 GET /billing/vote-usage-orders/{billingOrderId}
 ```
 
-응답에는 주문 당시의 상품·가격 스냅샷과 현재 상태가 포함됩니다.
+응답에는 주문 당시의 상품·가격 스냅샷과 현재 상태가 포함됩니다. 생성 응답과
+동일하게 기본 요금, 블록체인 저장 추가금, 최종 결제 금액을 반환합니다.
 
 ## 투표 이용료 주문과 확정 투표 취소
 
@@ -141,7 +153,11 @@ Payment 서비스가 환불을 완료해 주문이 `REFUNDED`로 전이하면 �
   "pricingUnitSize": 100,
   "pricingUnitCount": 2,
   "unitPrice": 3000,
-  "amount": 6000,
+  "baseAmount": 6000,
+  "blockchainStorageCount": 2,
+  "blockchainStorageUnitPrice": 3000,
+  "blockchainStorageAmount": 6000,
+  "amount": 12000,
   "currency": "KRW",
   "status": "REFUND_PENDING",
   "paymentId": "payment-1",

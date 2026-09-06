@@ -9,6 +9,10 @@ type BillingOrderResultSource = {
   readonly pricingUnitSize: number;
   readonly pricingUnitCount: number;
   readonly unitPrice: number;
+  readonly baseAmount: number;
+  readonly blockchainStorageCount: number;
+  readonly blockchainStorageUnitPrice: number;
+  readonly blockchainStorageAmount: number;
   readonly price: { readonly amount: number; readonly currency: string };
   readonly status: BillingOrderStatus;
   readonly paymentId?: string;
@@ -32,6 +36,10 @@ export class BillingOrderResult {
     readonly pricingUnitSize: number,
     readonly pricingUnitCount: number,
     readonly unitPrice: number,
+    readonly baseAmount: number,
+    readonly blockchainStorageCount: number,
+    readonly blockchainStorageUnitPrice: number,
+    readonly blockchainStorageAmount: number,
     readonly amount: number,
     readonly currency: string,
     readonly status: BillingOrderStatus,
@@ -56,6 +64,10 @@ export class BillingOrderResult {
       source.pricingUnitSize,
       source.pricingUnitCount,
       source.unitPrice,
+      source.baseAmount,
+      source.blockchainStorageCount,
+      source.blockchainStorageUnitPrice,
+      source.blockchainStorageAmount,
       source.price.amount,
       source.price.currency,
       source.status,

@@ -2,12 +2,12 @@ import { DatabaseModule } from '../../../src/platform/database/database.module';
 import {
   databaseRepositoryPortTokens,
   databaseRepositoryProviders,
-} from '../../../src/composition/database-repository.providers';
+} from '../../../src/composition/persistence/database-repository.providers';
 import {
   databaseTransactionPortTokens,
   databaseTransactionProviders,
 } from '../../../src/platform/database/database-transaction.providers';
-import { createDatabaseEntityRegistry } from '../../../src/composition/database-entity.registry';
+import { createDatabaseEntityRegistry } from '../../../src/composition/persistence/database-entity.registry';
 import { DATABASE_HEALTH_PORT } from '../../../src/shared/application/port/health/database-health.port';
 import { MikroOrmDatabaseHealthAdapter } from '../../../src/platform/database/mikro-orm-database-health.adapter';
 

@@ -28,6 +28,10 @@ export function createBillingEntities(
       pricingUnitSize: p.integer().fieldName('pricing_unit_size'),
       pricingUnitCount: p.integer().fieldName('pricing_unit_count'),
       unitPrice: p.integer().fieldName('unit_price'),
+      blockchainStorageCount: p.integer().fieldName('blockchain_storage_count'),
+      blockchainStorageUnitPrice: p
+        .integer()
+        .fieldName('blockchain_storage_unit_price'),
       amount: p.integer(),
       currency: p.string().length(3),
       status: p.string().$type<BillingOrderStatus>(),

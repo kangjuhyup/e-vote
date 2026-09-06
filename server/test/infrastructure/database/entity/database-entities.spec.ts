@@ -1,5 +1,5 @@
 import { createDatabaseConfig } from '../../../../src/platform/database/database.config';
-import { createDatabaseEntityRegistry } from '../../../../src/composition/database-entity.registry';
+import { createDatabaseEntityRegistry } from '../../../../src/composition/persistence/database-entity.registry';
 
 describe('database entities registry', () => {
   it('registers all ERD entity classes', async () => {

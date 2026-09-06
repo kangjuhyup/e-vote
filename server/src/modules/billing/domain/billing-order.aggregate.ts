@@ -28,6 +28,8 @@ type BillingOrderParams = {
   readonly pricingUnitSize: number;
   readonly pricingUnitCount: number;
   readonly unitPrice: number;
+  readonly blockchainStorageCount: number;
+  readonly blockchainStorageUnitPrice: number;
   readonly amount: number;
   readonly currency: string;
   readonly status: BillingOrderStatusType;
@@ -57,6 +59,10 @@ export class BillingOrderAggregate {
     readonly pricingUnitSize: number,
     readonly pricingUnitCount: number,
     readonly unitPrice: number,
+    readonly baseAmount: number,
+    readonly blockchainStorageCount: number,
+    readonly blockchainStorageUnitPrice: number,
+    readonly blockchainStorageAmount: number,
     readonly price: Money,
     public status: BillingOrderStatusType,
     public paymentId: string | undefined,
@@ -91,6 +97,8 @@ export class BillingOrderAggregate {
       pricingUnitSize: params.price.pricingUnitSize,
       pricingUnitCount: params.price.pricingUnitCount,
       unitPrice: params.price.unitPrice.amount,
+      blockchainStorageCount: params.price.blockchainStorageCount,
+      blockchainStorageUnitPrice: params.price.blockchainStorageUnitPrice,
       amount: params.price.money.amount,
       currency: params.price.money.currency,
       status: BillingOrderStatus.PendingPayment,
@@ -329,6 +337,8 @@ export class BillingOrderAggregate {
       pricingUnitSize: params.pricingUnitSize,
       pricingUnitCount: params.pricingUnitCount,
       unitPrice: params.unitPrice,
+      blockchainStorageCount: params.blockchainStorageCount,
+      blockchainStorageUnitPrice: params.blockchainStorageUnitPrice,
       amount: params.amount,
       currency: params.currency,
     });
@@ -345,6 +355,10 @@ export class BillingOrderAggregate {
       pricing.pricingUnitSize,
       pricing.pricingUnitCount,
       pricing.unitPrice.amount,
+      pricing.baseAmount,
+      pricing.blockchainStorageCount,
+      pricing.blockchainStorageUnitPrice,
+      pricing.blockchainStorageAmount,
       pricing.money,
       params.status,
       params.paymentId,

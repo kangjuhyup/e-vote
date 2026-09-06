@@ -1,19 +1,19 @@
 import type { AnyEntity, EntityClass } from '@mikro-orm/core';
-import { createAttachmentEntities } from '../modules/vote/infrastructure/database/entity/attachment.entities';
-import { createElectionCommissionEntities } from '../modules/election-commission/infrastructure/database/entity/election-commission.entities';
-import { createElectoralRollEntities } from '../modules/electoral-roll/infrastructure/database/entity/electoral-roll.entities';
-import { createElectorEntities } from '../modules/elector/infrastructure/database/entity/elector.entities';
+import { createAttachmentEntities } from '../../modules/vote/infrastructure/database/entity/attachment.entities';
+import { createElectionCommissionEntities } from '../../modules/election-commission/infrastructure/database/entity/election-commission.entities';
+import { createElectoralRollEntities } from '../../modules/electoral-roll/infrastructure/database/entity/electoral-roll.entities';
+import { createElectorEntities } from '../../modules/elector/infrastructure/database/entity/elector.entities';
 import {
   registerEntities,
   type DatabaseEntityClasses,
   type DatabaseEntityFactoryContext,
-} from '../platform/database/entity/entity-factory-context';
-import { createParticipationEntities } from '../modules/participation/infrastructure/database/entity/participation.entities';
-import { createResultEntities } from '../modules/participation/infrastructure/database/entity/result.entities';
-import { createVoteEntities } from '../modules/vote/infrastructure/database/entity/vote.entities';
-import { createSmsDispatchEntities } from '../shared/infrastructure/database/entity/sms-dispatch.entities';
-import { createBillingEntities } from '../modules/billing/infrastructure/database/entity/billing.entities';
-import { createIntegrationOutboxEntities } from '../platform/outbox/infrastructure/database/entity/integration-outbox.entities';
+} from '../../platform/database/entity/entity-factory-context';
+import { createParticipationEntities } from '../../modules/participation/infrastructure/database/entity/participation.entities';
+import { createResultEntities } from '../../modules/participation/infrastructure/database/entity/result.entities';
+import { createVoteEntities } from '../../modules/vote/infrastructure/database/entity/vote.entities';
+import { createSmsDispatchEntities } from '../../shared/infrastructure/database/entity/sms-dispatch.entities';
+import { createBillingEntities } from '../../modules/billing/infrastructure/database/entity/billing.entities';
+import { createIntegrationOutboxEntities } from '../../platform/outbox/infrastructure/database/entity/integration-outbox.entities';
 
 export interface DatabaseEntityRegistry extends DatabaseEntityClasses {
   readonly databaseEntities: EntityClass<AnyEntity>[];

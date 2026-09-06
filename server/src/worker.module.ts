@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import {
   databaseRepositoryPortTokens,
   databaseRepositoryProviders,
-} from './composition/database-repository.providers';
-import { createDatabaseEntityRegistry } from './composition/database-entity.registry';
+} from './composition/persistence/database-repository.providers';
+import { createDatabaseEntityRegistry } from './composition/persistence/database-entity.registry';
 import { BillingOrderOutboxRecorder } from './modules/billing/application/event/billing-order-outbox.recorder';
 import { MarkBillingOrderPaidHandler } from './modules/billing/application/command/handler/mark-billing-order-paid.handler';
 import { MarkBillingOrderRefundedHandler } from './modules/billing/application/command/handler/mark-billing-order-refunded.handler';

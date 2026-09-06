@@ -63,11 +63,11 @@ import { GetVoteTurnoutHandler } from './modules/participation/application/query
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PlatformModule } from './platform/platform.module';
-import { createDatabaseEntityRegistry } from './composition/database-entity.registry';
+import { createDatabaseEntityRegistry } from './composition/persistence/database-entity.registry';
 import {
   databaseRepositoryPortTokens,
   databaseRepositoryProviders,
-} from './composition/database-repository.providers';
+} from './composition/persistence/database-repository.providers';
 import { createElectorIdentityVerificationAdapter } from './modules/elector/infrastructure/security/elector-identity-verification.config';
 import { RandomSmsSenderAdapter } from './shared/infrastructure/sms/random-sms-sender.adapter';
 import { ElectorSmsRecipientAccessAdapter } from './modules/elector/infrastructure/sms/elector-sms-recipient-access.adapter';

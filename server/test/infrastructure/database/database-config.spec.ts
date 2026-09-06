@@ -1,5 +1,5 @@
 import { createDatabaseConfig } from '../../../src/platform/database/database.config';
-import { createDatabaseEntityRegistry } from '../../../src/composition/database-entity.registry';
+import { createDatabaseEntityRegistry } from '../../../src/composition/persistence/database-entity.registry';
 
 describe('database config', () => {
   it('maps environment variables to PostgreSQL MikroORM options', async () => {

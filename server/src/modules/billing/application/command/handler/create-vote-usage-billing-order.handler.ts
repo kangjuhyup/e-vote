@@ -9,6 +9,10 @@ import {
   type VoteElectorCountAccessPort,
 } from '../../../../../shared/application/port/capability/vote-elector-count-access.port';
 import {
+  VOTE_RESULT_STORAGE_PRICING_ACCESS_PORT,
+  type VoteResultStoragePricingAccessPort,
+} from '../../../../../shared/application/port/capability/vote-result-storage-pricing-access.port';
+import {
   VOTE_SETUP_LIFECYCLE_PORT,
   type VoteSetupLifecyclePort,
 } from '../../../../../shared/application/port/capability/vote-billing.port';
@@ -42,6 +46,8 @@ export class CreateVoteUsageBillingOrderHandler {
     private readonly voteAccess: VoteAccessPort,
     @Inject(VOTE_ELECTOR_COUNT_ACCESS_PORT)
     private readonly electorCountAccess: VoteElectorCountAccessPort,
+    @Inject(VOTE_RESULT_STORAGE_PRICING_ACCESS_PORT)
+    private readonly resultStoragePricingAccess: VoteResultStoragePricingAccessPort,
     @Inject(VOTE_SETUP_LIFECYCLE_PORT)
     private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
     private readonly outboxRecorder: BillingOrderOutboxRecorder,
@@ -80,7 +86,12 @@ export class CreateVoteUsageBillingOrderHandler {
     const electorCount = await this.electorCountAccess.countEligibleElectors(
       vote.id,
     );
-    const price = VoteUsagePrice.forElectorCount(electorCount);
+    const blockchainStorageCount =
+      await this.resultStoragePricingAccess.countBlockchainVoteDetails(vote.id);
+    const price = VoteUsagePrice.forElectorCount(
+      electorCount,
+      blockchainStorageCount,
+    );
     const order = BillingOrderAggregate.issue({
       id: billingOrderId,
       voteId: vote.id,
