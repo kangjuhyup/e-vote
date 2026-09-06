@@ -48,6 +48,8 @@ export class CreateVoteHandler {
       identityVerificationPolicy: IdentityVerificationPolicy.of(
         command.identityVerificationPolicy,
       ),
+      startedAt: command.startedAt,
+      endedAt: command.endedAt,
       status: VoteStatus.Draft,
     });
 

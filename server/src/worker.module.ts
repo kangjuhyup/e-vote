@@ -22,6 +22,11 @@ import { NotConfiguredIntegrationEventPublisherAdapter } from './platform/outbox
 import { IntegrationEventOutboxDispatcher } from './shared/application/messaging/integration-event-outbox.dispatcher';
 import { VOTE_SETUP_LIFECYCLE_PORT } from './shared/application/port/capability/vote-billing.port';
 import { VOTE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-repository.port';
+import { VOTE_SCHEDULE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-schedule-repository.port';
+import { ProcessDueVoteSchedulesHandler } from './modules/vote/application/command/handler/process-due-vote-schedules.handler';
+import { VoteScheduleWorker } from './modules/vote/infrastructure/scheduling/vote-schedule.worker';
+import { VOTE_USAGE_ENTITLEMENT_ACCESS_PORT } from './shared/application/port/capability/vote-billing.port';
+import { BILLING_ORDER_REPOSITORY_PORT } from './modules/billing/application/port/persistence/command/billing-order-repository.port';
 import {
   INTEGRATION_EVENT_PUBLISHER_PORT,
   type IntegrationEventPublisherPort,
@@ -43,6 +48,14 @@ import {
     {
       provide: VOTE_SETUP_LIFECYCLE_PORT,
       useExisting: VOTE_REPOSITORY_PORT,
+    },
+    {
+      provide: VOTE_SCHEDULE_REPOSITORY_PORT,
+      useExisting: VOTE_REPOSITORY_PORT,
+    },
+    {
+      provide: VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
+      useExisting: BILLING_ORDER_REPOSITORY_PORT,
     },
     BillingOrderOutboxRecorder,
     MarkBillingOrderPaidHandler,
@@ -96,6 +109,8 @@ import {
       ) => new IntegrationEventOutboxDispatcher(repository, publisher),
     },
     MockPaymentOutboxWorker,
+    ProcessDueVoteSchedulesHandler,
+    VoteScheduleWorker,
   ],
 })
 export class WorkerModule {}

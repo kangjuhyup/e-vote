@@ -51,6 +51,8 @@ describe('CreateVoteHandler', () => {
         identityVerificationPolicy: {
           required: false,
         },
+        startedAt: new Date('2026-09-06T10:00:00.000Z'),
+        endedAt: new Date('2026-09-06T11:00:00.000Z'),
       }),
     );
 
@@ -67,6 +69,8 @@ describe('CreateVoteHandler', () => {
       createdByUserPrincipalId: 'user-1',
       title: 'Board election',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
+      startedAt: new Date('2026-09-06T10:00:00.000Z'),
+      endedAt: new Date('2026-09-06T11:00:00.000Z'),
       status: VoteStatus.Draft,
     });
   });

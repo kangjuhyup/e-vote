@@ -14,6 +14,7 @@ import { HttpExceptionFilter } from '../src/shared/presentation/common/filter/ht
 import { RvlogHttpExceptionLogger } from '../src/platform/logging/rvlog-http-exception.logger';
 import { MockPaymentOutboxWorker } from '../src/modules/billing/infrastructure/payment/mock-payment-outbox.worker';
 import { MOCK_PAYMENT_RANDOM_SOURCE } from '../src/modules/billing/infrastructure/payment/payment-integration.config';
+import { VoteScheduleWorker } from '../src/modules/vote/infrastructure/scheduling/vote-schedule.worker';
 
 const describeDatabase =
   process.env.COLLECTION_REQUEST_CONTEXT_E2E_DATABASE === 'true'
@@ -200,6 +201,8 @@ describeDatabase('MikroORM collections in Nest request context', () => {
           voteWeightMode: 'EQUAL',
         },
         identityVerificationPolicy: { required: false },
+        startedAt: '2099-01-01T00:00:00.000Z',
+        endedAt: '2099-01-02T00:00:00.000Z',
       })
       .expect(201);
     const voteId = (createdVote.body as { readonly id: string }).id;
@@ -359,6 +362,82 @@ describeDatabase('MikroORM collections in Nest request context', () => {
 
     expect(persistedVote?.created_by_user_principal_id).toBe(USER_PRINCIPAL_ID);
     expect(commissionMemberCount?.member_count).toBe(0);
+  });
+
+  it('automatically opens a paid vote at its start time and closes it at its end time', async () => {
+    const startedAt = new Date('2099-02-01T00:00:00.000Z');
+    const endedAt = new Date('2099-02-01T01:00:00.000Z');
+    const createdVote = await request(app.getHttpServer())
+      .post('/votes')
+      .set('authorization', 'Bearer create-scheduled-vote')
+      .send({
+        commissionId: COMMISSION_ID,
+        title: 'Scheduled paid vote',
+        votingChannels: ['ONLINE'],
+        defaultPolicy: {
+          privacyMode: 'SECRET',
+          participationUnit: 'INDIVIDUAL',
+          resultStorageMode: 'DATABASE',
+          voteWeightMode: 'EQUAL',
+        },
+        identityVerificationPolicy: { required: false },
+        startedAt: startedAt.toISOString(),
+        endedAt: endedAt.toISOString(),
+      })
+      .expect(201);
+    const voteId = (createdVote.body as { readonly id: string }).id;
+
+    await request(app.getHttpServer())
+      .put(`/votes/${voteId}/electoral-roll-snapshot`)
+      .set('authorization', 'Bearer attach-scheduled-roll')
+      .send({ electoralRollId: ELECTORAL_ROLL_ID })
+      .expect(200);
+    const detail = await request(app.getHttpServer())
+      .put(`/votes/${voteId}/sub-votes`)
+      .set('authorization', 'Bearer create-scheduled-detail')
+      .send({ title: 'Scheduled detail', type: 'CANDIDATE', sortOrder: 0 })
+      .expect(201);
+    const voteDetailId = (detail.body as { readonly id: string }).id;
+    await request(app.getHttpServer())
+      .put(`/votes/${voteId}/sub-votes/${voteDetailId}/candidates`)
+      .set('authorization', 'Bearer create-scheduled-candidate')
+      .send({ candidateNo: 1, name: 'Candidate 1' })
+      .expect(201);
+
+    const paymentWorker = moduleRef.get(MockPaymentOutboxWorker);
+    await paymentWorker.onApplicationShutdown();
+    const orderResponse = await request(app.getHttpServer())
+      .post('/billing/vote-usage-orders')
+      .set('authorization', 'Bearer create-scheduled-order')
+      .send({ voteId })
+      .expect(201);
+    const orderId = (orderResponse.body as { readonly id: string }).id;
+    await paymentWorker.dispatchOnce();
+    await expectBillingOrderStatus(orderId, 'PAID');
+    await expectVoteBillingLifecycle(voteId, {
+      status: 'FINALIZED',
+      activeBillingOrderId: orderId,
+      billingOrderStatus: 'PAID',
+    });
+
+    const scheduleWorker = moduleRef.get(VoteScheduleWorker);
+    await expect(
+      scheduleWorker.dispatchOnce(new Date(startedAt.getTime() - 1)),
+    ).resolves.toBe(0);
+    await expect(scheduleWorker.dispatchOnce(startedAt)).resolves.toBe(1);
+    await expectVoteBillingLifecycle(voteId, {
+      status: 'OPEN',
+      activeBillingOrderId: orderId,
+      billingOrderStatus: 'PAID',
+    });
+
+    await expect(scheduleWorker.dispatchOnce(endedAt)).resolves.toBe(1);
+    await expectVoteBillingLifecycle(voteId, {
+      status: 'CLOSED',
+      activeBillingOrderId: orderId,
+      billingOrderStatus: 'PAID',
+    });
+    await expect(scheduleWorker.dispatchOnce(endedAt)).resolves.toBe(0);
   });
 
   it('encrypts roll identity data and carries it through the immutable snapshot to electors', async () => {

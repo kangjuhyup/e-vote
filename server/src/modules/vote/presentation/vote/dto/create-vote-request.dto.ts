@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
+import { IsISO8601, IsOptional, IsUUID } from 'class-validator';
 
 const PrivacyModeBody = {
   Secret: 'SECRET',
@@ -129,6 +129,24 @@ export class CreateVoteBody {
     description: '부모 투표의 본인인증 정책입니다.',
   })
   readonly identityVerificationPolicy!: IdentityVerificationPolicyBody;
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  @ApiProperty({
+    required: false,
+    format: 'date-time',
+    description: '투표 개시 시각입니다. 생략하면 생성 시각을 사용합니다.',
+  })
+  readonly startedAt?: string;
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  @ApiProperty({
+    required: false,
+    format: 'date-time',
+    description: '투표 종료 시각입니다. 생략하면 개시 시각을 사용합니다.',
+  })
+  readonly endedAt?: string;
 }
 
 export class VoteParam {

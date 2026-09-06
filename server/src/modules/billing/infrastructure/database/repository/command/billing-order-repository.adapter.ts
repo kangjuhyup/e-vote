@@ -97,6 +97,20 @@ export class BillingOrderRepositoryAdapter
     );
   }
 
+  async findPaidVoteIds(
+    voteIds: readonly string[],
+  ): Promise<ReadonlySet<string>> {
+    if (voteIds.length === 0) return new Set();
+
+    const { BillingOrderEntity } = await getDatabaseEntities();
+    const rows = (await this.em.find(BillingOrderEntity as any, {
+      voteId: { $in: [...voteIds] },
+      status: BillingOrderStatus.Paid,
+    })) as unknown as readonly { readonly voteId: string }[];
+
+    return new Set(rows.map((row) => row.voteId));
+  }
+
   private async findOne(
     where: Record<string, unknown>,
     lockMode?: LockMode,

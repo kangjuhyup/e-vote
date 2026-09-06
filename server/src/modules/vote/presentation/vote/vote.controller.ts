@@ -64,6 +64,8 @@ export class VoteController {
     @User() user: UserPrincipal,
     @Body() body: CreateVoteBody,
   ): Promise<CreateVoteResponse> {
+    const startedAt = body.startedAt ? new Date(body.startedAt) : new Date();
+    const endedAt = body.endedAt ? new Date(body.endedAt) : startedAt;
     const result = await this.createVoteHandler.execute(
       CreateVoteCommand.of({
         createdByUserPrincipalId: user.id,
@@ -72,6 +74,8 @@ export class VoteController {
         votingChannels: body.votingChannels,
         defaultPolicy: body.defaultPolicy,
         identityVerificationPolicy: body.identityVerificationPolicy,
+        startedAt,
+        endedAt,
       }),
     );
 
@@ -109,7 +113,15 @@ export class VoteController {
   ) {
     return ManageVoteResponse.of(
       await this.updateVoteHandler!.execute(
-        UpdateVoteCommand.of({ voteId: params.voteId, ...body }),
+        UpdateVoteCommand.of({
+          voteId: params.voteId,
+          title: body.title,
+          votingChannels: body.votingChannels,
+          defaultPolicy: body.defaultPolicy,
+          identityVerificationPolicy: body.identityVerificationPolicy,
+          startedAt: body.startedAt ? new Date(body.startedAt) : undefined,
+          endedAt: body.endedAt ? new Date(body.endedAt) : undefined,
+        }),
       ),
     );
   }

@@ -313,7 +313,10 @@ function createVoteAccess(vote: VoteReference | undefined): VoteAccessPort {
 function createEntitlementAccess(
   hasPaidOrder = true,
 ): jest.Mocked<VoteUsageEntitlementAccessPort> {
-  return { hasPaidOrder: jest.fn().mockResolvedValue(hasPaidOrder) };
+  return {
+    hasPaidOrder: jest.fn().mockResolvedValue(hasPaidOrder),
+    findPaidVoteIds: jest.fn().mockResolvedValue(new Set()),
+  };
 }
 
 function createFieldSessionAccess(

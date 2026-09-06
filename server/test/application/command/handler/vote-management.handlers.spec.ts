@@ -171,7 +171,10 @@ function voteRepository(
 }
 
 function entitlementStub(paid: boolean): VoteUsageEntitlementAccessPort {
-  return { hasPaidOrder: jest.fn().mockResolvedValue(paid) };
+  return {
+    hasPaidOrder: jest.fn().mockResolvedValue(paid),
+    findPaidVoteIds: jest.fn().mockResolvedValue(new Set()),
+  };
 }
 
 function transactionManagerStub(): DatabaseTransactionManager {
