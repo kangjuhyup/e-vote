@@ -15,6 +15,8 @@ export type BillingOrderPersistence = {
   readonly unitPrice: number | string;
   readonly blockchainStorageCount: number | string;
   readonly blockchainStorageUnitPrice: number | string;
+  readonly identityVerificationRequired: boolean;
+  readonly identityVerificationUnitPrice: number | string;
   readonly amount: number | string;
   readonly currency: string;
   readonly status: BillingOrderStatus;
@@ -45,6 +47,10 @@ export class BillingOrderMapper {
       unitPrice: Number(entity.unitPrice),
       blockchainStorageCount: Number(entity.blockchainStorageCount),
       blockchainStorageUnitPrice: Number(entity.blockchainStorageUnitPrice),
+      identityVerificationRequired: entity.identityVerificationRequired,
+      identityVerificationUnitPrice: Number(
+        entity.identityVerificationUnitPrice,
+      ),
       amount: Number(entity.amount),
       currency: entity.currency,
       status: entity.status,

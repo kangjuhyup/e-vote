@@ -16,7 +16,9 @@ describe('BillingOrderMapper', () => {
       unitPrice: 3_000,
       blockchainStorageCount: 2,
       blockchainStorageUnitPrice: 3_000,
-      amount: 12_000,
+      identityVerificationRequired: true,
+      identityVerificationUnitPrice: 30_000,
+      amount: 72_000,
       currency: 'KRW',
       status: 'PENDING_PAYMENT',
       paymentId: null,
@@ -35,7 +37,10 @@ describe('BillingOrderMapper', () => {
       blockchainStorageCount: 2,
       blockchainStorageUnitPrice: 3_000,
       blockchainStorageAmount: 6_000,
-      price: { amount: 12_000, currency: 'KRW' },
+      identityVerificationRequired: true,
+      identityVerificationUnitPrice: 30_000,
+      identityVerificationAmount: 60_000,
+      price: { amount: 72_000, currency: 'KRW' },
     });
   });
 });

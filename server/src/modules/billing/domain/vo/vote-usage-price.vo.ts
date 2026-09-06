@@ -13,17 +13,22 @@ export class VoteUsagePrice {
     readonly blockchainStorageCount: number,
     readonly blockchainStorageUnitPrice: number,
     readonly blockchainStorageAmount: number,
+    readonly identityVerificationRequired: boolean,
+    readonly identityVerificationUnitPrice: number,
+    readonly identityVerificationAmount: number,
     readonly money: Money,
   ) {}
 
   static forElectorCount(
     electorCount: number,
     blockchainStorageCount = 0,
+    identityVerificationRequired = false,
   ): VoteUsagePrice {
     const pricingUnitSize = 100;
     const pricingUnitCount = Math.ceil(electorCount / pricingUnitSize);
     const unitPrice = 3_000;
     const blockchainStorageUnitPrice = 3_000;
+    const identityVerificationUnitPrice = 30_000;
 
     return VoteUsagePrice.reconstitute({
       productCode: 'VOTE_USAGE',
@@ -34,9 +39,14 @@ export class VoteUsagePrice {
       unitPrice,
       blockchainStorageCount,
       blockchainStorageUnitPrice,
+      identityVerificationRequired,
+      identityVerificationUnitPrice,
       amount:
         pricingUnitCount * unitPrice +
-        blockchainStorageCount * blockchainStorageUnitPrice,
+        blockchainStorageCount * blockchainStorageUnitPrice +
+        (identityVerificationRequired
+          ? pricingUnitCount * identityVerificationUnitPrice
+          : 0),
       currency: 'KRW',
     });
   }
@@ -50,6 +60,8 @@ export class VoteUsagePrice {
     unitPrice: number;
     blockchainStorageCount: number;
     blockchainStorageUnitPrice: number;
+    identityVerificationRequired: boolean;
+    identityVerificationUnitPrice: number;
     amount: number;
     currency: string;
   }): VoteUsagePrice {
@@ -99,6 +111,19 @@ export class VoteUsagePrice {
         'vote usage blockchain storage unit price must be positive',
       );
     }
+    if (typeof params.identityVerificationRequired !== 'boolean') {
+      throw new DomainError(
+        'vote usage identity verification requirement must be boolean',
+      );
+    }
+    if (
+      !Number.isSafeInteger(params.identityVerificationUnitPrice) ||
+      params.identityVerificationUnitPrice <= 0
+    ) {
+      throw new DomainError(
+        'vote usage identity verification unit price must be positive',
+      );
+    }
 
     const unitPrice = Money.of({
       amount: params.unitPrice,
@@ -111,7 +136,13 @@ export class VoteUsagePrice {
     const baseAmount = unitPrice.amount * params.pricingUnitCount;
     const blockchainStorageAmount =
       params.blockchainStorageUnitPrice * params.blockchainStorageCount;
-    if (money.amount !== baseAmount + blockchainStorageAmount) {
+    const identityVerificationAmount = params.identityVerificationRequired
+      ? params.identityVerificationUnitPrice * params.pricingUnitCount
+      : 0;
+    if (
+      money.amount !==
+      baseAmount + blockchainStorageAmount + identityVerificationAmount
+    ) {
       throw new DomainError('vote usage total price is invalid');
     }
 
@@ -127,6 +158,9 @@ export class VoteUsagePrice {
         params.blockchainStorageCount,
         params.blockchainStorageUnitPrice,
         blockchainStorageAmount,
+        params.identityVerificationRequired,
+        params.identityVerificationUnitPrice,
+        identityVerificationAmount,
         money,
       ),
     );

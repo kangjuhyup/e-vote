@@ -12,6 +12,9 @@ type BillingOrderResponseSource = {
   readonly blockchainStorageCount: number;
   readonly blockchainStorageUnitPrice: number;
   readonly blockchainStorageAmount: number;
+  readonly identityVerificationRequired: boolean;
+  readonly identityVerificationUnitPrice: number;
+  readonly identityVerificationAmount: number;
   readonly amount: number;
   readonly currency: string;
   readonly status: string;
@@ -39,7 +42,12 @@ export class BillingOrderResponse {
   @ApiProperty({ example: 2 }) readonly blockchainStorageCount: number;
   @ApiProperty({ example: 3000 }) readonly blockchainStorageUnitPrice: number;
   @ApiProperty({ example: 6000 }) readonly blockchainStorageAmount: number;
-  @ApiProperty({ example: 12000 }) readonly amount: number;
+  @ApiProperty({ example: true })
+  readonly identityVerificationRequired: boolean;
+  @ApiProperty({ example: 30000 })
+  readonly identityVerificationUnitPrice: number;
+  @ApiProperty({ example: 60000 }) readonly identityVerificationAmount: number;
+  @ApiProperty({ example: 72000 }) readonly amount: number;
   @ApiProperty({ example: 'KRW' }) readonly currency: string;
   @ApiProperty({
     enum: ['PENDING_PAYMENT', 'PAID', 'CANCELED', 'REFUND_PENDING', 'REFUNDED'],
@@ -72,6 +80,9 @@ export class BillingOrderResponse {
     this.blockchainStorageCount = source.blockchainStorageCount;
     this.blockchainStorageUnitPrice = source.blockchainStorageUnitPrice;
     this.blockchainStorageAmount = source.blockchainStorageAmount;
+    this.identityVerificationRequired = source.identityVerificationRequired;
+    this.identityVerificationUnitPrice = source.identityVerificationUnitPrice;
+    this.identityVerificationAmount = source.identityVerificationAmount;
     this.amount = source.amount;
     this.currency = source.currency;
     this.status = source.status;

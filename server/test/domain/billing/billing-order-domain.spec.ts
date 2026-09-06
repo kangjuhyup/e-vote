@@ -74,9 +74,22 @@ describe('billing order domain', () => {
         blockchainStorageCount: 2,
         blockchainStorageUnitPrice: 3_000,
         amount: 6_000,
+        identityVerificationRequired: false,
+        identityVerificationUnitPrice: 30_000,
         currency: 'KRW',
       }),
     ).toThrow('vote usage total price is invalid');
+  });
+
+  it('adds 30,000 KRW per started 100 electors when identity verification is required', () => {
+    expect(VoteUsagePrice.forElectorCount(120, 0, true)).toMatchObject({
+      baseAmount: 6_000,
+      blockchainStorageAmount: 0,
+      identityVerificationRequired: true,
+      identityVerificationUnitPrice: 30_000,
+      identityVerificationAmount: 60_000,
+      money: { amount: 66_000, currency: 'KRW' },
+    });
   });
 
   it('rejects an order for a vote without eligible electors', () => {
@@ -116,8 +129,8 @@ describe('billing order domain', () => {
     expect(order.grantsVoteUsage()).toBe(true);
   });
 
-  it('requires payment of the blockchain surcharge in the final total', () => {
-    const order = issueOrder(VoteUsagePrice.forElectorCount(120, 2));
+  it('requires payment of every surcharge in the final total', () => {
+    const order = issueOrder(VoteUsagePrice.forElectorCount(120, 2, true));
 
     expect(() =>
       order.markPaid({
@@ -130,7 +143,7 @@ describe('billing order domain', () => {
 
     order.markPaid({
       paymentId: 'payment-1',
-      paidAmount: 12_000,
+      paidAmount: 72_000,
       paidCurrency: 'KRW',
       paidAt: issuedAt,
     });
@@ -275,6 +288,8 @@ describe('billing order domain', () => {
       unitPrice: 3_000,
       blockchainStorageCount: 0,
       blockchainStorageUnitPrice: 3_000,
+      identityVerificationRequired: false,
+      identityVerificationUnitPrice: 30_000,
       amount: 3_000,
       currency: 'KRW',
       version: 7,

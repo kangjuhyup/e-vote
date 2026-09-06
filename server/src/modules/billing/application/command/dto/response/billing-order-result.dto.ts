@@ -13,6 +13,9 @@ type BillingOrderResultSource = {
   readonly blockchainStorageCount: number;
   readonly blockchainStorageUnitPrice: number;
   readonly blockchainStorageAmount: number;
+  readonly identityVerificationRequired: boolean;
+  readonly identityVerificationUnitPrice: number;
+  readonly identityVerificationAmount: number;
   readonly price: { readonly amount: number; readonly currency: string };
   readonly status: BillingOrderStatus;
   readonly paymentId?: string;
@@ -40,6 +43,9 @@ export class BillingOrderResult {
     readonly blockchainStorageCount: number,
     readonly blockchainStorageUnitPrice: number,
     readonly blockchainStorageAmount: number,
+    readonly identityVerificationRequired: boolean,
+    readonly identityVerificationUnitPrice: number,
+    readonly identityVerificationAmount: number,
     readonly amount: number,
     readonly currency: string,
     readonly status: BillingOrderStatus,
@@ -68,6 +74,9 @@ export class BillingOrderResult {
       source.blockchainStorageCount,
       source.blockchainStorageUnitPrice,
       source.blockchainStorageAmount,
+      source.identityVerificationRequired,
+      source.identityVerificationUnitPrice,
+      source.identityVerificationAmount,
       source.price.amount,
       source.price.currency,
       source.status,

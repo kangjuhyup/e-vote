@@ -17,6 +17,8 @@ describe('billing query handler', () => {
     unitPrice: 3_000,
     blockchainStorageCount: 0,
     blockchainStorageUnitPrice: 3_000,
+    identityVerificationRequired: false,
+    identityVerificationUnitPrice: 30_000,
     amount: 6_000,
     currency: 'KRW',
     status: 'PENDING_PAYMENT',

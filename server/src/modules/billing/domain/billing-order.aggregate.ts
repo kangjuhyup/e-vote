@@ -30,6 +30,8 @@ type BillingOrderParams = {
   readonly unitPrice: number;
   readonly blockchainStorageCount: number;
   readonly blockchainStorageUnitPrice: number;
+  readonly identityVerificationRequired: boolean;
+  readonly identityVerificationUnitPrice: number;
   readonly amount: number;
   readonly currency: string;
   readonly status: BillingOrderStatusType;
@@ -63,6 +65,9 @@ export class BillingOrderAggregate {
     readonly blockchainStorageCount: number,
     readonly blockchainStorageUnitPrice: number,
     readonly blockchainStorageAmount: number,
+    readonly identityVerificationRequired: boolean,
+    readonly identityVerificationUnitPrice: number,
+    readonly identityVerificationAmount: number,
     readonly price: Money,
     public status: BillingOrderStatusType,
     public paymentId: string | undefined,
@@ -99,6 +104,8 @@ export class BillingOrderAggregate {
       unitPrice: params.price.unitPrice.amount,
       blockchainStorageCount: params.price.blockchainStorageCount,
       blockchainStorageUnitPrice: params.price.blockchainStorageUnitPrice,
+      identityVerificationRequired: params.price.identityVerificationRequired,
+      identityVerificationUnitPrice: params.price.identityVerificationUnitPrice,
       amount: params.price.money.amount,
       currency: params.price.money.currency,
       status: BillingOrderStatus.PendingPayment,
@@ -339,6 +346,8 @@ export class BillingOrderAggregate {
       unitPrice: params.unitPrice,
       blockchainStorageCount: params.blockchainStorageCount,
       blockchainStorageUnitPrice: params.blockchainStorageUnitPrice,
+      identityVerificationRequired: params.identityVerificationRequired,
+      identityVerificationUnitPrice: params.identityVerificationUnitPrice,
       amount: params.amount,
       currency: params.currency,
     });
@@ -359,6 +368,9 @@ export class BillingOrderAggregate {
       pricing.blockchainStorageCount,
       pricing.blockchainStorageUnitPrice,
       pricing.blockchainStorageAmount,
+      pricing.identityVerificationRequired,
+      pricing.identityVerificationUnitPrice,
+      pricing.identityVerificationAmount,
       pricing.money,
       params.status,
       params.paymentId,

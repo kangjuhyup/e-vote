@@ -91,6 +91,7 @@ export class CreateVoteUsageBillingOrderHandler {
     const price = VoteUsagePrice.forElectorCount(
       electorCount,
       blockchainStorageCount,
+      vote.identityVerificationPolicy.required,
     );
     const order = BillingOrderAggregate.issue({
       id: billingOrderId,

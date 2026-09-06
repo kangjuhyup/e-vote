@@ -14,6 +14,9 @@ type GetBillingOrderResponseSource = {
   readonly blockchainStorageCount: number;
   readonly blockchainStorageUnitPrice: number;
   readonly blockchainStorageAmount: number;
+  readonly identityVerificationRequired: boolean;
+  readonly identityVerificationUnitPrice: number;
+  readonly identityVerificationAmount: number;
   readonly amount: number;
   readonly currency: string;
   readonly status: string;
@@ -43,6 +46,9 @@ export class GetBillingOrderResponse {
   @ApiProperty() readonly blockchainStorageCount: number;
   @ApiProperty() readonly blockchainStorageUnitPrice: number;
   @ApiProperty() readonly blockchainStorageAmount: number;
+  @ApiProperty() readonly identityVerificationRequired: boolean;
+  @ApiProperty() readonly identityVerificationUnitPrice: number;
+  @ApiProperty() readonly identityVerificationAmount: number;
   @ApiProperty() readonly amount: number;
   @ApiProperty() readonly currency: string;
   @ApiProperty({
@@ -78,6 +84,9 @@ export class GetBillingOrderResponse {
     this.blockchainStorageCount = source.blockchainStorageCount;
     this.blockchainStorageUnitPrice = source.blockchainStorageUnitPrice;
     this.blockchainStorageAmount = source.blockchainStorageAmount;
+    this.identityVerificationRequired = source.identityVerificationRequired;
+    this.identityVerificationUnitPrice = source.identityVerificationUnitPrice;
+    this.identityVerificationAmount = source.identityVerificationAmount;
     this.amount = source.amount;
     this.currency = source.currency;
     this.status = source.status;

@@ -46,6 +46,9 @@ describe('billing command handlers', () => {
       blockchainStorageCount: 2,
       blockchainStorageUnitPrice: 3_000,
       blockchainStorageAmount: 6_000,
+      identityVerificationRequired: false,
+      identityVerificationUnitPrice: 30_000,
+      identityVerificationAmount: 0,
       amount: 12_000,
       currency: 'KRW',
       status: 'PENDING_PAYMENT',
@@ -68,6 +71,29 @@ describe('billing command handlers', () => {
         billingOrderId: 'billing-order-1',
       },
     ]);
+  });
+
+  it('adds the identity verification surcharge when verification is required', async () => {
+    const handler = new CreateVoteUsageBillingOrderHandler(
+      repositoryStub(),
+      voteAccessStub({
+        createdByUserPrincipalId: 'user-1',
+        identityVerificationRequired: true,
+      }),
+      electorCountStub(120),
+      blockchainStorageCountStub(0),
+      voteLifecycleStub(),
+      new BillingOrderOutboxRecorder(outboxStub()),
+      transactionManagerStub(),
+    );
+
+    await expect(handler.execute(createCommand())).resolves.toMatchObject({
+      baseAmount: 6_000,
+      identityVerificationRequired: true,
+      identityVerificationUnitPrice: 30_000,
+      identityVerificationAmount: 60_000,
+      amount: 66_000,
+    });
   });
 
   it('returns the existing order to its owner even when the legacy vote creator is unknown', async () => {
@@ -531,6 +557,7 @@ describe('billing command handlers', () => {
     options: {
       readonly createdByUserPrincipalId?: string;
       readonly billingOrderId?: string;
+      readonly identityVerificationRequired?: boolean;
     } = {
       createdByUserPrincipalId: 'user-1',
     },
@@ -541,6 +568,9 @@ describe('billing command handlers', () => {
         commissionId: 'commission-1',
         createdByUserPrincipalId: options.createdByUserPrincipalId,
         billingOrderId: options.billingOrderId,
+        identityVerificationPolicy: {
+          required: options.identityVerificationRequired ?? false,
+        },
         isCreatedBy: (userPrincipalId) =>
           options.createdByUserPrincipalId === userPrincipalId,
       }),
