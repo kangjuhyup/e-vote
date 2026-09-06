@@ -122,13 +122,25 @@ describe('billing order migration', () => {
       '"blockchain_storage_unit_price" integer not null default 3000',
     );
     expect(blockchainPricingMigrationSource).toContain(
+      '"identity_verification_required" boolean not null default false',
+    );
+    expect(blockchainPricingMigrationSource).toContain(
+      '"identity_verification_unit_price" integer not null default 30000',
+    );
+    expect(blockchainPricingMigrationSource).toContain(
       'billing_orders_blockchain_storage_count_non_negative',
     );
     expect(blockchainPricingMigrationSource).toContain(
       '"blockchain_storage_unit_price" * "blockchain_storage_count"',
     );
     expect(blockchainPricingMigrationSource).toContain(
-      'cannot remove blockchain billing snapshots',
+      'case when "identity_verification_required"',
+    );
+    expect(blockchainPricingMigrationSource).toContain(
+      'then "identity_verification_unit_price" * "pricing_unit_count"',
+    );
+    expect(blockchainPricingMigrationSource).toContain(
+      'cannot remove billing surcharge snapshots',
     );
   });
 });

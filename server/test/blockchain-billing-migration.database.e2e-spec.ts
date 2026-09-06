@@ -50,9 +50,12 @@ describeDatabase('blockchain billing migration database integration', () => {
         amount: number;
         blockchain_storage_count: number;
         blockchain_storage_unit_price: number;
+        identity_verification_required: boolean;
+        identity_verification_unit_price: number;
       }>
     >(
-      `select amount, blockchain_storage_count, blockchain_storage_unit_price
+      `select amount, blockchain_storage_count, blockchain_storage_unit_price,
+              identity_verification_required, identity_verification_unit_price
        from billing_orders
        where id = ?`,
       [LEGACY_ORDER_ID],
@@ -62,16 +65,20 @@ describeDatabase('blockchain billing migration database integration', () => {
       amount: 3_000,
       blockchain_storage_count: 0,
       blockchain_storage_unit_price: 3_000,
+      identity_verification_required: false,
+      identity_verification_unit_price: 30_000,
     });
   });
 
-  it('accepts a valid surcharge total and rejects an inconsistent total', async () => {
+  it('accepts combined surcharge totals and rejects an inconsistent total', async () => {
     await insertVote(em, BLOCKCHAIN_VOTE_ID);
     await insertOrder(em, {
       id: BLOCKCHAIN_ORDER_ID,
       voteId: BLOCKCHAIN_VOTE_ID,
-      amount: 9_000,
+      electorCount: 120,
+      amount: 72_000,
       blockchainStorageCount: 2,
+      identityVerificationRequired: true,
     });
 
     await expect(
@@ -82,7 +89,7 @@ describeDatabase('blockchain billing migration database integration', () => {
         ]),
     ).rejects.toThrow();
     await expect(orm?.migrator.down()).rejects.toThrow(
-      'cannot remove blockchain billing snapshots',
+      'cannot remove billing surcharge snapshots',
     );
   });
 });
@@ -134,20 +141,32 @@ async function insertOrder(
   params: {
     id: string;
     voteId: string;
+    electorCount?: number;
     amount: number;
     blockchainStorageCount?: number;
+    identityVerificationRequired?: boolean;
   },
 ): Promise<void> {
+  const electorCount = params.electorCount ?? 1;
+  const pricingUnitCount = Math.ceil(electorCount / 100);
   const blockchainColumns =
     params.blockchainStorageCount === undefined
       ? ''
       : ', blockchain_storage_count, blockchain_storage_unit_price';
   const blockchainValues =
     params.blockchainStorageCount === undefined ? '' : ', ?, 3000';
+  const identityColumns =
+    params.identityVerificationRequired === undefined
+      ? ''
+      : ', identity_verification_required, identity_verification_unit_price';
+  const identityValues =
+    params.identityVerificationRequired === undefined ? '' : ', ?, 30000';
   const queryParams = [
     params.id,
     params.voteId,
     COMMISSION_ID,
+    electorCount,
+    pricingUnitCount,
     params.amount,
     NOW,
     new Date('2026-09-13T00:00:00.000Z'),
@@ -155,6 +174,9 @@ async function insertOrder(
     ...(params.blockchainStorageCount === undefined
       ? []
       : [params.blockchainStorageCount]),
+    ...(params.identityVerificationRequired === undefined
+      ? []
+      : [params.identityVerificationRequired]),
   ];
 
   await entityManager.getConnection().execute(
@@ -163,11 +185,11 @@ async function insertOrder(
        product_code, product_name, elector_count, pricing_unit_size,
        pricing_unit_count, unit_price, amount, currency, status, issued_at,
        cancellation_window_days, cancelable_until, updated_at
-       ${blockchainColumns}
+       ${blockchainColumns}${identityColumns}
      ) values (
-       ?, 1, ?, ?, 'creator-1', 'VOTE_USAGE', 'Vote usage', 1, 100, 1,
+       ?, 1, ?, ?, 'creator-1', 'VOTE_USAGE', 'Vote usage', ?, 100, ?,
        3000, ?, 'KRW', 'PENDING_PAYMENT', ?, 7, ?, ?
-       ${blockchainValues}
+       ${blockchainValues}${identityValues}
      )`,
     queryParams,
   );

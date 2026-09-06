@@ -29,6 +29,10 @@ export class BillingOrderReadRepositoryAdapter implements BillingOrderReadReposi
           unitPrice: Number(entity.unitPrice),
           blockchainStorageCount: Number(entity.blockchainStorageCount),
           blockchainStorageUnitPrice: Number(entity.blockchainStorageUnitPrice),
+          identityVerificationRequired: entity.identityVerificationRequired,
+          identityVerificationUnitPrice: Number(
+            entity.identityVerificationUnitPrice,
+          ),
           amount: Number(entity.amount),
           currency: entity.currency,
           status: entity.status,

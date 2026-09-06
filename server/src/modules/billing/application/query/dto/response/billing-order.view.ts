@@ -16,6 +16,9 @@ export class BillingOrderView {
     readonly blockchainStorageCount: number,
     readonly blockchainStorageUnitPrice: number,
     readonly blockchainStorageAmount: number,
+    readonly identityVerificationRequired: boolean,
+    readonly identityVerificationUnitPrice: number,
+    readonly identityVerificationAmount: number,
     readonly amount: number,
     readonly currency: string,
     readonly status: BillingOrderStatus,
@@ -43,6 +46,8 @@ export class BillingOrderView {
     readonly unitPrice: number;
     readonly blockchainStorageCount: number;
     readonly blockchainStorageUnitPrice: number;
+    readonly identityVerificationRequired: boolean;
+    readonly identityVerificationUnitPrice: number;
     readonly amount: number;
     readonly currency: string;
     readonly status: BillingOrderStatus;
@@ -71,6 +76,11 @@ export class BillingOrderView {
       params.blockchainStorageCount,
       params.blockchainStorageUnitPrice,
       params.blockchainStorageCount * params.blockchainStorageUnitPrice,
+      params.identityVerificationRequired,
+      params.identityVerificationUnitPrice,
+      params.identityVerificationRequired
+        ? params.identityVerificationUnitPrice * params.pricingUnitCount
+        : 0,
       params.amount,
       params.currency,
       params.status,

@@ -32,6 +32,12 @@ export function createBillingEntities(
       blockchainStorageUnitPrice: p
         .integer()
         .fieldName('blockchain_storage_unit_price'),
+      identityVerificationRequired: p
+        .boolean()
+        .fieldName('identity_verification_required'),
+      identityVerificationUnitPrice: p
+        .integer()
+        .fieldName('identity_verification_unit_price'),
       amount: p.integer(),
       currency: p.string().length(3),
       status: p.string().$type<BillingOrderStatus>(),
