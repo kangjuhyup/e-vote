@@ -138,6 +138,11 @@ import {
   VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
 } from './shared/application/port/capability/vote-billing.port';
 import { BillingOrderOutboxRecorder } from './modules/billing/application/event/billing-order-outbox.recorder';
+import { ParticipationController } from './modules/participation/presentation/participation/participation.controller';
+import { CastParticipationHandler } from './modules/participation/application/command/handler/cast-participation.handler';
+import { ElectorSignatureController } from './modules/elector/presentation/elector/elector-signature.controller';
+import { RequestElectorSignatureUploadHandler } from './modules/elector/application/command/handler/request-elector-signature-upload.handler';
+import { ConfirmElectorSignatureUploadHandler } from './modules/elector/application/command/handler/confirm-elector-signature-upload.handler';
 
 @Module({
   imports: [
@@ -171,6 +176,8 @@ import { BillingOrderOutboxRecorder } from './modules/billing/application/event/
     FieldVotingSessionController,
     FieldVotingSessionSmsController,
     ElectorReadController,
+    ElectorSignatureController,
+    ParticipationController,
     VoteStatisticsController,
     ParticipationAccessController,
     ParticipationInvitationController,
@@ -237,6 +244,9 @@ import { BillingOrderOutboxRecorder } from './modules/billing/application/event/
     AttachElectoralRollSnapshotHandler,
     CreateElectorHandler,
     AuthenticateElectorHandler,
+    RequestElectorSignatureUploadHandler,
+    ConfirmElectorSignatureUploadHandler,
+    CastParticipationHandler,
     CreateFieldVotingSessionHandler,
     OpenFieldVotingSessionHandler,
     CloseFieldVotingSessionHandler,

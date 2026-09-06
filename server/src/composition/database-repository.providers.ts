@@ -60,11 +60,23 @@ import { ELECTION_COMMISSION_MEMBERSHIP_ACCESS_PORT } from '../shared/applicatio
 import { ElectionCommissionMembershipAccessAdapter } from '../modules/election-commission/infrastructure/database/repository/query/election-commission-membership-access.adapter';
 import { VOTE_ELECTOR_COUNT_ACCESS_PORT } from '../shared/application/port/capability/vote-elector-count-access.port';
 import { VoteElectorCountAccessAdapter } from '../modules/elector/infrastructure/database/repository/query/vote-elector-count-access.adapter';
+import { ELECTOR_SIGNATURE_REPOSITORY_PORT } from '../modules/elector/application/port/persistence/command/elector-signature-repository.port';
+import { ELECTOR_SIGNATURE_ACCESS_PORT } from '../shared/application/port/capability/elector-signature-access.port';
+import { ElectorSignatureRepositoryAdapter } from '../modules/elector/infrastructure/database/repository/command/elector-signature-repository.adapter';
 import { INTEGRATION_EVENT_OUTBOX_PORT } from '../shared/application/port/messaging/integration-event-outbox.port';
 import { OUTBOX_MESSAGE_REPOSITORY_PORT } from '../shared/application/port/messaging/outbox-message-repository.port';
 import { IntegrationOutboxRepositoryAdapter } from '../platform/outbox/infrastructure/database/repository/integration-outbox-repository.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
+  ElectorSignatureRepositoryAdapter,
+  {
+    provide: ELECTOR_SIGNATURE_REPOSITORY_PORT,
+    useExisting: ElectorSignatureRepositoryAdapter,
+  },
+  {
+    provide: ELECTOR_SIGNATURE_ACCESS_PORT,
+    useExisting: ElectorSignatureRepositoryAdapter,
+  },
   ElectorVerificationRepositoryAdapter,
   {
     provide: ELECTOR_VERIFICATION_REPOSITORY_PORT,
@@ -202,6 +214,8 @@ export const databaseRepositoryProviders: Provider[] = [
 ];
 
 export const databaseRepositoryPortTokens = [
+  ELECTOR_SIGNATURE_REPOSITORY_PORT,
+  ELECTOR_SIGNATURE_ACCESS_PORT,
   ELECTOR_VERIFICATION_REPOSITORY_PORT,
   ELECTOR_PARTICIPANT_ACCESS_PORT,
   INTEGRATION_EVENT_OUTBOX_PORT,

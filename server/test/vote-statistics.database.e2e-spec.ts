@@ -30,6 +30,7 @@ import { VoteDetailRepositoryAdapter } from '../src/modules/vote/infrastructure/
 import { ElectorRepositoryAdapter } from '../src/modules/elector/infrastructure/database/repository/command/elector-repository.adapter';
 import { CandidateRepositoryAdapter } from '../src/modules/vote/infrastructure/database/repository/command/candidate-repository.adapter';
 import { FieldVotingSessionRepositoryAdapter } from '../src/modules/field-voting/infrastructure/database/repository/command/field-voting-session-repository.adapter';
+import { ElectorSignatureRepositoryAdapter } from '../src/modules/elector/infrastructure/database/repository/command/elector-signature-repository.adapter';
 
 const describeDatabase =
   process.env.VOTE_STATISTICS_E2E_DATABASE === 'true'
@@ -445,6 +446,9 @@ describeDatabase('vote statistics database integration', () => {
       'participant-1',
       'mock-success:cast0001',
     );
+    const signatureRepository = new ElectorSignatureRepositoryAdapter(
+      handlerEm,
+    );
     const handler = new CastParticipationHandler(
       new VoteRepositoryAdapter(handlerEm),
       new VoteDetailRepositoryAdapter(handlerEm),
@@ -453,21 +457,39 @@ describeDatabase('vote statistics database integration', () => {
       new ParticipationRepositoryAdapter(handlerEm),
       new FieldVotingSessionRepositoryAdapter(handlerEm),
       new ElectorVerificationRepositoryAdapter(handlerEm),
+      signatureRepository,
     );
+    const command = CastParticipationCommand.of({
+      userPrincipalId: 'participant-1',
+      voteId: VOTE_ID,
+      voteDetailId: VOTE_DETAIL_ID,
+      electorId: ELECTOR_FOUR_ID,
+      selectedCandidateId: CANDIDATE_ONE_ID,
+      votingChannel: VotingChannel.Online,
+      participatedAt: new Date('2026-08-29T03:00:00.000Z'),
+    });
 
+    await expect(handler.execute(command)).rejects.toThrow(
+      'confirmed elector signature is required for participation',
+    );
+    await signatureRepository.save({
+      voteId: VOTE_ID,
+      electorId: ELECTOR_FOUR_ID,
+      file: {
+        storageKey: 'signatures/e2e-cast-signature',
+        originalName: 'signature.png',
+        mimeType: 'image/png',
+        sizeBytes: 128,
+      },
+    });
     await expect(
-      handler.execute(
-        CastParticipationCommand.of({
-          userPrincipalId: 'participant-1',
-          voteId: VOTE_ID,
-          voteDetailId: VOTE_DETAIL_ID,
-          electorId: ELECTOR_FOUR_ID,
-          selectedCandidateId: CANDIDATE_ONE_ID,
-          votingChannel: VotingChannel.Online,
-          participatedAt: new Date('2026-08-29T03:00:00.000Z'),
-        }),
-      ),
-    ).resolves.toMatchObject({ voteDetailId: VOTE_DETAIL_ID, status: 'CAST' });
+      signatureRepository.hasConfirmedSignature(VOTE_ID, ELECTOR_FOUR_ID),
+    ).resolves.toBe(true);
+
+    await expect(handler.execute(command)).resolves.toMatchObject({
+      voteDetailId: VOTE_DETAIL_ID,
+      status: 'CAST',
+    });
 
     const result = await readCandidateResult(em, CANDIDATE_ONE_ID);
     const [storedParticipation] = await em
