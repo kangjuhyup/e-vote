@@ -1,28 +1,39 @@
 export interface ElectoralRollMemberRecord {
+  birthDate?: string;
   createdAt: string;
   electoralRollId: string;
   groupKey?: string;
   id: string;
   identifier: string;
+  name?: string;
+  phoneNumber?: string;
   updatedAt: string;
   voteWeight: number;
 }
 
 export interface ElectoralRollMemberDraft {
+  birthDate?: string;
   draftId: string;
   groupKey?: string;
   identifier: string;
+  name?: string;
+  phoneNumber?: string;
   sourceMemberId?: string;
   voteWeight: number;
 }
 
 export type ElectoralRollMemberDraftField =
-  | "groupKey"
-  | "identifier"
-  | "voteWeight";
+  | 'birthDate'
+  | 'groupKey'
+  | 'identifier'
+  | 'name'
+  | 'phoneNumber'
+  | 'voteWeight';
+
+export const ELECTORAL_ROLL_IDENTITY_REQUIRED_MESSAGE =
+  '본인인증 투표에는 모든 선거인의 이름과 휴대폰번호가 필요합니다.';
 
 export interface ElectoralRollRecord {
-  commissionId: string;
   createdAt: string;
   id: string;
   members: ElectoralRollMemberRecord[];
@@ -32,7 +43,6 @@ export interface ElectoralRollRecord {
 }
 
 export interface ElectoralRollPageItemRecord {
-  commissionId: string;
   id: string;
   memberCount: number;
   name: string;
@@ -49,14 +59,12 @@ export interface ElectoralRollPageRecord {
 }
 
 export interface ElectoralRollPageInput {
-  commissionId?: string;
   page?: number;
   pageSize?: number;
   query?: string;
 }
 
 export interface CreateElectoralRollInput {
-  commissionId: string;
   name: string;
 }
 
@@ -65,16 +73,26 @@ export interface CreateElectoralRollResult extends CreateElectoralRollInput {
   revision: number;
 }
 
+export interface DeleteElectoralRollInput {
+  electoralRollId: string;
+}
+
 export interface AddElectoralRollMemberInput {
+  birthDate?: string;
   electoralRollId: string;
   groupKey?: string;
   identifier: string;
+  name?: string;
+  phoneNumber?: string;
   voteWeight?: number;
 }
 
 export interface ElectoralRollImportMemberInput {
+  birthDate?: string;
   groupKey?: string;
   identifier: string;
+  name?: string;
+  phoneNumber?: string;
   rowNumber: number;
   voteWeight: number;
 }
@@ -105,10 +123,13 @@ export interface ElectoralRollWorkbookParseResult {
 }
 
 export interface UpdateElectoralRollMemberInput {
+  birthDate?: string;
   electoralRollId: string;
   groupKey?: string;
   identifier: string;
   memberId: string;
+  name?: string;
+  phoneNumber?: string;
   voteWeight: number;
 }
 

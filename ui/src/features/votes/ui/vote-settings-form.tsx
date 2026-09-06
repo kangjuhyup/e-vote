@@ -9,8 +9,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import type { VoteDetail } from "@/features/votes/model/vote.types";
+
+import { VoteAccessFields } from "./vote-access-fields";
+import { VotePolicyFields } from "./vote-policy-fields";
+import { VoteScheduleFields } from "./vote-schedule-fields";
 
 interface VoteSettingsFormProps {
   disabled?: boolean;
@@ -55,80 +58,23 @@ export function VoteSettingsForm({
             disabled={disabled}
             className="sm:col-span-2"
           />
-          <label className="grid gap-2 text-sm font-medium">
-            공개 범위
-            <Select
-              name="privacyMode"
-              defaultValue={defaultPolicy.privacyMode}
-              disabled={disabled}
-            >
-              <option value="SECRET">비밀 투표</option>
-              <option value="PUBLIC">공개 투표</option>
-            </Select>
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            참여 단위
-            <Select
-              name="participationUnit"
-              defaultValue={defaultPolicy.participationUnit}
-              disabled={disabled}
-            >
-              <option value="INDIVIDUAL">개인</option>
-              <option value="GROUP">그룹</option>
-            </Select>
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            가중치 방식
-            <Select
-              name="voteWeightMode"
-              defaultValue={defaultPolicy.voteWeightMode}
-              disabled={disabled}
-            >
-              <option value="EQUAL">동일 가중치</option>
-              <option value="SHARE">지분 가중치</option>
-            </Select>
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            결과 저장
-            <Select
-              name="resultStorageMode"
-              defaultValue={defaultPolicy.resultStorageMode}
-              disabled={disabled}
-            >
-              <option value="DATABASE">데이터베이스</option>
-              <option value="BLOCKCHAIN">블록체인</option>
-            </Select>
-          </label>
-          <fieldset className="sm:col-span-2" disabled={disabled}>
-            <legend className="text-sm font-medium">허용 채널</legend>
-            <div className="mt-2 flex flex-wrap gap-4 text-sm">
-              <CheckOption
-                value="ONLINE"
-                label="온라인"
-                defaultChecked={votingChannels.includes("ONLINE")}
-              />
-              <CheckOption
-                value="ONSITE"
-                label="현장"
-                defaultChecked={votingChannels.includes("ONSITE")}
-              />
-              <CheckOption
-                value="VISIT"
-                label="방문"
-                defaultChecked={votingChannels.includes("VISIT")}
-              />
-            </div>
-          </fieldset>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input
-              type="checkbox"
-              name="identityRequired"
-              defaultChecked={vote.identityVerificationPolicy?.required}
-              disabled={disabled}
-              className="size-4 rounded border"
-            />
-            본인인증 필수
-          </label>
+          <VoteScheduleFields
+            defaultStartedAt={vote.startsAt}
+            defaultEndedAt={vote.endsAt}
+            descriptionId="vote-settings-schedule-description"
+            disabled={disabled}
+          />
+          <VotePolicyFields
+            className="sm:col-span-2"
+            defaultValues={defaultPolicy}
+            disabled={disabled}
+          />
+          <VoteAccessFields
+            className="sm:col-span-2"
+            defaultIdentityRequired={vote.identityVerificationPolicy?.required}
+            defaultVotingChannels={votingChannels}
+            disabled={disabled}
+          />
           <Button
             type="submit"
             className="sm:col-span-2"
@@ -140,29 +86,6 @@ export function VoteSettingsForm({
         </form>
       </CardContent>
     </Card>
-  );
-}
-
-function CheckOption({
-  defaultChecked,
-  label,
-  value,
-}: {
-  defaultChecked: boolean;
-  label: string;
-  value: string;
-}) {
-  return (
-    <label className="flex items-center gap-2">
-      <input
-        type="checkbox"
-        name="channel"
-        value={value}
-        defaultChecked={defaultChecked}
-        className="size-4 rounded border"
-      />
-      {label}
-    </label>
   );
 }
 

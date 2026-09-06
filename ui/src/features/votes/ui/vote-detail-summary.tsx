@@ -8,22 +8,33 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { VoteDetail } from "@/features/votes/model/vote.types";
+import type { VoteBillingLifecycleStatus } from "@/features/votes/lib/vote-finalization";
 
 import { getVoteStatusLabel, getVoteStatusVariant } from "../lib/vote-view-models";
 
 interface VoteDetailSummaryProps {
+  billingOrderStatus?: VoteBillingLifecycleStatus;
   vote: VoteDetail;
 }
 
-export function VoteDetailSummary({ vote }: VoteDetailSummaryProps) {
+export function VoteDetailSummary({
+  billingOrderStatus,
+  vote,
+}: VoteDetailSummaryProps) {
+  const effectiveBillingOrderStatus =
+    billingOrderStatus ?? vote.billingOrderStatus;
+
   return (
     <Card className="rounded-lg">
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle>{vote.title}</CardTitle>
           <StatusBadge
-            label={getVoteStatusLabel(vote.status)}
-            variant={getVoteStatusVariant(vote.status)}
+            label={getVoteStatusLabel(vote.status, effectiveBillingOrderStatus)}
+            variant={getVoteStatusVariant(
+              vote.status,
+              effectiveBillingOrderStatus,
+            )}
           />
         </div>
       </CardHeader>

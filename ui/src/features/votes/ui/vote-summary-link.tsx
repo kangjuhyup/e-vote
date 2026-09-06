@@ -25,8 +25,11 @@ export function VoteSummaryLink({
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-medium">{vote.title}</h3>
           <StatusBadge
-            label={getVoteStatusLabel(vote.status)}
-            variant={getVoteStatusVariant(vote.status)}
+            label={getVoteStatusLabel(vote.status, vote.billingOrderStatus)}
+            variant={getVoteStatusVariant(
+              vote.status,
+              vote.billingOrderStatus,
+            )}
           />
         </div>
         <p className="mt-2 text-sm text-muted-foreground">

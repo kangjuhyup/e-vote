@@ -117,7 +117,7 @@ export function VoteSmsManagement({
                   />
                 </label>
                 <p className="text-xs leading-5 text-muted-foreground">
-                  버튼을 누르면 대상 선거인에게 즉시 발송됩니다. 본문과 전화번호는 발송 이력에 저장되지 않습니다.
+                  버튼을 누르면 대상 선거인에게 즉시 발송됩니다. {purpose === "VOTE_PARTICIPATION_REMINDER" ? "각 미참여자에게 개인별 보안 참여 링크가 자동으로 추가됩니다. " : null}본문과 전화번호, 참여 링크는 발송 이력에 저장되지 않습니다.
                 </p>
                 <Button type="submit" className="w-full" disabled={isSending || draft.trim().length === 0}>
                   <Send aria-hidden="true" />

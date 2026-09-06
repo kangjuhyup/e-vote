@@ -12,7 +12,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { FieldSessionRecord } from "@/features/votes/model/vote-operations.types";
+import type {
+  CommissionMemberRecord,
+  FieldSessionRecord,
+} from "@/features/votes/model/vote-operations.types";
 import { formatKoreanDateTime } from "@/shared/lib/date-format";
 
 const statusLabels = {
@@ -25,7 +28,9 @@ const statusLabels = {
 interface FieldSessionManagementProps {
   allowedChannels: readonly ("ONSITE" | "VISIT")[];
   commissionId?: string;
+  isManagersLoading: boolean;
   isSubmitting: boolean;
+  managers: CommissionMemberRecord[];
   message?: string;
   onChangeStatus: (
     id: string,
@@ -41,13 +46,14 @@ interface FieldSessionManagementProps {
   smsDrafts: Record<string, string>;
   smsEnabled: boolean;
   totalPages: number;
-  voteId: string;
 }
 
 export function FieldSessionManagement({
   allowedChannels,
   commissionId,
+  isManagersLoading,
   isSubmitting,
+  managers,
   message,
   onChangeStatus,
   onCreate,
@@ -60,7 +66,6 @@ export function FieldSessionManagement({
   smsDrafts,
   smsEnabled,
   totalPages,
-  voteId,
 }: FieldSessionManagementProps) {
   return (
     <div className="space-y-5">
@@ -83,14 +88,9 @@ export function FieldSessionManagement({
               <Card key={session.id} className="rounded-lg">
                 <CardHeader>
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <CardTitle className="text-base">
-                        {session.title}
-                      </CardTitle>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {session.id}
-                      </p>
-                    </div>
+                    <CardTitle className="text-base">
+                      {session.title}
+                    </CardTitle>
                     <Badge
                       variant={session.status === "OPEN" ? "default" : "outline"}
                     >
@@ -216,9 +216,6 @@ export function FieldSessionManagement({
               />
               <CardTitle className="text-base">세션 생성</CardTitle>
             </div>
-            <p className="text-sm text-muted-foreground">
-              투표 {voteId}
-            </p>
           </CardHeader>
           <CardContent>
             <form
@@ -243,13 +240,38 @@ export function FieldSessionManagement({
               />
               <Field label="장소 이름" name="locationName" required />
               <Field label="주소" name="address" required />
-              <Field
-                label="관리자 ID"
-                name="managerIds"
-                placeholder="쉼표로 구분"
-                required
-                className="sm:col-span-2"
-              />
+              <fieldset className="grid gap-2 sm:col-span-2">
+                <legend className="text-sm font-medium">담당 관리자</legend>
+                {isManagersLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    관리자 목록을 불러오는 중…
+                  </p>
+                ) : managers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    선택할 수 있는 활성 위원이 없습니다.
+                  </p>
+                ) : (
+                  <div className="grid gap-2 rounded-md border p-3">
+                    {managers.map((manager) => (
+                      <label
+                        key={manager.id}
+                        className="flex min-h-10 items-center gap-3 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          name="managerIds"
+                          value={manager.id}
+                          className="size-4 rounded border"
+                        />
+                        <span>
+                          {manager.name} ·{" "}
+                          {manager.role === "ADMIN" ? "관리자" : "현장 관리자"}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
               <Field
                 label="시작 시각"
                 name="startsAt"
@@ -265,7 +287,12 @@ export function FieldSessionManagement({
               <Button
                 type="submit"
                 className="sm:col-span-2"
-                disabled={isSubmitting || !commissionId}
+                disabled={
+                  isSubmitting ||
+                  isManagersLoading ||
+                  !commissionId ||
+                  managers.length === 0
+                }
               >
                 세션 생성
               </Button>

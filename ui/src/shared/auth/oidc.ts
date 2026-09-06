@@ -11,6 +11,8 @@ export interface EVoteOidcProfile {
   email?: string | null;
 }
 
+type AuthEnvironment = Readonly<Record<string, string | undefined>>;
+
 interface BuildTenantOidcIssuerInput {
   issuerOrigin: string;
   tenantCode: string;
@@ -26,15 +28,19 @@ export function buildTenantOidcIssuer({
   return `${normalizedOrigin}/t/${encodedTenantCode}/oidc`;
 }
 
-export function getTenantOidcIssuer() {
+export function getTenantOidcIssuer(
+  environment: AuthEnvironment = process.env,
+) {
   return buildTenantOidcIssuer({
-    issuerOrigin: process.env.AUTH_OIDC_ISSUER ?? DEFAULT_OIDC_ISSUER_ORIGIN,
-    tenantCode: process.env.AUTH_OIDC_TENANT_CODE ?? DEFAULT_OIDC_TENANT_CODE,
+    issuerOrigin:
+      environment.AUTH_OIDC_ISSUER ?? DEFAULT_OIDC_ISSUER_ORIGIN,
+    tenantCode:
+      environment.AUTH_OIDC_TENANT_CODE ?? DEFAULT_OIDC_TENANT_CODE,
   });
 }
 
 export function getVoteApiResource(
-  environment: Readonly<Record<string, string | undefined>> = process.env,
+  environment: AuthEnvironment = process.env,
 ) {
   const resource =
     environment.AUTH_E_VOTE_RESOURCE?.trim() || DEFAULT_VOTE_API_RESOURCE;
@@ -55,6 +61,45 @@ export function getVoteApiResource(
   }
 
   return resourceUrl.origin;
+}
+
+export function createEVoteOidcProvider(
+  environment: AuthEnvironment = process.env,
+) {
+  const clientSecret =
+    environment.AUTH_E_VOTE_SECRET ??
+    environment.AUTH_E_VOTE_CLIENT_SECRET;
+  const checks: Array<'pkce' | 'state' | 'nonce'> = [
+    'pkce',
+    'state',
+    'nonce',
+  ];
+
+  return {
+    id: E_VOTE_PROVIDER_ID,
+    name: 'E-Vote',
+    type: 'oidc' as const,
+    issuer: getTenantOidcIssuer(environment),
+    idToken: true,
+    clientId: E_VOTE_CLIENT_ID,
+    ...(clientSecret ? { clientSecret } : {}),
+    authorization: {
+      params: {
+        prompt: 'consent',
+        scope: 'openid profile email offline_access',
+        resource: getVoteApiResource(environment),
+      },
+    },
+    checks,
+    client: {
+      token_endpoint_auth_method: clientSecret
+        ? 'client_secret_basic'
+        : 'none',
+    },
+    profile(profile: EVoteOidcProfile) {
+      return mapEVoteProfileToUser(profile);
+    },
+  };
 }
 
 export function mapEVoteProfileToUser(profile: EVoteOidcProfile) {

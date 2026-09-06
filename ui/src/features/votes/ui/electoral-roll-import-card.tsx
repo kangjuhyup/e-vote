@@ -23,6 +23,7 @@ import type {
 
 interface ElectoralRollImportCardProps {
   isSubmitting: boolean;
+  mode?: 'create' | 'manage';
   onImportMembers: (
     members: ElectoralRollImportMemberInput[],
   ) => Promise<StageElectoralRollMembersResult>;
@@ -30,6 +31,7 @@ interface ElectoralRollImportCardProps {
 
 export function ElectoralRollImportCard({
   isSubmitting,
+  mode = 'manage',
   onImportMembers,
 }: ElectoralRollImportCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,8 +85,12 @@ export function ElectoralRollImportCard({
       setFileName("");
       setParseResult(undefined);
       if (fileInputRef.current) fileInputRef.current.value = "";
-    } catch {
-      setActionError("구성원을 초안에 추가하지 못했습니다. 내용을 확인하세요.");
+    } catch (error) {
+      setActionError(
+        mode === 'create' && error instanceof Error
+          ? error.message
+          : "구성원을 초안에 추가하지 못했습니다. 내용을 확인하세요.",
+      );
     } finally {
       setIsApplying(false);
     }
@@ -109,8 +115,12 @@ export function ElectoralRollImportCard({
           <div>
             <CardTitle className="text-base">엑셀로 일괄 등록</CardTitle>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              템플릿을 내려받아 작성한 뒤 업로드하세요. 기존 구성원은
-              유지되고 새 구성원만 추가됩니다.
+              템플릿을 내려받아 작성한 뒤 업로드하세요.{' '}
+              {mode === 'manage'
+                ? '기존 구성원은 유지되고 새 구성원만 추가됩니다. '
+                : '파일을 검증한 뒤 생성할 명부의 구성원으로 추가합니다. '}
+              이름·휴대폰번호·생년월일은 선택 항목이며, 본인인증 투표에
+              사용할 때는 이름과 휴대폰번호를 모두 입력해야 합니다.
             </p>
           </div>
         </div>
@@ -150,12 +160,17 @@ export function ElectoralRollImportCard({
             ) : (
               <Upload aria-hidden="true" />
             )}
-            {isBusy ? "추가 중…" : "검증한 구성원 초안 추가"}
+            {isBusy
+              ? "추가 중…"
+              : mode === 'manage'
+                ? "검증한 구성원 초안 추가"
+                : "검증한 구성원 추가"}
           </Button>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          .xlsx · 최대 5MB · 한 번에 최대 5,000명 · 빈 가중치는 1
+          .xlsx · 최대 5MB · 한 번에 최대 5,000명 · 빈 가중치는 1 ·
+          이름과 휴대폰번호는 함께 입력
         </p>
 
         {isParsing ? (
@@ -173,8 +188,9 @@ export function ElectoralRollImportCard({
               {parseResult.members.length.toLocaleString()}명 등록 준비 완료
             </p>
             <p className="mt-1 text-xs opacity-80">
-              파일 내용을 확인했습니다. 초안에 추가한 뒤 선거인명부 저장
-              버튼으로 반영하세요.
+              {mode === 'manage'
+                ? '파일 내용을 확인했습니다. 초안에 추가한 뒤 선거인명부 저장 버튼으로 반영하세요.'
+                : '파일 내용을 확인했습니다. 구성원으로 추가한 뒤 생성 전 검토할 수 있습니다.'}
             </p>
           </div>
         ) : null}

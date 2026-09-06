@@ -1,51 +1,53 @@
 import NextAuth, { type NextAuthConfig } from 'next-auth';
 
 import {
-  E_VOTE_CLIENT_ID,
-  E_VOTE_PROVIDER_ID,
-  type EVoteOidcProfile,
-  getTenantOidcIssuer,
-  getVoteApiResource,
-  mapEVoteProfileToUser,
+  createEVoteOidcProvider,
 } from '@/shared/auth/oidc';
-import { persistVoteAccessToken } from '@/shared/auth/vote-session-token';
-
-const eVoteClientSecret =
-  process.env.AUTH_E_VOTE_SECRET ?? process.env.AUTH_E_VOTE_CLIENT_SECRET;
+import { refreshVoteAccessToken } from '@/shared/auth/refresh-vote-access-token';
+import { revokeVoteRefreshToken } from '@/shared/auth/revoke-vote-refresh-token';
+import {
+  getVoteApiAuthStatus,
+  invalidateVoteSessionToken,
+  persistVoteAccessToken,
+} from '@/shared/auth/vote-session-token';
 
 export const authConfig = {
-  providers: [
-    {
-      id: E_VOTE_PROVIDER_ID,
-      name: 'E-Vote',
-      type: 'oidc',
-      issuer: getTenantOidcIssuer(),
-      idToken: false,
-      clientId: E_VOTE_CLIENT_ID,
-      ...(eVoteClientSecret ? { clientSecret: eVoteClientSecret } : {}),
-      authorization: {
-        params: {
-          scope: 'openid profile email',
-          resource: getVoteApiResource(),
-        },
-      },
-      checks: ['pkce', 'state', 'nonce'],
-      client: {
-        token_endpoint_auth_method: eVoteClientSecret
-          ? 'client_secret_basic'
-          : 'none',
-      },
-      profile(profile: EVoteOidcProfile) {
-        return mapEVoteProfileToUser(profile);
-      },
-    },
-  ],
+  providers: [createEVoteOidcProvider()],
   session: {
     strategy: 'jwt',
   },
   callbacks: {
-    jwt({ token, account }) {
-      return persistVoteAccessToken(token, account);
+    async jwt({ token, account, trigger, session }) {
+      if (account) {
+        return persistVoteAccessToken(token, account);
+      }
+
+      if (
+        trigger === 'update' &&
+        typeof session === 'object' &&
+        session !== null &&
+        'refreshVoteAccessToken' in session &&
+        session.refreshVoteAccessToken === true
+      ) {
+        try {
+          return await refreshVoteAccessToken(token);
+        } catch {
+          return invalidateVoteSessionToken(token);
+        }
+      }
+
+      return token;
+    },
+    session({ session, token }) {
+      session.voteApiAuthStatus = getVoteApiAuthStatus(token);
+      return session;
+    },
+  },
+  events: {
+    async signOut(message) {
+      if ('token' in message) {
+        await revokeVoteRefreshToken(message.token).catch(() => undefined);
+      }
     },
   },
 } satisfies NextAuthConfig;

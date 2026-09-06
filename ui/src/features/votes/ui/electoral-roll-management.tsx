@@ -1,15 +1,8 @@
-import { ArrowLeft, ClipboardList, Plus } from "lucide-react";
-import type { FormEvent } from "react";
+import { ArrowLeft, ClipboardList, Trash2 } from 'lucide-react';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type {
   ElectoralRollPageRecord,
   ElectoralRollRecord,
@@ -17,19 +10,24 @@ import type {
   ElectoralRollMemberDraft,
   ElectoralRollMemberDraftField,
   StageElectoralRollMembersResult,
-} from "@/features/votes/model/electoral-roll.types";
+} from '@/features/votes/model/electoral-roll.types';
 
-import { ElectoralRollList } from "./electoral-roll-list";
-import { ElectoralRollMemberSection } from "./electoral-roll-member-section";
+import { ElectoralRollList } from './electoral-roll-list';
+import { ElectoralRollMemberSection } from './electoral-roll-member-section';
+import { RegistryDeletionDialog } from './registry-deletion-dialog';
 
 interface ElectoralRollManagementProps {
+  deleteErrorMessage?: string;
   errorMessage?: string;
+  isDeleteDialogOpen: boolean;
   isSubmitting: boolean;
   memberDrafts: ElectoralRollMemberDraft[];
   memberPage: number;
   memberSearchText: string;
   message?: string;
-  onAddMember: (data: FormData) => void;
+  onAddMember: (data: FormData) => boolean | void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
   onImportMembers: (
     members: ElectoralRollImportMemberInput[],
   ) => Promise<StageElectoralRollMembersResult>;
@@ -38,11 +36,11 @@ interface ElectoralRollManagementProps {
     field: ElectoralRollMemberDraftField,
     value: string,
   ) => void;
-  onCreate: (data: FormData) => void;
   onDiscardMemberChanges: () => void;
   onMemberPageChange: (page: number) => void;
   onMemberSearchTextChange: (searchText: string) => void;
   onRemoveMember: (memberId: string) => void;
+  onRequestDelete: () => void;
   onSaveMembers: () => void;
   onRollPageChange: (page: number) => void;
   onSelectRoll: (electoralRollId: string) => void;
@@ -54,20 +52,24 @@ interface ElectoralRollManagementProps {
 }
 
 export function ElectoralRollManagement({
+  deleteErrorMessage,
   errorMessage,
+  isDeleteDialogOpen,
   isSubmitting,
   memberDrafts,
   memberPage,
   memberSearchText,
   message,
   onAddMember,
+  onCancelDelete,
+  onConfirmDelete,
   onImportMembers,
   onMemberChange,
-  onCreate,
   onDiscardMemberChanges,
   onMemberPageChange,
   onMemberSearchTextChange,
   onRemoveMember,
+  onRequestDelete,
   onSaveMembers,
   onRollPageChange,
   onSelectRoll,
@@ -97,47 +99,11 @@ export function ElectoralRollManagement({
       ) : null}
 
       {selectedRollId.length === 0 ? (
-        <>
-          <ElectoralRollList
-            page={rollPage}
-            onPageChange={onRollPageChange}
-            onSelect={onSelectRoll}
-          />
-
-          <Card className="rounded-lg">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Plus
-                  className="size-5 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <CardTitle className="text-base">독립 명부 생성</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form
-                className="grid gap-4 sm:grid-cols-2 sm:items-end"
-                onSubmit={formHandler(onCreate, true)}
-              >
-                <Field
-                  label="선거관리위원회 ID"
-                  name="commissionId"
-                  defaultValue="commission-1"
-                  required
-                />
-                <Field label="명부 이름" name="name" required />
-                <Button
-                  type="submit"
-                  className="sm:col-span-2"
-                  disabled={isSubmitting}
-                >
-                  <Plus aria-hidden="true" />
-                  명부 생성
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </>
+        <ElectoralRollList
+          page={rollPage}
+          onPageChange={onRollPageChange}
+          onSelect={onSelectRoll}
+        />
       ) : !roll ? (
         <>
           <Button type="button" variant="outline" onClick={onShowList}>
@@ -161,12 +127,7 @@ export function ElectoralRollManagement({
                     className="mt-0.5 size-5 text-muted-foreground"
                     aria-hidden="true"
                   />
-                  <div>
-                    <CardTitle>{roll.name}</CardTitle>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {roll.id}
-                    </p>
-                  </div>
+                  <CardTitle>{roll.name}</CardTitle>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {pendingChangeCount > 0 ? (
@@ -179,8 +140,7 @@ export function ElectoralRollManagement({
               </div>
             </CardHeader>
             <CardContent>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2">
-                <Summary label="선거관리위원회 ID" value={roll.commissionId} />
+              <dl className="grid gap-3 text-sm">
                 <Summary
                   label="구성원 수"
                   value={`${memberDrafts.length.toLocaleString()}명`}
@@ -204,6 +164,45 @@ export function ElectoralRollManagement({
             onSaveMembers={onSaveMembers}
             onSearchTextChange={onMemberSearchTextChange}
           />
+
+          <Card className="rounded-lg border-destructive/30">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Trash2
+                  className="size-5 text-destructive"
+                  aria-hidden="true"
+                />
+                <CardTitle className="text-base">선거인명부 삭제</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4">
+              <p className="text-sm leading-6 text-muted-foreground">
+                명부는 목록에서 제거되지만 기존 투표에 연결된 스냅샷 기록은
+                유지됩니다.
+              </p>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={isSubmitting}
+                onClick={onRequestDelete}
+              >
+                <Trash2 aria-hidden="true" />
+                선거인명부 삭제
+              </Button>
+            </CardContent>
+          </Card>
+
+          {isDeleteDialogOpen ? (
+            <RegistryDeletionDialog
+              title="선거인명부 삭제"
+              resourceName={roll.name}
+              description="이 선거인명부와 현재 구성원 정보를 삭제하시겠습니까? 기존 투표에 연결된 불변 스냅샷과 투표 기록은 유지됩니다."
+              errorMessage={deleteErrorMessage}
+              isDeleting={isSubmitting}
+              onCancel={onCancelDelete}
+              onConfirm={onConfirmDelete}
+            />
+          ) : null}
         </>
       )}
     </div>
@@ -227,28 +226,4 @@ function Summary({ label, value }: { label: string; value: string }) {
       <dd className="mt-1 break-all font-medium">{value}</dd>
     </div>
   );
-}
-
-function Field({
-  label,
-  name,
-  ...props
-}: { label: string; name: string } & React.ComponentProps<typeof Input>) {
-  return (
-    <label className="grid gap-2 text-sm font-medium">
-      {label}
-      <Input name={name} {...props} />
-    </label>
-  );
-}
-
-function formHandler(
-  handler: (data: FormData) => void,
-  reset = false,
-) {
-  return (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    handler(new FormData(event.currentTarget));
-    if (reset) event.currentTarget.reset();
-  };
 }

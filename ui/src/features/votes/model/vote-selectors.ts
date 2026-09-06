@@ -12,6 +12,12 @@ function clampParticipationPercent(value: number) {
 
 export function toVoteSummary(vote: VoteSummary): VoteSummary {
   return {
+    ...(vote.activeBillingOrderId
+      ? { activeBillingOrderId: vote.activeBillingOrderId }
+      : {}),
+    ...(vote.billingOrderStatus
+      ? { billingOrderStatus: vote.billingOrderStatus }
+      : {}),
     commissionId: vote.commissionId,
     electoralRollSnapshotId: vote.electoralRollSnapshotId,
     id: vote.id,

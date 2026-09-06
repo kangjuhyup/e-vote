@@ -21,6 +21,11 @@ pnpm install
 pnpm dev
 ```
 
+When run inside Orca, `pnpm dev` opens four independent terminal tabs for the
+Vote API, Vote UI, Auth Service, and Auth UI. PostgreSQL and Redis continue in
+the background. Database migrations run before those terminals open. Outside
+Orca, the API and UI keep running in the current terminal as before.
+
 The default local ports are `5432` for PostgreSQL, `6381` for Redis, `3000`
 for the API server, `3001` for the vote UI, `3002` for the OIDC auth service,
 and `3003` for the auth admin UI.
@@ -150,6 +155,12 @@ After login, the UI stores the OIDC access token only inside the encrypted
 Auth.js JWT session cookie. The server-side `/api/vote-server/*` route reads
 that cookie and forwards the token to the Vote API as a Bearer token. It is not
 added to the browser-visible session object.
+
+The UI requests `offline_access` and keeps rotating refresh tokens in the same
+encrypted server-side session. Refresh requests repeat the Vote API `resource`
+parameter so replacement opaque access tokens retain the configured audience.
+Signing out revokes the refresh token before clearing the Auth.js session, then
+continues through the tenant OIDC end-session endpoint.
 
 The Vote API treats the access token as opaque. It authenticates as a
 confidential resource server and sends the token to the tenant's RFC 7662

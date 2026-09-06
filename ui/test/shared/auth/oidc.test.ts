@@ -52,7 +52,7 @@ describe('getVoteApiResource', () => {
 });
 
 describe('mapEVoteProfileToUser', () => {
-  it('maps userinfo claims into an Auth.js user without exposing tokens', () => {
+  it('maps ID token claims into an Auth.js user without exposing tokens', () => {
     expect(
       mapEVoteProfileToUser({
         sub: 'user-1',

@@ -115,12 +115,7 @@ export function VoteCommissionSetup({
         {selectedCommission ? (
           <div className="rounded-md border bg-muted/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="font-medium">{selectedCommission.name}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {selectedCommission.id}
-                </p>
-              </div>
+              <p className="font-medium">{selectedCommission.name}</p>
               <span className="text-sm text-muted-foreground">
                 등록 위원 {selectedCommission.members.length}명
               </span>

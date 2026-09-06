@@ -1,8 +1,28 @@
 import { describe, expect, it } from "vitest";
 
-import { toCandidateItems } from "@/features/votes/lib/vote-view-models";
+import {
+  getVoteStatusLabel,
+  getVoteStatusVariant,
+  toCandidateItems,
+} from "@/features/votes/lib/vote-view-models";
 
 describe("vote view models", () => {
+  it("shows active billing lifecycle states ahead of the stored vote status", () => {
+    expect(getVoteStatusLabel("draft", "PENDING_PAYMENT")).toBe(
+      "결제 처리 중",
+    );
+    expect(getVoteStatusVariant("draft", "PENDING_PAYMENT")).toBe(
+      "secondary",
+    );
+    expect(getVoteStatusLabel("finalized", "PAID")).toBe(
+      "확정됨(개시 전)",
+    );
+    expect(getVoteStatusLabel("finalized", "REFUND_PENDING")).toBe(
+      "확정됨(개시 전)",
+    );
+    expect(getVoteStatusLabel("draft")).toBe("초안");
+  });
+
   it("orders candidate items by ballot order", () => {
     const items = toCandidateItems([
       {

@@ -1,14 +1,9 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import type { ElectoralRollPageRecord } from "@/features/votes/model/electoral-roll.types";
-import { formatKoreanDateTime } from "@/shared/lib/date-format";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { ElectoralRollPageRecord } from '@/features/votes/model/electoral-roll.types';
+import { formatKoreanDateTime } from '@/shared/lib/date-format';
 
 interface ElectoralRollListProps {
   onPageChange: (page: number) => void;
@@ -45,26 +40,32 @@ export function ElectoralRollList({
               aria-label="선거인명부 목록 표"
               tabIndex={0}
             >
-              <table className="w-full min-w-[900px] text-left text-sm">
+              <table className="w-full min-w-[760px] text-left text-sm">
                 <caption className="sr-only">선거인명부 목록</caption>
                 <thead className="border-b bg-muted/50 text-muted-foreground">
                   <tr>
                     <th scope="col" className="py-3 pl-6 pr-3 font-medium">
                       명부
                     </th>
-                    <th scope="col" className="px-3 py-3 font-medium">
-                      선거관리위원회 ID
-                    </th>
-                    <th scope="col" className="px-3 py-3 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="px-3 py-3 text-right font-medium"
+                    >
                       구성원
                     </th>
-                    <th scope="col" className="px-3 py-3 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="px-3 py-3 text-right font-medium"
+                    >
                       revision
                     </th>
                     <th scope="col" className="px-3 py-3 font-medium">
                       최종 수정
                     </th>
-                    <th scope="col" className="py-3 pl-3 pr-6 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="py-3 pl-3 pr-6 text-right font-medium"
+                    >
                       관리
                     </th>
                   </tr>
@@ -74,12 +75,6 @@ export function ElectoralRollList({
                     <tr key={roll.id} className="hover:bg-muted/30">
                       <td className="py-4 pl-6 pr-3">
                         <p className="font-medium">{roll.name}</p>
-                        <p className="mt-1 font-mono text-xs text-muted-foreground">
-                          {roll.id}
-                        </p>
-                      </td>
-                      <td className="break-all px-3 py-4 text-muted-foreground">
-                        {roll.commissionId}
                       </td>
                       <td className="px-3 py-4 text-right tabular-nums">
                         {roll.memberCount.toLocaleString()}명

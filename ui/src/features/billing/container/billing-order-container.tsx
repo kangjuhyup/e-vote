@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { RetryErrorCard } from "@/components/feedback/retry-error-card";
 import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
@@ -34,7 +34,7 @@ export function BillingOrderContainer({
   const orderQuery = useQuery(billingOrderQueryOptions(billingOrderId));
   const cancelMutation = useMutation({
     mutationFn: billingApi.cancelVoteUsageOrder,
-    onSuccess: (order) => {
+    onSuccess: async (order) => {
       queryClient.setQueryData(
         billingOrderQueryOptions(billingOrderId).queryKey,
         order,
@@ -44,14 +44,21 @@ export function BillingOrderContainer({
       setMessage(
         order.status === "REFUND_PENDING"
           ? "취소 요청을 접수했습니다. 결제 금액은 환불 처리 중입니다."
-          : "주문과 확정된 투표를 취소했습니다.",
+          : "결제 주문을 취소하고 투표 상태 갱신을 요청했습니다.",
       );
+      await queryClient.invalidateQueries({ queryKey: ["votes"] });
     },
   });
   const order = orderQuery.data;
+  const orderStatus = order?.status;
   const cancelableByStatus = order
     ? isBillingOrderCancelable(order.status)
     : false;
+
+  useEffect(() => {
+    if (!orderStatus) return;
+    void queryClient.invalidateQueries({ queryKey: ["votes"] });
+  }, [orderStatus, queryClient]);
 
   function handleCancel() {
     const reason = cancelReason.trim();
@@ -61,7 +68,7 @@ export function BillingOrderContainer({
       return;
     }
     if (!cancelConfirmed) {
-      setMessage("취소 후 투표를 다시 사용할 수 없다는 내용을 확인해 주세요.");
+      setMessage("취소·환불 처리 중의 투표 잠금 내용을 확인해 주세요.");
       return;
     }
     cancelMutation.mutate({ billingOrderId, reason });

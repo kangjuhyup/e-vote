@@ -8,6 +8,12 @@ import {
 } from "@/features/votes/lib/vote-search-params";
 
 describe("vote search params", () => {
+  it("accepts the finalized vote status filter", () => {
+    expect(
+      readVoteListSearchParams(new URLSearchParams("status=finalized")),
+    ).toEqual({ statusFilter: "finalized", searchText: "" });
+  });
+
   it("reads valid vote-list filters and normalizes invalid status values", () => {
     expect(
       readVoteListSearchParams(

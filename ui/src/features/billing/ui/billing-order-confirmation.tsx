@@ -17,6 +17,7 @@ import {
 } from "../lib/billing-view-models";
 
 interface BillingOrderConfirmationProps {
+  blockingReasons?: string[];
   errorMessage?: string;
   hasCommission: boolean;
   isConfirmed: boolean;
@@ -27,6 +28,7 @@ interface BillingOrderConfirmationProps {
 }
 
 export function BillingOrderConfirmation({
+  blockingReasons = [],
   errorMessage,
   hasCommission,
   isConfirmed,
@@ -35,6 +37,11 @@ export function BillingOrderConfirmation({
   onCreateOrder,
   order,
 }: BillingOrderConfirmationProps) {
+  const canCreateOrder = hasCommission && blockingReasons.length === 0;
+  const canCreateReplacementOrder =
+    order?.status === "CANCELED" || order?.status === "REFUNDED";
+  const showOrder = order && !canCreateReplacementOrder;
+
   return (
     <Card className="mt-5 rounded-lg border-primary/20 shadow-none">
       <CardHeader>
@@ -52,7 +59,7 @@ export function BillingOrderConfirmation({
             {errorMessage}
           </p>
         ) : null}
-        {order ? (
+        {showOrder ? (
           <div className="space-y-4">
             <dl className="grid gap-3 sm:grid-cols-3">
               <Summary label="주문 금액" value={formatBillingAmount(order.amount, order.currency)} />
@@ -60,7 +67,11 @@ export function BillingOrderConfirmation({
               <Summary label="가격 구간" value={`${order.pricingUnitCount.toLocaleString()}구간`} />
             </dl>
             <p className="text-sm leading-6 text-muted-foreground">
-              금액과 가격 기준은 서버가 주문 생성 시점에 확정한 값입니다. 결제 완료 처리는 외부 Payment 서비스의 승인 결과로만 반영됩니다.
+              {order.status === "PENDING_PAYMENT"
+                ? "결제 처리 중입니다. 완료될 때까지 투표는 초안으로 표시되지만 설정은 잠깁니다."
+                : order.status === "REFUND_PENDING"
+                  ? "환불 처리 중입니다. 환불이 완료될 때까지 투표의 확정 상태와 설정 잠금이 유지됩니다."
+                  : "결제가 완료되어 투표가 확정됐습니다. 아직 투표를 개시하기 전 상태입니다."}
             </p>
             <Button asChild>
               <Link href={`/billing/vote-usage-orders/${order.id}`}>
@@ -70,20 +81,38 @@ export function BillingOrderConfirmation({
           </div>
         ) : (
           <div className="space-y-4">
+            {order ? (
+              <p className="rounded-md border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                이전 주문은 {billingStatusLabels[order.status]} 상태입니다. 투표가 다시 초안으로 전환되어 설정을 수정하거나 새 결제를 요청할 수 있습니다.
+              </p>
+            ) : null}
             <div className="flex items-start gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-100">
               <AlertTriangle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
               <div>
-                <p className="font-medium">주문 생성과 동시에 투표 설정이 확정됩니다.</p>
+                <p className="font-medium">주문 생성과 동시에 결제 처리가 시작됩니다.</p>
                 <p className="mt-1 leading-6">
-                  이후 투표 설정, 선거인, 연결된 선거인명부 스냅샷을 변경할 수 없습니다. 금액은 서버가 유효 선거인 수를 기준으로 계산합니다.
+                  주문이 결제 대기 중인 동안에도 투표 설정, 선거인, 연결된 선거인명부 스냅샷은 잠깁니다. 결제가 완료되면 투표가 확정됩니다.
                 </p>
               </div>
             </div>
-            {!hasCommission ? (
+            {blockingReasons.length > 0 ? (
+              <div className="rounded-md border bg-muted/40 px-4 py-3 text-sm">
+                <p className="font-medium">확정 전에 필요한 설정</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+                  {blockingReasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : !hasCommission ? (
               <p className="text-sm text-destructive">
-                이용료 주문을 생성하려면 활성 위원으로 등록된 선거관리위원회를 투표에 지정해야 합니다.
+                투표를 확정하려면 이 투표를 운영할 선거관리위원회를 먼저 지정해야 합니다.
               </p>
-            ) : (
+            ) : null}
+            <p className="text-sm leading-6 text-muted-foreground">
+              결제 주문 생성 권한은 선거관리위원회 소속이 아니라 현재 로그인한 사용자가 투표를 생성했는지를 기준으로 확인합니다.
+            </p>
+            {canCreateOrder ? (
               <label className="flex items-start gap-3 text-sm">
                 <input
                   type="checkbox"
@@ -91,16 +120,20 @@ export function BillingOrderConfirmation({
                   checked={isConfirmed}
                   onChange={(event) => onConfirmChange(event.target.checked)}
                 />
-                <span>주문 생성 후 투표 설정이 잠기며, 변경하려면 취소 후 새 투표를 만들어야 함을 확인했습니다.</span>
+                <span>결제가 완료되거나 주문 취소·환불이 끝날 때까지 투표 설정이 잠긴다는 내용을 확인했습니다.</span>
               </label>
-            )}
+            ) : null}
             <Button
               type="button"
-              disabled={!hasCommission || !isConfirmed || isSubmitting}
+              disabled={!canCreateOrder || !isConfirmed || isSubmitting}
               onClick={onCreateOrder}
             >
               <LockKeyhole aria-hidden="true" />
-              {isSubmitting ? "주문 생성 중…" : "이용료 주문 생성 및 투표 확정"}
+              {isSubmitting
+                ? "주문 생성 중…"
+                : canCreateReplacementOrder
+                  ? "이용료 다시 결제"
+                  : "이용료 결제 요청"}
             </Button>
           </div>
         )}

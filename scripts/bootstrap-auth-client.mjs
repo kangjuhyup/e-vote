@@ -8,6 +8,7 @@ const DEFAULT_ALLOWED_RESOURCE = 'https://vote-api.example.com';
 const DEFAULT_RESOURCE_SERVER_CLIENT_ID = 'vote-api';
 const DEFAULT_RESOURCE_SERVER_SECRET =
   'vote-local-introspection-secret-change-me';
+const TENANT_CODE = 'acme';
 
 function normalizeAllowedResource(value) {
   let url;
@@ -23,7 +24,6 @@ function normalizeAllowedResource(value) {
 
   return url.origin;
 }
-
 function sameValues(actual, expected) {
   return (
     Array.isArray(actual) &&
@@ -41,7 +41,7 @@ export function createDesiredClient(env = process.env) {
     grantTypes: ['authorization_code', 'refresh_token'],
     responseTypes: ['code'],
     tokenEndpointAuthMethod: 'none',
-    scope: 'openid profile email',
+    scope: 'openid profile email offline_access',
     postLogoutRedirectUris: [
       env.AUTH_CLIENT_POST_LOGOUT_URI || DEFAULT_POST_LOGOUT_URI,
     ],
@@ -80,6 +80,16 @@ export function createDesiredResourceServer(env = process.env) {
   };
 }
 
+export function createDesiredScope() {
+  return {
+    name: 'offline_access',
+    displayName: 'Offline Access',
+    description: 'Allows the e-vote client to renew expired access tokens.',
+    claimKeys: [],
+    enabled: true,
+  };
+}
+
 export function isCompatibleClient(actual, expected) {
   return (
     actual?.clientId === expected.clientId &&
@@ -105,13 +115,17 @@ export function isCompatibleClient(actual, expected) {
   );
 }
 
-function canUpdateAllowedResources(actual, expected) {
+function canUpdatePublicClient(actual, expected) {
   return (
     expected.type === 'public' &&
     typeof actual?.id === 'string' &&
     actual.id.length > 0 &&
     isCompatibleClient(
-      { ...actual, allowedResources: expected.allowedResources },
+      {
+        ...actual,
+        scope: expected.scope,
+        allowedResources: expected.allowedResources,
+      },
       expected,
     )
   );
@@ -145,6 +159,35 @@ async function requireOk(response, errorCode) {
   return response;
 }
 
+async function ensureOfflineAccessScope({ baseUrl, cookieHeader, fetchImpl }) {
+  const listResponse = await requireOk(
+    await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/scopes?limit=100`, {
+      headers: { cookie: cookieHeader },
+    }),
+    'AUTH_SCOPE_LIST_FAILED',
+  );
+  const result = await listResponse.json();
+  const existing = result.items?.find(
+    (scope) => scope.name === 'offline_access' && scope.enabled === true,
+  );
+
+  if (existing) return 'existing';
+
+  await requireOk(
+    await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/scopes`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: cookieHeader,
+      },
+      body: JSON.stringify(createDesiredScope()),
+    }),
+    'AUTH_SCOPE_CREATE_FAILED',
+  );
+
+  return 'created';
+}
+
 export async function bootstrapAuthClient({
   env = process.env,
   fetchImpl = fetch,
@@ -168,8 +211,10 @@ export async function bootstrapAuthClient({
   );
   const cookieHeader = extractCookieHeader(loginResponse);
 
+  await ensureOfflineAccessScope({ baseUrl, cookieHeader, fetchImpl });
+
   const listResponse = await requireOk(
-    await fetchImpl(`${baseUrl}/t/acme/admin/clients?limit=100`, {
+    await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/clients?limit=100`, {
       headers: { cookie: cookieHeader },
     }),
     'AUTH_CLIENT_LIST_FAILED',
@@ -183,10 +228,10 @@ export async function bootstrapAuthClient({
 
     if (existing) {
       if (!isCompatibleClient(existing, desiredClient)) {
-        if (canUpdateAllowedResources(existing, desiredClient)) {
+        if (canUpdatePublicClient(existing, desiredClient)) {
           await requireOk(
             await fetchImpl(
-              `${baseUrl}/t/acme/admin/clients/${encodeURIComponent(existing.id)}`,
+              `${baseUrl}/t/${TENANT_CODE}/admin/clients/${encodeURIComponent(existing.id)}`,
               {
                 method: 'PUT',
                 headers: {
@@ -194,6 +239,7 @@ export async function bootstrapAuthClient({
                   cookie: cookieHeader,
                 },
                 body: JSON.stringify({
+                  scope: desiredClient.scope,
                   allowedResources: desiredClient.allowedResources,
                 }),
               },
@@ -209,7 +255,7 @@ export async function bootstrapAuthClient({
     }
 
     await requireOk(
-      await fetchImpl(`${baseUrl}/t/acme/admin/clients`, {
+      await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/clients`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -228,7 +274,9 @@ export async function bootstrapAuthClient({
   }
 
   await requireOk(
-    await fetchImpl(`${baseUrl}/t/acme/oidc/.well-known/openid-configuration`),
+    await fetchImpl(
+      `${baseUrl}/t/${TENANT_CODE}/oidc/.well-known/openid-configuration`,
+    ),
     'AUTH_DISCOVERY_FAILED',
   );
 

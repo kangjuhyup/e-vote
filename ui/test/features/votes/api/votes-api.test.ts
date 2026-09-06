@@ -173,7 +173,7 @@ describe("votes api", () => {
 
   it("maps server vote status DTO values into UI vote statuses", () => {
     expect(
-      ["DRAFT", "OPEN", "CLOSED", "CANCELED"].map((status) =>
+      ["DRAFT", "FINALIZED", "OPEN", "CLOSED", "CANCELED"].map((status) =>
         mapVoteSummaryResponse(
           voteSummaryDto({
             id: `vote-${status}`,
@@ -186,13 +186,14 @@ describe("votes api", () => {
       ),
     ).toEqual([
       expect.objectContaining({ status: "draft" }),
+      expect.objectContaining({ status: "finalized" }),
       expect.objectContaining({ status: "active" }),
       expect.objectContaining({ status: "completed" }),
       expect.objectContaining({ status: "canceled" }),
     ]);
   });
 
-  it("maps future draft votes into the scheduled dashboard bucket", () => {
+  it("keeps future draft votes as drafts until payment finalizes them", () => {
     expect(
       mapVoteSummaryResponse(
         voteSummaryDto({
@@ -201,7 +202,33 @@ describe("votes api", () => {
         }),
         "2026-08-13T00:00:00.000Z",
       ),
-    ).toEqual(expect.objectContaining({ status: "scheduled" }));
+    ).toEqual(expect.objectContaining({ status: "draft" }));
+  });
+
+  it.each(["PENDING_PAYMENT", "PAID", "REFUND_PENDING"] as const)(
+    "preserves the active billing order contract for %s",
+    (billingOrderStatus) => {
+      expect(
+        mapVoteSummaryResponse(
+          voteSummaryDto({
+            activeBillingOrderId: "billing-order-1",
+            billingOrderStatus,
+          }),
+        ),
+      ).toEqual(
+        expect.objectContaining({
+          activeBillingOrderId: "billing-order-1",
+          billingOrderStatus,
+        }),
+      );
+    },
+  );
+
+  it("keeps terminal or unauthorized billing fields omitted", () => {
+    const vote = mapVoteSummaryResponse(voteSummaryDto());
+
+    expect(vote).not.toHaveProperty("activeBillingOrderId");
+    expect(vote).not.toHaveProperty("billingOrderStatus");
   });
 
   it("preserves the attached electoral-roll snapshot id", () => {
@@ -318,21 +345,17 @@ describe("votes api", () => {
     });
   });
 
-  it("enriches vote summaries with detail elector totals from the configured server API", async () => {
+  it("maps vote summaries without issuing per-vote detail requests", async () => {
     const fetcher = vi.fn(async (input: string) => {
       if (input === "http://localhost:3000/votes?page=1&pageSize=100") {
-        return jsonResponse(pageDto([voteSummaryDto()]));
-      }
-
-      if (input === "http://localhost:3000/votes/vote-1") {
-        return jsonResponse(voteDetailDto());
-      }
-
-      if (
-        input ===
-        "http://localhost:3000/votes/vote-1/electors?page=1&pageSize=100"
-      ) {
-        return jsonResponse(pageDto([electorDto()]));
+        return jsonResponse(
+          pageDto([
+            voteSummaryDto({
+              activeBillingOrderId: "billing-order-1",
+              billingOrderStatus: "PENDING_PAYMENT",
+            }),
+          ]),
+        );
       }
 
       throw new Error(`unexpected URL: ${input}`);
@@ -347,17 +370,17 @@ describe("votes api", () => {
       expect.objectContaining({
         id: "vote-1",
         status: "active",
+        activeBillingOrderId: "billing-order-1",
+        billingOrderStatus: "PENDING_PAYMENT",
         startsAt: "2026-08-10T09:00:00.000Z",
         endsAt: "2026-08-20T09:00:00.000Z",
-        electorCount: 1,
+        electorCount: 0,
         participatedCount: 0,
         participationKnown: false,
       }),
     ]);
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
       "http://localhost:3000/votes?page=1&pageSize=100",
-      "http://localhost:3000/votes/vote-1",
-      "http://localhost:3000/votes/vote-1/electors?page=1&pageSize=100",
     ]);
   });
 

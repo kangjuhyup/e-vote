@@ -1,20 +1,22 @@
-"use client";
+'use client';
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 
-import { PageShell } from "@/components/layout/page-shell";
-import { Button } from "@/components/ui/button";
-import { billingApi } from "@/features/billing/api/billing-api";
-import type { BillingOrder } from "@/features/billing/model/billing.types";
-import { BillingOrderConfirmation } from "@/features/billing/ui/billing-order-confirmation";
-import { electoralRollPageQueryOptions } from "@/features/votes/api/electoral-roll-query-options";
-import { voteOperationsApi } from "@/features/votes/api/vote-operations-api";
-import { commissionManagementQueryOptions } from "@/features/votes/api/vote-operations-query-options";
-import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
+import { PageShell } from '@/components/layout/page-shell';
+import { Button } from '@/components/ui/button';
+import { billingApi } from '@/features/billing/api/billing-api';
+import { billingOrderQueryOptions } from '@/features/billing/api/billing-query-options';
+import { BillingOrderConfirmation } from '@/features/billing/ui/billing-order-confirmation';
+import { electoralRollPageQueryOptions } from '@/features/votes/api/electoral-roll-query-options';
+import { voteAttachmentApi } from '@/features/votes/api/vote-attachment-api';
+import { voteOperationsApi } from '@/features/votes/api/vote-operations-api';
+import { commissionManagementQueryOptions } from '@/features/votes/api/vote-operations-query-options';
+import { isVoteApiMockMode } from '@/features/votes/api/votes-api';
+import { resolveVoteSchedule } from '@/features/votes/lib/vote-schedule';
 import type {
   CreateVoteInput,
   CreateVoteResult,
@@ -23,69 +25,91 @@ import type {
   ResultStorageMode,
   VoteWeightMode,
   VotingChannel,
-} from "@/features/votes/model/vote-operations.types";
+} from '@/features/votes/model/vote-operations.types';
 
-import { VoteNavigation } from "../ui/vote-navigation";
+import { VoteNavigation } from '../ui/vote-navigation';
+import { AttachmentUploadSection } from '../ui/attachment-upload-section';
 import {
   VoteSetupWizard,
   type VoteSetupBallotDraft,
   type VoteSetupStep,
-} from "../ui/vote-setup-wizard";
+} from '../ui/vote-setup-wizard';
 
 interface VoteSetupContainerProps {
   account?: ReactNode;
 }
 
-type VoteDraft = Omit<CreateVoteInput, "electoralRollId">;
+type VoteDraft = Omit<CreateVoteInput, 'commissionId' | 'electoralRollId'>;
+type CreatedSetupBallot = {
+  candidates: Array<{ id: string; name: string }>;
+  id: string;
+  title: string;
+};
 
 export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
   const queryClient = useQueryClient();
   const isMockMode = isVoteApiMockMode();
-  const [step, setStep] = useState<VoteSetupStep>("basics");
+  const [step, setStep] = useState<VoteSetupStep>('basics');
   const [voteDraft, setVoteDraft] = useState<VoteDraft>();
   const [ballotDrafts, setBallotDrafts] = useState<VoteSetupBallotDraft[]>([]);
   const [draftBallotType, setDraftBallotType] = useState<
-    "CANDIDATE" | "YES_NO"
-  >("CANDIDATE");
+    'CANDIDATE' | 'YES_NO'
+  >('CANDIDATE');
   const [selectedElectoralRollId, setSelectedElectoralRollId] =
     useState<string>();
   const [createdVote, setCreatedVote] = useState<CreateVoteResult>();
   const [createdSubVoteIds, setCreatedSubVoteIds] = useState<string[]>([]);
+  const [createdBallots, setCreatedBallots] = useState<CreatedSetupBallot[]>([]);
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>();
   const [message, setMessage] = useState<string>();
   const [errorMessage, setErrorMessage] = useState<string>();
-  const [billingOrder, setBillingOrder] = useState<BillingOrder>();
+  const [billingOrderId, setBillingOrderId] = useState<string>();
   const [billingConfirmed, setBillingConfirmed] = useState(false);
 
   const commissionsQuery = useQuery(commissionManagementQueryOptions(1, 100));
   const electoralRollsQuery = useQuery(
     electoralRollPageQueryOptions({ page: 1, pageSize: 100 }),
   );
+  const billingOrderQuery = useQuery({
+    ...billingOrderQueryOptions(billingOrderId ?? ''),
+    enabled: Boolean(billingOrderId),
+  });
+  const billingOrder = billingOrderQuery.data;
+  const attachmentLocked =
+    Boolean(billingOrderId && !billingOrder) ||
+    billingOrder?.status === 'PENDING_PAYMENT' ||
+    billingOrder?.status === 'PAID' ||
+    billingOrder?.status === 'REFUND_PENDING';
   const selectedElectoralRoll = electoralRollsQuery.data?.items.find(
     (roll) => roll.id === selectedElectoralRollId,
   );
 
   const createSetupMutation = useMutation({
     mutationFn: async () => {
-      if (!voteDraft || ballotDrafts.length === 0 || !selectedElectoralRollId) {
-        throw new Error("기본 정책, 안건, 선거인명부를 먼저 설정하세요.");
+      if (
+        !voteDraft ||
+        ballotDrafts.length === 0 ||
+        !selectedElectoralRollId ||
+        !selectedCommissionId
+      ) {
+        throw new Error(
+          '기본 정책, 안건, 선거인명부, 운영 위원회를 먼저 설정하세요.',
+        );
       }
       const vote = await voteOperationsApi.createVote({
         ...voteDraft,
+        commissionId: selectedCommissionId,
         electoralRollId: selectedElectoralRollId,
-        ...(selectedCommissionId
-          ? { commissionId: selectedCommissionId }
-          : {}),
       });
       const subVotes = await Promise.all(
-        ballotDrafts.map(async (ballot) => {
+        ballotDrafts.map(async (ballot, ballotIndex) => {
           const subVote = await voteOperationsApi.createSubVote({
             voteId: vote.id,
             title: ballot.title,
             type: ballot.type,
-            sortOrder: ballot.sortOrder,
+            sortOrder: ballotIndex,
           });
-          await Promise.all(
+          const candidates = await Promise.all(
             ballot.candidateNames.map((name, index) =>
               voteOperationsApi.createCandidate({
                 voteId: vote.id,
@@ -95,7 +119,14 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
               }),
             ),
           );
-          return subVote;
+          return {
+            candidates: candidates.map((candidate, index) => ({
+              id: candidate.id,
+              name: ballot.candidateNames[index] ?? `후보 ${index + 1}`,
+            })),
+            id: subVote.id,
+            title: ballot.title,
+          };
         }),
       );
       return { subVotes, vote };
@@ -103,22 +134,44 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
     onSuccess: async ({ subVotes, vote }) => {
       setCreatedVote(vote);
       setCreatedSubVoteIds(subVotes.map((subVote) => subVote.id));
-      setMessage("투표 설정을 생성했습니다.");
-      setStep("review");
+      setCreatedBallots(subVotes);
+      setMessage('투표 초안을 생성했습니다. 첨부파일을 등록해 주세요.');
+      setStep('attachments');
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["votes"] }),
-        queryClient.invalidateQueries({ queryKey: ["vote-operations"] }),
+        queryClient.invalidateQueries({ queryKey: ['votes'] }),
+        queryClient.invalidateQueries({ queryKey: ['vote-operations'] }),
       ]);
     },
   });
   const createBillingMutation = useMutation({
     mutationFn: billingApi.createVoteUsageOrder,
     onSuccess: (order) => {
-      setBillingOrder(order);
+      queryClient.setQueryData(
+        billingOrderQueryOptions(order.id).queryKey,
+        order,
+      );
+      setBillingOrderId(order.id);
       setBillingConfirmed(false);
-      setMessage("이용료 주문을 생성하고 투표 설정을 확정했습니다.");
+      setMessage(
+        order.status === 'PAID'
+          ? '결제가 완료되어 투표가 확정됐습니다.'
+          : '결제 주문을 생성했습니다. 결제가 완료될 때까지 투표 설정이 잠깁니다.',
+      );
     },
   });
+
+  useEffect(() => {
+    if (
+      !billingOrder ||
+      (billingOrder.status !== 'PAID' &&
+        billingOrder.status !== 'CANCELED' &&
+        billingOrder.status !== 'REFUND_PENDING' &&
+        billingOrder.status !== 'REFUNDED')
+    ) {
+      return;
+    }
+    void queryClient.invalidateQueries({ queryKey: ['votes'] });
+  }, [billingOrder, queryClient]);
 
   const isSubmitting =
     createSetupMutation.isPending || createBillingMutation.isPending;
@@ -131,50 +184,58 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
 
   function handleCreateVote(data: FormData) {
     clearStatus();
-    const channels = data.getAll("channel").map(String) as VotingChannel[];
+    const channels = data.getAll('channel').map(String) as VotingChannel[];
+    const schedule = resolveVoteSchedule(
+      String(data.get('startedAt') ?? ''),
+      String(data.get('endedAt') ?? ''),
+    );
     if (channels.length === 0) {
-      setErrorMessage("허용할 투표 채널을 하나 이상 선택하세요.");
+      setErrorMessage('허용할 투표 채널을 하나 이상 선택하세요.');
+      return;
+    }
+    if (!schedule.ok) {
+      setErrorMessage(schedule.errorMessage);
       return;
     }
 
     setVoteDraft({
-      title: String(data.get("title") ?? ""),
+      ...schedule.schedule,
+      title: String(data.get('title') ?? ''),
       votingChannels: channels,
       defaultPolicy: {
-        privacyMode: String(data.get("privacyMode")) as PrivacyMode,
+        privacyMode: String(data.get('privacyMode')) as PrivacyMode,
         participationUnit: String(
-          data.get("participationUnit"),
+          data.get('participationUnit'),
         ) as ParticipationUnit,
         resultStorageMode: String(
-          data.get("resultStorageMode"),
+          data.get('resultStorageMode'),
         ) as ResultStorageMode,
-        voteWeightMode: String(data.get("voteWeightMode")) as VoteWeightMode,
+        voteWeightMode: String(data.get('voteWeightMode')) as VoteWeightMode,
       },
       identityVerificationPolicy: {
-        required: data.get("identityRequired") === "on",
+        required: data.get('identityRequired') === 'on',
       },
     });
-    setMessage("기본 정책을 저장했습니다.");
-    setStep("ballot");
+    setMessage('기본 정책을 저장했습니다.');
+    setStep('ballot');
   }
 
   function handleCreateBallot(data: FormData) {
     clearStatus();
-    const type = String(data.get("type")) as "CANDIDATE" | "YES_NO";
+    const type = String(data.get('type')) as 'CANDIDATE' | 'YES_NO';
     const ballot = {
-      title: String(data.get("title") ?? ""),
+      title: String(data.get('title') ?? ''),
       type,
-      sortOrder: Number(data.get("sortOrder") ?? 0),
       candidateNames:
-        type === "CANDIDATE"
+        type === 'CANDIDATE'
           ? [
-              String(data.get("candidate1") ?? ""),
-              String(data.get("candidate2") ?? ""),
+              String(data.get('candidate1') ?? ''),
+              String(data.get('candidate2') ?? ''),
             ]
           : [],
     } satisfies VoteSetupBallotDraft;
     setBallotDrafts((current) => [...current, ballot]);
-    setDraftBallotType("CANDIDATE");
+    setDraftBallotType('CANDIDATE');
     setMessage(`${ballot.title} 안건을 추가했습니다.`);
   }
 
@@ -184,7 +245,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
       navigation={<VoteNavigation current="votes" isMockMode={isMockMode} />}
       eyebrow="투표 설정"
       title="새 투표 만들기"
-      description="기본 정책과 안건을 설정하고 기존 선거인명부를 연결한 뒤 운영 위원회를 선택합니다."
+      description="기본 정책과 안건을 설정하고 선거인명부와 운영 위원회를 연결한 뒤 투표·후보자 첨부파일을 등록합니다."
       actions={
         <Button type="button" variant="outline" asChild>
           <Link href="/votes">
@@ -195,6 +256,77 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
       }
     >
       <VoteSetupWizard
+        attachmentsPanel={
+          createdVote ? (
+            <AttachmentUploadSection
+              title="투표 첨부파일"
+              description="결제를 시작하기 전에 공고문, 안내 자료와 기타 문서를 등록하세요."
+              disabled={attachmentLocked}
+              typeOptions={[
+                { label: '공고문', value: 'NOTICE' },
+                { label: '안내 자료', value: 'GUIDE' },
+                { label: '기타', value: 'ETC' },
+              ]}
+              onRequestUpload={(metadata) =>
+                voteAttachmentApi.requestVoteUpload(
+                  { voteId: createdVote.id },
+                  metadata,
+                )
+              }
+              onUploadObject={voteAttachmentApi.uploadObject}
+              onConfirmUpload={(input) =>
+                voteAttachmentApi.confirmVoteUpload(
+                  { voteId: createdVote.id },
+                  input,
+                )
+              }
+            />
+          ) : undefined
+        }
+        candidateAttachmentsPanel={
+          createdVote &&
+          createdBallots.some((ballot) => ballot.candidates.length > 0) ? (
+            <div className="space-y-4">
+              {createdBallots.flatMap((ballot) =>
+                ballot.candidates.map((candidate) => (
+                  <AttachmentUploadSection
+                    key={candidate.id}
+                    title={`${ballot.title} · ${candidate.name} 첨부파일`}
+                    description="후보자 프로필 이미지, 공약집, 포스터와 기타 자료를 등록하세요."
+                    disabled={attachmentLocked}
+                    typeOptions={[
+                      { label: '프로필 이미지', value: 'PROFILE_IMAGE' },
+                      { label: '공약집', value: 'PLEDGE' },
+                      { label: '포스터', value: 'POSTER' },
+                      { label: '기타', value: 'ETC' },
+                    ]}
+                    onRequestUpload={(metadata) =>
+                      voteAttachmentApi.requestCandidateUpload(
+                        {
+                          candidateId: candidate.id,
+                          voteDetailId: ballot.id,
+                          voteId: createdVote.id,
+                        },
+                        metadata,
+                      )
+                    }
+                    onUploadObject={voteAttachmentApi.uploadObject}
+                    onConfirmUpload={(input) =>
+                      voteAttachmentApi.confirmCandidateUpload(
+                        {
+                          candidateId: candidate.id,
+                          voteDetailId: ballot.id,
+                          voteId: createdVote.id,
+                        },
+                        input,
+                      )
+                    }
+                  />
+                )),
+              )}
+            </div>
+          ) : undefined
+        }
         billingPanel={
           createdVote ? (
             <BillingOrderConfirmation
@@ -246,6 +378,16 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
           setBallotDrafts((current) =>
             current.filter((_, index) => index !== ballotIndex),
           );
+        }}
+        onReorderBallot={(fromIndex, toIndex) => {
+          clearStatus();
+          setBallotDrafts((current) => {
+            const reordered = [...current];
+            const [moved] = reordered.splice(fromIndex, 1);
+            if (!moved) return current;
+            reordered.splice(toIndex, 0, moved);
+            return reordered;
+          });
         }}
         onElectoralRollChange={(electoralRollId) => {
           clearStatus();

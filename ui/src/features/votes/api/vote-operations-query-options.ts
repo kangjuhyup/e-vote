@@ -36,6 +36,13 @@ export function commissionManagementQueryOptions(page: number, pageSize = 20) {
   });
 }
 
+export function commissionQueryOptions(commissionId: string) {
+  return queryOptions({
+    queryKey: ["vote-operations", apiMode, "commissions", commissionId],
+    queryFn: () => voteOperationsApi.fetchCommission(commissionId),
+  });
+}
+
 export function fieldSessionManagementQueryOptions(
   voteId: string,
   page: number,

@@ -1,4 +1,4 @@
-import { ArrowRight, ListTree } from "lucide-react";
+import { ArrowRight, ListTree, Paperclip } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyStateCard } from "@/components/feedback/empty-state-card";
@@ -54,12 +54,22 @@ export function VoteSubVoteSection({ subVotes, voteId }: VoteSubVoteSectionProps
                 <p className="line-clamp-2 min-h-10 text-sm text-muted-foreground">
                   {subVote.description || "등록된 설명이 없습니다."}
                 </p>
-                <Button type="button" variant="outline" className="mt-4 w-full" asChild>
-                  <Link href={`/votes/${voteId}/sub-votes/${subVote.id}`}>
-                    통계와 결과
-                    <ArrowRight aria-hidden="true" />
-                  </Link>
-                </Button>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <Button type="button" variant="outline" asChild>
+                    <Link href={`/votes/${voteId}/sub-votes/${subVote.id}`}>
+                      통계와 결과
+                      <ArrowRight aria-hidden="true" />
+                    </Link>
+                  </Button>
+                  <Button type="button" asChild>
+                    <Link
+                      href={`/votes/${voteId}/sub-votes/${subVote.id}#candidate-attachments`}
+                    >
+                      <Paperclip aria-hidden="true" />
+                      후보자 첨부파일
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
