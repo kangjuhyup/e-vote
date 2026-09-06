@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
 import {
+  AttachedFile,
+  AttachmentTarget,
   AttachmentTargetType,
   SaveAttachedFileParams,
   SaveAttachedFileResult,
@@ -38,6 +40,101 @@ export class AttachmentRepositoryAdapter implements AttachmentRepositoryPort {
       attachmentId: attachment.id as string,
       fileId: file.id as string,
       storageKey: params.file.storageKey,
+    };
+  }
+
+  async findAttachedFile(
+    target: AttachmentTarget,
+    attachmentId: string,
+  ): Promise<AttachedFile | undefined> {
+    const entities = await getDatabaseEntities();
+    const { entityClass, where } = this.resolveAttachmentTarget(
+      entities,
+      target,
+      attachmentId,
+    );
+    const attachment = (await this.em.findOne(entityClass as any, where, {
+      populate: ['file'],
+    } as any)) as unknown as
+      (DatabaseEntity & { readonly file: DatabaseEntity }) | null;
+
+    if (!attachment || attachment.file.status !== ACTIVE_FILE_STATUS) {
+      return undefined;
+    }
+
+    return {
+      attachmentId: attachment.id as string,
+      fileId: attachment.file.id as string,
+      storageKey: attachment.file.storageKey as string,
+      originalName: attachment.file.originalName as string,
+      mimeType: attachment.file.mimeType as string,
+      sizeBytes: attachment.file.sizeBytes as number,
+      attachmentType: attachment.type as AttachedFile['attachmentType'],
+      sortOrder: attachment.sortOrder as number,
+      createdAt: attachment.createdAt as Date,
+    };
+  }
+
+  async deleteAttachedFile(
+    target: AttachmentTarget,
+    attachmentId: string,
+    deletedAt: Date,
+  ): Promise<boolean> {
+    const entities = await getDatabaseEntities();
+    const { entityClass, where } = this.resolveAttachmentTarget(
+      entities,
+      target,
+      attachmentId,
+    );
+    const attachment = (await this.em.findOne(entityClass as any, where, {
+      populate: ['file'],
+    } as any)) as unknown as
+      (DatabaseEntity & { readonly file: DatabaseEntity }) | null;
+    if (!attachment || attachment.file.status !== ACTIVE_FILE_STATUS) {
+      return false;
+    }
+
+    this.em.remove(attachment as any);
+    this.em.assign(attachment.file as any, {
+      status: 'DELETED',
+      deletedAt,
+    });
+    await this.em.flush();
+    return true;
+  }
+
+  private resolveAttachmentTarget(
+    entities: Awaited<ReturnType<typeof getDatabaseEntities>>,
+    target: AttachmentTarget,
+    attachmentId: string,
+  ): { entityClass: unknown; where: Record<string, unknown> } {
+    if (target.targetType === AttachmentTargetType.Vote) {
+      return {
+        entityClass: entities.VoteAttachmentEntity,
+        where: { id: attachmentId, vote: { id: target.voteId } },
+      };
+    }
+    if (target.targetType === AttachmentTargetType.VoteDetail) {
+      return {
+        entityClass: entities.VoteDetailAttachmentEntity,
+        where: {
+          id: attachmentId,
+          voteDetail: { id: target.voteDetailId, vote: { id: target.voteId } },
+        },
+      };
+    }
+    return {
+      entityClass: entities.CandidateAttachmentEntity,
+      where: {
+        id: attachmentId,
+        candidate: {
+          id: target.candidateId,
+          voteDetail: {
+            id: target.voteDetailId,
+            vote: { id: target.voteId },
+          },
+        },
+      },
     };
   }
 

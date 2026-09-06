@@ -7,6 +7,7 @@ import { AttachmentTargetValidator } from '../attachment-target.validator';
 import {
   assertAttachmentType,
   assertAttachmentUploadMetadata,
+  attachmentUploadMetadataMatches,
   normalizeMimeType,
 } from '../attachment-upload.policy';
 import { ConfirmAttachmentUploadCommand } from '../dto/request/confirm-attachment-upload.command';
@@ -51,7 +52,11 @@ export class ConfirmAttachmentUploadHandler {
   ): Promise<ConfirmAttachmentUploadResult> {
     assertAttachmentUploadMetadata(command);
     assertAttachmentType(command.target, command.attachmentType);
-    await this.attachmentTargetValidator.assertExists(command.target);
+    await this.attachmentTargetValidator.assertOwnedBy(
+      command.target,
+      command.userPrincipalId,
+    );
+    await this.attachmentTargetValidator.assertMutable(command.target);
 
     const metadata = await this.storage.getObjectMetadata(command.storageKey);
 
@@ -62,7 +67,13 @@ export class ConfirmAttachmentUploadHandler {
     if (
       metadata.contentLength !== command.sizeBytes ||
       normalizeMimeType(metadata.contentType ?? '') !==
-        normalizeMimeType(command.mimeType)
+        normalizeMimeType(command.mimeType) ||
+      !attachmentUploadMetadataMatches(
+        metadata.metadata,
+        command.target,
+        command.attachmentType,
+        command.sortOrder,
+      )
     ) {
       throw new UploadedAttachmentMetadataMismatchError();
     }
@@ -70,6 +81,10 @@ export class ConfirmAttachmentUploadHandler {
     const attachment = await this.transactionManager.runInTransaction(
       async () => {
         await this.voteSetupLifecycle.lockVote(command.target.voteId);
+        await this.attachmentTargetValidator.assertOwnedBy(
+          command.target,
+          command.userPrincipalId,
+        );
         await this.attachmentTargetValidator.assertMutable(command.target);
 
         return this.attachmentRepository.saveAttachedFile({

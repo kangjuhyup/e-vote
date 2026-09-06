@@ -9,6 +9,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
 import { ConfirmAttachmentUploadHandler } from './modules/vote/application/command/handler/confirm-attachment-upload.handler';
+import { DeleteAttachmentHandler } from './modules/vote/application/command/handler/delete-attachment.handler';
 import { AddElectoralRollMembersHandler } from './modules/electoral-roll/application/command/handler/add-electoral-roll-members.handler';
 import { AttachElectoralRollSnapshotHandler } from './modules/vote/application/command/handler/attach-electoral-roll-snapshot.handler';
 import { AuthenticateElectorHandler } from './modules/elector/application/command/handler/authenticate-elector.handler';
@@ -41,6 +42,7 @@ import { UpdateVoteHandler } from './modules/vote/application/command/handler/up
 import { WithdrawCandidateHandler } from './modules/vote/application/command/handler/withdraw-candidate.handler';
 import { ELECTOR_IDENTITY_VERIFICATION_PORT } from './modules/elector/application/port/gateway/elector-identity-verification.port';
 import { GetCandidatePageHandler } from './modules/vote/application/query/handler/get-candidate-page.handler';
+import { GetAttachmentDownloadUrlHandler } from './modules/vote/application/query/handler/get-attachment-download-url.handler';
 import { GetCandidateHandler } from './modules/vote/application/query/handler/get-candidate.handler';
 import { GetElectionCommissionHandler } from './modules/election-commission/application/query/handler/get-election-commission.handler';
 import { GetElectionCommissionPageHandler } from './modules/election-commission/application/query/handler/get-election-commission-page.handler';
@@ -251,6 +253,8 @@ import { ConfirmElectorSignatureUploadHandler } from './modules/elector/applicat
     BlockElectorHandler,
     RequestAttachmentUploadHandler,
     ConfirmAttachmentUploadHandler,
+    DeleteAttachmentHandler,
+    GetAttachmentDownloadUrlHandler,
     SendVoteSmsHandler,
     GetVoteHandler,
     GetSmsDispatchPageHandler,

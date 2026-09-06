@@ -72,8 +72,29 @@ export type SaveAttachedFileResult = {
   readonly storageKey: string;
 };
 
+export type AttachedFile = {
+  readonly attachmentId: string;
+  readonly fileId: string;
+  readonly storageKey: string;
+  readonly originalName: string;
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+  readonly attachmentType: AttachmentType;
+  readonly sortOrder: number;
+  readonly createdAt: Date;
+};
+
 export interface AttachmentRepositoryPort {
   saveAttachedFile(
     params: SaveAttachedFileParams,
   ): Promise<SaveAttachedFileResult>;
+  findAttachedFile(
+    target: AttachmentTarget,
+    attachmentId: string,
+  ): Promise<AttachedFile | undefined>;
+  deleteAttachedFile(
+    target: AttachmentTarget,
+    attachmentId: string,
+    deletedAt: Date,
+  ): Promise<boolean>;
 }

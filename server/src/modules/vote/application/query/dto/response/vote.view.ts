@@ -11,6 +11,7 @@ import type {
   VoteStatus,
 } from '../../../../../../shared/domain/voting/type/vote-status.type';
 import type { VotingChannel } from '../../../../../../shared/domain/voting/type/voting-channel.type';
+import type { AttachmentView } from './attachment.view';
 
 export const ActiveBillingOrderStatus = {
   PendingPayment: 'PENDING_PAYMENT',
@@ -115,6 +116,7 @@ type CandidateViewProps = {
   readonly name: string;
   readonly description: string;
   readonly status: CandidateStatus;
+  readonly attachments?: readonly AttachmentView[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -127,6 +129,7 @@ export class CandidateView {
     readonly name: string,
     readonly description: string,
     readonly status: CandidateStatus,
+    readonly attachments: readonly AttachmentView[],
     readonly createdAt: Date,
     readonly updatedAt: Date,
   ) {}
@@ -139,6 +142,7 @@ export class CandidateView {
       params.name,
       params.description,
       params.status,
+      params.attachments ?? [],
       params.createdAt,
       params.updatedAt,
     );
@@ -154,6 +158,7 @@ type VoteDetailViewProps = {
   readonly overrides?: VotePolicyOverridesView;
   readonly sortOrder: number;
   readonly status: VoteDetailStatus;
+  readonly attachments?: readonly AttachmentView[];
   readonly candidates: readonly CandidateView[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -171,6 +176,7 @@ export class VoteDetailView {
     overrides: VotePolicyOverridesView | undefined,
     readonly sortOrder: number,
     readonly status: VoteDetailStatus,
+    readonly attachments: readonly AttachmentView[],
     readonly candidates: readonly CandidateView[],
     readonly createdAt: Date,
     readonly updatedAt: Date,
@@ -190,6 +196,7 @@ export class VoteDetailView {
       params.overrides,
       params.sortOrder,
       params.status,
+      params.attachments ?? [],
       params.candidates,
       params.createdAt,
       params.updatedAt,
@@ -201,6 +208,7 @@ type VoteSummaryViewProps = {
   readonly id: string;
   readonly commissionId: string;
   readonly title: string;
+  readonly attachments?: readonly AttachmentView[];
   readonly votingChannels: readonly VotingChannel[];
   readonly defaultPolicy: VotePolicyView;
   readonly identityVerificationPolicy: IdentityVerificationPolicyView;
@@ -223,6 +231,7 @@ export class VoteSummaryView {
     readonly id: string,
     readonly commissionId: string,
     readonly title: string,
+    readonly attachments: readonly AttachmentView[],
     readonly votingChannels: readonly VotingChannel[],
     readonly defaultPolicy: VotePolicyView,
     readonly identityVerificationPolicy: IdentityVerificationPolicyView,
@@ -251,6 +260,7 @@ export class VoteSummaryView {
       params.id,
       params.commissionId,
       params.title,
+      params.attachments ?? [],
       params.votingChannels,
       params.defaultPolicy,
       params.identityVerificationPolicy,
@@ -281,6 +291,7 @@ export class VoteView {
     readonly commissionId: string,
     readonly title: string,
     readonly description: string,
+    readonly attachments: readonly AttachmentView[],
     readonly votingChannels: readonly VotingChannel[],
     readonly defaultPolicy: VotePolicyView,
     readonly identityVerificationPolicy: IdentityVerificationPolicyView,
@@ -311,6 +322,7 @@ export class VoteView {
       params.commissionId,
       params.title,
       params.description,
+      params.attachments ?? [],
       params.votingChannels,
       params.defaultPolicy,
       params.identityVerificationPolicy,

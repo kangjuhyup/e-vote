@@ -51,6 +51,7 @@ import { CastParticipationHandler } from './modules/participation/application/co
         createPresignedGetObjectUrl: jest.fn(),
         createPresignedDeleteObjectUrl: jest.fn(),
         getObjectMetadata: jest.fn(),
+        deleteObject: jest.fn(),
       },
     },
     {
@@ -168,6 +169,8 @@ import { CastParticipationHandler } from './modules/participation/application/co
       provide: ATTACHMENT_REPOSITORY_PORT,
       useValue: {
         saveAttachedFile: jest.fn(),
+        findAttachedFile: jest.fn(),
+        deleteAttachedFile: jest.fn(),
       },
     },
   ],

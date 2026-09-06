@@ -41,6 +41,7 @@ type MockEntityManager = {
   readonly getReference: jest.Mock<{ id: unknown }, [unknown, unknown]>;
   readonly nativeDelete: jest.Mock<Promise<number>, [unknown, unknown]>;
   readonly persist: jest.Mock<void, [unknown]>;
+  readonly remove: jest.Mock<void, [unknown]>;
   readonly transactional: jest.Mock<
     Promise<unknown>,
     [(em: MockEntityManager) => Promise<unknown>]
@@ -453,6 +454,56 @@ describe('database repository adapters', () => {
       storageKey: 'attachments/detail-key',
     });
   });
+
+  it('resolves and soft-deletes an attachment only inside its target hierarchy', async () => {
+    const em = createMockEntityManager();
+    const file = {
+      id: 'file-1',
+      storageKey: 'attachments/opaque-key',
+      originalName: 'notice.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 1024,
+      status: 'ACTIVE',
+    };
+    const attachment = {
+      id: 'attachment-1',
+      file,
+      type: VoteAttachmentType.Notice,
+      sortOrder: 1,
+      createdAt: new Date('2026-09-06T00:00:00.000Z'),
+    };
+    em.findOne.mockResolvedValue(attachment);
+    const adapter = new AttachmentRepositoryAdapter(em as any);
+    const target = {
+      targetType: AttachmentTargetType.Vote,
+      voteId: 'vote-1',
+    } as const;
+
+    await expect(
+      adapter.findAttachedFile(target, 'attachment-1'),
+    ).resolves.toMatchObject({
+      attachmentId: 'attachment-1',
+      storageKey: 'attachments/opaque-key',
+      originalName: 'notice.pdf',
+    });
+    await expect(
+      adapter.deleteAttachedFile(
+        target,
+        'attachment-1',
+        new Date('2026-09-06T00:01:00.000Z'),
+      ),
+    ).resolves.toBe(true);
+
+    expect(em.findOne.mock.calls[0]?.[1]).toEqual({
+      id: 'attachment-1',
+      vote: { id: 'vote-1' },
+    });
+    expect(em.remove).toHaveBeenCalledWith(attachment);
+    expect(em.assign).toHaveBeenCalledWith(file, {
+      status: 'DELETED',
+      deletedAt: new Date('2026-09-06T00:01:00.000Z'),
+    });
+  });
 });
 
 function createdData(
@@ -493,6 +544,7 @@ function createMockEntityManager(): MockEntityManager {
       .fn<Promise<number>, [unknown, unknown]>()
       .mockResolvedValue(0),
     persist: jest.fn<void, [unknown]>(),
+    remove: jest.fn<void, [unknown]>(),
     transactional: jest.fn<
       Promise<unknown>,
       [(em: MockEntityManager) => Promise<unknown>]

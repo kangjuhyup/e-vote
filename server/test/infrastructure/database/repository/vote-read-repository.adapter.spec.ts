@@ -42,7 +42,10 @@ describe('VoteReadRepositoryAdapter', () => {
         'commission',
         'electoralRollSnapshot',
         'votingChannels',
+        'attachments.file',
+        'voteDetails.attachments.file',
         'voteDetails.candidates',
+        'voteDetails.candidates.attachments.file',
       ],
       strategy: LoadStrategy.SELECT_IN,
     });
@@ -52,6 +55,17 @@ describe('VoteReadRepositoryAdapter', () => {
       electoralRollSnapshotId: 'snapshot-1',
       title: 'Board election',
       description: 'Annual board election',
+      attachments: [
+        {
+          id: 'vote-attachment-1',
+          fileId: 'file-1',
+          type: 'NOTICE',
+          originalName: 'notice.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 100,
+          sortOrder: 1,
+        },
+      ],
       votingChannels: [VotingChannel.Onsite, VotingChannel.Online],
       defaultPolicy: {
         privacyMode: PrivacyMode.Secret,
@@ -106,6 +120,7 @@ describe('VoteReadRepositoryAdapter', () => {
     });
     expect(result).not.toHaveProperty('electors');
     expect(result).not.toHaveProperty('participations');
+    expect(result).not.toHaveProperty('attachments.0.storageKey');
     expect(em.find).toHaveBeenCalledTimes(1);
     expect(em.find.mock.calls[0][1]).toEqual({
       id: { $in: ['billing-order-1'] },
@@ -129,7 +144,12 @@ describe('VoteReadRepositoryAdapter', () => {
     });
 
     expect(em.findAndCount.mock.calls[0][2]).toMatchObject({
-      populate: ['commission', 'electoralRollSnapshot', 'votingChannels'],
+      populate: [
+        'commission',
+        'electoralRollSnapshot',
+        'votingChannels',
+        'attachments.file',
+      ],
       limit: 20,
       offset: 20,
       orderBy: {
@@ -201,6 +221,22 @@ function createVoteEntity(): Record<string, unknown> {
     electoralRollSnapshot: { id: 'snapshot-1' },
     title: 'Board election',
     description: 'Annual board election',
+    attachments: [
+      {
+        id: 'vote-attachment-1',
+        type: 'NOTICE',
+        sortOrder: 1,
+        createdAt: now,
+        file: {
+          id: 'file-1',
+          storageKey: 'attachments/opaque-key',
+          originalName: 'notice.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 100,
+          status: 'ACTIVE',
+        },
+      },
+    ],
     votingChannels: [
       { channel: VotingChannel.Onsite },
       { channel: VotingChannel.Online },
@@ -229,6 +265,7 @@ function createVoteEntity(): Record<string, unknown> {
         voteWeightModeOverride: null,
         sortOrder: 2,
         status: VoteDetailStatus.Draft,
+        attachments: [],
         createdAt: now,
         updatedAt: now,
         candidates: [],
@@ -244,6 +281,7 @@ function createVoteEntity(): Record<string, unknown> {
         voteWeightModeOverride: null,
         sortOrder: 1,
         status: VoteDetailStatus.Draft,
+        attachments: [],
         createdAt: now,
         updatedAt: now,
         candidates: [
@@ -253,6 +291,7 @@ function createVoteEntity(): Record<string, unknown> {
             name: 'Lee',
             description: '',
             status: 'ACTIVE',
+            attachments: [],
             createdAt: now,
             updatedAt: now,
           },
@@ -262,6 +301,7 @@ function createVoteEntity(): Record<string, unknown> {
             name: 'Kim',
             description: '',
             status: 'ACTIVE',
+            attachments: [],
             createdAt: now,
             updatedAt: now,
           },

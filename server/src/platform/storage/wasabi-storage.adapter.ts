@@ -17,20 +17,21 @@ import { WasabiStorageConfig } from './wasabi-storage.config';
 
 type PresignStorageCommand =
   PutObjectCommand | GetObjectCommand | DeleteObjectCommand;
-type InspectStorageCommand = HeadObjectCommand;
+type DirectStorageCommand = HeadObjectCommand | DeleteObjectCommand;
 
 type PresignStorageUrl = (
   client: S3Client,
   command: PresignStorageCommand,
   options: { expiresIn: number },
 ) => Promise<string>;
-type SendStorageCommand = (command: InspectStorageCommand) => Promise<{
+type InspectStorageOutput = {
   ContentType?: string;
   ContentLength?: number;
   ETag?: string;
   LastModified?: Date;
   Metadata?: Record<string, string>;
-}>;
+};
+type SendStorageCommand = (command: DirectStorageCommand) => Promise<unknown>;
 
 type StorageKeyGenerator = () => string;
 type Clock = () => Date;
@@ -107,7 +108,7 @@ export class WasabiStorageAdapter implements StoragePort {
     });
 
     try {
-      const output = await this.send(command);
+      const output = (await this.send(command)) as InspectStorageOutput;
 
       return {
         storageKey,
@@ -124,6 +125,15 @@ export class WasabiStorageAdapter implements StoragePort {
 
       throw error;
     }
+  }
+
+  async deleteObject(storageKey: string): Promise<void> {
+    await this.send(
+      new DeleteObjectCommand({
+        Bucket: this.config.bucket,
+        Key: storageKey,
+      }),
+    );
   }
 
   private async createPresignedUrl(
@@ -152,7 +162,7 @@ export class WasabiStorageAdapter implements StoragePort {
     return `${this.config.keyPrefix}/${key}`;
   }
 
-  private send(command: InspectStorageCommand): ReturnType<SendStorageCommand> {
+  private send(command: DirectStorageCommand): ReturnType<SendStorageCommand> {
     if (this.sendStorageCommand) {
       return this.sendStorageCommand(command);
     }

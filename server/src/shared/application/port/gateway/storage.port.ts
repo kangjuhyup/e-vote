@@ -32,6 +32,7 @@ export interface StoragePort {
   getObjectMetadata(
     storageKey: string,
   ): Promise<StoredObjectMetadata | undefined>;
+  deleteObject(storageKey: string): Promise<void>;
 }
 
 export class StorageNotConfiguredError extends Error {

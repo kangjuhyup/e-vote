@@ -18,11 +18,29 @@ import type {
 } from '../../../../../../shared/domain/voting/type/vote-policy.type';
 import type { VoteDetailStatus } from '../../../../../../shared/domain/voting/type/vote-status.type';
 import {
-  JOINED_RELATION_LOAD_OPTIONS,
+  SELECT_IN_RELATION_LOAD_OPTIONS,
   getDatabaseEntities,
+  loadedItems,
+  type LoadedCollectionLike,
 } from '../../../../../../platform/database/repository/database-repository.util';
+import { AttachmentView } from '../../../../application/query/dto/response/attachment.view';
+import type { AttachmentType } from '../../../../application/port/persistence/command/attachment-repository.port';
 
-const VOTE_DETAIL_READ_RELATIONS = ['vote'] as const;
+const VOTE_DETAIL_READ_RELATIONS = ['vote', 'attachments.file'] as const;
+
+type AttachmentReadPersistence = {
+  readonly id: string;
+  readonly type: AttachmentType;
+  readonly sortOrder: number;
+  readonly createdAt: Date;
+  readonly file: {
+    readonly id: string;
+    readonly originalName: string;
+    readonly mimeType: string;
+    readonly sizeBytes: number;
+    readonly status: string;
+  };
+};
 
 type VoteDetailReadPersistence = {
   readonly id: string;
@@ -36,6 +54,7 @@ type VoteDetailReadPersistence = {
   readonly voteWeightModeOverride: VoteWeightMode | null;
   readonly sortOrder: number;
   readonly status: VoteDetailStatus;
+  readonly attachments?: LoadedCollectionLike<AttachmentReadPersistence>;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -57,7 +76,7 @@ export class VoteDetailReadRepositoryAdapter implements VoteDetailReadRepository
       },
       {
         populate: VOTE_DETAIL_READ_RELATIONS,
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       } as any,
     )) as unknown as VoteDetailReadPersistence | null;
 
@@ -80,7 +99,7 @@ export class VoteDetailReadRepositoryAdapter implements VoteDetailReadRepository
           createdAt: 'desc',
           id: 'desc',
         },
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       } as any,
     )) as unknown as [VoteDetailReadPersistence[], number];
 
@@ -103,6 +122,26 @@ export class VoteDetailReadRepositoryAdapter implements VoteDetailReadRepository
       overrides: this.toOverridesView(entity),
       sortOrder: entity.sortOrder,
       status: entity.status,
+      attachments: loadedItems(entity.attachments ?? [])
+        .filter((attachment) => attachment.file.status === 'ACTIVE')
+        .map((attachment) =>
+          AttachmentView.of({
+            id: attachment.id,
+            fileId: attachment.file.id,
+            type: attachment.type,
+            originalName: attachment.file.originalName,
+            mimeType: attachment.file.mimeType,
+            sizeBytes: attachment.file.sizeBytes,
+            sortOrder: attachment.sortOrder,
+            createdAt: attachment.createdAt,
+          }),
+        )
+        .sort(
+          (left, right) =>
+            left.sortOrder - right.sortOrder ||
+            left.createdAt.getTime() - right.createdAt.getTime() ||
+            left.id.localeCompare(right.id),
+        ),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });

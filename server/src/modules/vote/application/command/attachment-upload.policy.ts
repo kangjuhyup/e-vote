@@ -102,3 +102,37 @@ export function assertAttachmentType(
     throw new UnsupportedAttachmentTypeError();
   }
 }
+
+export function createAttachmentUploadMetadata(
+  target: AttachmentTarget,
+  attachmentType: AttachmentType,
+  sortOrder: number,
+): Record<string, string> {
+  const metadata: Record<string, string> = {
+    targetType: target.targetType,
+    voteId: target.voteId,
+    attachmentType,
+    sortOrder: String(sortOrder),
+  };
+  if ('voteDetailId' in target) metadata.voteDetailId = target.voteDetailId;
+  if ('candidateId' in target) metadata.candidateId = target.candidateId;
+  return metadata;
+}
+
+export function attachmentUploadMetadataMatches(
+  actual: Readonly<Record<string, string>> | undefined,
+  target: AttachmentTarget,
+  attachmentType: AttachmentType,
+  sortOrder: number,
+): boolean {
+  if (!actual) return false;
+  const normalizedActual = new Map(
+    Object.entries(actual).map(([key, value]) => [key.toLowerCase(), value]),
+  );
+  return Object.entries(
+    createAttachmentUploadMetadata(target, attachmentType, sortOrder),
+  ).every(
+    ([key, expectedValue]) =>
+      normalizedActual.get(key.toLowerCase()) === expectedValue,
+  );
+}

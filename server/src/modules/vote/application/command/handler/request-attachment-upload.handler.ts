@@ -5,6 +5,7 @@ import { AttachmentTargetValidator } from '../attachment-target.validator';
 import {
   assertAttachmentType,
   assertAttachmentUploadMetadata,
+  createAttachmentUploadMetadata,
 } from '../attachment-upload.policy';
 import { RequestAttachmentUploadCommand } from '../dto/request/request-attachment-upload.command';
 import { RequestAttachmentUploadResult } from '../dto/response/request-attachment-upload-result.dto';
@@ -22,12 +23,20 @@ export class RequestAttachmentUploadHandler {
   ): Promise<RequestAttachmentUploadResult> {
     assertAttachmentUploadMetadata(command);
     assertAttachmentType(command.target, command.attachmentType);
-    await this.attachmentTargetValidator.assertExists(command.target);
+    await this.attachmentTargetValidator.assertOwnedBy(
+      command.target,
+      command.userPrincipalId,
+    );
+    await this.attachmentTargetValidator.assertMutable(command.target);
 
     const presignedUrl = await this.storage.createPresignedPutObjectUrl({
       contentType: command.mimeType,
       contentLength: command.sizeBytes,
-      metadata: this.createUploadMetadata(command),
+      metadata: createAttachmentUploadMetadata(
+        command.target,
+        command.attachmentType,
+        command.sortOrder,
+      ),
     });
 
     return RequestAttachmentUploadResult.of({
@@ -35,26 +44,5 @@ export class RequestAttachmentUploadHandler {
       uploadUrl: presignedUrl.url,
       expiresAt: presignedUrl.expiresAt,
     });
-  }
-
-  private createUploadMetadata(
-    command: RequestAttachmentUploadCommand,
-  ): Record<string, string> {
-    const metadata: Record<string, string> = {
-      targetType: command.target.targetType,
-      voteId: command.target.voteId,
-      attachmentType: command.attachmentType,
-      sortOrder: String(command.sortOrder),
-    };
-
-    if ('voteDetailId' in command.target) {
-      metadata.voteDetailId = command.target.voteDetailId;
-    }
-
-    if ('candidateId' in command.target) {
-      metadata.candidateId = command.target.candidateId;
-    }
-
-    return metadata;
   }
 }

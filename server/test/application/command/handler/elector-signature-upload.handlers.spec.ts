@@ -30,6 +30,7 @@ describe('elector signature upload handlers', () => {
       createPresignedGetObjectUrl: jest.fn(),
       createPresignedDeleteObjectUrl: jest.fn(),
       getObjectMetadata: jest.fn(),
+      deleteObject: jest.fn(),
     };
     participantAccess = { isAuthorized: jest.fn().mockResolvedValue(true) };
     repository = {

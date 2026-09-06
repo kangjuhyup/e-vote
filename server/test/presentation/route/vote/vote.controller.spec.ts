@@ -115,6 +115,7 @@ describe('VoteController', () => {
           id: 'vote-1',
           commissionId: 'commission-1',
           title: 'Board election',
+          attachments: [],
           votingChannels: [VotingChannel.Online],
           defaultPolicy: {
             privacyMode: PrivacyMode.Secret,
@@ -159,6 +160,7 @@ describe('VoteController', () => {
       commissionId: 'commission-1',
       title: 'Board election',
       description: 'Annual board election',
+      attachments: [],
       votingChannels: [VotingChannel.Online],
       defaultPolicy: {
         privacyMode: PrivacyMode.Secret,
@@ -184,6 +186,7 @@ describe('VoteController', () => {
           },
           sortOrder: 0,
           status: VoteStatus.Draft,
+          attachments: [],
           candidates: [
             {
               id: 'candidate-1',
@@ -192,6 +195,7 @@ describe('VoteController', () => {
               name: 'Kim',
               description: '',
               status: 'ACTIVE',
+              attachments: [],
               createdAt: '2026-08-12T00:00:00.000Z',
               updatedAt: '2026-08-12T01:00:00.000Z',
             },
@@ -313,6 +317,7 @@ describe('VoteController', () => {
     });
     expect(requestAttachmentUploadExecute).toHaveBeenCalledTimes(1);
     expect(requestAttachmentUploadExecute.mock.calls[0][0]).toMatchObject({
+      userPrincipalId: TEST_USER_PRINCIPAL.id,
       target: {
         targetType: AttachmentTargetType.Vote,
         voteId: 'vote-1',
@@ -353,6 +358,7 @@ describe('VoteController', () => {
     });
     expect(confirmAttachmentUploadExecute).toHaveBeenCalledTimes(1);
     expect(confirmAttachmentUploadExecute.mock.calls[0][0]).toMatchObject({
+      userPrincipalId: TEST_USER_PRINCIPAL.id,
       target: {
         targetType: AttachmentTargetType.Vote,
         voteId: 'vote-1',
