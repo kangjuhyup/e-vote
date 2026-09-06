@@ -7,6 +7,10 @@ export type BillingOrderStatus =
 
 export interface BillingOrder {
   amount: number;
+  baseAmount: number;
+  blockchainStorageAmount: number;
+  blockchainStorageCount: number;
+  blockchainStorageUnitPrice: number;
   cancelableUntil: string;
   cancellationReason?: string;
   cancellationWindowDays: number;

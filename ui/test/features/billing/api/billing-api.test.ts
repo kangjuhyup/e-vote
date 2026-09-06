@@ -15,7 +15,11 @@ function jsonResponse(data: unknown, status = 200) {
 
 function billingOrder(overrides: Record<string, unknown> = {}) {
   return {
-    amount: 6_000,
+    amount: 12_000,
+    baseAmount: 6_000,
+    blockchainStorageAmount: 6_000,
+    blockchainStorageCount: 2,
+    blockchainStorageUnitPrice: 3_000,
     cancelableUntil: "2026-09-07T00:00:00.000Z",
     cancellationWindowDays: 7,
     currency: "KRW",
@@ -44,7 +48,11 @@ describe("billing api", () => {
     });
 
     await expect(client.createVoteUsageOrder("vote/1")).resolves.toMatchObject({
-      amount: 6_000,
+      amount: 12_000,
+      baseAmount: 6_000,
+      blockchainStorageAmount: 6_000,
+      blockchainStorageCount: 2,
+      blockchainStorageUnitPrice: 3_000,
       id: "billing-order-1",
     });
     expect(fetcher).toHaveBeenCalledWith(
@@ -82,9 +90,17 @@ describe("billing api", () => {
       mode: "live",
     });
 
-    await client.cancelVoteUsageOrder({
-      billingOrderId: "billing-order-1",
-      reason: "투표 일정 변경",
+    await expect(
+      client.cancelVoteUsageOrder({
+        billingOrderId: "billing-order-1",
+        reason: "투표 일정 변경",
+      }),
+    ).resolves.toMatchObject({
+      amount: 12_000,
+      baseAmount: 6_000,
+      blockchainStorageAmount: 6_000,
+      blockchainStorageCount: 2,
+      blockchainStorageUnitPrice: 3_000,
     });
 
     expect(fetcher).toHaveBeenCalledWith(
@@ -108,6 +124,10 @@ describe("billing api", () => {
     expect(second).toEqual(first);
     expect(first).toMatchObject({
       amount: 3_000,
+      baseAmount: 3_000,
+      blockchainStorageAmount: 0,
+      blockchainStorageCount: 0,
+      blockchainStorageUnitPrice: 3_000,
       orderedByUserPrincipalId: "mock-user-principal",
       pricingUnitCount: 1,
       pricingUnitSize: 100,

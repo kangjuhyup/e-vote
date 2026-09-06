@@ -53,6 +53,10 @@ function billingOrder(
 ): BillingOrder {
   return {
     amount: 3_000,
+    baseAmount: 3_000,
+    blockchainStorageAmount: 0,
+    blockchainStorageCount: 0,
+    blockchainStorageUnitPrice: 3_000,
     cancelableUntil: '2026-09-12T00:00:00.000Z',
     cancellationWindowDays: 7,
     currency: 'KRW',
