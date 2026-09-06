@@ -1,4 +1,5 @@
 import { isApiMockMode } from "@/shared/config/api-mode";
+import { voteApiFetch } from "@/shared/auth/vote-api-fetch";
 
 import type {
   SendFieldSessionSmsInput,
@@ -134,7 +135,7 @@ export function createVoteSmsApiClient(
 ) {
   const mode = options.mode ?? (isApiMockMode() ? "mock" : "live");
   const baseUrl = (options.baseUrl ?? resolveBaseUrl()).replace(/\/+$/, "");
-  const fetcher = options.fetcher ?? fetch;
+  const fetcher = options.fetcher ?? voteApiFetch;
   const now = options.now ?? (() => new Date().toISOString());
   let sequence = 0;
   const mockDispatches: SmsDispatchDetail[] = [];

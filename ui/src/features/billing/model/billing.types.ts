@@ -16,7 +16,7 @@ export interface BillingOrder {
   electorCount: number;
   id: string;
   issuedAt: string;
-  orderedByUserPrincipalId?: string;
+  orderedByUserPrincipalId: string;
   paidAt?: string;
   paymentId?: string;
   pricingUnitCount: number;

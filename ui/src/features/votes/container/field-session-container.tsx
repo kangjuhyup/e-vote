@@ -6,7 +6,10 @@ import { useState } from "react";
 import { RetryErrorCard } from "@/components/feedback/retry-error-card";
 import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
 import { voteOperationsApi } from "@/features/votes/api/vote-operations-api";
-import { fieldSessionManagementQueryOptions } from "@/features/votes/api/vote-operations-query-options";
+import {
+  commissionManagementQueryOptions,
+  fieldSessionManagementQueryOptions,
+} from "@/features/votes/api/vote-operations-query-options";
 import { voteSmsApi } from "@/features/votes/api/vote-sms-api";
 
 import { FieldSessionManagement } from "../ui/field-session-management";
@@ -35,6 +38,10 @@ export function FieldSessionContainer({
   const sessionsQuery = useQuery(
     fieldSessionManagementQueryOptions(voteId, page, PAGE_SIZE),
   );
+  const commissionsQuery = useQuery({
+    ...commissionManagementQueryOptions(1, 100),
+    enabled: Boolean(commissionId),
+  });
   const createMutation = useMutation({
     mutationFn: voteOperationsApi.createFieldSession,
     onSuccess: async (item) => {
@@ -75,8 +82,16 @@ export function FieldSessionContainer({
       setPendingSmsSessionId(undefined);
     },
   });
-  const error = createMutation.error ?? statusMutation.error ?? smsMutation.error;
+  const error =
+    createMutation.error ??
+    statusMutation.error ??
+    smsMutation.error ??
+    commissionsQuery.error;
   const data = sessionsQuery.data;
+  const managers =
+    commissionsQuery.data?.items
+      .find((commission) => commission.id === commissionId)
+      ?.members.filter((member) => member.status === "ACTIVE") ?? [];
 
   return (
     <section aria-labelledby="field-session-operations-title" className="space-y-4">
@@ -100,7 +115,8 @@ export function FieldSessionContainer({
         <FieldSessionManagement
           allowedChannels={allowedChannels}
           commissionId={commissionId}
-          voteId={voteId}
+          isManagersLoading={commissionsQuery.isLoading}
+          managers={managers}
           sessions={data?.items ?? []}
           page={data?.page ?? page}
           totalPages={data?.totalPages ?? 0}
@@ -123,6 +139,14 @@ export function FieldSessionContainer({
               setMessage("투표에 설정된 현장·방문 채널만 선택할 수 있습니다.");
               return;
             }
+            const managerIds = formData
+              .getAll("managerIds")
+              .map(String)
+              .filter(Boolean);
+            if (managerIds.length === 0) {
+              setMessage("담당 관리자를 한 명 이상 선택해 주세요.");
+              return;
+            }
             createMutation.mutate({
               voteId,
               commissionId,
@@ -130,10 +154,7 @@ export function FieldSessionContainer({
               title: String(formData.get("title") ?? ""),
               locationName: String(formData.get("locationName") ?? ""),
               address: String(formData.get("address") ?? ""),
-              managerIds: String(formData.get("managerIds") ?? "")
-                .split(",")
-                .map((value) => value.trim())
-                .filter(Boolean),
+              managerIds,
               startsAt: new Date(
                 String(formData.get("startsAt")),
               ).toISOString(),

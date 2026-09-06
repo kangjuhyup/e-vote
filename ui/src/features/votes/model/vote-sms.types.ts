@@ -52,6 +52,7 @@ export function getVoteSmsPurpose(
   switch (status) {
     case "draft":
     case "scheduled":
+    case "finalized":
       return "UPCOMING_VOTE_NOTICE";
     case "active":
       return "VOTE_PARTICIPATION_REMINDER";

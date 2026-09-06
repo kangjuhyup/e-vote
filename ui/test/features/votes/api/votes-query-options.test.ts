@@ -7,10 +7,17 @@ vi.hoisted(() => {
 });
 
 import {
+  VOTE_LIFECYCLE_REFETCH_INTERVAL_MS,
+  getVoteListRefetchInterval,
   voteDashboardQueryOptions,
   voteDetailQueryOptions,
+  voteListQueryOptions,
 } from "@/features/votes/api/votes-query-options";
-import type { VoteDashboard, VoteDetail } from "@/features/votes/model/vote.types";
+import type {
+  VoteDashboard,
+  VoteDetail,
+  VoteSummary,
+} from "@/features/votes/model/vote.types";
 
 async function runQuery<T>(queryFn: unknown): Promise<T> {
   if (typeof queryFn !== "function") {
@@ -21,6 +28,17 @@ async function runQuery<T>(queryFn: unknown): Promise<T> {
 }
 
 describe("votes query options", () => {
+  const draftVote: VoteSummary = {
+    id: "vote-1",
+    title: "초안 투표",
+    status: "draft",
+    startsAt: "2026-09-10T00:00:00.000Z",
+    endsAt: "2026-09-11T00:00:00.000Z",
+    electorCount: 0,
+    participatedCount: 0,
+    participationKnown: false,
+  };
+
   it("isolates mock data in mode-specific query cache keys", () => {
     expect(voteDashboardQueryOptions().queryKey).toEqual([
       "votes",
@@ -63,5 +81,28 @@ describe("votes query options", () => {
 
     expect(dashboard.activeVotes[0]).not.toHaveProperty("candidates");
     expect(dashboard.activeVotes[0]).not.toHaveProperty("electors");
+  });
+
+  it.each(["PENDING_PAYMENT", "REFUND_PENDING"] as const)(
+    "polls the single vote-list query while an order is %s",
+    (billingOrderStatus) => {
+      expect(
+        getVoteListRefetchInterval([{ ...draftVote, billingOrderStatus }]),
+      ).toBe(VOTE_LIFECYCLE_REFETCH_INTERVAL_MS);
+    },
+  );
+
+  it("stops list polling when no transitional active order is exposed", () => {
+    expect(
+      getVoteListRefetchInterval([
+        { ...draftVote, billingOrderStatus: "PAID" },
+      ]),
+    ).toBe(false);
+    expect(getVoteListRefetchInterval([draftVote])).toBe(false);
+    expect(voteListQueryOptions().queryKey).toEqual([
+      "votes",
+      "mock",
+      "list",
+    ]);
   });
 });

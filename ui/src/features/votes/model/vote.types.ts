@@ -1,11 +1,17 @@
 export type VoteStatus =
   | "draft"
   | "scheduled"
+  | "finalized"
   | "active"
   | "completed"
   | "canceled";
 
 export type VoteStatusFilter = "all" | VoteStatus;
+
+export type ActiveVoteBillingOrderStatus =
+  | "PENDING_PAYMENT"
+  | "PAID"
+  | "REFUND_PENDING";
 
 export type ElectorParticipationFilter =
   | "all"
@@ -13,6 +19,8 @@ export type ElectorParticipationFilter =
   | "not-participated";
 
 export interface VoteSummary {
+  activeBillingOrderId?: string;
+  billingOrderStatus?: ActiveVoteBillingOrderStatus;
   commissionId?: string;
   electoralRollSnapshotId?: string;
   id: string;

@@ -9,9 +9,12 @@ import { ElectoralRollMemberSection } from "@/features/votes/ui/electoral-roll-m
 const members: ElectoralRollMemberDraft[] = Array.from(
   { length: 26 },
   (_, index) => ({
+    birthDate: index === 0 ? "1990-**-**" : undefined,
     draftId: `member-id-${index + 1}`,
     groupKey: `group-${index + 1}`,
     identifier: `member-${index + 1}`,
+    name: index === 0 ? "김*표" : undefined,
+    phoneNumber: index === 0 ? "010-****-1201" : undefined,
     sourceMemberId: `member-id-${index + 1}`,
     voteWeight: 1,
   }),
@@ -40,6 +43,25 @@ describe("ElectoralRollMemberSection", () => {
     const view = render(<ElectoralRollMemberSection {...props} />);
 
     expect(screen.getAllByRole("row")).toHaveLength(26);
+    expect(
+      screen.queryByRole("columnheader", { name: "구성원 ID" }),
+    ).toBeNull();
+    expect(screen.queryByText("member-id-1")).toBeNull();
+    expect(screen.getByRole("columnheader", { name: "이름" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "휴대폰번호" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "생년월일" })).toBeTruthy();
+    expect(screen.getByLabelText("member-1 구성원 이름")).toHaveProperty(
+      "value",
+      "김*표",
+    );
+    expect(screen.getByLabelText("member-1 구성원 휴대폰번호")).toHaveProperty(
+      "value",
+      "010-****-1201",
+    );
+    expect(screen.getByLabelText("member-1 구성원 생년월일")).toHaveProperty(
+      "value",
+      "1990-**-**",
+    );
     expect(screen.getByText("1-25 / 26명")).toBeTruthy();
     expect(screen.queryByLabelText("member-26 구성원 식별자")).toBeNull();
 
@@ -81,6 +103,14 @@ describe("ElectoralRollMemberSection", () => {
       "member-id-1",
       "identifier",
       "member-1-updated",
+    );
+    fireEvent.change(screen.getByLabelText("member-1 구성원 이름"), {
+      target: { value: "김대표" },
+    });
+    expect(onMemberChange).toHaveBeenCalledWith(
+      "member-id-1",
+      "name",
+      "김대표",
     );
     expect(screen.queryByRole("button", { name: "변경 저장" })).toBeNull();
 

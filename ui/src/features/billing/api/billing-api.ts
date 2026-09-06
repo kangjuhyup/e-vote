@@ -1,6 +1,8 @@
 import { isApiMockMode } from "@/shared/config/api-mode";
+import { voteApiFetch } from "@/shared/auth/vote-api-fetch";
 
 import { unwrapVoteApiResponse } from "@/features/votes/api/votes-api";
+import { voteFixtureDetails } from "@/features/votes/api/votes-fixtures";
 
 import type {
   BillingOrder,
@@ -33,6 +35,7 @@ async function request<T>(
   baseUrl: string,
   path: string,
   init: RequestInit = {},
+  accessDeniedMessage = "이 결제 주문을 관리할 권한이 없습니다.",
 ) {
   if (baseUrl.length === 0) {
     throw new Error("NEXT_PUBLIC_VOTE_API_BASE_URL is required in live mode");
@@ -52,7 +55,7 @@ async function request<T>(
       throw new Error("결제 요청 내용을 확인해 주세요.");
     }
     if (response.status === 403) {
-      throw new Error("이 결제 주문을 관리할 권한이 없습니다.");
+      throw new Error(accessDeniedMessage);
     }
     if (response.status === 404) {
       throw new Error("결제 주문 또는 연결된 투표를 찾을 수 없습니다.");
@@ -71,16 +74,24 @@ export function createBillingApiClient(
 ) {
   const mode = options.mode ?? (isApiMockMode() ? "mock" : "live");
   const baseUrl = (options.baseUrl ?? resolveBaseUrl()).replace(/\/+$/, "");
-  const fetcher = options.fetcher ?? fetch;
+  const fetcher = options.fetcher ?? voteApiFetch;
   const now = options.now ?? (() => new Date().toISOString());
   const mockOrders = new Map<string, BillingOrder>();
   const mockOrderIdByVoteId = new Map<string, string>();
+  const mockFetchCountByOrderId = new Map<string, number>();
   let sequence = 0;
 
   async function createVoteUsageOrder(voteId: string): Promise<BillingOrder> {
     if (mode === "mock") {
       const existingId = mockOrderIdByVoteId.get(voteId);
-      if (existingId) return mockOrders.get(existingId)!;
+      const existingOrder = existingId ? mockOrders.get(existingId) : undefined;
+      if (
+        existingOrder &&
+        existingOrder.status !== "CANCELED" &&
+        existingOrder.status !== "REFUNDED"
+      ) {
+        return existingOrder;
+      }
 
       sequence += 1;
       const issuedAt = now();
@@ -94,6 +105,7 @@ export function createBillingApiClient(
         electorCount: 3,
         id: `billing-order-${sequence}`,
         issuedAt,
+        orderedByUserPrincipalId: "mock-user-principal",
         pricingUnitCount: 1,
         pricingUnitSize: 100,
         productCode: "VOTE_USAGE",
@@ -104,6 +116,12 @@ export function createBillingApiClient(
       };
       mockOrders.set(order.id, order);
       mockOrderIdByVoteId.set(voteId, order.id);
+      mockFetchCountByOrderId.set(order.id, 0);
+      const vote = voteFixtureDetails.find((item) => item.id === voteId);
+      if (vote) {
+        vote.activeBillingOrderId = order.id;
+        vote.billingOrderStatus = "PENDING_PAYMENT";
+      }
       return order;
     }
 
@@ -112,6 +130,7 @@ export function createBillingApiClient(
       baseUrl,
       "/billing/vote-usage-orders",
       { method: "POST", body: JSON.stringify({ voteId }) },
+      "투표 생성자만 새 결제 주문을 만들 수 있고, 기존 주문은 주문 생성자만 다시 요청할 수 있습니다. 생성자 정보가 없는 기존 투표는 운영자 보정 전까지 결제할 수 없습니다.",
     );
   }
 
@@ -121,6 +140,39 @@ export function createBillingApiClient(
     if (mode === "mock") {
       const order = mockOrders.get(billingOrderId);
       if (!order) throw new Error("결제 주문을 찾을 수 없습니다.");
+      if (
+        order.status === "PENDING_PAYMENT" ||
+        order.status === "REFUND_PENDING"
+      ) {
+        const fetchCount = (mockFetchCountByOrderId.get(order.id) ?? 0) + 1;
+        mockFetchCountByOrderId.set(order.id, fetchCount);
+        if (fetchCount >= 2) {
+          const transitioned: BillingOrder =
+            order.status === "PENDING_PAYMENT"
+              ? {
+                  ...order,
+                  paidAt: now(),
+                  paymentId: `mock-payment-${order.id}`,
+                  status: "PAID",
+                }
+              : { ...order, refundedAt: now(), status: "REFUNDED" };
+          mockOrders.set(order.id, transitioned);
+          const vote = voteFixtureDetails.find(
+            (item) => item.id === order.voteId,
+          );
+          if (vote) {
+            vote.status = transitioned.status === "PAID" ? "finalized" : "draft";
+            if (transitioned.status === "PAID") {
+              vote.activeBillingOrderId = transitioned.id;
+              vote.billingOrderStatus = "PAID";
+            } else {
+              delete vote.activeBillingOrderId;
+              delete vote.billingOrderStatus;
+            }
+          }
+          return transitioned;
+        }
+      }
       return order;
     }
 
@@ -128,6 +180,8 @@ export function createBillingApiClient(
       fetcher,
       baseUrl,
       `/billing/vote-usage-orders/${encode(billingOrderId)}`,
+      {},
+      "결제 주문을 생성한 사용자만 이 주문을 조회할 수 있습니다.",
     );
   }
 
@@ -148,6 +202,25 @@ export function createBillingApiClient(
         status: order.status === "PAID" ? "REFUND_PENDING" : "CANCELED",
       };
       mockOrders.set(canceled.id, canceled);
+      mockFetchCountByOrderId.set(canceled.id, 0);
+      if (canceled.status === "CANCELED") {
+        const vote = voteFixtureDetails.find(
+          (item) => item.id === canceled.voteId,
+        );
+        if (vote) {
+          vote.status = "draft";
+          delete vote.activeBillingOrderId;
+          delete vote.billingOrderStatus;
+        }
+      } else {
+        const vote = voteFixtureDetails.find(
+          (item) => item.id === canceled.voteId,
+        );
+        if (vote) {
+          vote.activeBillingOrderId = canceled.id;
+          vote.billingOrderStatus = "REFUND_PENDING";
+        }
+      }
       return canceled;
     }
 
@@ -156,6 +229,7 @@ export function createBillingApiClient(
       baseUrl,
       `/billing/vote-usage-orders/${encode(input.billingOrderId)}/cancellation`,
       { method: "POST", body: JSON.stringify({ reason: input.reason }) },
+      "결제 주문을 생성한 사용자만 이 주문을 취소할 수 있습니다.",
     );
   }
 

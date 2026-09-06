@@ -30,7 +30,7 @@ const MEMBERS_PER_PAGE = 25;
 interface ElectoralRollMemberSectionProps {
   isSubmitting: boolean;
   members: ElectoralRollMemberDraft[];
-  onAddMember: (data: FormData) => void;
+  onAddMember: (data: FormData) => boolean | void;
   onImportMembers: (
     members: ElectoralRollImportMemberInput[],
   ) => Promise<StageElectoralRollMembersResult>;
@@ -71,8 +71,9 @@ export function ElectoralRollMemberSection({
     return [
       member.identifier,
       member.groupKey,
-      member.sourceMemberId,
-      member.draftId,
+      member.name,
+      member.phoneNumber,
+      member.birthDate,
     ].some((value) => value?.toLocaleLowerCase().includes(normalizedSearchText));
   });
   const pageCount = Math.max(
@@ -132,11 +133,44 @@ export function ElectoralRollMemberSection({
           <CardTitle className="text-base">구성원 추가</CardTitle>
         </CardHeader>
         <CardContent>
+          <p
+            id="electoral-roll-identity-guidance"
+            className="mb-4 text-sm leading-6 text-muted-foreground"
+          >
+            이름과 휴대폰번호는 선택 항목이지만 함께 입력해야 합니다.
+            생년월일은 두 항목을 입력한 경우에만 YYYY-MM-DD 형식으로
+            입력하세요. 본인인증 투표에 사용할 명부는 모든 선거인의 이름과
+            휴대폰번호가 필요합니다. 마스킹된 본인인증 정보를 변경할 때는
+            이름과 휴대폰번호를 모두 다시 입력하세요.
+          </p>
           <form
-            className="grid gap-3 sm:grid-cols-3 sm:items-end"
+            className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 lg:items-end"
             onSubmit={formHandler(onAddMember, true)}
           >
             <Field label="새 구성원 식별자" name="identifier" required />
+            <Field
+              label="새 구성원 이름"
+              name="name"
+              autoComplete="off"
+              aria-describedby="electoral-roll-identity-guidance"
+            />
+            <Field
+              label="새 구성원 휴대폰번호"
+              name="phoneNumber"
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              placeholder="010-1234-5678"
+              aria-describedby="electoral-roll-identity-guidance"
+            />
+            <Field
+              label="새 구성원 생년월일"
+              name="birthDate"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="YYYY-MM-DD"
+              aria-describedby="electoral-roll-identity-guidance"
+            />
             <Field label="새 구성원 그룹 키" name="groupKey" />
             <Field
               label="새 구성원 투표 가중치"
@@ -149,7 +183,7 @@ export function ElectoralRollMemberSection({
             />
             <Button
               type="submit"
-              className="sm:col-span-3"
+              className="md:col-span-2 lg:col-span-3"
               disabled={isSubmitting}
             >
               <Plus aria-hidden="true" />
@@ -184,7 +218,7 @@ export function ElectoralRollMemberSection({
                 <SearchField
                   label="명부 구성원 검색"
                   name="memberSearch"
-                  placeholder="식별자, 그룹 키 또는 ID 검색"
+                  placeholder="식별자, 이름, 휴대폰번호 또는 그룹 키 검색"
                   value={searchText}
                   onValueChange={onSearchTextChange}
                 />
@@ -208,24 +242,32 @@ export function ElectoralRollMemberSection({
                   aria-label="명부 구성원 표"
                   tabIndex={0}
                 >
-                  <table className="w-full min-w-[960px] table-fixed text-left text-sm">
+                  <table className="w-full min-w-[1320px] table-fixed text-left text-sm">
                     <caption className="sr-only">
                       명부 구성원 정보 및 수정 기능
                     </caption>
                     <colgroup>
-                      <col className="w-[21%]" />
-                      <col className="w-[24%]" />
-                      <col className="w-[22%]" />
-                      <col className="w-[15%]" />
                       <col className="w-[18%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[17%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[11%]" />
+                      <col className="w-[12%]" />
                     </colgroup>
                     <thead className="border-b bg-muted/50 text-muted-foreground">
                       <tr>
                         <th scope="col" className="py-3 pl-6 pr-3 font-medium">
-                          구성원 ID
+                          식별자
                         </th>
                         <th scope="col" className="px-3 py-3 font-medium">
-                          식별자
+                          이름
+                        </th>
+                        <th scope="col" className="px-3 py-3 font-medium">
+                          휴대폰번호
+                        </th>
+                        <th scope="col" className="px-3 py-3 font-medium">
+                          생년월일
                         </th>
                         <th scope="col" className="px-3 py-3 font-medium">
                           그룹 키
@@ -315,14 +357,6 @@ function MemberTableRow({
   return (
     <tr className="transition-colors hover:bg-muted/30">
       <td className="py-3 pl-6 pr-3 align-middle">
-        <span
-          className="block truncate font-mono text-xs text-muted-foreground"
-          title={member.sourceMemberId ?? "저장 대기"}
-        >
-          {member.sourceMemberId ?? "저장 후 생성"}
-        </span>
-      </td>
-      <td className="px-3 py-3 align-middle">
         <Input
           aria-label={`${member.identifier} 구성원 식별자`}
           className="h-9 min-h-9"
@@ -331,6 +365,46 @@ function MemberTableRow({
             onMemberChange(member.draftId, "identifier", event.target.value)
           }
           required
+        />
+      </td>
+      <td className="px-3 py-3 align-middle">
+        <Input
+          aria-label={`${member.identifier} 구성원 이름`}
+          aria-describedby="electoral-roll-identity-guidance"
+          className="h-9 min-h-9"
+          autoComplete="off"
+          value={member.name ?? ""}
+          onChange={(event) =>
+            onMemberChange(member.draftId, "name", event.target.value)
+          }
+        />
+      </td>
+      <td className="px-3 py-3 align-middle">
+        <Input
+          aria-label={`${member.identifier} 구성원 휴대폰번호`}
+          aria-describedby="electoral-roll-identity-guidance"
+          className="h-9 min-h-9"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          value={member.phoneNumber ?? ""}
+          onChange={(event) =>
+            onMemberChange(member.draftId, "phoneNumber", event.target.value)
+          }
+        />
+      </td>
+      <td className="px-3 py-3 align-middle">
+        <Input
+          aria-label={`${member.identifier} 구성원 생년월일`}
+          aria-describedby="electoral-roll-identity-guidance"
+          className="h-9 min-h-9 tabular-nums"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="YYYY-MM-DD"
+          value={member.birthDate ?? ""}
+          onChange={(event) =>
+            onMemberChange(member.draftId, "birthDate", event.target.value)
+          }
         />
       </td>
       <td className="px-3 py-3 align-middle">
@@ -389,12 +463,12 @@ function Field({
 }
 
 function formHandler(
-  handler: (data: FormData) => void,
+  handler: (data: FormData) => boolean | void,
   reset = false,
 ) {
   return (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    handler(new FormData(event.currentTarget));
-    if (reset) event.currentTarget.reset();
+    const shouldReset = handler(new FormData(event.currentTarget)) !== false;
+    if (reset && shouldReset) event.currentTarget.reset();
   };
 }

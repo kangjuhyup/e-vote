@@ -110,7 +110,9 @@ export function ElectoralRollImportCard({
             <CardTitle className="text-base">엑셀로 일괄 등록</CardTitle>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               템플릿을 내려받아 작성한 뒤 업로드하세요. 기존 구성원은
-              유지되고 새 구성원만 추가됩니다.
+              유지되고 새 구성원만 추가됩니다. 이름·휴대폰번호·생년월일은
+              선택 항목이며, 본인인증 투표에 사용할 때는 이름과
+              휴대폰번호를 모두 입력해야 합니다.
             </p>
           </div>
         </div>
@@ -155,7 +157,8 @@ export function ElectoralRollImportCard({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          .xlsx · 최대 5MB · 한 번에 최대 5,000명 · 빈 가중치는 1
+          .xlsx · 최대 5MB · 한 번에 최대 5,000명 · 빈 가중치는 1 ·
+          이름과 휴대폰번호는 함께 입력
         </p>
 
         {isParsing ? (

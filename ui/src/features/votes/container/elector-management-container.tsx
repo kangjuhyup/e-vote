@@ -14,7 +14,12 @@ import { voteOperationsApi } from "@/features/votes/api/vote-operations-api";
 import { electorManagementQueryOptions } from "@/features/votes/api/vote-operations-query-options";
 import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
 import { voteDetailQueryOptions } from "@/features/votes/api/votes-query-options";
+import { isVoteSetupEditable } from "@/features/votes/lib/vote-finalization";
 
+import type {
+  ElectorRecord,
+  ParticipationInvitationRecord,
+} from "../model/vote-operations.types";
 import { ElectorManagementView } from "../ui/elector-management-view";
 import { VoteNavigation } from "../ui/vote-navigation";
 
@@ -29,11 +34,23 @@ export function ElectorManagementContainer({
 }: ElectorManagementContainerProps) {
   const [page, setPage] = useState(1);
   const [message, setMessage] = useState<string>();
+  const [deletingElector, setDeletingElector] = useState<ElectorRecord>();
+  const [invitationElector, setInvitationElector] = useState<ElectorRecord>();
+  const [invitation, setInvitation] =
+    useState<ParticipationInvitationRecord>();
   const queryClient = useQueryClient();
   const electorsQuery = useQuery(electorManagementQueryOptions(voteId, page));
   const voteQuery = useQuery(voteDetailQueryOptions(voteId));
   const electoralRollSnapshotId =
     voteQuery.data?.electoralRollSnapshotId ?? undefined;
+  const canDeleteElectors = Boolean(
+    voteQuery.data &&
+      !electoralRollSnapshotId &&
+      isVoteSetupEditable(
+        voteQuery.data.status,
+        voteQuery.data.billingOrderStatus,
+      ),
+  );
   const createMutation = useMutation({
     mutationFn: voteOperationsApi.createElector,
     onSuccess: async (elector) => {
@@ -44,6 +61,60 @@ export function ElectorManagementContainer({
       ]);
     },
   });
+  const invitationMutation = useMutation({
+    mutationFn: voteOperationsApi.issueParticipationInvitation,
+    onSuccess: setInvitation,
+  });
+  const deleteMutation = useMutation({
+    mutationFn: voteOperationsApi.deleteElector,
+    onSuccess: async () => {
+      const deletedName = deletingElector?.name ?? "선택한 선거인";
+      setDeletingElector(undefined);
+      setMessage(`${deletedName} 선거인을 삭제했습니다.`);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["vote-operations"] }),
+        queryClient.invalidateQueries({ queryKey: ["votes"] }),
+      ]);
+    },
+  });
+
+  function handleOpenInvitation(elector: ElectorRecord) {
+    invitationMutation.reset();
+    setInvitation(undefined);
+    setInvitationElector(elector);
+  }
+
+  function handleCloseInvitation() {
+    if (invitationMutation.isPending) return;
+    invitationMutation.reset();
+    setInvitation(undefined);
+    setInvitationElector(undefined);
+  }
+
+  function handleIssueInvitation() {
+    if (!invitationElector) return;
+    invitationMutation.mutate({
+      electorId: invitationElector.id,
+      voteId,
+    });
+  }
+
+  function handleRequestDelete(elector: ElectorRecord) {
+    deleteMutation.reset();
+    setMessage(undefined);
+    setDeletingElector(elector);
+  }
+
+  function handleCancelDelete() {
+    if (deleteMutation.isPending) return;
+    deleteMutation.reset();
+    setDeletingElector(undefined);
+  }
+
+  function handleConfirmDelete() {
+    if (!deletingElector || !canDeleteElectors) return;
+    deleteMutation.mutate({ electorId: deletingElector.id, voteId });
+  }
 
   function handleCreate(formData: FormData) {
     setMessage(undefined);
@@ -97,8 +168,24 @@ export function ElectorManagementContainer({
         />
       ) : electorsQuery.data ? (
         <ElectorManagementView
+          canDeleteElectors={canDeleteElectors}
+          deletingElector={deletingElector}
+          deletionError={
+            deleteMutation.error instanceof Error
+              ? deleteMutation.error.message
+              : undefined
+          }
           page={electorsQuery.data}
           electoralRollSnapshotId={electoralRollSnapshotId}
+          invitation={invitation}
+          invitationElector={invitationElector}
+          invitationError={
+            invitationMutation.error instanceof Error
+              ? invitationMutation.error.message
+              : undefined
+          }
+          isIssuingInvitation={invitationMutation.isPending}
+          isDeleting={deleteMutation.isPending}
           isSubmitting={createMutation.isPending}
           message={
             createMutation.error instanceof Error
@@ -106,7 +193,13 @@ export function ElectorManagementContainer({
               : message
           }
           onCreate={handleCreate}
+          onCancelDelete={handleCancelDelete}
+          onCloseInvitation={handleCloseInvitation}
+          onConfirmDelete={handleConfirmDelete}
+          onIssueInvitation={handleIssueInvitation}
+          onOpenInvitation={handleOpenInvitation}
           onPageChange={setPage}
+          onRequestDelete={handleRequestDelete}
         />
       ) : null}
     </PageShell>

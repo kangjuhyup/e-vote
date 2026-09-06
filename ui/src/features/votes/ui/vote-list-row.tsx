@@ -21,8 +21,11 @@ export function VoteListRow({ vote }: VoteListRowProps) {
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-medium">{vote.title}</h2>
             <StatusBadge
-              label={getVoteStatusLabel(vote.status)}
-              variant={getVoteStatusVariant(vote.status)}
+              label={getVoteStatusLabel(vote.status, vote.billingOrderStatus)}
+              variant={getVoteStatusVariant(
+                vote.status,
+                vote.billingOrderStatus,
+              )}
             />
           </div>
           <p className="mt-2 text-sm text-muted-foreground">

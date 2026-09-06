@@ -1,7 +1,9 @@
 import { LogOut, UserRound } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/shared/auth/auth";
+import { buildVoteEndSessionUrl } from "@/shared/auth/vote-logout";
 
 interface SessionControlsContainerProps {
   isMockMode?: boolean;
@@ -23,7 +25,9 @@ export function SessionControlsContainer({
           action={async () => {
             "use server";
 
-            await signOut({ redirectTo: "/" });
+            const endSessionUrl = buildVoteEndSessionUrl();
+            await signOut({ redirect: false });
+            redirect(endSessionUrl);
           }}
         >
           <Button type="submit" variant="ghost" size="sm">

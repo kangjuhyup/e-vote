@@ -1,27 +1,32 @@
-"use client";
+'use client';
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+import { useState } from 'react';
 
-import { RetryErrorCard } from "@/components/feedback/retry-error-card";
-import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
-import { PageShell } from "@/components/layout/page-shell";
-import { electoralRollApi } from "@/features/votes/api/electoral-roll-api";
+import { RetryErrorCard } from '@/components/feedback/retry-error-card';
+import { SkeletonCardGrid } from '@/components/feedback/skeleton-card-grid';
+import { PageShell } from '@/components/layout/page-shell';
+import { electoralRollApi } from '@/features/votes/api/electoral-roll-api';
 import {
   electoralRollPageQueryOptions,
   electoralRollQueryOptions,
-} from "@/features/votes/api/electoral-roll-query-options";
-import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
+} from '@/features/votes/api/electoral-roll-query-options';
+import { isVoteApiMockMode } from '@/features/votes/api/votes-api';
+import {
+  getElectoralRollMemberIdentityPatch,
+  validateElectoralRollMemberIdentity,
+} from '@/features/votes/lib/electoral-roll-member-validation';
 import type {
+  DeleteElectoralRollInput,
   ElectoralRollImportMemberInput,
   ElectoralRollMemberDraft,
   ElectoralRollMemberDraftField,
   ElectoralRollMemberRecord,
-} from "@/features/votes/model/electoral-roll.types";
+} from '@/features/votes/model/electoral-roll.types';
 
-import { ElectoralRollManagement } from "../ui/electoral-roll-management";
-import { VoteNavigation } from "../ui/vote-navigation";
+import { ElectoralRollManagement } from '../ui/electoral-roll-management';
+import { VoteNavigation } from '../ui/vote-navigation';
 
 let memberDraftSequence = 0;
 
@@ -37,14 +42,15 @@ export function ElectoralRollManagementContainer({
 }) {
   const queryClient = useQueryClient();
   const isMockMode = isVoteApiMockMode();
-  const [selectedRollId, setSelectedRollId] = useState("");
+  const [selectedRollId, setSelectedRollId] = useState('');
   const [rollPage, setRollPage] = useState(1);
   const [memberPage, setMemberPage] = useState(1);
-  const [memberSearchText, setMemberSearchText] = useState("");
+  const [memberSearchText, setMemberSearchText] = useState('');
   const [editedMemberDrafts, setEditedMemberDrafts] =
     useState<ElectoralRollMemberDraft[]>();
   const [message, setMessage] = useState<string>();
   const [draftErrorMessage, setDraftErrorMessage] = useState<string>();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const rollQuery = useQuery({
     ...electoralRollQueryOptions(selectedRollId),
     enabled: selectedRollId.length > 0,
@@ -58,10 +64,10 @@ export function ElectoralRollManagementContainer({
   async function refreshRoll(electoralRollId = selectedRollId) {
     await Promise.all([
       queryClient.invalidateQueries({
-        queryKey: ["electoral-rolls", electoralRollApi.mode, electoralRollId],
+        queryKey: ['electoral-rolls', electoralRollApi.mode, electoralRollId],
       }),
       queryClient.invalidateQueries({
-        queryKey: ["electoral-rolls", electoralRollApi.mode, "page"],
+        queryKey: ['electoral-rolls', electoralRollApi.mode, 'page'],
       }),
     ]);
   }
@@ -71,7 +77,7 @@ export function ElectoralRollManagementContainer({
     onSuccess: async (result) => {
       setSelectedRollId(result.id);
       setMemberPage(1);
-      setMemberSearchText("");
+      setMemberSearchText('');
       setMessage(`${result.name} 명부를 생성했습니다.`);
       await refreshRoll(result.id);
     },
@@ -79,7 +85,7 @@ export function ElectoralRollManagementContainer({
   const saveMembersMutation = useMutation({
     mutationFn: async () => {
       const roll = rollQuery.data;
-      if (!roll) throw new Error("선거인명부를 찾을 수 없습니다.");
+      if (!roll) throw new Error('선거인명부를 찾을 수 없습니다.');
 
       const sourceMembersById = new Map(
         roll.members.map((member) => [member.id, member]),
@@ -108,20 +114,26 @@ export function ElectoralRollManagementContainer({
         });
       }
       for (const member of updatedMembers) {
+        const source = sourceMembersById.get(member.sourceMemberId!);
+        if (!source) continue;
         await electoralRollApi.updateMember({
           electoralRollId: roll.id,
           memberId: member.sourceMemberId!,
           identifier: member.identifier,
           groupKey: member.groupKey,
           voteWeight: member.voteWeight,
+          ...getElectoralRollMemberIdentityPatch(source, member),
         });
       }
       if (addedMembers.length > 0) {
         await electoralRollApi.addMembers({
           electoralRollId: roll.id,
           members: addedMembers.map((member, index) => ({
+            birthDate: member.birthDate,
             identifier: member.identifier,
             groupKey: member.groupKey,
+            name: member.name,
+            phoneNumber: member.phoneNumber,
             voteWeight: member.voteWeight,
             rowNumber: index + 1,
           })),
@@ -139,7 +151,7 @@ export function ElectoralRollManagementContainer({
         `선거인명부 변경 ${changeCount.toLocaleString()}건을 저장했습니다.`,
       );
       setMemberPage(1);
-      setMemberSearchText("");
+      setMemberSearchText('');
       await refreshRoll(electoralRollId);
       setEditedMemberDrafts(undefined);
     },
@@ -148,8 +160,24 @@ export function ElectoralRollManagementContainer({
       setEditedMemberDrafts(undefined);
     },
   });
+  const deleteMutation = useMutation({
+    mutationFn: (input: DeleteElectoralRollInput) =>
+      electoralRollApi.deleteElectoralRoll(input),
+    onSuccess: async (_, input) => {
+      setIsDeleteDialogOpen(false);
+      setSelectedRollId('');
+      setMemberPage(1);
+      setMemberSearchText('');
+      setEditedMemberDrafts(undefined);
+      setMessage('선거인명부를 삭제했습니다. 기존 투표 기록은 유지됩니다.');
+      await refreshRoll(input.electoralRollId);
+    },
+  });
   const mutationError = createMutation.error ?? saveMembersMutation.error;
-  const isSubmitting = createMutation.isPending || saveMembersMutation.isPending;
+  const isSubmitting =
+    createMutation.isPending ||
+    saveMembersMutation.isPending ||
+    deleteMutation.isPending;
   const pendingChangeCount = countMemberDraftChanges(
     rollQuery.data?.members ?? [],
     memberDrafts,
@@ -158,8 +186,10 @@ export function ElectoralRollManagementContainer({
   function clearStatus() {
     setMessage(undefined);
     setDraftErrorMessage(undefined);
+    setIsDeleteDialogOpen(false);
     createMutation.reset();
     saveMembersMutation.reset();
+    deleteMutation.reset();
   }
 
   return (
@@ -211,19 +241,40 @@ export function ElectoralRollManagementContainer({
             draftErrorMessage ??
             (mutationError instanceof Error ? mutationError.message : undefined)
           }
+          deleteErrorMessage={
+            deleteMutation.error instanceof Error
+              ? deleteMutation.error.message
+              : undefined
+          }
+          isDeleteDialogOpen={isDeleteDialogOpen}
           onSelectRoll={(id) => {
             setSelectedRollId(id.trim());
             setMemberPage(1);
-            setMemberSearchText("");
+            setMemberSearchText('');
             setEditedMemberDrafts(undefined);
             clearStatus();
           }}
           onShowList={() => {
-            setSelectedRollId("");
+            setSelectedRollId('');
             setMemberPage(1);
-            setMemberSearchText("");
+            setMemberSearchText('');
             setEditedMemberDrafts(undefined);
             clearStatus();
+          }}
+          onRequestDelete={() => {
+            clearStatus();
+            setIsDeleteDialogOpen(true);
+          }}
+          onCancelDelete={() => {
+            if (!deleteMutation.isPending) {
+              setIsDeleteDialogOpen(false);
+              deleteMutation.reset();
+            }
+          }}
+          onConfirmDelete={() => {
+            const electoralRollId = rollQuery.data?.id;
+            if (!electoralRollId) return;
+            deleteMutation.mutate({ electoralRollId });
           }}
           onRollPageChange={setRollPage}
           onMemberPageChange={setMemberPage}
@@ -234,8 +285,7 @@ export function ElectoralRollManagementContainer({
           onCreate={(data) => {
             clearStatus();
             createMutation.mutate({
-              commissionId: String(data.get("commissionId") ?? ""),
-              name: String(data.get("name") ?? ""),
+              name: String(data.get('name') ?? ''),
             });
           }}
           onAddMember={(data) => {
@@ -243,16 +293,23 @@ export function ElectoralRollManagementContainer({
             try {
               stageMembers([
                 {
-                  identifier: String(data.get("identifier") ?? ""),
-                  groupKey: String(data.get("groupKey") ?? "") || undefined,
-                  voteWeight: Number(data.get("voteWeight") ?? 1),
+                  birthDate:
+                    String(data.get('birthDate') ?? '').trim() || undefined,
+                  identifier: String(data.get('identifier') ?? ''),
+                  groupKey: String(data.get('groupKey') ?? '') || undefined,
+                  name: String(data.get('name') ?? '').trim() || undefined,
+                  phoneNumber:
+                    String(data.get('phoneNumber') ?? '').trim() || undefined,
+                  voteWeight: Number(data.get('voteWeight') ?? 1),
                   rowNumber: 0,
                 },
               ]);
+              return true;
             } catch (error) {
               setDraftErrorMessage(
-                error instanceof Error ? error.message : "구성원을 확인하세요.",
+                error instanceof Error ? error.message : '구성원을 확인하세요.',
               );
+              return false;
             }
           }}
           onImportMembers={(members) => {
@@ -263,7 +320,7 @@ export function ElectoralRollManagementContainer({
             clearStatus();
             setEditedMemberDrafts(undefined);
             setMemberPage(1);
-            setMemberSearchText("");
+            setMemberSearchText('');
           }}
           onMemberChange={(draftId, field, value) => {
             clearStatus();
@@ -285,7 +342,10 @@ export function ElectoralRollManagementContainer({
           }}
           onSaveMembers={() => {
             clearStatus();
-            const validationMessage = validateMemberDrafts(memberDrafts);
+            const validationMessage = validateMemberDrafts(
+              memberDrafts,
+              rollQuery.data?.members ?? [],
+            );
             if (validationMessage) {
               setDraftErrorMessage(validationMessage);
               return;
@@ -299,15 +359,18 @@ export function ElectoralRollManagementContainer({
 
   function stageMembers(members: ElectoralRollImportMemberInput[]) {
     const nextDrafts = members.map((member) => ({
+      birthDate: member.birthDate,
       draftId: nextMemberDraftId(),
       identifier: member.identifier,
       groupKey: member.groupKey,
+      name: member.name,
+      phoneNumber: member.phoneNumber,
       voteWeight: member.voteWeight,
     }));
-    const validationMessage = validateMemberDrafts([
-      ...memberDrafts,
-      ...nextDrafts,
-    ]);
+    const validationMessage = validateMemberDrafts(
+      [...memberDrafts, ...nextDrafts],
+      rollQuery.data?.members ?? [],
+    );
     if (validationMessage) throw new Error(validationMessage);
 
     setEditedMemberDrafts((current) => [
@@ -315,7 +378,7 @@ export function ElectoralRollManagementContainer({
       ...nextDrafts,
     ]);
     setMemberPage(Math.max(1, Math.ceil((memberDrafts.length + 1) / 25)));
-    setMemberSearchText("");
+    setMemberSearchText('');
     setMessage(
       `구성원 ${nextDrafts.length.toLocaleString()}명을 저장 대기 목록에 추가했습니다.`,
     );
@@ -323,12 +386,17 @@ export function ElectoralRollManagementContainer({
   }
 }
 
-function toMemberDraft(member: ElectoralRollMemberRecord): ElectoralRollMemberDraft {
+function toMemberDraft(
+  member: ElectoralRollMemberRecord,
+): ElectoralRollMemberDraft {
   return {
     draftId: member.id,
     sourceMemberId: member.id,
     identifier: member.identifier,
     groupKey: member.groupKey,
+    name: member.name,
+    phoneNumber: member.phoneNumber,
+    birthDate: member.birthDate,
     voteWeight: member.voteWeight,
   };
 }
@@ -338,9 +406,10 @@ function updateMemberDraft(
   field: ElectoralRollMemberDraftField,
   value: string,
 ): ElectoralRollMemberDraft {
-  if (field === "voteWeight") return { ...draft, voteWeight: Number(value) };
-  if (field === "groupKey") return { ...draft, groupKey: value || undefined };
-  return { ...draft, identifier: value };
+  if (field === 'voteWeight') return { ...draft, voteWeight: Number(value) };
+  if (field === 'groupKey') return { ...draft, groupKey: value || undefined };
+  if (field === 'identifier') return { ...draft, identifier: value };
+  return { ...draft, [field]: value || undefined };
 }
 
 function isSameMemberDraft(
@@ -349,7 +418,10 @@ function isSameMemberDraft(
 ) {
   return (
     source.identifier === draft.identifier &&
-    (source.groupKey ?? "") === (draft.groupKey ?? "") &&
+    (source.groupKey ?? '') === (draft.groupKey ?? '') &&
+    (source.name ?? '') === (draft.name ?? '') &&
+    (source.phoneNumber ?? '') === (draft.phoneNumber ?? '') &&
+    (source.birthDate ?? '') === (draft.birthDate ?? '') &&
     source.voteWeight === draft.voteWeight
   );
 }
@@ -358,7 +430,9 @@ function countMemberDraftChanges(
   sourceMembers: ElectoralRollMemberRecord[],
   drafts: ElectoralRollMemberDraft[],
 ) {
-  const sourceById = new Map(sourceMembers.map((member) => [member.id, member]));
+  const sourceById = new Map(
+    sourceMembers.map((member) => [member.id, member]),
+  );
   const retainedIds = new Set(
     drafts.flatMap((draft) =>
       draft.sourceMemberId ? [draft.sourceMemberId] : [],
@@ -375,17 +449,28 @@ function countMemberDraftChanges(
   return removedCount + changedCount;
 }
 
-function validateMemberDrafts(drafts: ElectoralRollMemberDraft[]) {
+function validateMemberDrafts(
+  drafts: ElectoralRollMemberDraft[],
+  sourceMembers: ElectoralRollMemberRecord[],
+) {
   const identifiers = new Set<string>();
+  const sourceById = new Map(
+    sourceMembers.map((member) => [member.id, member]),
+  );
   for (const draft of drafts) {
     const identifier = draft.identifier.trim();
-    if (!identifier) return "모든 구성원의 식별자를 입력하세요.";
+    if (!identifier) return '모든 구성원의 식별자를 입력하세요.';
     if (!Number.isFinite(draft.voteWeight) || draft.voteWeight <= 0) {
       return `${identifier} 구성원의 투표 가중치를 확인하세요.`;
     }
     if (identifiers.has(identifier)) {
       return `${identifier} 식별자가 중복되었습니다.`;
     }
+    const identityError = validateElectoralRollMemberIdentity(
+      draft,
+      draft.sourceMemberId ? sourceById.get(draft.sourceMemberId) : undefined,
+    );
+    if (identityError) return `${identifier} 구성원: ${identityError}`;
     identifiers.add(identifier);
   }
   return undefined;

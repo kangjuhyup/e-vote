@@ -6,45 +6,37 @@ import {
   Trash2,
   UsersRound,
   Vote,
-} from "lucide-react";
-import Link from "next/link";
-import type { FormEvent, ReactNode } from "react";
+} from 'lucide-react';
+import Link from 'next/link';
+import type { FormEvent, ReactNode } from 'react';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import type { ElectoralRollPageItemRecord } from "@/features/votes/model/electoral-roll.types";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import type { ElectoralRollPageItemRecord } from '@/features/votes/model/electoral-roll.types';
 import type {
   CommissionRecord,
   CreateVoteResult,
-} from "@/features/votes/model/vote-operations.types";
+} from '@/features/votes/model/vote-operations.types';
 
-import { VoteCommissionSetup } from "./vote-commission-setup";
+import { VoteCommissionSetup } from './vote-commission-setup';
+import { VoteScheduleFields } from './vote-schedule-fields';
 
 export type VoteSetupStep =
-  | "ballot"
-  | "basics"
-  | "commission"
-  | "electors"
-  | "review";
+  'ballot' | 'basics' | 'commission' | 'electors' | 'review';
 
 export interface VoteSetupBallotDraft {
   candidateNames: string[];
   sortOrder: number;
   title: string;
-  type: "CANDIDATE" | "YES_NO";
+  type: 'CANDIDATE' | 'YES_NO';
 }
 
 interface VoteSetupWizardProps {
   ballots: VoteSetupBallotDraft[];
-  ballotType: VoteSetupBallotDraft["type"];
+  ballotType: VoteSetupBallotDraft['type'];
   billingPanel?: ReactNode;
   commissions: CommissionRecord[];
   createdSubVoteIds: string[];
@@ -55,7 +47,7 @@ interface VoteSetupWizardProps {
   isCommissionsLoading?: boolean;
   isElectoralRollsLoading?: boolean;
   onCommissionChange: (commissionId: string) => void;
-  onBallotTypeChange: (type: VoteSetupBallotDraft["type"]) => void;
+  onBallotTypeChange: (type: VoteSetupBallotDraft['type']) => void;
   onCompleteSetup: () => void;
   onCreateBallot: (formData: FormData) => void;
   onCreateVote: (formData: FormData) => void;
@@ -70,11 +62,11 @@ interface VoteSetupWizardProps {
 }
 
 const steps: Array<{ key: VoteSetupStep; label: string }> = [
-  { key: "basics", label: "기본 정책" },
-  { key: "ballot", label: "안건과 후보" },
-  { key: "electors", label: "선거인명부" },
-  { key: "commission", label: "운영 위원회" },
-  { key: "review", label: "검토" },
+  { key: 'basics', label: '기본 정책' },
+  { key: 'ballot', label: '안건과 후보' },
+  { key: 'electors', label: '선거인명부' },
+  { key: 'commission', label: '운영 위원회' },
+  { key: 'review', label: '검토' },
 ];
 
 export function VoteSetupWizard(props: VoteSetupWizardProps) {
@@ -97,13 +89,13 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
                   disabled={index > currentIndex}
                   onClick={() => props.onStepChange(item.key)}
                   className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45"
-                  aria-current={isCurrent ? "step" : undefined}
+                  aria-current={isCurrent ? 'step' : undefined}
                 >
                   <span
                     className={
                       isCurrent || isComplete
-                        ? "flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground"
-                        : "flex size-6 items-center justify-center rounded-md border text-muted-foreground"
+                        ? 'flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground'
+                        : 'flex size-6 items-center justify-center rounded-md border text-muted-foreground'
                     }
                   >
                     {isComplete ? (
@@ -134,7 +126,7 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
             {props.successMessage}
           </p>
         ) : null}
-        {props.step === "commission" ? (
+        {props.step === 'commission' ? (
           <div className="space-y-4">
             <VoteCommissionSetup
               allowCreate={false}
@@ -142,54 +134,59 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
               isLoading={props.isCommissionsLoading}
               isSubmitting={props.isSubmitting}
               selectedCommissionId={props.selectedCommissionId}
-              selectionRequired={false}
+              selectionRequired
               onCommissionChange={props.onCommissionChange}
             />
             <div className="flex justify-end">
               <Button
                 type="button"
-                disabled={props.isSubmitting}
+                disabled={props.isSubmitting || !props.selectedCommissionId}
                 onClick={props.onCompleteSetup}
               >
-                {props.isSubmitting ? "생성 중…" : "투표 생성 후 검토"}
+                {props.isSubmitting ? '생성 중…' : '투표 생성 후 검토'}
                 <ChevronRight aria-hidden="true" />
               </Button>
             </div>
           </div>
         ) : null}
-        {props.step === "basics" ? (
+        {props.step === 'basics' ? (
           <BasicsForm
             isSubmitting={props.isSubmitting}
             onSubmit={props.onCreateVote}
           />
         ) : null}
-        {props.step === "ballot" ? (
+        {props.step === 'ballot' ? (
           <BallotForm
             ballots={props.ballots}
             ballotType={props.ballotType}
             isSubmitting={props.isSubmitting}
-            onNext={() => props.onStepChange("electors")}
+            onNext={() => props.onStepChange('electors')}
             onTypeChange={props.onBallotTypeChange}
             onRemove={props.onRemoveBallot}
             onSubmit={props.onCreateBallot}
           />
         ) : null}
-        {props.step === "electors" ? (
+        {props.step === 'electors' ? (
           <ElectoralRollStep
             electoralRolls={props.electoralRolls}
             isLoading={props.isElectoralRollsLoading}
             isSubmitting={props.isSubmitting}
             onChange={props.onElectoralRollChange}
-            onNext={() => props.onStepChange("commission")}
+            onNext={() => props.onStepChange('commission')}
             selectedElectoralRoll={props.selectedElectoralRoll}
             selectedElectoralRollId={props.selectedElectoralRollId}
           />
         ) : null}
-        {props.step === "review" && props.createdVote ? (
+        {props.step === 'review' && props.createdVote ? (
           <Review
             billingPanel={props.billingPanel}
             createdSubVoteIds={props.createdSubVoteIds}
             createdVote={props.createdVote}
+            selectedCommission={props.commissions.find(
+              (commission) =>
+                commission.id ===
+                (props.selectedCommissionId ?? props.createdVote?.commissionId),
+            )}
             selectedElectoralRoll={props.selectedElectoralRoll}
           />
         ) : null}
@@ -220,6 +217,7 @@ function BasicsForm({
           required
           className="sm:col-span-2"
         />
+        <VoteScheduleFields descriptionId="vote-schedule-description" />
         <label className="grid gap-2 text-sm font-medium">
           공개 범위
           <Select name="privacyMode" defaultValue="SECRET">
@@ -269,11 +267,7 @@ function BasicsForm({
           />
           본인인증 필수
         </label>
-        <Button
-          type="submit"
-          className="sm:col-span-2"
-          disabled={isSubmitting}
-        >
+        <Button type="submit" className="sm:col-span-2" disabled={isSubmitting}>
           <Vote aria-hidden="true" />
           안건과 후보로 이동
           <ChevronRight aria-hidden="true" />
@@ -309,16 +303,16 @@ function ElectoralRollStep({
         <label className="grid gap-2 text-sm font-medium">
           연결할 선거인명부
           <Select
-            value={selectedElectoralRollId ?? ""}
+            value={selectedElectoralRollId ?? ''}
             disabled={isLoading || isSubmitting || electoralRolls.length === 0}
             onChange={(event) => onChange(event.target.value)}
           >
             <option value="" disabled>
               {isLoading
-                ? "선거인명부 불러오는 중…"
+                ? '선거인명부 불러오는 중…'
                 : electoralRolls.length === 0
-                  ? "등록된 선거인명부가 없습니다"
-                  : "선거인명부를 선택하세요"}
+                  ? '등록된 선거인명부가 없습니다'
+                  : '선거인명부를 선택하세요'}
             </option>
             {electoralRolls.map((roll) => (
               <option key={roll.id} value={roll.id}>
@@ -337,9 +331,6 @@ function ElectoralRollStep({
               />
               <div className="min-w-0">
                 <p className="font-medium">{selectedElectoralRoll.name}</p>
-                <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
-                  {selectedElectoralRoll.id}
-                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Badge variant="outline">
                     {selectedElectoralRoll.memberCount.toLocaleString()}명
@@ -385,12 +376,12 @@ function BallotForm({
   onTypeChange,
 }: {
   ballots: VoteSetupBallotDraft[];
-  ballotType: VoteSetupBallotDraft["type"];
+  ballotType: VoteSetupBallotDraft['type'];
   isSubmitting: boolean;
   onNext: () => void;
   onRemove: (ballotIndex: number) => void;
   onSubmit: (data: FormData) => void;
-  onTypeChange: (type: VoteSetupBallotDraft["type"]) => void;
+  onTypeChange: (type: VoteSetupBallotDraft['type']) => void;
 }) {
   return (
     <WizardCard
@@ -409,7 +400,7 @@ function BallotForm({
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">안건 {index + 1}</Badge>
                     <Badge variant="outline">
-                      {ballot.type === "CANDIDATE" ? "후보자형" : "찬반형"}
+                      {ballot.type === 'CANDIDATE' ? '후보자형' : '찬반형'}
                     </Badge>
                   </div>
                   <h3 className="mt-3 font-medium">{ballot.title}</h3>
@@ -429,7 +420,7 @@ function BallotForm({
                 </Button>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {ballot.type === "YES_NO" ? (
+                {ballot.type === 'YES_NO' ? (
                   <Badge variant="outline">찬성 / 반대</Badge>
                 ) : (
                   ballot.candidateNames.map((candidate, candidateIndex) => (
@@ -446,58 +437,58 @@ function BallotForm({
           ))}
         </div>
       ) : null}
-      <div className={ballots.length > 0 ? "border-t pt-6" : undefined}>
+      <div className={ballots.length > 0 ? 'border-t pt-6' : undefined}>
         <h3 className="mb-4 text-sm font-medium">새 안건 추가</h3>
-      <form
-        className="grid gap-4 sm:grid-cols-2"
-        onSubmit={toFormHandler(onSubmit, true)}
-      >
-        <Field
-          label={ballotType === "YES_NO" ? "찬반 안건" : "안건 제목"}
-          name="title"
-          required
-          className="sm:col-span-2"
-        />
-        <label className="grid gap-2 text-sm font-medium">
-          유형
-          <Select
-            name="type"
-            value={ballotType}
-            onChange={(event) =>
-              onTypeChange(event.target.value as VoteSetupBallotDraft["type"])
-            }
-          >
-            <option value="CANDIDATE">후보자형</option>
-            <option value="YES_NO">찬반형</option>
-          </Select>
-        </label>
-        <Field
-          label="정렬 순서"
-          name="sortOrder"
-          type="number"
-          min="0"
-          defaultValue="0"
-          required
-        />
-        {ballotType === "CANDIDATE" ? (
-          <>
-            <Field label="후보 1" name="candidate1" required />
-            <Field label="후보 2" name="candidate2" required />
-          </>
-        ) : null}
-        <Button
-          type="submit"
-          variant="outline"
-          disabled={isSubmitting}
+        <form
+          className="grid gap-4 sm:grid-cols-2"
+          onSubmit={toFormHandler(onSubmit, true)}
         >
-          <Plus aria-hidden="true" />
-          안건 추가
-        </Button>
-        <Button type="button" disabled={ballots.length === 0} onClick={onNext}>
-          선거인명부로 이동
-          <ChevronRight aria-hidden="true" />
-        </Button>
-      </form>
+          <Field
+            label={ballotType === 'YES_NO' ? '찬반 안건' : '안건 제목'}
+            name="title"
+            required
+            className="sm:col-span-2"
+          />
+          <label className="grid gap-2 text-sm font-medium">
+            유형
+            <Select
+              name="type"
+              value={ballotType}
+              onChange={(event) =>
+                onTypeChange(event.target.value as VoteSetupBallotDraft['type'])
+              }
+            >
+              <option value="CANDIDATE">후보자형</option>
+              <option value="YES_NO">찬반형</option>
+            </Select>
+          </label>
+          <Field
+            label="정렬 순서"
+            name="sortOrder"
+            type="number"
+            min="0"
+            defaultValue="0"
+            required
+          />
+          {ballotType === 'CANDIDATE' ? (
+            <>
+              <Field label="후보 1" name="candidate1" required />
+              <Field label="후보 2" name="candidate2" required />
+            </>
+          ) : null}
+          <Button type="submit" variant="outline" disabled={isSubmitting}>
+            <Plus aria-hidden="true" />
+            안건 추가
+          </Button>
+          <Button
+            type="button"
+            disabled={ballots.length === 0}
+            onClick={onNext}
+          >
+            선거인명부로 이동
+            <ChevronRight aria-hidden="true" />
+          </Button>
+        </form>
       </div>
     </WizardCard>
   );
@@ -507,41 +498,39 @@ function Review({
   billingPanel,
   createdSubVoteIds,
   createdVote,
+  selectedCommission,
   selectedElectoralRoll,
 }: {
   billingPanel?: ReactNode;
   createdSubVoteIds: string[];
   createdVote: CreateVoteResult;
+  selectedCommission?: CommissionRecord;
   selectedElectoralRoll?: ElectoralRollPageItemRecord;
 }) {
   return (
     <WizardCard
       title="설정 검토"
-      description="생성된 식별자를 확인하고 상세 화면에서 추가 설정을 이어가세요."
+      description="생성된 투표의 설정을 확인하고 상세 화면에서 추가 설정을 이어가세요."
     >
       <dl className="grid gap-3 sm:grid-cols-2">
-        <Summary label="부모 투표 ID" value={createdVote.id} />
         <Summary label="상태" value="초안" />
-        <Summary label="위원회 ID" value={createdVote.commissionId ?? "미지정"} />
+        <Summary
+          label="운영 위원회"
+          value={
+            selectedCommission?.name ??
+            (createdVote.commissionId ? '지정됨' : '미지정')
+          }
+        />
         <Summary
           label="선거인명부"
           value={
-            selectedElectoralRoll
-              ? `${selectedElectoralRoll.name} · ${selectedElectoralRoll.id}`
-              : createdVote.electoralRollId ?? "미연결"
+            selectedElectoralRoll?.name ??
+            (createdVote.electoralRollId ? '연결됨' : '미연결')
           }
         />
         <Summary
-          label="선거인명부 스냅샷 ID"
-          value={createdVote.electoralRollSnapshotId ?? "서버에서 연결됨"}
-        />
-        <Summary
-          label="자식 투표 ID"
-          value={
-            createdSubVoteIds.length > 0
-              ? `${createdSubVoteIds.length}개 · ${createdSubVoteIds.join(", ")}`
-              : "미등록"
-          }
+          label="안건"
+          value={`${createdSubVoteIds.length.toLocaleString()}개`}
         />
       </dl>
       {billingPanel}
@@ -591,7 +580,7 @@ function Field({
   name: string;
 } & React.ComponentProps<typeof Input>) {
   return (
-    <label className={`grid gap-2 text-sm font-medium ${className ?? ""}`}>
+    <label className={`grid gap-2 text-sm font-medium ${className ?? ''}`}>
       {label}
       <Input name={name} {...props} />
     </label>
@@ -601,14 +590,10 @@ function Field({
 function CheckOption({
   label,
   ...props
-}: { label: string } & React.ComponentProps<"input">) {
+}: { label: string } & React.ComponentProps<'input'>) {
   return (
     <label className="flex items-center gap-2">
-      <input
-        type="checkbox"
-        className="size-4 rounded border"
-        {...props}
-      />
+      <input type="checkbox" className="size-4 rounded border" {...props} />
       {label}
     </label>
   );

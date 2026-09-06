@@ -8,6 +8,7 @@ const voteStatusFilters = new Set<VoteStatusFilter>([
   "active",
   "scheduled",
   "completed",
+  "finalized",
   "draft",
   "canceled",
 ]);

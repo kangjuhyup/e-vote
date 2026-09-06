@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import type { VoteDetail } from "@/features/votes/model/vote.types";
 
+import { VoteScheduleFields } from "./vote-schedule-fields";
+
 interface VoteSettingsFormProps {
   disabled?: boolean;
   isSubmitting: boolean;
@@ -54,6 +56,12 @@ export function VoteSettingsForm({
             required
             disabled={disabled}
             className="sm:col-span-2"
+          />
+          <VoteScheduleFields
+            defaultStartedAt={vote.startsAt}
+            defaultEndedAt={vote.endsAt}
+            descriptionId="vote-settings-schedule-description"
+            disabled={disabled}
           />
           <label className="grid gap-2 text-sm font-medium">
             공개 범위

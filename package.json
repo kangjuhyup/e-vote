@@ -8,6 +8,12 @@
   },
   "scripts": {
     "dev": "sh scripts/dev.sh",
+    "dev:migrate": "sh scripts/dev-component.sh migrate",
+    "dev:api": "sh scripts/dev-component.sh api",
+    "dev:worker": "sh scripts/dev-component.sh worker",
+    "dev:ui:local": "sh scripts/dev-component.sh ui",
+    "dev:auth-service": "sh scripts/dev-component.sh auth-service",
+    "dev:auth-ui": "sh scripts/dev-component.sh auth-ui",
     "dev:docker": "docker compose up -d --wait",
     "dev:ui": "pnpm --filter @vote/ui dev",
     "dev:ui:mock": "NEXT_PUBLIC_VOTE_API_MODE=mock pnpm --filter @vote/ui dev",

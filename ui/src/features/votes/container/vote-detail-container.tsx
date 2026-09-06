@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Pencil, UsersRound } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
@@ -12,6 +12,7 @@ import { RetryErrorCard } from "@/components/feedback/retry-error-card";
 import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
+import { billingOrderQueryOptions } from "@/features/billing/api/billing-query-options";
 import { voteDetailQueryOptions } from "@/features/votes/api/votes-query-options";
 import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
 import {
@@ -22,6 +23,7 @@ import type { ElectorParticipationFilter } from "@/features/votes/model/vote.typ
 import { filterElectors } from "@/features/votes/model/vote-selectors";
 import { useVotesUiStore } from "@/features/votes/store/votes-ui.store";
 
+import { isVoteSetupEditable } from "../lib/vote-finalization";
 import { toCandidateItems, toRosterItems } from "../lib/vote-view-models";
 import { FieldSessionContainer } from "./field-session-container";
 import { VoteSmsContainer } from "./vote-sms-container";
@@ -48,6 +50,7 @@ export function VoteDetailContainer({
   account,
   voteId,
 }: VoteDetailContainerProps) {
+  const queryClient = useQueryClient();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,6 +74,13 @@ export function VoteDetailContainer({
 
   const voteQuery = useQuery(voteDetailQueryOptions(voteId));
   const vote = voteQuery.data;
+  const activeBillingOrderId = vote?.activeBillingOrderId;
+  const billingOrderQuery = useQuery({
+    ...billingOrderQueryOptions(activeBillingOrderId ?? ""),
+    enabled: Boolean(activeBillingOrderId),
+  });
+  const billingOrderStatus =
+    billingOrderQuery.data?.status ?? vote?.billingOrderStatus;
   const filteredElectors = vote
     ? filterElectors(vote.electors, electorParticipationFilter)
     : [];
@@ -139,6 +149,18 @@ export function VoteDetailContainer({
     vote,
   ]);
 
+  useEffect(() => {
+    const observedStatus = billingOrderQuery.data?.status;
+    if (!observedStatus || observedStatus === vote?.billingOrderStatus) {
+      return;
+    }
+    void queryClient.invalidateQueries({ queryKey: ["votes"] });
+  }, [
+    billingOrderQuery.data?.status,
+    queryClient,
+    vote?.billingOrderStatus,
+  ]);
+
   return (
     <PageShell
       account={account}
@@ -150,18 +172,28 @@ export function VoteDetailContainer({
       description="투표 내용, 후보자, 선거인명부와 참여 상태를 확인합니다."
       actions={
         <>
-          <Button type="button" variant="outline" asChild>
-            <Link href={`/votes/${voteId}/edit`}>
+          {vote && isVoteSetupEditable(vote.status, billingOrderStatus) ? (
+            <Button type="button" variant="outline" asChild>
+              <Link href={`/votes/${voteId}/edit`}>
+                <Pencil aria-hidden="true" />
+                투표 수정
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              disabled
+              title={
+                billingOrderStatus === "PENDING_PAYMENT"
+                  ? "결제 처리 중에는 투표를 수정할 수 없습니다."
+                  : "초안 상태의 투표만 수정할 수 있습니다."
+              }
+            >
               <Pencil aria-hidden="true" />
               투표 수정
-            </Link>
-          </Button>
-          <Button type="button" variant="outline" asChild>
-            <Link href={`/votes/${voteId}/electors`}>
-              <UsersRound aria-hidden="true" />
-              선거인 관리
-            </Link>
-          </Button>
+            </Button>
+          )}
           <Button type="button" variant="outline" asChild>
             <Link href="/votes">
               <ArrowLeft aria-hidden="true" />
@@ -194,7 +226,10 @@ export function VoteDetailContainer({
         />
       ) : (
         <>
-          <VoteDetailSummary vote={vote} />
+          <VoteDetailSummary
+            billingOrderStatus={billingOrderStatus}
+            vote={vote}
+          />
           <VoteSmsContainer voteId={vote.id} voteStatus={vote.status} />
           <VoteSubVoteSection voteId={vote.id} subVotes={vote.subVotes} />
           <VoteDetailRosterSection

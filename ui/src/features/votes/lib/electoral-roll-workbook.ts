@@ -5,10 +5,14 @@ import type {
   ElectoralRollWorkbookError,
   ElectoralRollWorkbookParseResult,
 } from "../model/electoral-roll.types";
+import { validateElectoralRollMemberIdentity } from "./electoral-roll-member-validation";
 
 export const ELECTORAL_ROLL_TEMPLATE_SHEET = "선거인명부";
 export const ELECTORAL_ROLL_TEMPLATE_HEADERS = [
   "구성원 식별자",
+  "이름",
+  "휴대폰번호",
+  "생년월일",
   "그룹 키",
   "투표 가중치",
 ] as const;
@@ -43,6 +47,9 @@ export async function createElectoralRollTemplateBuffer(): Promise<ArrayBuffer> 
   instructionSheet.addRow(["항목", "작성 방법"]);
   instructionSheet.addRows([
     ["구성원 식별자", "필수. 사번·회원번호 등 구성원을 구분하는 값을 입력합니다."],
+    ["이름", "선택. 휴대폰번호와 반드시 함께 입력합니다."],
+    ["휴대폰번호", "선택. 표시 문자를 제외한 숫자 8~15자리이며 이름과 함께 입력합니다."],
+    ["생년월일", "선택. 이름과 휴대폰번호가 있을 때 YYYY-MM-DD 형식으로 입력합니다."],
     ["그룹 키", "선택. 부서·지점 등 집계에 사용할 그룹을 입력합니다."],
     ["투표 가중치", "선택. 양수를 입력하며, 비워두면 1로 적용됩니다."],
     ["업로드 제한", "빈 행을 제외하고 최대 5,000명, 파일 크기 최대 5MB입니다."],
@@ -55,15 +62,19 @@ export async function createElectoralRollTemplateBuffer(): Promise<ArrayBuffer> 
   });
   dataSheet.columns = [
     { header: ELECTORAL_ROLL_TEMPLATE_HEADERS[0], key: "identifier", width: 28 },
-    { header: ELECTORAL_ROLL_TEMPLATE_HEADERS[1], key: "groupKey", width: 24 },
-    { header: ELECTORAL_ROLL_TEMPLATE_HEADERS[2], key: "voteWeight", width: 18 },
+    { header: ELECTORAL_ROLL_TEMPLATE_HEADERS[1], key: "name", width: 18 },
+    { header: ELECTORAL_ROLL_TEMPLATE_HEADERS[2], key: "phoneNumber", width: 22 },
+    { header: ELECTORAL_ROLL_TEMPLATE_HEADERS[3], key: "birthDate", width: 16 },
+    { header: ELECTORAL_ROLL_TEMPLATE_HEADERS[4], key: "groupKey", width: 24 },
+    { header: ELECTORAL_ROLL_TEMPLATE_HEADERS[5], key: "voteWeight", width: 18 },
   ];
   styleHeader(dataSheet.getRow(1));
-  dataSheet.autoFilter = "A1:C1";
-  dataSheet.getColumn(1).numFmt = "@";
-  dataSheet.getColumn(2).numFmt = "@";
+  dataSheet.autoFilter = "A1:F1";
+  for (let columnNumber = 1; columnNumber <= 5; columnNumber += 1) {
+    dataSheet.getColumn(columnNumber).numFmt = "@";
+  }
   for (let rowNumber = 2; rowNumber <= MAX_ELECTORAL_ROLL_IMPORT_ROWS + 1; rowNumber += 1) {
-    dataSheet.getCell(rowNumber, 3).dataValidation = {
+    dataSheet.getCell(rowNumber, 6).dataValidation = {
       type: "decimal",
       operator: "greaterThan",
       allowBlank: true,
@@ -141,14 +152,29 @@ export async function parseElectoralRollWorkbook(
     }
 
     const identifierCell = row.getCell(1);
-    const groupKeyCell = row.getCell(2);
-    const voteWeightCell = row.getCell(3);
-    if ([identifierCell, groupKeyCell, voteWeightCell].some(hasFormula)) {
+    const nameCell = row.getCell(2);
+    const phoneNumberCell = row.getCell(3);
+    const birthDateCell = row.getCell(4);
+    const groupKeyCell = row.getCell(5);
+    const voteWeightCell = row.getCell(6);
+    if (
+      [
+        identifierCell,
+        nameCell,
+        phoneNumberCell,
+        birthDateCell,
+        groupKeyCell,
+        voteWeightCell,
+      ].some(hasFormula)
+    ) {
       errors.push({ rowNumber, message: "수식은 사용할 수 없습니다." });
       return;
     }
 
     const identifier = identifierCell.text.trim();
+    const name = nameCell.text.trim() || undefined;
+    const phoneNumber = phoneNumberCell.text.trim() || undefined;
+    const birthDate = birthDateCell.text.trim() || undefined;
     const groupKey = groupKeyCell.text.trim() || undefined;
     const voteWeightText = voteWeightCell.text.trim();
     const voteWeight = voteWeightText.length === 0 ? 1 : Number(voteWeightText);
@@ -159,6 +185,15 @@ export async function parseElectoralRollWorkbook(
     }
     if (!Number.isFinite(voteWeight) || voteWeight <= 0) {
       errors.push({ rowNumber, message: "투표 가중치는 0보다 큰 숫자여야 합니다." });
+      return;
+    }
+    const identityError = validateElectoralRollMemberIdentity({
+      birthDate,
+      name,
+      phoneNumber,
+    });
+    if (identityError) {
+      errors.push({ rowNumber, message: identityError });
       return;
     }
 
@@ -172,7 +207,15 @@ export async function parseElectoralRollWorkbook(
       return;
     }
     identifiers.set(identifierKey, rowNumber);
-    members.push({ identifier, groupKey, voteWeight, rowNumber });
+    members.push({
+      birthDate,
+      groupKey,
+      identifier,
+      name,
+      phoneNumber,
+      rowNumber,
+      voteWeight,
+    });
   });
 
   const nonEmptyDataRows = countNonEmptyDataRows(worksheet);
@@ -251,7 +294,7 @@ function hasFormula(cell: Cell): boolean {
 
 function isEmptyDataRow(values: unknown): boolean {
   if (!Array.isArray(values)) return true;
-  return values.slice(1, 4).every((value) => String(value ?? "").trim() === "");
+  return values.slice(1, 7).every((value) => String(value ?? "").trim() === "");
 }
 
 function countNonEmptyDataRows(worksheet: Worksheet): number {

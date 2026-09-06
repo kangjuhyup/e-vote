@@ -5,6 +5,7 @@ import {
   bootstrapAuthClient,
   createDesiredClient,
   createDesiredResourceServer,
+  createDesiredScope,
 } from './bootstrap-auth-client.mjs';
 
 const env = {
@@ -33,11 +34,26 @@ function loginResponse() {
   );
 }
 
-test('creates the local public OIDC client through the admin API', async () => {
+function existingScopeResponse() {
+  return response({
+    items: [{ id: 'scope-1', ...createDesiredScope(), builtIn: false }],
+    total: 1,
+    page: 1,
+    limit: 100,
+  });
+}
+
+test('creates the offline scope and both local OIDC clients', async () => {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
+    if (url.includes('/admin/scopes?')) {
+      return response({ items: [], total: 0, page: 1, limit: 100 });
+    }
+    if (url.endsWith('/admin/scopes')) {
+      return response({ id: 'scope-1' }, { status: 201 });
+    }
     if (url.includes('/admin/clients?')) {
       return response({ items: [], total: 0, page: 1, limit: 100 });
     }
@@ -47,20 +63,21 @@ test('creates the local public OIDC client through the admin API', async () => {
     return response({ issuer: 'http://localhost:3002/t/acme/oidc' });
   };
 
-  const result = await bootstrapAuthClient({
-    env,
-    fetchImpl,
-    log: () => {},
-  });
+  const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 5);
-  assert.deepEqual(JSON.parse(calls[2].options.body), createDesiredClient(env));
+  assert.equal(calls.length, 7);
+  assert.deepEqual(JSON.parse(calls[2].options.body), createDesiredScope());
+  assert.deepEqual(JSON.parse(calls[4].options.body), createDesiredClient(env));
   assert.deepEqual(
-    JSON.parse(calls[3].options.body),
+    JSON.parse(calls[5].options.body),
     createDesiredResourceServer(env),
   );
-  assert.match(calls[2].options.headers.cookie, /admin_session=session-token/);
+  assert.match(calls[4].options.headers.cookie, /admin_session=session-token/);
+  assert.equal(
+    createDesiredClient(env).scope,
+    'openid profile email offline_access',
+  );
   assert.deepEqual(createDesiredClient(env).allowedResources, [
     'https://vote-api.example.com',
   ]);
@@ -106,51 +123,63 @@ test('rejects a non-HTTPS Vote API resource', () => {
   );
 });
 
-test('is idempotent when the compatible client already exists', async () => {
+test('is idempotent when the scope and clients already exist', async () => {
   const desiredClient = createDesiredClient(env);
   const desiredResourceServer = createDesiredResourceServer(env);
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
-    return response({
-      items: [
-        { ...desiredClient, enabled: true },
-        { ...desiredResourceServer, secret: undefined, enabled: true },
-      ],
-      total: 1,
-      page: 1,
-      limit: 100,
-    });
+    if (url.includes('/admin/scopes?')) return existingScopeResponse();
+    if (url.includes('/admin/clients?')) {
+      return response({
+        items: [
+          { id: 'client-1', ...desiredClient, enabled: true },
+          {
+            id: 'client-2',
+            ...desiredResourceServer,
+            secret: undefined,
+            enabled: true,
+          },
+        ],
+        total: 2,
+        page: 1,
+        limit: 100,
+      });
+    }
+    throw new Error(`unexpected request: ${url}`);
   };
 
-  const result = await bootstrapAuthClient({
-    env,
-    fetchImpl,
-    log: () => {},
-  });
+  const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'existing');
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
 });
 
-test('updates only allowedResources for a compatible legacy public client', async () => {
+test('updates refresh scope and allowed resource on a legacy public client', async () => {
   const desiredClient = createDesiredClient(env);
   const desiredResourceServer = createDesiredResourceServer(env);
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
+    if (url.includes('/admin/scopes?')) return existingScopeResponse();
     if (url.includes('/admin/clients?')) {
       return response({
         items: [
           {
-            ...desiredClient,
             id: 'legacy/client',
+            ...desiredClient,
             enabled: true,
+            scope: 'openid profile email',
             allowedResources: [],
           },
-          { ...desiredResourceServer, secret: undefined, enabled: true },
+          {
+            id: 'client-2',
+            ...desiredResourceServer,
+            secret: undefined,
+            enabled: true,
+          },
         ],
         total: 2,
         page: 1,
@@ -163,16 +192,13 @@ test('updates only allowedResources for a compatible legacy public client', asyn
     return response({ issuer: 'http://localhost:3002/t/acme/oidc' });
   };
 
-  const result = await bootstrapAuthClient({
-    env,
-    fetchImpl,
-    log: () => {},
-  });
+  const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 4);
-  assert.equal(calls[2].options.method, 'PUT');
-  assert.deepEqual(JSON.parse(calls[2].options.body), {
+  assert.equal(calls.length, 5);
+  assert.equal(calls[3].options.method, 'PUT');
+  assert.deepEqual(JSON.parse(calls[3].options.body), {
+    scope: 'openid profile email offline_access',
     allowedResources: ['https://vote-api.example.com'],
   });
 });
@@ -182,16 +208,18 @@ test('fails closed when an existing client has incompatible settings', async () 
   const desiredResourceServer = createDesiredResourceServer(env);
   const fetchImpl = async (url) => {
     if (url.endsWith('/admin/session')) return loginResponse();
+    if (url.includes('/admin/scopes?')) return existingScopeResponse();
     return response({
       items: [
         {
+          id: 'client-1',
           ...desiredClient,
           enabled: true,
           redirectUris: ['http://unexpected.example/callback'],
         },
         { ...desiredResourceServer, secret: undefined, enabled: true },
       ],
-      total: 1,
+      total: 2,
       page: 1,
       limit: 100,
     });

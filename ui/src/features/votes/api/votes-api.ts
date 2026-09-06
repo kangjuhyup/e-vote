@@ -4,6 +4,7 @@ import {
   toVoteSummary,
 } from "@/features/votes/model/vote-selectors";
 import type {
+  ActiveVoteBillingOrderStatus,
   VoteCandidate,
   VoteDashboard,
   VoteDetail,
@@ -17,6 +18,7 @@ import {
   resolveApiMode,
   type ApiMode,
 } from "@/shared/config/api-mode";
+import { voteApiFetch } from "@/shared/auth/vote-api-fetch";
 
 import { voteFixtureDetails } from "./votes-fixtures";
 
@@ -58,6 +60,8 @@ interface IdentityVerificationPolicyResponseDto {
 }
 
 export interface VoteSummaryResponseDto {
+  activeBillingOrderId?: string;
+  billingOrderStatus?: ActiveVoteBillingOrderStatus;
   id: string;
   commissionId: string;
   electoralRollSnapshotId?: string;
@@ -188,24 +192,12 @@ function hasKnownElectorParticipation(response: VoteElectorResponseDto) {
   return typeof response.participated === "boolean";
 }
 
-function startsAfter(startedAt: string, now: string) {
-  const startedAtTime = Date.parse(startedAt);
-  const nowTime = Date.parse(now);
-
-  return (
-    Number.isFinite(startedAtTime) &&
-    Number.isFinite(nowTime) &&
-    startedAtTime > nowTime
-  );
-}
-
-function mapVoteStatus(
-  status: string,
-  input: { startedAt: string; now: string },
-): VoteStatus {
+function mapVoteStatus(status: string): VoteStatus {
   switch (status) {
     case "DRAFT":
-      return startsAfter(input.startedAt, input.now) ? "scheduled" : "draft";
+      return "draft";
+    case "FINALIZED":
+      return "finalized";
     case "OPEN":
       return "active";
     case "CLOSED":
@@ -233,17 +225,21 @@ export function mapVoteSummaryResponse(
   response: VoteSummaryResponseDto,
   now = new Date().toISOString(),
 ): VoteSummary {
+  void now;
   const participationKnown = hasKnownVoteParticipationCounts(response);
 
   return {
+    ...(response.activeBillingOrderId
+      ? { activeBillingOrderId: response.activeBillingOrderId }
+      : {}),
+    ...(response.billingOrderStatus
+      ? { billingOrderStatus: response.billingOrderStatus }
+      : {}),
     commissionId: response.commissionId,
     electoralRollSnapshotId: response.electoralRollSnapshotId,
     id: response.id,
     title: response.title,
-    status: mapVoteStatus(response.status, {
-      startedAt: response.startedAt,
-      now,
-    }),
+    status: mapVoteStatus(response.status),
     startsAt: response.startedAt,
     endsAt: response.endedAt,
     electorCount: response.electorCount ?? 0,
@@ -265,14 +261,13 @@ function mapVoteCandidateResponse(
 
 function mapVoteSubVoteResponse(
   response: VoteDetailItemResponseDto,
-  now: string,
 ): VoteSubVote {
   return {
     id: response.id,
     title: response.title,
     description: response.description,
     type: response.type === "YES_NO" ? "yes-no" : "candidate",
-    status: mapVoteStatus(response.status, { startedAt: now, now }),
+    status: mapVoteStatus(response.status),
     order: response.sortOrder,
     candidates: response.candidates.map(mapVoteCandidateResponse),
   };
@@ -326,9 +321,7 @@ export function mapVoteDetailResponse(
       voteDetail.candidates.map(mapVoteCandidateResponse),
     ),
     electors: mappedElectors,
-    subVotes: response.voteDetails.map((voteDetail) =>
-      mapVoteSubVoteResponse(voteDetail, now),
-    ),
+    subVotes: response.voteDetails.map(mapVoteSubVoteResponse),
     votingChannels: response.votingChannels as NonNullable<
       VoteDetail["votingChannels"]
     >,
@@ -406,7 +399,7 @@ async function requestVoteApiPage<T>(
 export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) {
   const mode = options.mode ?? resolveVoteApiMode();
   const baseUrl = options.baseUrl ?? resolveVoteApiBaseUrl();
-  const fetcher = options.fetcher ?? fetch;
+  const fetcher = options.fetcher ?? voteApiFetch;
   const mockVoteDetails = options.mockVoteDetails ?? voteFixtureDetails;
   const now = options.now ?? (() => new Date().toISOString());
 
@@ -448,15 +441,7 @@ export function createVotesApiClient(options: CreateVotesApiClientOptions = {}) 
       fetcher,
     });
 
-    return Promise.all(
-      response.map(async (vote) => {
-        const detail = await fetchVoteDetailFromServer(vote.id, requestTime);
-
-        return detail
-          ? toVoteSummary(detail)
-          : mapVoteSummaryResponse(vote, requestTime);
-      }),
-    );
+    return response.map((vote) => mapVoteSummaryResponse(vote, requestTime));
   }
 
   async function fetchVoteDetail(voteId: string): Promise<VoteDetail | null> {

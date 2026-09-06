@@ -1,8 +1,9 @@
 import {
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   LockKeyhole,
+  Link2,
+  Trash2,
   UserPlus,
   UsersRound,
 } from "lucide-react";
@@ -21,23 +22,55 @@ import { Input } from "@/components/ui/input";
 import type {
   ElectorRecord,
   PageResult,
+  ParticipationInvitationRecord,
 } from "@/features/votes/model/vote-operations.types";
 
+import { ElectorDeletionDialog } from "./elector-deletion-dialog";
+import { ParticipationLinkDialog } from "./participation-link-dialog";
+
 interface ElectorManagementViewProps {
+  canDeleteElectors: boolean;
+  deletingElector?: ElectorRecord;
+  deletionError?: string;
   electoralRollSnapshotId?: string;
+  isDeleting: boolean;
   isSubmitting: boolean;
+  invitation?: ParticipationInvitationRecord;
+  invitationElector?: ElectorRecord;
+  invitationError?: string;
+  isIssuingInvitation: boolean;
   message?: string;
+  onCancelDelete: () => void;
   onCreate: (formData: FormData) => void;
+  onCloseInvitation: () => void;
+  onConfirmDelete: () => void;
+  onIssueInvitation: () => void;
+  onOpenInvitation: (elector: ElectorRecord) => void;
   onPageChange: (page: number) => void;
+  onRequestDelete: (elector: ElectorRecord) => void;
   page: PageResult<ElectorRecord>;
 }
 
 export function ElectorManagementView({
+  canDeleteElectors,
+  deletingElector,
+  deletionError,
   electoralRollSnapshotId,
+  isDeleting,
   isSubmitting,
+  invitation,
+  invitationElector,
+  invitationError,
+  isIssuingInvitation,
   message,
+  onCancelDelete,
+  onCloseInvitation,
+  onConfirmDelete,
   onCreate,
+  onIssueInvitation,
+  onOpenInvitation,
   onPageChange,
+  onRequestDelete,
   page,
 }: ElectorManagementViewProps) {
   const isElectoralRollManaged = electoralRollSnapshotId !== undefined;
@@ -51,6 +84,11 @@ export function ElectorManagementView({
 
   return (
     <div className="space-y-5">
+      {message ? (
+        <p className="rounded-md bg-accent px-4 py-3 text-sm text-accent-foreground">
+          {message}
+        </p>
+      ) : null}
       {electoralRollSnapshotId ? (
         <div className="flex flex-wrap items-start justify-between gap-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-4">
           <div className="flex min-w-0 items-start gap-3">
@@ -62,12 +100,9 @@ export function ElectorManagementView({
               <p className="font-medium">
                 선거인명부에서 관리되는 선거인입니다.
               </p>
-              <p className="mt-1 break-all text-sm text-muted-foreground">
-                {electoralRollSnapshotId}
-              </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 연결된 스냅샷에서 선거인이 반영되므로
-                이 화면에서 개별 등록할 수 없습니다.
+                이 화면에서 개별 등록하거나 삭제할 수 없습니다.
               </p>
             </div>
           </div>
@@ -128,15 +163,56 @@ export function ElectorManagementView({
                         {elector.groupKey ? ` / ${elector.groupKey}` : ""}
                       </p>
                     </div>
-                    <div className="text-sm sm:text-right">
-                      <p className="font-medium tabular-nums">
-                        가중치 {elector.voteWeight.toLocaleString()}
-                      </p>
-                      {elector.phoneNumber ? (
-                        <p className="mt-1 text-muted-foreground">
-                          {elector.phoneNumber}
+                    <div className="flex flex-col items-start gap-3 text-sm sm:items-end sm:text-right">
+                      <div>
+                        <p className="font-medium tabular-nums">
+                          가중치 {elector.voteWeight.toLocaleString()}
                         </p>
-                      ) : null}
+                        {elector.phoneNumber ? (
+                          <p className="mt-1 text-muted-foreground">
+                            {elector.phoneNumber}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={elector.status !== "ELIGIBLE"}
+                          title={
+                            elector.status === "ELIGIBLE"
+                              ? undefined
+                              : "차단된 선거인에게는 참여 링크를 발급할 수 없습니다."
+                          }
+                          onClick={() => onOpenInvitation(elector)}
+                        >
+                          <Link2 aria-hidden="true" />
+                          참여 링크
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          aria-label={`${elector.name} 선거인 삭제`}
+                          disabled={
+                            !canDeleteElectors ||
+                            elector.status !== "ELIGIBLE" ||
+                            isDeleting
+                          }
+                          title={
+                            !canDeleteElectors
+                              ? "결제가 시작되지 않은 초안의 직접 등록 선거인만 삭제할 수 있습니다."
+                              : elector.status !== "ELIGIBLE"
+                                ? "이미 차단된 선거인입니다."
+                                : undefined
+                          }
+                          onClick={() => onRequestDelete(elector)}
+                        >
+                          <Trash2 aria-hidden="true" />
+                          삭제
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -217,15 +293,6 @@ export function ElectorManagementView({
                 required
                 disabled={isElectoralRollManaged}
               />
-              {message ? (
-                <p className="flex items-start gap-2 rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
-                  <CheckCircle2
-                    className="mt-0.5 size-4 shrink-0"
-                    aria-hidden="true"
-                  />
-                  {message}
-                </p>
-              ) : null}
               <Button
                 type="submit"
                 className="w-full"
@@ -238,6 +305,26 @@ export function ElectorManagementView({
           </CardContent>
         </Card>
       </div>
+
+      {invitationElector ? (
+        <ParticipationLinkDialog
+          elector={invitationElector}
+          invitation={invitation}
+          error={invitationError}
+          isIssuing={isIssuingInvitation}
+          onClose={onCloseInvitation}
+          onIssue={onIssueInvitation}
+        />
+      ) : null}
+      {deletingElector ? (
+        <ElectorDeletionDialog
+          elector={deletingElector}
+          errorMessage={deletionError}
+          isDeleting={isDeleting}
+          onCancel={onCancelDelete}
+          onConfirm={onConfirmDelete}
+        />
+      ) : null}
     </div>
   );
 }

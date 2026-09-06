@@ -30,22 +30,28 @@ describe("electoral roll workbook", () => {
 
   it("normalizes valid rows and defaults a blank vote weight to one", async () => {
     const file = await workbookFile([
-      ["employee-001", "seoul", 2],
-      ["employee-002", "", ""],
+      ["employee-001", "김선거", "010-1234-5678", "1990-01-31", "seoul", 2],
+      ["employee-002", "", "", "", "", ""],
     ]);
 
     await expect(parseElectoralRollWorkbook(file)).resolves.toEqual({
       errors: [],
       members: [
         {
+          birthDate: "1990-01-31",
           identifier: "employee-001",
           groupKey: "seoul",
+          name: "김선거",
+          phoneNumber: "010-1234-5678",
           rowNumber: 2,
           voteWeight: 2,
         },
         {
+          birthDate: undefined,
           identifier: "employee-002",
           groupKey: undefined,
+          name: undefined,
+          phoneNumber: undefined,
           rowNumber: 3,
           voteWeight: 1,
         },
@@ -56,10 +62,10 @@ describe("electoral roll workbook", () => {
   it("reports duplicate identifiers, formulas, and non-positive weights by row", async () => {
     const workbook = baseWorkbook();
     const sheet = workbook.getWorksheet(ELECTORAL_ROLL_TEMPLATE_SHEET)!;
-    sheet.addRow(["employee-001", "seoul", 1]);
-    sheet.addRow(["EMPLOYEE-001", "busan", 1]);
-    sheet.addRow(["employee-003", "", { formula: "1+1", result: 2 }]);
-    sheet.addRow(["employee-004", "", 0]);
+    sheet.addRow(["employee-001", "", "", "", "seoul", 1]);
+    sheet.addRow(["EMPLOYEE-001", "", "", "", "busan", 1]);
+    sheet.addRow(["employee-003", "", "", "", "", { formula: "1+1", result: 2 }]);
+    sheet.addRow(["employee-004", "", "", "", "", 0]);
 
     const result = await parseElectoralRollWorkbook(
       await toFile(workbook, "members.xlsx"),
@@ -74,6 +80,35 @@ describe("electoral roll workbook", () => {
         message: "투표 가중치는 0보다 큰 숫자여야 합니다.",
       },
     ]);
+  });
+
+  it("validates identity profile pairing, phone digits, and real birth dates", async () => {
+    const file = await workbookFile([
+      ["employee-001", "김선거", "", "", "", 1],
+      ["employee-002", "박선거", "123-456", "", "", 1],
+      ["employee-003", "이선거", "010-1234-5678", "2026-02-30", "", 1],
+      ["employee-004", "", "", "1990-01-01", "", 1],
+    ]);
+
+    await expect(parseElectoralRollWorkbook(file)).resolves.toEqual({
+      errors: [
+        { rowNumber: 2, message: "이름과 휴대폰번호는 함께 입력하세요." },
+        {
+          rowNumber: 3,
+          message: "휴대폰번호는 표시 문자를 제외하고 숫자 8~15자리로 입력하세요.",
+        },
+        {
+          rowNumber: 4,
+          message: "생년월일은 유효한 YYYY-MM-DD 형식으로 입력하세요.",
+        },
+        {
+          rowNumber: 5,
+          message:
+            "생년월일은 이름과 휴대폰번호를 함께 입력한 경우에만 입력할 수 있습니다.",
+        },
+      ],
+      members: [],
+    });
   });
 
   it("rejects files that do not match the template type, size, or headers", async () => {
@@ -116,8 +151,7 @@ describe("electoral roll workbook", () => {
       errors: [
         {
           rowNumber: 1,
-          message:
-            "열 이름과 순서를 템플릿과 동일하게 유지하세요: 구성원 식별자, 그룹 키, 투표 가중치",
+          message: `열 이름과 순서를 템플릿과 동일하게 유지하세요: ${ELECTORAL_ROLL_TEMPLATE_HEADERS.join(", ")}`,
         },
       ],
       members: [],
@@ -128,7 +162,7 @@ describe("electoral roll workbook", () => {
     const workbook = baseWorkbook();
     const sheet = workbook.getWorksheet(ELECTORAL_ROLL_TEMPLATE_SHEET)!;
     for (let index = 0; index <= MAX_ELECTORAL_ROLL_IMPORT_ROWS; index += 1) {
-      sheet.addRow([`employee-${index}`, "", 1]);
+      sheet.addRow([`employee-${index}`, "", "", "", "", 1]);
     }
 
     await expect(
