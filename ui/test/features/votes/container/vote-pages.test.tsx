@@ -329,7 +329,7 @@ describe('vote containers', () => {
     }
   });
 
-  it('registers a vote attachment from an editable vote', async () => {
+  it('exposes and registers vote attachments from the vote detail', async () => {
     const requestUpload = vi
       .spyOn(voteAttachmentApi, 'requestVoteUpload')
       .mockImplementation(async (_target, metadata) => ({
@@ -350,7 +350,19 @@ describe('vote containers', () => {
       });
 
     try {
-      renderWithQueryClient(<VoteEditContainer voteId="scheduled-budget" />);
+      renderWithQueryClient(<VoteDetailContainer voteId="scheduled-budget" />);
+      expect(
+        await screen.findByRole('heading', {
+          name: '투표 첨부파일 업로드',
+        }),
+      ).toBeTruthy();
+      expect(
+        screen
+          .getByRole('link', { name: '후보자 첨부파일' })
+          .getAttribute('href'),
+      ).toBe(
+        '/votes/scheduled-budget/sub-votes/budget-approval#candidate-attachments',
+      );
       const input = await screen.findByLabelText('파일');
       const file = new File(['notice'], '공고문.pdf', {
         type: 'application/pdf',
@@ -419,7 +431,9 @@ describe('vote containers', () => {
 
     expect(await screen.findByText('대표 후보 선출')).toBeTruthy();
     expect(screen.getByRole('heading', { name: '투표율' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: '후보와 선택지' })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: '후보자 및 첨부파일' }),
+    ).toBeTruthy();
     const attachmentButtons = screen.getAllByRole('button', {
       name: '첨부 등록',
     }) as HTMLButtonElement[];
@@ -546,13 +560,23 @@ describe('vote containers', () => {
     ).toHaveProperty('href', expect.stringContaining('/electoral-rolls'));
   });
 
-  it('places the required commission at the last setup step', async () => {
+  it('places the required commission before creation-driven steps', async () => {
     renderWithQueryClient(<VoteSetupContainer />);
 
     expect(
       screen.getByRole('heading', { level: 2, name: '기본 정책' }),
     ).toBeTruthy();
     expect(screen.getByLabelText('투표 제목')).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: '공개 범위' })).toBeNull();
+    expect(screen.getByRole('group', { name: '공개 범위' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /비밀 투표/ })).toHaveProperty(
+      'checked',
+      true,
+    );
+    expect(screen.getByRole('radio', { name: /공개 투표/ })).toBeTruthy();
+    expect(screen.getByRole('group', { name: '참여 단위' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: '가중치 방식' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: '결과 저장' })).toBeTruthy();
     expect(screen.queryByLabelText('선거인명부 ID')).toBeNull();
     expect(screen.queryByLabelText('투표 운영 위원회')).toBeNull();
     expect(screen.queryByRole('button', { name: '위원회 등록' })).toBeNull();
@@ -569,6 +593,7 @@ describe('vote containers', () => {
       '안건과 후보',
       '선거인명부',
       '운영 위원회',
+      '첨부파일',
       '검토',
     ]);
   });
@@ -735,13 +760,36 @@ describe('vote containers', () => {
     ).toBeTruthy();
     expect(
       screen.getByRole<HTMLButtonElement>('button', {
-        name: '투표 생성 후 검토',
+        name: '투표 생성 후 첨부파일',
       }).disabled,
     ).toBe(true);
     fireEvent.change(screen.getByLabelText('투표 운영 위원회'), {
       target: { value: 'commission-1' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '투표 생성 후 검토' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: '투표 생성 후 첨부파일' }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: '첨부파일 등록' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '투표 첨부파일' })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', {
+        name: 'Mock 대표 선출 · 후보 가 첨부파일',
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('heading', {
+        name: 'Mock 대표 선출 · 후보 나 첨부파일',
+      }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: '첨부 등록' })).toHaveLength(
+      3,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: '설정 검토로 이동' }),
+    );
 
     expect(
       await screen.findByRole('heading', { name: '설정 검토' }),
@@ -756,7 +804,6 @@ describe('vote containers', () => {
     expect(
       screen.queryByText(/부모 투표 ID|위원회 ID|스냅샷 ID|자식 투표 ID/),
     ).toBeNull();
-    expect(screen.getByRole('heading', { name: '투표 첨부파일' })).toBeTruthy();
     expect(
       screen.getByRole('link', { name: '1번 안건 후보 첨부' }),
     ).toHaveProperty('href', expect.stringContaining('/sub-votes/'));
@@ -931,6 +978,30 @@ describe('vote containers', () => {
       startsAt: new Date('2026-09-20T09:00:00').toISOString(),
       endsAt: new Date('2026-09-20T18:00:00').toISOString(),
     });
+  });
+
+  it('preserves the current vote policy in explanatory choices while editing', async () => {
+    const vote = voteFixtureDetails.find(
+      (item) => item.id === 'active-general',
+    );
+    if (!vote) throw new Error('active-general fixture is required');
+
+    renderWithQueryClient(<VoteEditContainer voteId={vote.id} />);
+
+    expect(await screen.findByText('투표 기본 설정')).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: '공개 범위' })).toBeNull();
+    expect(screen.getByRole('radio', { name: /비밀 투표/ })).toHaveProperty(
+      'checked',
+      true,
+    );
+    expect(
+      screen.getByRole('radio', { name: /동일 가중치/ }),
+    ).toHaveProperty('checked', true);
+    expect(screen.getByRole('group', { name: '허용 채널' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: '본인인증' })).toBeTruthy();
+    expect(
+      screen.getByRole('checkbox', { name: /본인인증 필수/ }),
+    ).toBeTruthy();
   });
 
   it('explains why an incomplete roll cannot be attached to an identity-required vote', async () => {

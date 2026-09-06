@@ -23,11 +23,18 @@ import type {
   CreateVoteResult,
 } from '@/features/votes/model/vote-operations.types';
 
+import { VoteAccessFields } from './vote-access-fields';
 import { VoteCommissionSetup } from './vote-commission-setup';
+import { VotePolicyFields } from './vote-policy-fields';
 import { VoteScheduleFields } from './vote-schedule-fields';
 
 export type VoteSetupStep =
-  'ballot' | 'basics' | 'commission' | 'electors' | 'review';
+  | 'attachments'
+  | 'ballot'
+  | 'basics'
+  | 'commission'
+  | 'electors'
+  | 'review';
 
 export interface VoteSetupBallotDraft {
   candidateNames: string[];
@@ -37,6 +44,7 @@ export interface VoteSetupBallotDraft {
 
 interface VoteSetupWizardProps {
   attachmentsPanel?: ReactNode;
+  candidateAttachmentsPanel?: ReactNode;
   ballots: VoteSetupBallotDraft[];
   ballotType: VoteSetupBallotDraft['type'];
   billingPanel?: ReactNode;
@@ -69,6 +77,7 @@ const steps: Array<{ key: VoteSetupStep; label: string }> = [
   { key: 'ballot', label: '안건과 후보' },
   { key: 'electors', label: '선거인명부' },
   { key: 'commission', label: '운영 위원회' },
+  { key: 'attachments', label: '첨부파일' },
   { key: 'review', label: '검토' },
 ];
 
@@ -79,9 +88,17 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
     <div className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)] xl:items-start">
       <nav
         aria-label="투표 설정 진행 상태"
-        className="rounded-lg border bg-card p-3 xl:sticky xl:top-5"
+        className="rounded-lg border bg-card p-2.5 sm:p-3 xl:sticky xl:top-5"
       >
-        <ol className="grid gap-1 sm:grid-cols-5 xl:grid-cols-1">
+        <div className="flex items-center justify-between gap-3 px-1 pb-2 sm:hidden">
+          <span className="text-sm font-semibold">
+            {steps[currentIndex]?.label}
+          </span>
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {currentIndex + 1} / {steps.length}
+          </span>
+        </div>
+        <ol className="grid grid-cols-6 gap-1 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-1">
           {steps.map((item, index) => {
             const isComplete = index < currentIndex;
             const isCurrent = item.key === props.step;
@@ -91,7 +108,7 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
                   type="button"
                   disabled={index > currentIndex}
                   onClick={() => props.onStepChange(item.key)}
-                  className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45"
+                  className="flex min-h-10 w-full items-center justify-center gap-3 rounded-md px-1 text-left text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-11 sm:justify-start sm:px-3"
                   aria-current={isCurrent ? 'step' : undefined}
                 >
                   <span
@@ -107,7 +124,7 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
                       <Circle className="size-3" aria-hidden="true" />
                     )}
                   </span>
-                  {item.label}
+                  <span className="sr-only sm:not-sr-only">{item.label}</span>
                 </button>
               </li>
             );
@@ -146,7 +163,7 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
                 disabled={props.isSubmitting || !props.selectedCommissionId}
                 onClick={props.onCompleteSetup}
               >
-                {props.isSubmitting ? '생성 중…' : '투표 생성 후 검토'}
+                {props.isSubmitting ? '생성 중…' : '투표 생성 후 첨부파일'}
                 <ChevronRight aria-hidden="true" />
               </Button>
             </div>
@@ -181,9 +198,15 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
             selectedElectoralRollId={props.selectedElectoralRollId}
           />
         ) : null}
+        {props.step === 'attachments' && props.createdVote ? (
+          <AttachmentsStep
+            attachmentsPanel={props.attachmentsPanel}
+            candidateAttachmentsPanel={props.candidateAttachmentsPanel}
+            onNext={() => props.onStepChange('review')}
+          />
+        ) : null}
         {props.step === 'review' && props.createdVote ? (
           <Review
-            attachmentsPanel={props.attachmentsPanel}
             billingPanel={props.billingPanel}
             createdSubVoteIds={props.createdSubVoteIds}
             createdVote={props.createdVote}
@@ -223,55 +246,8 @@ function BasicsForm({
           className="sm:col-span-2"
         />
         <VoteScheduleFields descriptionId="vote-schedule-description" />
-        <label className="grid gap-2 text-sm font-medium">
-          공개 범위
-          <Select name="privacyMode" defaultValue="SECRET">
-            <option value="SECRET">비밀 투표</option>
-            <option value="PUBLIC">공개 투표</option>
-          </Select>
-        </label>
-        <label className="grid gap-2 text-sm font-medium">
-          참여 단위
-          <Select name="participationUnit" defaultValue="INDIVIDUAL">
-            <option value="INDIVIDUAL">개인</option>
-            <option value="GROUP">그룹</option>
-          </Select>
-        </label>
-        <label className="grid gap-2 text-sm font-medium">
-          가중치 방식
-          <Select name="voteWeightMode" defaultValue="EQUAL">
-            <option value="EQUAL">동일 가중치</option>
-            <option value="SHARE">지분 가중치</option>
-          </Select>
-        </label>
-        <label className="grid gap-2 text-sm font-medium">
-          결과 저장
-          <Select name="resultStorageMode" defaultValue="DATABASE">
-            <option value="DATABASE">데이터베이스</option>
-            <option value="BLOCKCHAIN">블록체인</option>
-          </Select>
-        </label>
-        <fieldset className="sm:col-span-2">
-          <legend className="text-sm font-medium">허용 채널</legend>
-          <div className="mt-2 flex flex-wrap gap-4 text-sm">
-            <CheckOption
-              name="channel"
-              value="ONLINE"
-              label="온라인"
-              defaultChecked
-            />
-            <CheckOption name="channel" value="ONSITE" label="현장" />
-            <CheckOption name="channel" value="VISIT" label="방문" />
-          </div>
-        </fieldset>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input
-            type="checkbox"
-            name="identityRequired"
-            className="size-4 rounded border"
-          />
-          본인인증 필수
-        </label>
+        <VotePolicyFields className="sm:col-span-2" />
+        <VoteAccessFields className="sm:col-span-2" />
         <Button type="submit" className="sm:col-span-2" disabled={isSubmitting}>
           <Vote aria-hidden="true" />
           안건과 후보로 이동
@@ -651,14 +627,12 @@ function BallotForm({
 }
 
 function Review({
-  attachmentsPanel,
   billingPanel,
   createdSubVoteIds,
   createdVote,
   selectedCommission,
   selectedElectoralRoll,
 }: {
-  attachmentsPanel?: ReactNode;
   billingPanel?: ReactNode;
   createdSubVoteIds: string[];
   createdVote: CreateVoteResult;
@@ -691,7 +665,6 @@ function Review({
           value={`${createdSubVoteIds.length.toLocaleString()}개`}
         />
       </dl>
-      {attachmentsPanel ? <div className="mt-5">{attachmentsPanel}</div> : null}
       {createdSubVoteIds.length > 0 ? (
         <div className="mt-5 rounded-md border p-4">
           <p className="text-sm font-medium">후보자 첨부파일</p>
@@ -724,6 +697,48 @@ function Review({
         <Button variant="outline" asChild>
           <Link href={`/votes/${createdVote.id}/electors`}>선거인 관리</Link>
         </Button>
+      </div>
+    </WizardCard>
+  );
+}
+
+function AttachmentsStep({
+  attachmentsPanel,
+  candidateAttachmentsPanel,
+  onNext,
+}: {
+  attachmentsPanel?: ReactNode;
+  candidateAttachmentsPanel?: ReactNode;
+  onNext: () => void;
+}) {
+  return (
+    <WizardCard
+      title="첨부파일 등록"
+      description="생성된 투표 초안과 후보자에 필요한 파일을 등록합니다. 파일이 없다면 이 단계를 건너뛸 수 있습니다."
+    >
+      <div className="space-y-5">
+        {attachmentsPanel}
+        {candidateAttachmentsPanel ? (
+          <section aria-labelledby="setup-candidate-attachments-title">
+            <h3
+              id="setup-candidate-attachments-title"
+              className="mb-3 font-semibold"
+            >
+              후보자 첨부파일
+            </h3>
+            {candidateAttachmentsPanel}
+          </section>
+        ) : (
+          <p className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
+            첨부파일을 등록할 후보자가 없습니다.
+          </p>
+        )}
+        <div className="flex justify-end border-t pt-5">
+          <Button type="button" onClick={onNext}>
+            설정 검토로 이동
+            <ChevronRight aria-hidden="true" />
+          </Button>
+        </div>
       </div>
     </WizardCard>
   );
@@ -766,18 +781,6 @@ function Field({
     <label className={`grid gap-2 text-sm font-medium ${className ?? ''}`}>
       {label}
       <Input name={name} {...props} />
-    </label>
-  );
-}
-
-function CheckOption({
-  label,
-  ...props
-}: { label: string } & React.ComponentProps<'input'>) {
-  return (
-    <label className="flex items-center gap-2">
-      <input type="checkbox" className="size-4 rounded border" {...props} />
-      {label}
     </label>
   );
 }

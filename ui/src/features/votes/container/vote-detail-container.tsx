@@ -13,6 +13,7 @@ import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { billingOrderQueryOptions } from "@/features/billing/api/billing-query-options";
+import { voteAttachmentApi } from "@/features/votes/api/vote-attachment-api";
 import { voteDetailQueryOptions } from "@/features/votes/api/votes-query-options";
 import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
 import {
@@ -29,6 +30,7 @@ import { FieldSessionContainer } from "./field-session-container";
 import { VoteSmsContainer } from "./vote-sms-container";
 import { VoteDetailRosterSection } from "../ui/vote-detail-roster-section";
 import { VoteDetailSummary } from "../ui/vote-detail-summary";
+import { AttachmentUploadSection } from "../ui/attachment-upload-section";
 import { VoteNavigation } from "../ui/vote-navigation";
 import { VoteSubVoteSection } from "../ui/vote-sub-vote-section";
 
@@ -229,6 +231,24 @@ export function VoteDetailContainer({
           <VoteDetailSummary
             billingOrderStatus={billingOrderStatus}
             vote={vote}
+          />
+          <AttachmentUploadSection
+            title="투표 첨부파일 업로드"
+            description="공고문, 안내 자료와 기타 문서를 이 화면에서 바로 등록합니다. 파일은 20MB까지 등록할 수 있습니다."
+            disabled={!isVoteSetupEditable(vote.status, billingOrderStatus)}
+            disabledMessage="초안 상태이며 결제가 시작되기 전인 투표만 첨부파일을 등록할 수 있습니다."
+            typeOptions={[
+              { label: "공고문", value: "NOTICE" },
+              { label: "안내 자료", value: "GUIDE" },
+              { label: "기타", value: "ETC" },
+            ]}
+            onRequestUpload={(metadata) =>
+              voteAttachmentApi.requestVoteUpload({ voteId: vote.id }, metadata)
+            }
+            onUploadObject={voteAttachmentApi.uploadObject}
+            onConfirmUpload={(input) =>
+              voteAttachmentApi.confirmVoteUpload({ voteId: vote.id }, input)
+            }
           />
           <VoteSmsContainer voteId={vote.id} voteStatus={vote.status} />
           <VoteSubVoteSection voteId={vote.id} subVotes={vote.subVotes} />

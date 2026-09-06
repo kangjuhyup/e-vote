@@ -43,9 +43,9 @@ export function SubVoteOperationsContainer({ account, voteDetailId, voteId }: Su
     <PageShell
       account={account}
       navigation={<VoteNavigation current="votes" isMockMode={isVoteApiMockMode()} />}
-      eyebrow="자식 투표 운영"
-      title="투표율과 결과"
-      description="자식 투표의 정책, 후보자, 투표율과 종료 결과를 확인합니다."
+      eyebrow="안건 운영"
+      title="안건·후보자 관리"
+      description="후보자 첨부파일을 등록하고 안건의 투표율과 종료 결과를 확인합니다."
       actions={
         <Button type="button" variant="outline" asChild>
           <Link href={`/votes/${voteId}`}><ArrowLeft aria-hidden="true" />투표 상세</Link>

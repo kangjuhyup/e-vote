@@ -81,10 +81,16 @@ export function SubVoteOperationsView({
         )}
       </section>
 
-      <section aria-labelledby="candidate-title" className="space-y-3">
+      <section
+        id="candidate-attachments"
+        aria-labelledby="candidate-title"
+        className="scroll-mt-6 space-y-3"
+      >
         <div className="flex items-center gap-2">
           <UsersRound className="size-5 text-muted-foreground" aria-hidden="true" />
-          <h2 id="candidate-title" className="text-lg font-semibold">후보와 선택지</h2>
+          <h2 id="candidate-title" className="text-lg font-semibold">
+            {candidateAttachments ? "후보자 및 첨부파일" : "후보와 선택지"}
+          </h2>
         </div>
         {operations.candidates.length === 0 ? (
           <Card className="rounded-lg">

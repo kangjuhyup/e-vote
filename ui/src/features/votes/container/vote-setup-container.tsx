@@ -40,6 +40,11 @@ interface VoteSetupContainerProps {
 }
 
 type VoteDraft = Omit<CreateVoteInput, 'commissionId' | 'electoralRollId'>;
+type CreatedSetupBallot = {
+  candidates: Array<{ id: string; name: string }>;
+  id: string;
+  title: string;
+};
 
 export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
   const queryClient = useQueryClient();
@@ -54,6 +59,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
     useState<string>();
   const [createdVote, setCreatedVote] = useState<CreateVoteResult>();
   const [createdSubVoteIds, setCreatedSubVoteIds] = useState<string[]>([]);
+  const [createdBallots, setCreatedBallots] = useState<CreatedSetupBallot[]>([]);
   const [selectedCommissionId, setSelectedCommissionId] = useState<string>();
   const [message, setMessage] = useState<string>();
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -103,7 +109,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
             type: ballot.type,
             sortOrder: ballotIndex,
           });
-          await Promise.all(
+          const candidates = await Promise.all(
             ballot.candidateNames.map((name, index) =>
               voteOperationsApi.createCandidate({
                 voteId: vote.id,
@@ -113,7 +119,14 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
               }),
             ),
           );
-          return subVote;
+          return {
+            candidates: candidates.map((candidate, index) => ({
+              id: candidate.id,
+              name: ballot.candidateNames[index] ?? `후보 ${index + 1}`,
+            })),
+            id: subVote.id,
+            title: ballot.title,
+          };
         }),
       );
       return { subVotes, vote };
@@ -121,8 +134,9 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
     onSuccess: async ({ subVotes, vote }) => {
       setCreatedVote(vote);
       setCreatedSubVoteIds(subVotes.map((subVote) => subVote.id));
-      setMessage('투표 설정을 생성했습니다.');
-      setStep('review');
+      setCreatedBallots(subVotes);
+      setMessage('투표 초안을 생성했습니다. 첨부파일을 등록해 주세요.');
+      setStep('attachments');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['votes'] }),
         queryClient.invalidateQueries({ queryKey: ['vote-operations'] }),
@@ -231,7 +245,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
       navigation={<VoteNavigation current="votes" isMockMode={isMockMode} />}
       eyebrow="투표 설정"
       title="새 투표 만들기"
-      description="기본 정책과 안건을 설정하고 기존 선거인명부를 연결한 뒤 운영 위원회를 선택합니다."
+      description="기본 정책과 안건을 설정하고 선거인명부와 운영 위원회를 연결한 뒤 투표·후보자 첨부파일을 등록합니다."
       actions={
         <Button type="button" variant="outline" asChild>
           <Link href="/votes">
@@ -267,6 +281,50 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
                 )
               }
             />
+          ) : undefined
+        }
+        candidateAttachmentsPanel={
+          createdVote &&
+          createdBallots.some((ballot) => ballot.candidates.length > 0) ? (
+            <div className="space-y-4">
+              {createdBallots.flatMap((ballot) =>
+                ballot.candidates.map((candidate) => (
+                  <AttachmentUploadSection
+                    key={candidate.id}
+                    title={`${ballot.title} · ${candidate.name} 첨부파일`}
+                    description="후보자 프로필 이미지, 공약집, 포스터와 기타 자료를 등록하세요."
+                    disabled={attachmentLocked}
+                    typeOptions={[
+                      { label: '프로필 이미지', value: 'PROFILE_IMAGE' },
+                      { label: '공약집', value: 'PLEDGE' },
+                      { label: '포스터', value: 'POSTER' },
+                      { label: '기타', value: 'ETC' },
+                    ]}
+                    onRequestUpload={(metadata) =>
+                      voteAttachmentApi.requestCandidateUpload(
+                        {
+                          candidateId: candidate.id,
+                          voteDetailId: ballot.id,
+                          voteId: createdVote.id,
+                        },
+                        metadata,
+                      )
+                    }
+                    onUploadObject={voteAttachmentApi.uploadObject}
+                    onConfirmUpload={(input) =>
+                      voteAttachmentApi.confirmCandidateUpload(
+                        {
+                          candidateId: candidate.id,
+                          voteDetailId: ballot.id,
+                          voteId: createdVote.id,
+                        },
+                        input,
+                      )
+                    }
+                  />
+                )),
+              )}
+            </div>
           ) : undefined
         }
         billingPanel={
