@@ -30,11 +30,9 @@ import type {
   ElectorRecord,
   FieldSessionRecord,
   FieldSessionStatus,
-  IssueParticipationInvitationInput,
   ManageElectorResult,
   OperationCandidate,
   PageResult,
-  ParticipationInvitationRecord,
   SubVoteOperations,
   VotePolicyRecord,
   VoteResultRecord,
@@ -56,7 +54,6 @@ interface CreateVoteOperationsApiClientOptions {
   baseUrl?: string;
   fetcher?: ApiFetcher;
   mode?: 'live' | 'mock';
-  participationBaseUrl?: string;
 }
 
 interface PageDto<T> {
@@ -321,11 +318,6 @@ export function createVoteOperationsApiClient(
   const mode = options.mode ?? (isApiMockMode() ? 'mock' : 'live');
   const baseUrl = (options.baseUrl ?? resolveBaseUrl()).replace(/\/+$/, '');
   const fetcher = options.fetcher ?? voteApiFetch;
-  const participationBaseUrl =
-    options.participationBaseUrl ??
-    (typeof window === 'undefined'
-      ? 'http://localhost:3001'
-      : window.location.origin);
 
   async function fetchSubVoteOperations(
     voteId: string,
@@ -838,28 +830,6 @@ export function createVoteOperationsApiClient(
     );
   }
 
-  async function issueParticipationInvitation(
-    input: IssueParticipationInvitationInput,
-  ): Promise<ParticipationInvitationRecord> {
-    if (mode === 'mock') {
-      const elector = mockState.electors.find(
-        (item) => item.voteId === input.voteId && item.id === input.electorId,
-      );
-      if (!elector) {
-        throw new Error('선거인을 찾을 수 없습니다.');
-      }
-    }
-
-    const participationUrl = new URL('/participate', participationBaseUrl);
-    participationUrl.searchParams.set('voteId', input.voteId);
-    participationUrl.searchParams.set('electorId', input.electorId);
-
-    return {
-      invitationId: nextMockId('participation-link'),
-      participationUrl: participationUrl.toString(),
-    };
-  }
-
   async function fetchCommissions(
     page = 1,
     pageSize = 20,
@@ -1176,7 +1146,6 @@ export function createVoteOperationsApiClient(
     fetchElectors,
     fetchFieldSessions,
     fetchSubVoteOperations,
-    issueParticipationInvitation,
     mode,
     registerCommissionMember,
     updateCommissionMember,

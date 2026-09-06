@@ -35,6 +35,7 @@ type LoadState =
   | { kind: 'ready'; access: ParticipationAccess };
 
 interface ParticipationViewProps {
+  accessMode?: 'identity' | 'permanent-link';
   electorIdentityState: 'unverified' | 'verifying' | 'verified';
   errorMessage?: string;
   isPreview?: boolean;
@@ -52,6 +53,7 @@ interface ParticipationViewProps {
 }
 
 export function ParticipationView({
+  accessMode = 'identity',
   electorIdentityState,
   errorMessage,
   isPreview = false,
@@ -93,6 +95,7 @@ export function ParticipationView({
   return (
     <ReadyParticipationView
       access={state.access}
+      accessMode={accessMode}
       electorIdentityState={electorIdentityState}
       errorMessage={errorMessage}
       isPreview={isPreview}
@@ -111,6 +114,7 @@ export function ParticipationView({
 
 function ReadyParticipationView({
   access,
+  accessMode = 'identity',
   electorIdentityState,
   errorMessage,
   isPreview = false,
@@ -145,7 +149,7 @@ function ReadyParticipationView({
   );
   const mobileStage = !mobileIntroComplete
     ? 'overview'
-    : !access.elector.identityVerified
+    : accessMode === 'identity' && !access.elector.identityVerified
       ? 'identity'
       : activeBallotIndex >= 0
         ? 'ballot'
@@ -233,9 +237,11 @@ function ReadyParticipationView({
             />
             <Info
               icon={<ShieldCheck />}
-              label="본인 확인"
+              label={accessMode === 'permanent-link' ? '참여 권한' : '본인 확인'}
               value={
-                access.elector.identityVerified
+                accessMode === 'permanent-link'
+                  ? '문자 링크 확인 완료'
+                  : access.elector.identityVerified
                   ? 'Mock 확인 완료'
                   : 'Mock 확인 필요'
               }
@@ -247,11 +253,11 @@ function ReadyParticipationView({
             disabled={access.vote.status !== 'OPEN' || !isChannelAvailable}
             onClick={() => setMobileIntroComplete(true)}
           >
-            본인확인으로 계속
+            {accessMode === 'permanent-link' ? '투표 시작' : '본인확인으로 계속'}
           </Button>
         </section>
 
-        <section
+        {accessMode === 'identity' ? <section
           aria-labelledby="mock-verification-title"
           className={cn(
             'mt-4 rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-amber-950 sm:mt-5 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-100',
@@ -298,7 +304,7 @@ function ReadyParticipationView({
               )}
             </div>
           </div>
-        </section>
+        </section> : null}
 
         {errorMessage ? (
           <p
@@ -326,7 +332,7 @@ function ReadyParticipationView({
             )}
           />
         ) : null}
-        {!access.elector.identityVerified ? (
+        {accessMode === 'identity' && !access.elector.identityVerified ? (
           <p
             role="status"
             className={cn(

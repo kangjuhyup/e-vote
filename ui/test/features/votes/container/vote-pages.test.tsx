@@ -579,32 +579,31 @@ describe('vote containers', () => {
     }
   });
 
-  it('issues and shows an elector participation link in a popup', async () => {
+  it('queues bulk invitations and reissues an elector link without exposing a raw link', async () => {
     renderWithQueryClient(
       <ElectorManagementContainer voteId="active-general" />,
     );
 
-    const linkButtons = await screen.findAllByRole('button', {
-      name: '참여 링크',
+    fireEvent.click(await screen.findByRole('button', {
+      name: '전체 문자 발송 예약',
+    }));
+    expect(await screen.findByText(/발송 대기열에 등록했습니다/)).toBeTruthy();
+
+    const linkButtons = screen.getAllByRole('button', {
+      name: '링크 재발급',
     });
     fireEvent.click(linkButtons[0]);
 
     expect(
-      screen.getByRole('heading', { name: '선거인 참여 링크' }),
+      screen.getByRole('heading', { name: '참여 링크 재발급' }),
     ).toBeTruthy();
-    expect(screen.getByText('참여 링크를 만드시겠습니까?')).toBeTruthy();
-    expect(screen.queryByLabelText('이선거 선거인 참여 링크')).toBeNull();
+    expect(screen.getByText(/기존 참여 링크를 폐기/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: '참여 링크 생성' }));
+    fireEvent.click(screen.getByRole('button', { name: '새 링크 문자 발송' }));
 
-    const issuedLink = await screen.findByLabelText('이선거 선거인 참여 링크');
-    expect(issuedLink.getAttribute('value')).toContain(
-      '/participate?voteId=active-general&electorId=',
-    );
-    expect(screen.getByRole('link', { name: '새 창에서 열기' })).toHaveProperty(
-      'target',
-      '_blank',
-    );
+    expect(await screen.findByText(/이전 링크는 폐기/)).toBeTruthy();
+    expect(screen.getByRole('dialog').querySelector('input')).toBeNull();
+    expect(document.body.textContent).not.toContain('/participate?');
   });
 
   it('disables manual elector registration for electoral-roll-managed votes', async () => {

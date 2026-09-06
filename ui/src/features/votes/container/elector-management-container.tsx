@@ -11,15 +11,15 @@ import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { voteOperationsApi } from "@/features/votes/api/vote-operations-api";
+import { participationInvitationApi } from "@/features/votes/api/participation-invitation-api";
+import { formatInvitationDispatchResult } from "@/features/votes/lib/participation-invitation";
 import { electorManagementQueryOptions } from "@/features/votes/api/vote-operations-query-options";
 import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
 import { voteDetailQueryOptions } from "@/features/votes/api/votes-query-options";
 import { isVoteSetupEditable } from "@/features/votes/lib/vote-finalization";
 
-import type {
-  ElectorRecord,
-  ParticipationInvitationRecord,
-} from "../model/vote-operations.types";
+import type { ParticipationInvitationDispatchResult } from "../model/participation-invitation.types";
+import type { ElectorRecord } from "../model/vote-operations.types";
 import { ElectorManagementView } from "../ui/elector-management-view";
 import { VoteNavigation } from "../ui/vote-navigation";
 
@@ -36,8 +36,7 @@ export function ElectorManagementContainer({
   const [message, setMessage] = useState<string>();
   const [deletingElector, setDeletingElector] = useState<ElectorRecord>();
   const [invitationElector, setInvitationElector] = useState<ElectorRecord>();
-  const [invitation, setInvitation] =
-    useState<ParticipationInvitationRecord>();
+  const [invitation, setInvitation] = useState<ParticipationInvitationDispatchResult>();
   const queryClient = useQueryClient();
   const electorsQuery = useQuery(electorManagementQueryOptions(voteId, page));
   const voteQuery = useQuery(voteDetailQueryOptions(voteId));
@@ -62,8 +61,12 @@ export function ElectorManagementContainer({
     },
   });
   const invitationMutation = useMutation({
-    mutationFn: voteOperationsApi.issueParticipationInvitation,
+    mutationFn: participationInvitationApi.reissue,
     onSuccess: setInvitation,
+  });
+  const dispatchMutation = useMutation({
+    mutationFn: participationInvitationApi.dispatch,
+    onSuccess: (result) => setMessage(formatInvitationDispatchResult(result)),
   });
   const deleteMutation = useMutation({
     mutationFn: voteOperationsApi.deleteElector,
@@ -98,6 +101,12 @@ export function ElectorManagementContainer({
       voteId,
     });
   }
+
+  const canDispatchInvitations = Boolean(
+    voteQuery.data &&
+      !voteQuery.data.identityVerificationPolicy?.required &&
+      ['finalized', 'active', 'completed'].includes(voteQuery.data.status),
+  );
 
   function handleRequestDelete(elector: ElectorRecord) {
     deleteMutation.reset();
@@ -185,6 +194,7 @@ export function ElectorManagementContainer({
               : undefined
           }
           isIssuingInvitation={invitationMutation.isPending}
+          isDispatchingInvitations={dispatchMutation.isPending}
           isDeleting={deleteMutation.isPending}
           isSubmitting={createMutation.isPending}
           message={
@@ -197,9 +207,19 @@ export function ElectorManagementContainer({
           onCloseInvitation={handleCloseInvitation}
           onConfirmDelete={handleConfirmDelete}
           onIssueInvitation={handleIssueInvitation}
+          onDispatchInvitations={() => {
+            setMessage(undefined);
+            dispatchMutation.mutate({ voteId });
+          }}
           onOpenInvitation={handleOpenInvitation}
           onPageChange={setPage}
           onRequestDelete={handleRequestDelete}
+          canDispatchInvitations={canDispatchInvitations}
+          dispatchError={
+            dispatchMutation.error instanceof Error
+              ? dispatchMutation.error.message
+              : undefined
+          }
         />
       ) : null}
     </PageShell>

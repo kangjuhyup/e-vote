@@ -3,6 +3,7 @@ import {
   ChevronRight,
   LockKeyhole,
   Link2,
+  Send,
   Trash2,
   UserPlus,
   UsersRound,
@@ -22,29 +23,33 @@ import { Input } from "@/components/ui/input";
 import type {
   ElectorRecord,
   PageResult,
-  ParticipationInvitationRecord,
 } from "@/features/votes/model/vote-operations.types";
+import type { ParticipationInvitationDispatchResult } from "@/features/votes/model/participation-invitation.types";
 
 import { ElectorDeletionDialog } from "./elector-deletion-dialog";
 import { ParticipationLinkDialog } from "./participation-link-dialog";
 
 interface ElectorManagementViewProps {
+  canDispatchInvitations: boolean;
   canDeleteElectors: boolean;
   deletingElector?: ElectorRecord;
   deletionError?: string;
   electoralRollSnapshotId?: string;
   isDeleting: boolean;
   isSubmitting: boolean;
-  invitation?: ParticipationInvitationRecord;
+  invitation?: ParticipationInvitationDispatchResult;
   invitationElector?: ElectorRecord;
   invitationError?: string;
   isIssuingInvitation: boolean;
+  isDispatchingInvitations: boolean;
+  dispatchError?: string;
   message?: string;
   onCancelDelete: () => void;
   onCreate: (formData: FormData) => void;
   onCloseInvitation: () => void;
   onConfirmDelete: () => void;
   onIssueInvitation: () => void;
+  onDispatchInvitations: () => void;
   onOpenInvitation: (elector: ElectorRecord) => void;
   onPageChange: (page: number) => void;
   onRequestDelete: (elector: ElectorRecord) => void;
@@ -52,6 +57,7 @@ interface ElectorManagementViewProps {
 }
 
 export function ElectorManagementView({
+  canDispatchInvitations,
   canDeleteElectors,
   deletingElector,
   deletionError,
@@ -62,12 +68,15 @@ export function ElectorManagementView({
   invitationElector,
   invitationError,
   isIssuingInvitation,
+  isDispatchingInvitations,
+  dispatchError,
   message,
   onCancelDelete,
   onCloseInvitation,
   onConfirmDelete,
   onCreate,
   onIssueInvitation,
+  onDispatchInvitations,
   onOpenInvitation,
   onPageChange,
   onRequestDelete,
@@ -111,6 +120,28 @@ export function ElectorManagementView({
           </Button>
         </div>
       ) : null}
+
+      <Card className="rounded-lg border-primary/20 bg-primary/5">
+        <CardContent className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-medium">영구 참여 링크 문자 발송</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              투표가 확정된 뒤 본인인증이 필요 없는 선거의 투표 가능 선거인에게 참여 링크를 발송합니다.
+            </p>
+            {dispatchError ? <p role="alert" className="mt-2 text-sm text-destructive">{dispatchError}</p> : null}
+          </div>
+          <Button
+            type="button"
+            className="shrink-0"
+            disabled={!canDispatchInvitations || isDispatchingInvitations}
+            title={canDispatchInvitations ? undefined : '확정·진행·종료 상태이며 본인인증이 필요 없는 투표에서 사용할 수 있습니다.'}
+            onClick={onDispatchInvitations}
+          >
+            <Send aria-hidden="true" />
+            {isDispatchingInvitations ? '발송 예약 중…' : '전체 문자 발송 예약'}
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
         <section aria-labelledby="elector-list-title" className="space-y-3">
@@ -179,16 +210,16 @@ export function ElectorManagementView({
                           type="button"
                           variant="outline"
                           size="sm"
-                          disabled={elector.status !== "ELIGIBLE"}
+                          disabled={!canDispatchInvitations || elector.status !== "ELIGIBLE"}
                           title={
-                            elector.status === "ELIGIBLE"
+                            canDispatchInvitations && elector.status === "ELIGIBLE"
                               ? undefined
-                              : "차단된 선거인에게는 참여 링크를 발급할 수 없습니다."
+                              : "현재 상태에서 이 선거인의 참여 링크를 재발급할 수 없습니다."
                           }
                           onClick={() => onOpenInvitation(elector)}
                         >
                           <Link2 aria-hidden="true" />
-                          참여 링크
+                          링크 재발급
                         </Button>
                         <Button
                           type="button"
@@ -309,7 +340,7 @@ export function ElectorManagementView({
       {invitationElector ? (
         <ParticipationLinkDialog
           elector={invitationElector}
-          invitation={invitation}
+          result={invitation}
           error={invitationError}
           isIssuing={isIssuingInvitation}
           onClose={onCloseInvitation}

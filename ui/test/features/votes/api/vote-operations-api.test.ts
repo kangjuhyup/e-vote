@@ -240,26 +240,6 @@ describe('vote operations api', () => {
     ).rejects.toThrow('electoralRollId must be a UUID');
   });
 
-  it('creates an authenticated elector link without calling an invitation API', async () => {
-    const fetcher = vi.fn();
-    const client = createVoteOperationsApiClient({
-      baseUrl: 'https://api.example.com',
-      fetcher,
-      mode: 'live',
-      participationBaseUrl: 'https://vote.example.com',
-    });
-
-    const result = await client.issueParticipationInvitation({
-      electorId: 'elector /1',
-      voteId: 'vote /1',
-    });
-
-    expect(result.participationUrl).toBe(
-      'https://vote.example.com/participate?voteId=vote+%2F1&electorId=elector+%2F1',
-    );
-    expect(fetcher).not.toHaveBeenCalled();
-  });
-
   it('rejects incomplete mock rolls for identity-required votes', async () => {
     const client = createVoteOperationsApiClient({ mode: 'mock' });
 

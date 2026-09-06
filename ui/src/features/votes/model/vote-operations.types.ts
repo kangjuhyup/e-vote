@@ -241,16 +241,6 @@ export interface ManageElectorResult {
   voteId: string;
 }
 
-export interface IssueParticipationInvitationInput {
-  electorId: string;
-  voteId: string;
-}
-
-export interface ParticipationInvitationRecord {
-  invitationId: string;
-  participationUrl: string;
-}
-
 export interface CreateFieldSessionInput {
   address: string;
   channel: 'ONSITE' | 'VISIT';
