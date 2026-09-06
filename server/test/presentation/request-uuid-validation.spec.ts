@@ -55,6 +55,7 @@ const VALID_UUID = '11111111-1111-4111-8111-111111111111';
 const INVALID_UUID = 'not-a-uuid';
 
 const validRequest: Record<string, unknown> = {
+  votingChannel: 'ONLINE',
   billingOrderId: VALID_UUID,
   candidateId: VALID_UUID,
   commissionId: VALID_UUID,

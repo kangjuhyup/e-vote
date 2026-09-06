@@ -40,11 +40,24 @@ export class ElectorIdentityVerificationEvidence {
 }
 
 export class ElectorIdentityVerificationResult {
-  private constructor(readonly verified: boolean) {}
+  private constructor(
+    readonly verified: boolean,
+    readonly provider: string,
+    readonly method: string,
+    readonly isMock: boolean,
+  ) {}
 
   static of(params: {
     readonly verified: boolean;
+    readonly provider: string;
+    readonly method: string;
+    readonly isMock: boolean;
   }): ElectorIdentityVerificationResult {
-    return new ElectorIdentityVerificationResult(params.verified);
+    return new ElectorIdentityVerificationResult(
+      params.verified,
+      params.provider,
+      params.method,
+      params.isMock,
+    );
   }
 }

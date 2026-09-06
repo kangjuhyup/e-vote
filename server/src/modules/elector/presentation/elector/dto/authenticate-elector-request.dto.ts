@@ -1,29 +1,42 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
+import {
+  IsUUID,
+  IsString,
+  Length,
+  IsOptional,
+  IsISO8601,
+} from 'class-validator';
 
 export class AuthenticateElectorBody {
   @ApiProperty({
-    example: 'PASS',
+    example: 'MOCK',
     minLength: 1,
     maxLength: 50,
     description: '선거인 본인인증 제공자입니다.',
   })
+  @IsString()
+  @Length(1, 50)
   readonly provider!: string;
 
   @ApiProperty({
-    example: 'tx-1',
+    example: 'mock-success:11111111-1111-4111-8111-111111111111',
     minLength: 1,
     maxLength: 200,
     description: '본인인증 제공자가 발급한 인증 거래 ID입니다.',
   })
+  @IsString()
+  @Length(1, 200)
   readonly transactionId!: string;
 
   @ApiProperty({
     example: '2026-08-13T00:00:00.000Z',
     format: 'date-time',
-    description: '본인인증 완료 시각입니다.',
+    description: '호환성용 필드입니다. 인증 기록 시각은 서버가 결정합니다.',
+    required: false,
   })
-  readonly verifiedAt!: string;
+  @IsOptional()
+  @IsISO8601()
+  readonly verifiedAt?: string;
 }
 
 export class AuthenticateElectorParam {

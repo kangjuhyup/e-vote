@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsOptional, IsUUID, IsIn, IsISO8601 } from 'class-validator';
 
 const VotingChannelBody = {
   Online: 'ONLINE',
@@ -49,6 +49,7 @@ export class CastParticipationBody {
     example: VotingChannelBody.Onsite,
     description: '참여 채널입니다.',
   })
+  @IsIn(Object.values(VotingChannelBody))
   readonly votingChannel!: VotingChannelBody;
 
   @IsOptional()
@@ -63,7 +64,10 @@ export class CastParticipationBody {
 
   @ApiProperty({
     example: '2026-08-20T01:00:00.000Z',
-    description: '투표 참여 시각입니다.',
+    description: '호환성용 필드입니다. 실제 참여 시각은 서버가 기록합니다.',
+    required: false,
   })
-  readonly participatedAt!: string;
+  @IsOptional()
+  @IsISO8601()
+  readonly participatedAt?: string;
 }

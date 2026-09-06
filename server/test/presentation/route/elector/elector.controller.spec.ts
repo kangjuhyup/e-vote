@@ -128,7 +128,8 @@ describe('ElectorController', () => {
       electorId: 'elector-1',
       provider: 'PASS',
       transactionId: 'tx-1',
-      verifiedAt: new Date('2026-08-13T00:00:00.000Z'),
+      verifiedAt: expect.any(Date) as Date,
+      userPrincipalId: TEST_USER_PRINCIPAL.id,
     });
   });
 });
