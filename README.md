@@ -83,6 +83,30 @@ Worker delivery remains at-least-once. More than one worker replica can safely
 claim different messages through PostgreSQL leases and `FOR UPDATE SKIP
 LOCKED`, but worker concurrency must be scaled independently from HTTP load.
 
+### Wasabi object storage
+
+The server uses the AWS SDK for JavaScript v3 S3 client to connect to Wasabi.
+Copy the server environment example and replace the bucket and server-only
+credentials:
+
+```bash
+cp server/.env.example server/.env
+```
+
+Required values are `WASABI_ENDPOINT`, `WASABI_REGION`, `WASABI_BUCKET`,
+`WASABI_ACCESS_KEY_ID`, and `WASABI_SECRET_ACCESS_KEY`. The endpoint must match
+the bucket region, for example `https://s3.ap-northeast-1.wasabisys.com`.
+`WASABI_KEY_PREFIX`, `WASABI_FORCE_PATH_STYLE`, and
+`WASABI_PRESIGNED_URL_EXPIRES_IN_SECONDS` are optional; presigned URLs expire
+after 300 seconds by default.
+
+The access key and secret key belong only in the server environment. Browser
+uploads and downloads use short-lived presigned URLs. Configure the Wasabi
+bucket CORS policy to allow the deployed UI origin and the HTTP methods and
+headers used by those requests. The `/readiness` endpoint checks bucket access
+with `HeadBucket` and reports storage as unavailable when the configuration is
+missing or the bucket cannot be reached.
+
 `POST /votes` and `PATCH /votes/:voteId` accept optional ISO 8601 `startedAt`
 and `endedAt` fields. Automatic transitions require an explicit positive window
 (`endedAt > startedAt`). A create request that omits the schedule retains the
