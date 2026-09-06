@@ -17,6 +17,7 @@ function voteSummaryDto(
   overrides: Partial<VoteSummaryResponseDto> = {},
 ): VoteSummaryResponseDto {
   return {
+    attachments: [],
     id: "vote-1",
     commissionId: "commission-1",
     title: "Board election",
@@ -88,6 +89,17 @@ function jsonResponse(data: unknown) {
     }),
   );
 }
+
+const attachmentDto = {
+  createdAt: "2026-09-06T12:00:00.000Z",
+  fileId: "file-1",
+  id: "attachment-1",
+  mimeType: "application/pdf",
+  originalName: "공고문.pdf",
+  sizeBytes: 1024,
+  sortOrder: 0,
+  type: "NOTICE" as const,
+};
 
 describe("votes api", () => {
   it("calls the browser fetch function without rebinding its receiver", async () => {
@@ -262,6 +274,7 @@ describe("votes api", () => {
         {
           id: "vote-1",
           commissionId: "commission-1",
+          attachments: [attachmentDto],
           title: "Board election",
           description: "대표 후보를 선출합니다.",
           votingChannels: ["ONLINE"],
@@ -288,8 +301,16 @@ describe("votes api", () => {
               type: "CANDIDATE",
               sortOrder: 0,
               status: "OPEN",
+              attachments: [{ ...attachmentDto, id: "detail-attachment-1" }],
               candidates: [
                 {
+                  attachments: [
+                    {
+                      ...attachmentDto,
+                      id: "candidate-attachment-1",
+                      type: "PLEDGE",
+                    },
+                  ],
                   id: "candidate-1",
                   voteDetailId: "vote-detail-1",
                   candidateNo: 1,
@@ -337,7 +358,22 @@ describe("votes api", () => {
     ).toMatchObject({
       id: "vote-1",
       status: "active",
+      attachments: [expect.objectContaining({ id: "attachment-1" })],
       candidates: [expect.objectContaining({ id: "candidate-1", order: 1 })],
+      subVotes: [
+        expect.objectContaining({
+          attachments: [
+            expect.objectContaining({ id: "detail-attachment-1" }),
+          ],
+          candidates: [
+            expect.objectContaining({
+              attachments: [
+                expect.objectContaining({ id: "candidate-attachment-1" }),
+              ],
+            }),
+          ],
+        }),
+      ],
       electors: [
         expect.objectContaining({ id: "elector-1", participated: true }),
         expect.objectContaining({ id: "elector-2", participatedAt: null }),

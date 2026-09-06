@@ -110,7 +110,7 @@ export function createBillingApiClient(
         id: `billing-order-${sequence}`,
         identityVerificationAmount: 0,
         identityVerificationRequired: false,
-        identityVerificationUnitPrice: 3_000,
+        identityVerificationUnitPrice: 30_000,
         issuedAt,
         orderedByUserPrincipalId: "mock-user-principal",
         pricingUnitCount: 1,

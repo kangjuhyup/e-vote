@@ -1,3 +1,8 @@
+import type {
+  CandidateAttachmentRecord,
+  VoteAttachmentRecord,
+} from './vote-attachment.types';
+
 export type VoteStatus =
   | "draft"
   | "scheduled"
@@ -20,6 +25,7 @@ export type ElectorParticipationFilter =
 
 export interface VoteSummary {
   activeBillingOrderId?: string;
+  attachments?: VoteAttachmentRecord[];
   billingOrderStatus?: ActiveVoteBillingOrderStatus;
   commissionId?: string;
   electoralRollSnapshotId?: string;
@@ -34,6 +40,7 @@ export interface VoteSummary {
 }
 
 export interface VoteCandidate {
+  attachments?: CandidateAttachmentRecord[];
   id: string;
   name: string;
   description: string;
@@ -41,6 +48,7 @@ export interface VoteCandidate {
 }
 
 export interface VoteSubVote {
+  attachments?: VoteAttachmentRecord[];
   candidates: VoteCandidate[];
   description: string;
   id: string;

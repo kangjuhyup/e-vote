@@ -18,6 +18,7 @@ export function toVoteSummary(vote: VoteSummary): VoteSummary {
     ...(vote.billingOrderStatus
       ? { billingOrderStatus: vote.billingOrderStatus }
       : {}),
+    attachments: vote.attachments ?? [],
     commissionId: vote.commissionId,
     electoralRollSnapshotId: vote.electoralRollSnapshotId,
     id: vote.id,

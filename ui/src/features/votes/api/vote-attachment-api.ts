@@ -4,6 +4,8 @@ import { isApiMockMode } from '@/shared/config/api-mode';
 
 import {
   type AttachmentType,
+  type AttachmentDownloadGrant,
+  type AttachmentRecord,
   type AttachmentUploadGrant,
   type AttachmentUploadMetadata,
   type AttachmentUploadResult,
@@ -11,10 +13,13 @@ import {
   type CandidateAttachmentType,
   type ConfirmAttachmentUploadInput,
   type VoteAttachmentTarget,
+  type VoteDetailAttachmentTarget,
   type VoteAttachmentType,
 } from '../model/vote-attachment.types';
+import type { VoteDetail } from '../model/vote.types';
 import { validateAttachmentMetadata } from '../lib/vote-attachment';
 import { unwrapVoteApiResponse } from './votes-api';
+import { voteFixtureDetails } from './votes-fixtures';
 
 type ApiFetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -22,6 +27,7 @@ interface CreateVoteAttachmentApiClientOptions {
   baseUrl?: string;
   fetcher?: ApiFetcher;
   mode?: 'live' | 'mock';
+  mockVoteDetails?: VoteDetail[];
   objectFetcher?: ApiFetcher;
 }
 
@@ -47,6 +53,13 @@ function buildCandidateBasePath({
   voteId,
 }: CandidateAttachmentTarget) {
   return `/votes/${encode(voteId)}/sub-votes/${encode(voteDetailId)}/candidates/${encode(candidateId)}/attachments`;
+}
+
+function buildVoteDetailBasePath({
+  voteDetailId,
+  voteId,
+}: VoteDetailAttachmentTarget) {
+  return `/votes/${encode(voteId)}/sub-votes/${encode(voteDetailId)}/attachments`;
 }
 
 async function request<T>(
@@ -85,15 +98,18 @@ function toAttachmentApiError(error: Error) {
     return new Error('파일 이름, 형식 또는 크기가 허용 조건과 맞지 않습니다.');
   }
   if (error.status === 404) {
-    return new Error('업로드 대상 또는 저장소의 파일을 찾을 수 없습니다.');
+    return new Error('첨부파일 또는 연결된 대상을 찾을 수 없습니다.');
+  }
+  if (error.status === 403) {
+    return new Error('이 투표를 생성한 사용자만 첨부파일을 관리할 수 있습니다.');
   }
   if (error.status === 409) {
     return new Error(
-      '결제가 시작되었거나 투표가 초안 상태가 아니어서 첨부파일을 등록할 수 없습니다.',
+      '결제가 시작되었거나 투표가 초안 상태가 아니어서 첨부파일을 변경할 수 없습니다.',
     );
   }
   if (error.status === 503) {
-    return new Error('파일 저장소가 설정되지 않아 첨부파일을 등록할 수 없습니다.');
+    return new Error('파일 저장소가 설정되지 않아 첨부파일을 처리할 수 없습니다.');
   }
   return error;
 }
@@ -104,6 +120,7 @@ export function createVoteAttachmentApiClient(
   const mode = options.mode ?? (isApiMockMode() ? 'mock' : 'live');
   const baseUrl = (options.baseUrl ?? resolveBaseUrl()).replace(/\/+$/, '');
   const fetcher = options.fetcher ?? voteApiFetch;
+  const mockVoteDetails = options.mockVoteDetails ?? voteFixtureDetails;
   const objectFetcher = options.objectFetcher ?? fetch;
   let mockSequence = 0;
 
@@ -193,6 +210,101 @@ export function createVoteAttachmentApiClient(
     return result;
   }
 
+  async function fetchDownloadUrl(
+    basePath: string,
+    attachmentId: string,
+  ): Promise<AttachmentDownloadGrant> {
+    if (mode === 'mock') {
+      return {
+        attachmentId,
+        downloadUrl: `https://storage.mock/${encode(attachmentId)}`,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      };
+    }
+    if (!baseUrl) {
+      throw new Error('NEXT_PUBLIC_VOTE_API_BASE_URL is required in live mode');
+    }
+    const response = await fetcher(
+      `${baseUrl}${basePath}/${encode(attachmentId)}/download-url`,
+      { headers: { Accept: 'application/json' } },
+    );
+    if (!response.ok) {
+      throw toAttachmentApiError(await toVoteApiError(response));
+    }
+    if (response.status !== 200) {
+      throw new Error(`Unexpected attachment API status: ${response.status}`);
+    }
+    const grant = unwrapVoteApiResponse<AttachmentDownloadGrant>(
+      await response.json(),
+    );
+    if (
+      grant.attachmentId !== attachmentId ||
+      !grant.downloadUrl ||
+      !grant.expiresAt
+    ) {
+      throw new Error('다운로드 URL 응답이 올바르지 않습니다.');
+    }
+    return grant;
+  }
+
+  async function deleteAttachment(
+    basePath: string,
+    attachmentId: string,
+  ): Promise<void> {
+    if (mode === 'mock') return;
+    if (!baseUrl) {
+      throw new Error('NEXT_PUBLIC_VOTE_API_BASE_URL is required in live mode');
+    }
+    const response = await fetcher(
+      `${baseUrl}${basePath}/${encode(attachmentId)}`,
+      { method: 'DELETE', headers: { Accept: 'application/json' } },
+    );
+    if (!response.ok) {
+      throw toAttachmentApiError(await toVoteApiError(response));
+    }
+    if (response.status !== 204) {
+      throw new Error(`Unexpected attachment API status: ${response.status}`);
+    }
+  }
+
+  function registerMockAttachment<TType extends AttachmentType>(
+    target:
+      | VoteAttachmentTarget
+      | VoteDetailAttachmentTarget
+      | CandidateAttachmentTarget,
+    input: ConfirmAttachmentUploadInput<TType>,
+    result: AttachmentUploadResult,
+  ) {
+    if (mode !== 'mock') return;
+    const attachment: AttachmentRecord<TType> = {
+      createdAt: new Date().toISOString(),
+      fileId: result.fileId,
+      id: result.attachmentId,
+      mimeType: input.mimeType,
+      originalName: input.originalName,
+      sizeBytes: input.sizeBytes,
+      sortOrder: input.sortOrder ?? 0,
+      type: input.attachmentType,
+    };
+    mutateMockTargetAttachments(mockVoteDetails, target, (items) => [
+      ...items,
+      attachment,
+    ]);
+  }
+
+  function deleteMockAttachment(
+    target:
+      | VoteAttachmentTarget
+      | VoteDetailAttachmentTarget
+      | CandidateAttachmentTarget,
+    attachmentId: string,
+  ) {
+    if (mode !== 'mock') return;
+    mutateMockTargetAttachments(mockVoteDetails, target, (items) =>
+      items.filter((item) => item.id !== attachmentId),
+    );
+  }
+
   return {
     mode,
     requestVoteUpload(
@@ -205,7 +317,27 @@ export function createVoteAttachmentApiClient(
       target: VoteAttachmentTarget,
       input: ConfirmAttachmentUploadInput<VoteAttachmentType>,
     ) {
-      return confirmUpload(buildVoteBasePath(target), input);
+      return confirmUpload(buildVoteBasePath(target), input).then((result) => {
+        registerMockAttachment(target, input, result);
+        return result;
+      });
+    },
+    requestVoteDetailUpload(
+      target: VoteDetailAttachmentTarget,
+      metadata: AttachmentUploadMetadata<VoteAttachmentType>,
+    ) {
+      return requestUpload(buildVoteDetailBasePath(target), metadata);
+    },
+    confirmVoteDetailUpload(
+      target: VoteDetailAttachmentTarget,
+      input: ConfirmAttachmentUploadInput<VoteAttachmentType>,
+    ) {
+      return confirmUpload(buildVoteDetailBasePath(target), input).then(
+        (result) => {
+          registerMockAttachment(target, input, result);
+          return result;
+        },
+      );
     },
     requestCandidateUpload(
       target: CandidateAttachmentTarget,
@@ -217,10 +349,110 @@ export function createVoteAttachmentApiClient(
       target: CandidateAttachmentTarget,
       input: ConfirmAttachmentUploadInput<CandidateAttachmentType>,
     ) {
-      return confirmUpload(buildCandidateBasePath(target), input);
+      return confirmUpload(buildCandidateBasePath(target), input).then(
+        (result) => {
+          registerMockAttachment(target, input, result);
+          return result;
+        },
+      );
+    },
+    fetchVoteDownloadUrl(target: VoteAttachmentTarget, attachmentId: string) {
+      return fetchDownloadUrl(buildVoteBasePath(target), attachmentId);
+    },
+    async deleteVoteAttachment(
+      target: VoteAttachmentTarget,
+      attachmentId: string,
+    ) {
+      await deleteAttachment(buildVoteBasePath(target), attachmentId);
+      deleteMockAttachment(target, attachmentId);
+    },
+    fetchVoteDetailDownloadUrl(
+      target: VoteDetailAttachmentTarget,
+      attachmentId: string,
+    ) {
+      return fetchDownloadUrl(buildVoteDetailBasePath(target), attachmentId);
+    },
+    async deleteVoteDetailAttachment(
+      target: VoteDetailAttachmentTarget,
+      attachmentId: string,
+    ) {
+      await deleteAttachment(buildVoteDetailBasePath(target), attachmentId);
+      deleteMockAttachment(target, attachmentId);
+    },
+    fetchCandidateDownloadUrl(
+      target: CandidateAttachmentTarget,
+      attachmentId: string,
+    ) {
+      return fetchDownloadUrl(buildCandidateBasePath(target), attachmentId);
+    },
+    async deleteCandidateAttachment(
+      target: CandidateAttachmentTarget,
+      attachmentId: string,
+    ) {
+      await deleteAttachment(buildCandidateBasePath(target), attachmentId);
+      deleteMockAttachment(target, attachmentId);
     },
     uploadObject,
   };
 }
 
 export const voteAttachmentApi = createVoteAttachmentApiClient();
+
+function mutateMockTargetAttachments(
+  votes: VoteDetail[],
+  target:
+    | VoteAttachmentTarget
+    | VoteDetailAttachmentTarget
+    | CandidateAttachmentTarget,
+  mutate: (items: AttachmentRecord[]) => AttachmentRecord[],
+) {
+  const voteIndex = votes.findIndex((item) => item.id === target.voteId);
+  const existingVote = votes[voteIndex];
+  const vote = existingVote ? structuredClone(existingVote) : undefined;
+  if (!vote) return;
+  if ('candidateId' in target) {
+    const candidates = [
+      ...vote.candidates.filter((item) => item.id === target.candidateId),
+      ...vote.subVotes.flatMap((subVote) =>
+        subVote.id === target.voteDetailId
+          ? subVote.candidates.filter((item) => item.id === target.candidateId)
+          : [],
+      ),
+    ];
+    candidates.forEach((candidate) => {
+      candidate.attachments = mutate(candidate.attachments ?? []).filter(
+        isCandidateAttachment,
+      );
+    });
+    votes.splice(voteIndex, 1, vote);
+    return;
+  }
+  if ('voteDetailId' in target) {
+    const voteDetail = vote.subVotes.find(
+      (item) => item.id === target.voteDetailId,
+    );
+    if (voteDetail) {
+      voteDetail.attachments = mutate(voteDetail.attachments ?? []).filter(
+        isVoteAttachment,
+      );
+    }
+    votes.splice(voteIndex, 1, vote);
+    return;
+  }
+  vote.attachments = mutate(vote.attachments ?? []).filter(isVoteAttachment);
+  votes.splice(voteIndex, 1, vote);
+}
+
+function isVoteAttachment(
+  attachment: AttachmentRecord,
+): attachment is AttachmentRecord<VoteAttachmentType> {
+  return ['NOTICE', 'GUIDE', 'ETC'].includes(attachment.type);
+}
+
+function isCandidateAttachment(
+  attachment: AttachmentRecord,
+): attachment is AttachmentRecord<CandidateAttachmentType> {
+  return ['PROFILE_IMAGE', 'PLEDGE', 'POSTER', 'ETC'].includes(
+    attachment.type,
+  );
+}

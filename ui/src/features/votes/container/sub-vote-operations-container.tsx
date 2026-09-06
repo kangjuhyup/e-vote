@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -27,6 +27,7 @@ interface SubVoteOperationsContainerProps {
 }
 
 export function SubVoteOperationsContainer({ account, voteDetailId, voteId }: SubVoteOperationsContainerProps) {
+  const queryClient = useQueryClient();
   const operationsQuery = useQuery(
     subVoteOperationsQueryOptions(voteId, voteDetailId),
   );
@@ -39,17 +40,37 @@ export function SubVoteOperationsContainer({ account, voteDetailId, voteId }: Su
     ) ||
     operationsQuery.data?.status !== "DRAFT";
 
+  async function refreshAttachmentProjections() {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: subVoteOperationsQueryOptions(voteId, voteDetailId).queryKey,
+      }),
+      queryClient.invalidateQueries({ queryKey: ["votes"] }),
+    ]);
+  }
+
   return (
     <PageShell
       account={account}
       navigation={<VoteNavigation current="votes" isMockMode={isVoteApiMockMode()} />}
-      eyebrow="안건 운영"
-      title="안건·후보자 관리"
-      description="후보자 첨부파일을 등록하고 안건의 투표율과 종료 결과를 확인합니다."
+      eyebrow="안건 정보"
+      title="안건 상세"
+      description="안건 투표율과 결과, 등록된 첨부파일을 확인합니다."
       actions={
-        <Button type="button" variant="outline" asChild>
-          <Link href={`/votes/${voteId}`}><ArrowLeft aria-hidden="true" />투표 상세</Link>
-        </Button>
+        <>
+          <Button type="button" variant="outline" asChild>
+            <Link href={`/votes/${voteId}/edit`}>
+              <Pencil aria-hidden="true" />
+              첨부파일 수정
+            </Link>
+          </Button>
+          <Button type="button" variant="outline" asChild>
+            <Link href={`/votes/${voteId}`}>
+              <ArrowLeft aria-hidden="true" />
+              투표 상세
+            </Link>
+          </Button>
+        </>
       }
     >
       {operationsQuery.isLoading || voteQuery.isLoading ? (
@@ -67,14 +88,58 @@ export function SubVoteOperationsContainer({ account, voteDetailId, voteId }: Su
       ) : (
         <SubVoteOperationsView
           operations={operationsQuery.data}
+          attachmentsPanel={
+            <AttachmentUploadSection
+              attachments={operationsQuery.data.attachments ?? []}
+              title={`${operationsQuery.data.title} 첨부파일`}
+              description="등록된 안건 첨부파일을 확인하고 내려받을 수 있습니다."
+              disabled={attachmentsDisabled}
+              readOnly
+              typeOptions={[
+                { label: "공고문", value: "NOTICE" },
+                { label: "안내 자료", value: "GUIDE" },
+                { label: "기타", value: "ETC" },
+              ]}
+              onRequestUpload={(metadata) =>
+                voteAttachmentApi.requestVoteDetailUpload(
+                  { voteDetailId, voteId },
+                  metadata,
+                )
+              }
+              onUploadObject={voteAttachmentApi.uploadObject}
+              onConfirmUpload={async (input) => {
+                const result = await voteAttachmentApi.confirmVoteDetailUpload(
+                  { voteDetailId, voteId },
+                  input,
+                );
+                await refreshAttachmentProjections();
+                return result;
+              }}
+              onDeleteAttachment={async (attachmentId) => {
+                await voteAttachmentApi.deleteVoteDetailAttachment(
+                  { voteDetailId, voteId },
+                  attachmentId,
+                );
+                await refreshAttachmentProjections();
+              }}
+              onDownloadAttachment={(attachmentId) =>
+                voteAttachmentApi.fetchVoteDetailDownloadUrl(
+                  { voteDetailId, voteId },
+                  attachmentId,
+                )
+              }
+            />
+          }
           candidateAttachments={Object.fromEntries(
             operationsQuery.data.candidates.map((candidate) => [
               candidate.id,
               <AttachmentUploadSection
                 key={candidate.id}
+                attachments={candidate.attachments ?? []}
                 title={`${candidate.name} 첨부파일`}
-                description="프로필 이미지, 공약집, 포스터와 기타 후보 자료를 등록합니다."
+                description="등록된 프로필 이미지, 공약집과 포스터를 확인하고 내려받을 수 있습니다."
                 disabled={attachmentsDisabled}
+                readOnly
                 typeOptions={[
                   { label: "프로필 이미지", value: "PROFILE_IMAGE" },
                   { label: "공약집", value: "PLEDGE" },
@@ -88,10 +153,25 @@ export function SubVoteOperationsContainer({ account, voteDetailId, voteId }: Su
                   )
                 }
                 onUploadObject={voteAttachmentApi.uploadObject}
-                onConfirmUpload={(input) =>
-                  voteAttachmentApi.confirmCandidateUpload(
+                onConfirmUpload={async (input) => {
+                  const result = await voteAttachmentApi.confirmCandidateUpload(
                     { candidateId: candidate.id, voteDetailId, voteId },
                     input,
+                  );
+                  await refreshAttachmentProjections();
+                  return result;
+                }}
+                onDeleteAttachment={async (attachmentId) => {
+                  await voteAttachmentApi.deleteCandidateAttachment(
+                    { candidateId: candidate.id, voteDetailId, voteId },
+                    attachmentId,
+                  );
+                  await refreshAttachmentProjections();
+                }}
+                onDownloadAttachment={(attachmentId) =>
+                  voteAttachmentApi.fetchCandidateDownloadUrl(
+                    { candidateId: candidate.id, voteDetailId, voteId },
+                    attachmentId,
                   )
                 }
               />,
