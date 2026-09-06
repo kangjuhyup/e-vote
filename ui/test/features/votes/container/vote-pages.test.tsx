@@ -64,7 +64,7 @@ function billingOrder(
     id,
     identityVerificationAmount: 0,
     identityVerificationRequired: false,
-    identityVerificationUnitPrice: 3_000,
+    identityVerificationUnitPrice: 30_000,
     issuedAt: '2026-09-05T00:00:00.000Z',
     orderedByUserPrincipalId: 'user-principal-1',
     pricingUnitCount: 1,

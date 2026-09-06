@@ -42,7 +42,7 @@ function billingOrder(overrides: Partial<BillingOrder> = {}): BillingOrder {
     id: "billing-order-1",
     identityVerificationAmount: 0,
     identityVerificationRequired: false,
-    identityVerificationUnitPrice: 3_000,
+    identityVerificationUnitPrice: 30_000,
     issuedAt: "2026-09-05T00:00:00.000Z",
     orderedByUserPrincipalId: "user-1",
     pricingUnitCount: 1,
@@ -121,13 +121,13 @@ describe("billing order UI", () => {
 
   it("shows the server-provided blockchain surcharge and total in order details", async () => {
     const order = billingOrder({
-      amount: 18_000,
+      amount: 72_000,
       baseAmount: 6_000,
       blockchainStorageAmount: 6_000,
       blockchainStorageCount: 2,
       electorCount: 120,
       id: "blockchain-billing-order",
-      identityVerificationAmount: 6_000,
+      identityVerificationAmount: 60_000,
       identityVerificationRequired: true,
       pricingUnitCount: 2,
     });
@@ -140,9 +140,10 @@ describe("billing order UI", () => {
     expect(await screen.findByText("120명 · 100명 단위 2구간 · 구간당 ₩3,000")).toBeTruthy();
     expect(screen.getByText("2건 × ₩3,000")).toBeTruthy();
     expect(screen.getByText("본인인증 필수")).toBeTruthy();
-    expect(screen.getByText("2구간 × ₩3,000")).toBeTruthy();
-    expect(screen.getAllByText("₩6,000")).toHaveLength(3);
-    expect(screen.getByText("₩18,000")).toBeTruthy();
+    expect(screen.getByText("2구간 × ₩30,000")).toBeTruthy();
+    expect(screen.getAllByText("₩6,000")).toHaveLength(2);
+    expect(screen.getByText("₩60,000")).toBeTruthy();
+    expect(screen.getByText("₩72,000")).toBeTruthy();
   });
 
   it.each([
@@ -165,18 +166,18 @@ describe("billing order UI", () => {
     {
       blockchainStorageAmount: 0,
       blockchainStorageCount: 0,
-      identityVerificationAmount: 6_000,
+      identityVerificationAmount: 60_000,
       identityVerificationRequired: true,
-      totalAmount: 12_000,
-      totalLabel: "₩12,000",
+      totalAmount: 66_000,
+      totalLabel: "₩66,000",
     },
     {
       blockchainStorageAmount: 6_000,
       blockchainStorageCount: 2,
-      identityVerificationAmount: 6_000,
+      identityVerificationAmount: 60_000,
       identityVerificationRequired: true,
-      totalAmount: 18_000,
-      totalLabel: "₩18,000",
+      totalAmount: 72_000,
+      totalLabel: "₩72,000",
     },
   ])(
     "shows the server total for identity=$identityVerificationRequired and blockchain=$blockchainStorageCount",
@@ -218,7 +219,7 @@ describe("billing order UI", () => {
       );
       if (identityVerificationRequired) {
         expect(screen.getByText("본인인증 필수")).toBeTruthy();
-        expect(screen.getByText("2구간 × ₩3,000")).toBeTruthy();
+        expect(screen.getByText("2구간 × ₩30,000")).toBeTruthy();
       } else {
         expect(screen.queryByText("본인인증 필수")).toBeNull();
       }
