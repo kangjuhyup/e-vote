@@ -16,6 +16,32 @@ Vote 서비스의 Billing은 투표 이용료의 상품·가격 정책과 주문
 `FINALIZED`(확정됨, 아직 개시 전)로 전이합니다. 두 상태 모두 투표 설정·선거인·
 연결된 선거인명부 스냅샷을 변경할 수 없습니다.
 
+## 투표 조회의 활성 결제 계약
+
+`GET /votes`의 각 summary와 `GET /votes/{voteId}` 상세에는 현재 사용자가 주문자인
+활성 결제 주문이 있을 때 다음 두 필드가 함께 포함됩니다.
+
+```json
+{
+  "status": "DRAFT",
+  "activeBillingOrderId": "billing-order-1",
+  "billingOrderStatus": "PENDING_PAYMENT"
+}
+```
+
+- `activeBillingOrderId`: 현재 투표를 잠근 활성 주문 ID
+- `billingOrderStatus`: `PENDING_PAYMENT`, `PAID`, `REFUND_PENDING` 중 하나
+
+두 필드는 주문의 `orderedByUserPrincipalId`와 현재 `UserPrincipal.id`가 일치할 때만
+노출됩니다. 다른 사용자가 같은 투표를 조회하면 결제 주문 ID와 상태를 모두
+생략합니다. `CANCELED`와 `REFUNDED` 주문은 이력이며 투표 잠금을 해제하므로 역시
+생략합니다. 따라서 환불 완료 응답은 `status: DRAFT`이며 두 optional 필드가 없고,
+새 주문이 생성되면 새 ID와 `PENDING_PAYMENT`가 다시 나타납니다.
+
+목록 조회는 페이지의 주문 ID를 한 번에 조회하므로 투표 수에 비례하는 N+1 조회를
+만들지 않습니다. UI는 목록 또는 상세 응답만으로 결제 중 잠금을 복원할 수 있고,
+상태 전이는 해당 vote query를 다시 조회해 반영합니다.
+
 ## 투표 이용료 주문 생성
 
 ```http
@@ -194,3 +220,21 @@ envelope에는 `id`, `source`, `eventType`, `schemaVersion`, aggregate 식별자
 사유는 Payment payload에 포함하지 않습니다. 실제 transport가 구성되기 전에도
 개발 mock에서만 dispatcher를 실행하며, 기존 주문을 side-effect event로 backfill하지
 않습니다.
+
+## Migration20260905010000 식별자 충돌 호환
+
+과거 billing finalization migration과 미병합 participation invitation migration이
+동일한 `Migration20260905010000` 이름으로 만들어졌습니다. MikroORM은 이름만으로
+실행 여부를 판단하므로 한쪽이 먼저 기록된 DB에서는 다른 쪽 SQL을 건너뜁니다.
+
+기존 migration을 이름 변경하거나 history에서 삭제하지 않습니다. 대신
+`Migration20260905020000`이 두 스키마를 멱등하게 확인·보강합니다. 이 migration은
+`participation_invitations`, `FINALIZED` 상태 제약, 활성 주문 unique index 및 기존
+결제 상태의 vote backfill을 모두 보장합니다. 이미 어느 한쪽 또는 양쪽이 적용된
+DB에서도 동일하게 실행할 수 있으며, 모호한 과거 상태 때문에 down migration은
+의도적으로 비파괴 no-op입니다.
+
+향후 participation invitation 변경을 병합할 때는 stash의 충돌 파일
+`Migration20260905010000.ts`를 그대로 추가하지 말고 제거하거나 새 고유 이름의
+후속 migration으로 재작성해야 합니다. 테이블 생성 책임은 reconciliation migration이
+이미 담당하므로 application/entity 변경만 병합해도 기존 스키마가 보존됩니다.

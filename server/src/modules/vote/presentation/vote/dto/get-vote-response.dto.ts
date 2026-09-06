@@ -34,6 +34,15 @@ const VoteStatusResponse = {
   Canceled: 'CANCELED',
 } as const;
 
+const ActiveBillingOrderStatusResponse = {
+  PendingPayment: 'PENDING_PAYMENT',
+  Paid: 'PAID',
+  RefundPending: 'REFUND_PENDING',
+} as const;
+
+type ActiveBillingOrderStatusResponse =
+  (typeof ActiveBillingOrderStatusResponse)[keyof typeof ActiveBillingOrderStatusResponse];
+
 const VoteDetailStatusResponse = {
   Draft: 'DRAFT',
   Open: 'OPEN',
@@ -74,6 +83,8 @@ type VoteSummarySource = {
   readonly defaultPolicy: VotePolicySource;
   readonly identityVerificationPolicy: IdentityVerificationPolicySource;
   readonly electoralRollSnapshotId?: string;
+  readonly activeBillingOrderId?: string;
+  readonly billingOrderStatus?: ActiveBillingOrderStatusResponse;
   readonly status: string;
   readonly startedAt: Date;
   readonly endedAt: Date;
@@ -282,6 +293,23 @@ export class VoteSummaryResponse {
   readonly electoralRollSnapshotId?: string;
 
   @ApiProperty({
+    required: false,
+    example: 'billing-order-1',
+    description:
+      '현재 사용자가 주문자인 활성 결제 주문 ID입니다. 취소·환불 완료 후에는 생략됩니다.',
+  })
+  declare readonly activeBillingOrderId?: string;
+
+  @ApiProperty({
+    required: false,
+    enum: Object.values(ActiveBillingOrderStatusResponse),
+    example: ActiveBillingOrderStatusResponse.PendingPayment,
+    description:
+      '현재 사용자가 주문자인 활성 결제 주문 상태입니다. 다른 사용자의 주문 및 종료된 주문은 생략됩니다.',
+  })
+  declare readonly billingOrderStatus?: ActiveBillingOrderStatusResponse;
+
+  @ApiProperty({
     example: 'Board election',
     description: '부모 투표 제목입니다.',
   })
@@ -347,6 +375,12 @@ export class VoteSummaryResponse {
     this.commissionId = source.commissionId;
     if (source.electoralRollSnapshotId !== undefined) {
       this.electoralRollSnapshotId = source.electoralRollSnapshotId;
+    }
+    if (source.activeBillingOrderId !== undefined) {
+      this.activeBillingOrderId = source.activeBillingOrderId;
+    }
+    if (source.billingOrderStatus !== undefined) {
+      this.billingOrderStatus = source.billingOrderStatus;
     }
     this.title = source.title;
     this.votingChannels = source.votingChannels;
