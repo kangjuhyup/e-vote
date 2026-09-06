@@ -18,6 +18,8 @@ import { FIELD_VOTING_SESSION_REPOSITORY_PORT } from '../modules/field-voting/ap
 import { FIELD_VOTING_SESSION_READ_REPOSITORY_PORT } from '../modules/field-voting/application/port/persistence/query/field-voting-session-read-repository.port';
 import { FILE_REPOSITORY_PORT } from '../modules/vote/application/port/persistence/command/file-repository.port';
 import { PARTICIPATION_REPOSITORY_PORT } from '../modules/participation/application/port/persistence/command/participation-repository.port';
+import { PARTICIPATION_ACCESS_READ_PORT } from '../shared/application/port/capability/participation-access-read.port';
+import { PARTICIPATION_INVITATION_REPOSITORY_PORT } from '../modules/participation/application/port/persistence/command/participation-invitation-repository.port';
 import { VOTE_DETAIL_READ_REPOSITORY_PORT } from '../modules/vote/application/port/persistence/query/vote-detail-read-repository.port';
 import { VOTE_DETAIL_REPOSITORY_PORT } from '../modules/vote/application/port/persistence/command/vote-detail-repository.port';
 import { VOTE_READ_REPOSITORY_PORT } from '../modules/vote/application/port/persistence/query/vote-read-repository.port';
@@ -39,6 +41,8 @@ import { FieldVotingSessionRepositoryAdapter } from '../modules/field-voting/inf
 import { FieldVotingSessionReadRepositoryAdapter } from '../modules/field-voting/infrastructure/database/repository/query/field-voting-session-read-repository.adapter';
 import { FileRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/command/file-repository.adapter';
 import { ParticipationRepositoryAdapter } from '../modules/participation/infrastructure/database/repository/command/participation-repository.adapter';
+import { ParticipationAccessReadAdapter } from '../modules/participation/infrastructure/database/repository/query/participation-access-read.adapter';
+import { ParticipationInvitationRepositoryAdapter } from '../modules/participation/infrastructure/database/repository/command/participation-invitation-repository.adapter';
 import { VoteDetailReadRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/query/vote-detail-read-repository.adapter';
 import { VoteDetailRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/command/vote-detail-repository.adapter';
 import { VoteReadRepositoryAdapter } from '../modules/vote/infrastructure/database/repository/query/vote-read-repository.adapter';
@@ -144,6 +148,14 @@ export const databaseRepositoryProviders: Provider[] = [
     useClass: ParticipationRepositoryAdapter,
   },
   {
+    provide: PARTICIPATION_INVITATION_REPOSITORY_PORT,
+    useClass: ParticipationInvitationRepositoryAdapter,
+  },
+  {
+    provide: PARTICIPATION_ACCESS_READ_PORT,
+    useClass: ParticipationAccessReadAdapter,
+  },
+  {
     provide: FIELD_VOTING_SESSION_REPOSITORY_PORT,
     useClass: FieldVotingSessionRepositoryAdapter,
   },
@@ -210,6 +222,8 @@ export const databaseRepositoryPortTokens = [
   CANDIDATE_REPOSITORY_PORT,
   CANDIDATE_READ_REPOSITORY_PORT,
   PARTICIPATION_REPOSITORY_PORT,
+  PARTICIPATION_INVITATION_REPOSITORY_PORT,
+  PARTICIPATION_ACCESS_READ_PORT,
   FIELD_VOTING_SESSION_REPOSITORY_PORT,
   FIELD_VOTING_SESSION_READ_REPOSITORY_PORT,
   FIELD_PARTICIPATION_EVIDENCE_REPOSITORY_PORT,

@@ -60,6 +60,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
     entities.CandidateEntity,
     entities.FieldVotingSessionEntity,
     entities.VoteParticipationEntity,
+    entities.ParticipationInvitationEntity,
     entities.VoteResultEntity,
     entities.FileEntity,
     entities.FieldVotingSessionManagerEntity,

@@ -16,6 +16,7 @@ import { billingApi } from "@/features/billing/api/billing-api";
 import { billingOrderQueryOptions } from "@/features/billing/api/billing-query-options";
 import { BillingOrderConfirmation } from "@/features/billing/ui/billing-order-confirmation";
 import { electoralRollPageQueryOptions } from "@/features/votes/api/electoral-roll-query-options";
+import { voteAttachmentApi } from "@/features/votes/api/vote-attachment-api";
 import { voteOperationsApi } from "@/features/votes/api/vote-operations-api";
 import { commissionManagementQueryOptions } from "@/features/votes/api/vote-operations-query-options";
 import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
@@ -35,6 +36,7 @@ import {
 import { resolveVoteSchedule } from "@/features/votes/lib/vote-schedule";
 
 import { VoteCommissionSetup } from "../ui/vote-commission-setup";
+import { AttachmentUploadSection } from "../ui/attachment-upload-section";
 import { VoteDeletionSection } from "../ui/vote-deletion-section";
 import { VoteElectoralRollSetup } from "../ui/vote-electoral-roll-setup";
 import { VoteNavigation } from "../ui/vote-navigation";
@@ -309,6 +311,23 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
                 voteId,
               });
             }}
+          />
+          <AttachmentUploadSection
+            title="투표 첨부파일"
+            description="공고문, 안내 자료와 기타 문서를 등록합니다. 파일은 20MB까지 등록할 수 있습니다."
+            disabled={!isEditable}
+            typeOptions={[
+              { label: "공고문", value: "NOTICE" },
+              { label: "안내 자료", value: "GUIDE" },
+              { label: "기타", value: "ETC" },
+            ]}
+            onRequestUpload={(metadata) =>
+              voteAttachmentApi.requestVoteUpload({ voteId }, metadata)
+            }
+            onUploadObject={voteAttachmentApi.uploadObject}
+            onConfirmUpload={(input) =>
+              voteAttachmentApi.confirmVoteUpload({ voteId }, input)
+            }
           />
           {isDraftStatus || effectiveBillingOrderId || billingOrder ? (
             effectiveBillingOrderId && !billingOrder ? (

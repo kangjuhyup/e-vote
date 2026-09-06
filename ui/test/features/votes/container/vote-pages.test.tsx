@@ -17,6 +17,7 @@ import { ELECTORAL_ROLL_IDENTITY_REQUIRED_MESSAGE } from '@/features/votes/model
 import { billingApi } from '@/features/billing/api/billing-api';
 import type { BillingOrder } from '@/features/billing/model/billing.types';
 import { voteOperationsApi } from '@/features/votes/api/vote-operations-api';
+import { voteAttachmentApi } from '@/features/votes/api/vote-attachment-api';
 import { electoralRollApi } from '@/features/votes/api/electoral-roll-api';
 
 import { VoteDashboardContainer } from '@/features/votes/container/vote-dashboard-container';
@@ -326,6 +327,59 @@ describe('vote containers', () => {
     }
   });
 
+  it('registers a vote attachment from an editable vote', async () => {
+    const requestUpload = vi
+      .spyOn(voteAttachmentApi, 'requestVoteUpload')
+      .mockImplementation(async (_target, metadata) => ({
+        expiresAt: '2099-09-06T12:00:00.000Z',
+        metadata,
+        storageKey: 'votes/notice-one',
+        uploadUrl: 'https://storage.example/notice',
+      }));
+    const uploadObject = vi
+      .spyOn(voteAttachmentApi, 'uploadObject')
+      .mockResolvedValue(undefined);
+    const confirmUpload = vi
+      .spyOn(voteAttachmentApi, 'confirmVoteUpload')
+      .mockResolvedValue({
+        attachmentId: 'attachment-one',
+        fileId: 'file-one',
+        storageKey: 'votes/notice-one',
+      });
+
+    try {
+      renderWithQueryClient(<VoteEditContainer voteId="scheduled-budget" />);
+      const input = await screen.findByLabelText('파일');
+      const file = new File(['notice'], '공고문.pdf', {
+        type: 'application/pdf',
+      });
+      fireEvent.change(input, { target: { files: [file] } });
+      fireEvent.click(screen.getByRole('button', { name: '첨부 등록' }));
+
+      expect(await screen.findByText('공고문.pdf')).toBeTruthy();
+      expect(requestUpload).toHaveBeenCalledWith(
+        { voteId: 'scheduled-budget' },
+        expect.objectContaining({
+          attachmentType: 'NOTICE',
+          mimeType: 'application/pdf',
+          originalName: '공고문.pdf',
+        }),
+      );
+      expect(uploadObject).toHaveBeenCalledWith(
+        expect.objectContaining({ storageKey: 'votes/notice-one' }),
+        file,
+      );
+      expect(confirmUpload).toHaveBeenCalledWith(
+        { voteId: 'scheduled-budget' },
+        expect.objectContaining({ storageKey: 'votes/notice-one' }),
+      );
+    } finally {
+      requestUpload.mockRestore();
+      uploadObject.mockRestore();
+      confirmUpload.mockRestore();
+    }
+  });
+
   it('requires confirmation and deletes a draft vote from the edit page', async () => {
     navigation.pathname = '/votes/scheduled-budget/edit';
     const vote = voteFixtureDetails.find(
@@ -364,6 +418,11 @@ describe('vote containers', () => {
     expect(await screen.findByText('대표 후보 선출')).toBeTruthy();
     expect(screen.getByRole('heading', { name: '투표율' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: '후보와 선택지' })).toBeTruthy();
+    const attachmentButtons = screen.getAllByRole('button', {
+      name: '첨부 등록',
+    }) as HTMLButtonElement[];
+    expect(attachmentButtons.length).toBeGreaterThan(0);
+    expect(attachmentButtons.every((button) => button.disabled)).toBe(true);
   });
 
   it('renders elector management with the registration form', async () => {
@@ -667,6 +726,15 @@ describe('vote containers', () => {
         /부모 투표 ID|위원회 ID|스냅샷 ID|자식 투표 ID/,
       ),
     ).toBeNull();
+    expect(
+      screen.getByRole('heading', { name: '투표 첨부파일' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('link', { name: '1번 안건 후보 첨부' }),
+    ).toHaveProperty('href', expect.stringContaining('/sub-votes/'));
+    expect(
+      screen.getByRole('link', { name: '2번 안건 후보 첨부' }),
+    ).toHaveProperty('href', expect.stringContaining('/sub-votes/'));
     expect(
       screen.getByRole('heading', { name: '투표 이용료 결제 주문' }),
     ).toBeTruthy();

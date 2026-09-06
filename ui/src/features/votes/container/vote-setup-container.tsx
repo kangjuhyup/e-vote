@@ -12,6 +12,7 @@ import { billingApi } from '@/features/billing/api/billing-api';
 import { billingOrderQueryOptions } from '@/features/billing/api/billing-query-options';
 import { BillingOrderConfirmation } from '@/features/billing/ui/billing-order-confirmation';
 import { electoralRollPageQueryOptions } from '@/features/votes/api/electoral-roll-query-options';
+import { voteAttachmentApi } from '@/features/votes/api/vote-attachment-api';
 import { voteOperationsApi } from '@/features/votes/api/vote-operations-api';
 import { commissionManagementQueryOptions } from '@/features/votes/api/vote-operations-query-options';
 import { isVoteApiMockMode } from '@/features/votes/api/votes-api';
@@ -27,6 +28,7 @@ import type {
 } from '@/features/votes/model/vote-operations.types';
 
 import { VoteNavigation } from '../ui/vote-navigation';
+import { AttachmentUploadSection } from '../ui/attachment-upload-section';
 import {
   VoteSetupWizard,
   type VoteSetupBallotDraft,
@@ -67,6 +69,11 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
     enabled: Boolean(billingOrderId),
   });
   const billingOrder = billingOrderQuery.data;
+  const attachmentLocked =
+    Boolean(billingOrderId && !billingOrder) ||
+    billingOrder?.status === 'PENDING_PAYMENT' ||
+    billingOrder?.status === 'PAID' ||
+    billingOrder?.status === 'REFUND_PENDING';
   const selectedElectoralRoll = electoralRollsQuery.data?.items.find(
     (roll) => roll.id === selectedElectoralRollId,
   );
@@ -236,6 +243,33 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
       }
     >
       <VoteSetupWizard
+        attachmentsPanel={
+          createdVote ? (
+            <AttachmentUploadSection
+              title="투표 첨부파일"
+              description="결제를 시작하기 전에 공고문, 안내 자료와 기타 문서를 등록하세요."
+              disabled={attachmentLocked}
+              typeOptions={[
+                { label: '공고문', value: 'NOTICE' },
+                { label: '안내 자료', value: 'GUIDE' },
+                { label: '기타', value: 'ETC' },
+              ]}
+              onRequestUpload={(metadata) =>
+                voteAttachmentApi.requestVoteUpload(
+                  { voteId: createdVote.id },
+                  metadata,
+                )
+              }
+              onUploadObject={voteAttachmentApi.uploadObject}
+              onConfirmUpload={(input) =>
+                voteAttachmentApi.confirmVoteUpload(
+                  { voteId: createdVote.id },
+                  input,
+                )
+              }
+            />
+          ) : undefined
+        }
         billingPanel={
           createdVote ? (
             <BillingOrderConfirmation

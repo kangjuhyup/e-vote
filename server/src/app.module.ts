@@ -57,7 +57,15 @@ import { GetVoteHandler } from './modules/vote/application/query/handler/get-vot
 import { GetSmsDispatchPageHandler } from './modules/vote/application/query/handler/get-sms-dispatch-page.handler';
 import { GetSmsDispatchHandler } from './modules/vote/application/query/handler/get-sms-dispatch.handler';
 import { GetVoteResultHandler } from './modules/participation/application/query/handler/get-vote-result.handler';
+import { GetParticipationAccessHandler } from './modules/participation/application/query/handler/get-participation-access.handler';
 import { GetVoteTurnoutHandler } from './modules/participation/application/query/handler/get-vote-turnout.handler';
+import { CastParticipationHandler } from './modules/participation/application/command/handler/cast-participation.handler';
+import { CastParticipationWithInvitationHandler } from './modules/participation/application/command/handler/cast-participation-with-invitation.handler';
+import { IssueParticipationInvitationHandler } from './modules/participation/application/command/handler/issue-participation-invitation.handler';
+import { ParticipationInvitationResolver } from './modules/participation/application/participation-invitation.resolver';
+import { PARTICIPATION_TOKEN_PORT } from './modules/participation/application/port/security/participation-token.port';
+import { PARTICIPATION_INVITATION_ISSUER_PORT } from './shared/application/port/capability/participation-invitation-issuer.port';
+import { NodeParticipationTokenAdapter } from './modules/participation/infrastructure/security/node-participation-token.adapter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PlatformModule } from './platform/platform.module';
@@ -90,6 +98,8 @@ import { VoteController } from './modules/vote/presentation/vote/vote.controller
 import { VoteSmsController } from './modules/vote/presentation/vote-sms/vote-sms.controller';
 import { VoteSmsReadController } from './modules/vote/presentation/vote-sms/vote-sms-read.controller';
 import { VoteStatisticsController } from './modules/participation/presentation/vote-statistics/vote-statistics.controller';
+import { ParticipationInvitationController } from './modules/participation/presentation/participation/participation-invitation.controller';
+import { ParticipationAccessController } from './public/participation-access.controller';
 import { FieldParticipationEvidenceController } from './modules/field-voting/presentation/participation/field-participation-evidence.controller';
 import {
   ELECTION_COMMISSION_ACCESS_PORT,
@@ -162,6 +172,8 @@ import { BillingOrderOutboxRecorder } from './modules/billing/application/event/
     FieldVotingSessionSmsController,
     ElectorReadController,
     VoteStatisticsController,
+    ParticipationAccessController,
+    ParticipationInvitationController,
     FieldParticipationEvidenceController,
     BillingOrderController,
     BillingOrderCancellationController,
@@ -260,6 +272,19 @@ import { BillingOrderOutboxRecorder } from './modules/billing/application/event/
     GetElectorPageHandler,
     GetVoteTurnoutHandler,
     GetVoteResultHandler,
+    GetParticipationAccessHandler,
+    CastParticipationHandler,
+    CastParticipationWithInvitationHandler,
+    IssueParticipationInvitationHandler,
+    {
+      provide: PARTICIPATION_INVITATION_ISSUER_PORT,
+      useExisting: IssueParticipationInvitationHandler,
+    },
+    ParticipationInvitationResolver,
+    {
+      provide: PARTICIPATION_TOKEN_PORT,
+      useClass: NodeParticipationTokenAdapter,
+    },
     BillingOrderOutboxRecorder,
     CreateVoteUsageBillingOrderHandler,
     CancelVoteUsageBillingOrderHandler,

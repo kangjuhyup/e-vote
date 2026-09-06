@@ -4,6 +4,11 @@ import { voteApiFetch } from '@/shared/auth/vote-api-fetch';
 import { isApiMockMode } from '@/shared/config/api-mode';
 
 import type {
+  ConfirmSignatureUploadInput,
+  ConfirmSignatureUploadResult,
+  RequestSignatureUploadResult,
+  SignatureUploadMetadata,
+  UploadSignatureInput,
   AuthenticateParticipantInput,
   AuthenticateParticipantResult,
   CastParticipationInput,
@@ -18,6 +23,7 @@ type ApiFetcher = (input: string, init?: RequestInit) => Promise<Response>;
 interface ParticipationApiClientOptions {
   baseUrl?: string;
   fetcher?: ApiFetcher;
+  storageFetcher?: ApiFetcher;
   mode?: 'live' | 'mock';
   randomUuid?: () => string;
 }
@@ -72,7 +78,8 @@ const mockAccess: ParticipationAccess = {
         },
         {
           candidateNo: 2,
-          description: '구성원의 의견이 반영되는 참여 중심 운영을 만들겠습니다.',
+          description:
+            '구성원의 의견이 반영되는 참여 중심 운영을 만들겠습니다.',
           id: '44444444-4444-4444-8444-444444444444',
           name: '이지안',
         },
@@ -174,6 +181,7 @@ async function request<T>(
   baseUrl: string,
   path: string,
   init: RequestInit = {},
+  expectedStatus?: number,
 ): Promise<T> {
   if (baseUrl.length === 0) {
     throw new Error('NEXT_PUBLIC_VOTE_API_BASE_URL is required in live mode');
@@ -188,6 +196,9 @@ async function request<T>(
     },
   });
   if (!response.ok) throw await toVoteApiError(response);
+  if (expectedStatus && response.status !== expectedStatus) {
+    throw new Error('Unexpected signature confirmation status');
+  }
   return unwrapVoteApiResponse<T>(await response.json());
 }
 
@@ -231,6 +242,7 @@ export function createParticipationApiClient(
   const mode = options.mode ?? (isApiMockMode() ? 'mock' : 'live');
   const baseUrl = (options.baseUrl ?? resolveBaseUrl()).replace(/\/+$/, '');
   const fetcher = options.fetcher ?? voteApiFetch;
+  const storageFetcher = options.storageFetcher ?? fetch;
   const randomUuid = options.randomUuid ?? (() => crypto.randomUUID());
 
   return {
@@ -275,10 +287,85 @@ export function createParticipationApiClient(
         },
       );
       const result = assertAuthenticationResponse(response);
-      if (result.electorId !== input.electorId || result.voteId !== input.voteId) {
+      if (
+        result.electorId !== input.electorId ||
+        result.voteId !== input.voteId
+      ) {
         throw new Error('Unexpected elector authentication target');
       }
       return result;
+    },
+
+    async uploadSignature(
+      input: UploadSignatureInput,
+    ): Promise<ConfirmSignatureUploadResult> {
+      const { blob, originalName } = input;
+      if (
+        !['image/png', 'image/jpeg', 'image/webp'].includes(blob.type) ||
+        blob.size <= 0 ||
+        blob.size > 5 * 1024 * 1024 ||
+        !originalName.trim()
+      ) {
+        throw new Error(
+          '서명은 5MiB 이하의 PNG, JPEG, WebP 이미지여야 합니다.',
+        );
+      }
+      const metadata: SignatureUploadMetadata = {
+        originalName,
+        mimeType: blob.type as SignatureUploadMetadata['mimeType'],
+        sizeBytes: blob.size,
+      };
+      if (mode === 'mock') {
+        return {
+          fileId: randomUuid(),
+          storageKey: `preview/signature/${randomUuid()}`,
+        };
+      }
+      const path = `/votes/${encode(input.voteId)}/electors/${encode(input.electorId)}/signature`;
+      input.onStage?.('requesting');
+      const upload = await request<RequestSignatureUploadResult>(
+        fetcher,
+        baseUrl,
+        `${path}/upload-url`,
+        { method: 'POST', body: JSON.stringify(metadata) },
+      );
+      if (
+        typeof upload.uploadUrl !== 'string' ||
+        !upload.uploadUrl ||
+        typeof upload.storageKey !== 'string' ||
+        !upload.storageKey
+      )
+        throw new Error('Invalid signature upload response');
+      input.onStage?.('uploading');
+      // Presigned storage requests must not carry application credentials or JSON encoding.
+      const response = await storageFetcher(upload.uploadUrl, {
+        method: 'PUT',
+        body: blob,
+        credentials: 'omit',
+        headers: { 'Content-Type': metadata.mimeType },
+      });
+      if (!response.ok)
+        throw new Error('서명 이미지 전송에 실패했습니다. 다시 시도해 주세요.');
+      input.onStage?.('confirming');
+      const body: ConfirmSignatureUploadInput = {
+        ...metadata,
+        storageKey: upload.storageKey,
+      };
+      const confirmed = await request<ConfirmSignatureUploadResult>(
+        fetcher,
+        baseUrl,
+        `${path}/confirm`,
+        { method: 'POST', body: JSON.stringify(body) },
+        201,
+      );
+      if (
+        typeof confirmed.fileId !== 'string' ||
+        !confirmed.fileId ||
+        confirmed.storageKey !== upload.storageKey
+      ) {
+        throw new Error('Invalid signature confirmation response');
+      }
+      return confirmed;
     },
 
     async cast(
@@ -302,7 +389,7 @@ export function createParticipationApiClient(
             voteDetailId: input.voteDetailId,
             electorId: input.electorId,
             selectedCandidateId: input.selectedCandidateId,
-            votingChannel: 'ONLINE',
+            votingChannel: input.votingChannel ?? 'ONLINE',
           }),
         },
       );
@@ -317,16 +404,18 @@ export function createParticipationApiClient(
 
 export function getParticipationErrorMessage(
   error: unknown,
-  operation: 'load' | 'authenticate' | 'cast',
+  operation: 'load' | 'authenticate' | 'cast' | 'signature',
 ) {
   if (error instanceof VoteApiError) {
     if (error.status === 401)
       return '로그인이 만료되었습니다. 다시 로그인해 주세요.';
     if (error.status === 403)
       return '현재 로그인한 계정에 연결된 선거인이 아닙니다.';
+    if (operation === 'signature')
+      return '서명을 저장하거나 확인하지 못했습니다. 다시 시도해 주세요.';
     if (error.status === 409) {
       return operation === 'cast'
-        ? '이미 참여했거나 현재 투표 상태가 변경되었습니다. 중복 제출은 완료로 처리되지 않습니다.'
+        ? '서명이 미확정이거나 이미 참여했거나 현재 투표 상태가 변경되었습니다. 결과 제출로 다시 시도해 주세요. 중복 제출은 완료로 처리되지 않습니다.'
         : '이미 사용한 인증 요청이거나 현재 인증 상태와 충돌했습니다. 다시 시도해 주세요.';
     }
     if (error.status === 503)
@@ -335,11 +424,15 @@ export function getParticipationErrorMessage(
       return '투표 또는 선거인 정보를 찾을 수 없습니다.';
   }
 
-  if (operation === 'load')
-    return '참여할 투표 정보를 불러오지 못했습니다.';
+  if (operation === 'signature')
+    return '서명을 저장하거나 확인하지 못했습니다. 다시 시도해 주세요.';
+  if (operation === 'load') return '참여할 투표 정보를 불러오지 못했습니다.';
   if (operation === 'authenticate')
     return '개발용 Mock 본인확인에 실패했습니다.';
   return '선택을 제출하지 못했습니다. 다시 시도해 주세요.';
 }
 
 export const participationApi = createParticipationApiClient();
+export const participationPreviewApi = createParticipationApiClient({
+  mode: 'mock',
+});

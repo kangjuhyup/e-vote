@@ -15,6 +15,7 @@ export interface DatabaseEntityClasses {
   readonly CandidateEntity: EntityClass<AnyEntity>;
   readonly FieldVotingSessionEntity: EntityClass<AnyEntity>;
   readonly VoteParticipationEntity: EntityClass<AnyEntity>;
+  readonly ParticipationInvitationEntity: EntityClass<AnyEntity>;
   readonly VoteResultEntity: EntityClass<AnyEntity>;
   readonly FileEntity: EntityClass<AnyEntity>;
   readonly FieldVotingSessionManagerEntity: EntityClass<AnyEntity>;

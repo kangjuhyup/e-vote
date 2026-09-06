@@ -35,6 +35,7 @@ export interface VoteSetupBallotDraft {
 }
 
 interface VoteSetupWizardProps {
+  attachmentsPanel?: ReactNode;
   ballots: VoteSetupBallotDraft[];
   ballotType: VoteSetupBallotDraft['type'];
   billingPanel?: ReactNode;
@@ -179,6 +180,7 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
         ) : null}
         {props.step === 'review' && props.createdVote ? (
           <Review
+            attachmentsPanel={props.attachmentsPanel}
             billingPanel={props.billingPanel}
             createdSubVoteIds={props.createdSubVoteIds}
             createdVote={props.createdVote}
@@ -495,12 +497,14 @@ function BallotForm({
 }
 
 function Review({
+  attachmentsPanel,
   billingPanel,
   createdSubVoteIds,
   createdVote,
   selectedCommission,
   selectedElectoralRoll,
 }: {
+  attachmentsPanel?: ReactNode;
   billingPanel?: ReactNode;
   createdSubVoteIds: string[];
   createdVote: CreateVoteResult;
@@ -533,6 +537,26 @@ function Review({
           value={`${createdSubVoteIds.length.toLocaleString()}개`}
         />
       </dl>
+      {attachmentsPanel ? <div className="mt-5">{attachmentsPanel}</div> : null}
+      {createdSubVoteIds.length > 0 ? (
+        <div className="mt-5 rounded-md border p-4">
+          <p className="text-sm font-medium">후보자 첨부파일</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            결제를 시작하기 전에 각 안건 화면에서 후보자 자료를 등록하세요.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {createdSubVoteIds.map((voteDetailId, index) => (
+              <Button key={voteDetailId} type="button" variant="outline" asChild>
+                <Link
+                  href={`/votes/${createdVote.id}/sub-votes/${voteDetailId}`}
+                >
+                  {index + 1}번 안건 후보 첨부
+                </Link>
+              </Button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {billingPanel}
       <div className="mt-5 flex flex-wrap gap-3">
         <Button asChild>

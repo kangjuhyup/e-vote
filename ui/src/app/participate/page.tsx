@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic';
 interface ParticipatePageProps {
   searchParams: Promise<{
     electorId?: string | string[];
+    mock?: string | string[];
     voteId?: string | string[];
+    votingChannel?: string | string[];
   }>;
 }
 
@@ -18,15 +20,25 @@ function first(value?: string | string[]) {
 export default async function ParticipatePage({
   searchParams,
 }: ParticipatePageProps) {
-  const session = await getAppSession();
-  if (!session?.user) return <SignInContainer />;
-
   const query = await searchParams;
+  const previewMode = first(query.mock) === 'true';
+  const channel = first(query.votingChannel);
+  const votingChannel =
+    channel === 'ONSITE' || channel === 'VISIT' ? channel : 'ONLINE';
+  const session = previewMode ? null : await getAppSession();
+  if (!session?.user && !previewMode) return <SignInContainer />;
+
   return (
     <ParticipationContainer
       electorId={first(query.electorId)}
-      electorLabel={session.user.name ?? session.user.email ?? '로그인 사용자'}
+      electorLabel={
+        session?.user?.name ??
+        session?.user?.email ??
+        (previewMode ? '선거인' : '로그인 사용자')
+      }
+      previewMode={previewMode}
       voteId={first(query.voteId)}
+      votingChannel={votingChannel}
     />
   );
 }

@@ -147,6 +147,38 @@ export function createParticipationEntities(
   class VoteParticipationEntity extends VoteParticipationSchema.class {}
   VoteParticipationSchema.setClass(VoteParticipationEntity);
 
+  const ParticipationInvitationSchema = defineEntity({
+    name: 'ParticipationInvitationEntity',
+    tableName: 'participation_invitations',
+    uniques: [
+      {
+        name: 'participation_invitations_vote_id_elector_id_unique',
+        properties: ['vote', 'elector'],
+      },
+    ],
+    properties: {
+      id: p.uuid().primary(),
+      vote: () =>
+        p
+          .manyToOne(getEntity(context, 'VoteEntity'))
+          .fieldName('vote_id')
+          .deleteRule('cascade'),
+      elector: () =>
+        p
+          .manyToOne(getEntity(context, 'ElectorEntity'))
+          .fieldName('elector_id')
+          .deleteRule('cascade'),
+      tokenDigest: p.string().fieldName('token_digest').unique(),
+      expiresAt: p.datetime().fieldName('expires_at'),
+      revokedAt: p.datetime().fieldName('revoked_at').nullable(),
+      createdAt: p.datetime().fieldName('created_at'),
+      updatedAt: p.datetime().fieldName('updated_at'),
+    },
+  });
+  class ParticipationInvitationEntity
+    extends ParticipationInvitationSchema.class {}
+  ParticipationInvitationSchema.setClass(ParticipationInvitationEntity);
+
   const FieldParticipationEvidenceSchema = defineEntity({
     name: 'FieldParticipationEvidenceEntity',
     tableName: 'field_participation_evidences',
@@ -196,6 +228,7 @@ export function createParticipationEntities(
     FieldVotingSessionEntity,
     FieldVotingSessionManagerEntity,
     VoteParticipationEntity,
+    ParticipationInvitationEntity,
     FieldParticipationEvidenceEntity,
   };
 }

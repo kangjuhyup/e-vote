@@ -1,9 +1,5 @@
 export type ParticipationAccessState =
-  | 'DRAFT'
-  | 'FINALIZED'
-  | 'OPEN'
-  | 'CLOSED'
-  | 'CANCELED';
+  'DRAFT' | 'FINALIZED' | 'OPEN' | 'CLOSED' | 'CANCELED';
 
 export interface ParticipationCandidate {
   candidateNo: number;
@@ -58,7 +54,10 @@ export interface AuthenticateParticipantResult {
   voteId: string;
 }
 
+export type VotingChannel = 'ONLINE' | 'ONSITE' | 'VISIT';
+
 export interface CastParticipationInput {
+  votingChannel?: VotingChannel;
   electorId: string;
   selectedCandidateId: string;
   voteDetailId: string;
@@ -69,4 +68,36 @@ export interface CastParticipationResult {
   id: string;
   status: 'CAST';
   voteDetailId: string;
+}
+
+export type SignatureUploadStage = 'requesting' | 'uploading' | 'confirming';
+
+export interface SignatureUploadMetadata {
+  originalName: string;
+  mimeType: 'image/png' | 'image/jpeg' | 'image/webp';
+  sizeBytes: number;
+}
+
+export interface RequestSignatureUploadResult {
+  uploadUrl: string;
+  storageKey: string;
+  expiresAt: string;
+}
+
+export interface ConfirmSignatureUploadInput extends SignatureUploadMetadata {
+  storageKey: string;
+  checksum?: string;
+}
+
+export interface ConfirmSignatureUploadResult {
+  fileId: string;
+  storageKey: string;
+}
+
+export interface UploadSignatureInput {
+  voteId: string;
+  electorId: string;
+  blob: Blob;
+  originalName: string;
+  onStage?: (stage: SignatureUploadStage) => void;
 }

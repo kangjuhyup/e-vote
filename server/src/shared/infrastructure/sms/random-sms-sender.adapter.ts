@@ -1,4 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import {
+  PARTICIPATION_INVITATION_ISSUER_PORT,
+  type ParticipationInvitationIssuerPort,
+} from '../../application/port/capability/participation-invitation-issuer.port';
 import {
   SMS_RECIPIENT_ACCESS_PORT,
   type SmsRecipientAccessPort,
@@ -23,12 +28,21 @@ export class RandomSmsSenderAdapter implements SmsSenderPort {
   constructor(
     @Inject(SMS_RECIPIENT_ACCESS_PORT)
     private readonly recipientAccess: SmsRecipientAccessPort,
+    @Optional()
+    @Inject(PARTICIPATION_INVITATION_ISSUER_PORT)
+    private readonly invitationIssuer?: ParticipationInvitationIssuerPort,
+    @Optional()
+    private readonly config?: ConfigService,
   ) {}
 
   sendParticipationReminderToNonParticipants(
     request: VoteSmsSendRequest,
   ): Promise<SmsSendResult> {
-    return this.send(request.voteId, (recipient) => !recipient.participated);
+    return this.send(
+      request.voteId,
+      (recipient) => !recipient.participated,
+      (recipient) => this.prepareParticipationMessage(request, recipient),
+    );
   }
 
   sendResultNotice(request: VoteSmsSendRequest): Promise<SmsSendResult> {
@@ -49,17 +63,39 @@ export class RandomSmsSenderAdapter implements SmsSenderPort {
     voteId: string,
     additionalFilter: (recipient: SmsRecipientReference) => boolean = () =>
       true,
+    prepareMessage?: (recipient: SmsRecipientReference) => Promise<void>,
   ): Promise<SmsSendResult> {
     const recipients = await this.findAllRecipients(voteId);
+    const eligibleRecipients = recipients.filter(
+      (recipient) =>
+        recipient.status === ElectorStatus.Eligible &&
+        additionalFilter(recipient),
+    );
     return {
-      deliveries: recipients
-        .filter(
-          (recipient) =>
-            recipient.status === ElectorStatus.Eligible &&
-            additionalFilter(recipient),
-        )
-        .map((recipient) => this.createRandomDelivery(recipient)),
+      deliveries: await Promise.all(
+        eligibleRecipients.map(async (recipient) => {
+          await prepareMessage?.(recipient);
+          return this.createRandomDelivery(recipient);
+        }),
+      ),
     };
+  }
+
+  private async prepareParticipationMessage(
+    request: VoteSmsSendRequest,
+    recipient: SmsRecipientReference,
+  ): Promise<void> {
+    if (!this.invitationIssuer) return;
+    const invitation = await this.invitationIssuer.issue(
+      request.voteId,
+      recipient.electorId,
+    );
+    const baseUrl =
+      this.config?.get<string>('PARTICIPATION_PUBLIC_URL') ??
+      'http://localhost:3001/participate';
+    // The mock sender intentionally does not persist or log the personalized body.
+    const personalizedMessage = `${request.message}\n${baseUrl.replace(/#.*$/, '')}#${invitation.rawToken}`;
+    void personalizedMessage;
   }
 
   private async findAllRecipients(

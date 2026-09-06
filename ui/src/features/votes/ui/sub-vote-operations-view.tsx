@@ -1,4 +1,5 @@
 import { BarChart3, Scale, ShieldCheck, UsersRound } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,10 +24,14 @@ const policyLabels = {
 } as const;
 
 interface SubVoteOperationsViewProps {
+  candidateAttachments?: Record<string, ReactNode>;
   operations: SubVoteOperations;
 }
 
-export function SubVoteOperationsView({ operations }: SubVoteOperationsViewProps) {
+export function SubVoteOperationsView({
+  candidateAttachments,
+  operations,
+}: SubVoteOperationsViewProps) {
   const policyValues = [
     operations.policy.privacyMode,
     operations.policy.participationUnit,
@@ -88,19 +93,26 @@ export function SubVoteOperationsView({ operations }: SubVoteOperationsViewProps
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div
+            className={
+              candidateAttachments ? 'grid gap-4' : 'grid gap-3 md:grid-cols-2'
+            }
+          >
             {operations.candidates.map((candidate) => (
-            <Card key={candidate.id} className="rounded-lg">
-              <CardContent className="flex items-start gap-4 py-5">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-                  {candidate.candidateNo}
-                </span>
-                <div>
-                  <p className="font-medium">{candidate.name}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{candidate.description || "등록된 설명이 없습니다."}</p>
-                </div>
-              </CardContent>
-            </Card>
+              <div key={candidate.id} className="space-y-3">
+                <Card className="rounded-lg">
+                  <CardContent className="flex items-start gap-4 py-5">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+                      {candidate.candidateNo}
+                    </span>
+                    <div>
+                      <p className="font-medium">{candidate.name}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{candidate.description || "등록된 설명이 없습니다."}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                {candidateAttachments?.[candidate.id]}
+              </div>
             ))}
           </div>
         )}

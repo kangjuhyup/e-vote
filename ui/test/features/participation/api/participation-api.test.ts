@@ -179,4 +179,31 @@ describe('participationApi', () => {
       ),
     ).toContain('중복 제출은 완료로 처리되지 않습니다');
   });
+
+  it('keeps preview loading, authentication, and casting fully local', async () => {
+    const fetcher = vi.fn();
+    const client = createParticipationApiClient({
+      fetcher,
+      mode: 'mock',
+      randomUuid: () => '77777777-7777-4777-8777-777777777777',
+    });
+
+    await client.getAccess({
+      electorId: '55555555-5555-4555-8555-555555555555',
+      electorLabel: '미리보기 선거인',
+      voteId: '11111111-1111-4111-8111-111111111111',
+    });
+    await client.authenticate({
+      electorId: '55555555-5555-4555-8555-555555555555',
+      voteId: '11111111-1111-4111-8111-111111111111',
+    });
+    await client.cast({
+      electorId: '55555555-5555-4555-8555-555555555555',
+      selectedCandidateId: '33333333-3333-4333-8333-333333333333',
+      voteDetailId: '22222222-2222-4222-8222-222222222222',
+      voteId: '11111111-1111-4111-8111-111111111111',
+    });
+
+    expect(fetcher).not.toHaveBeenCalled();
+  });
 });
