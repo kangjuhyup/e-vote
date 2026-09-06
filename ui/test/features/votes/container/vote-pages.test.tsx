@@ -337,7 +337,8 @@ describe('vote containers', () => {
     }
   });
 
-  it('exposes and registers vote attachments from the vote detail', async () => {
+  it('registers vote attachments from the vote edit page', async () => {
+    navigation.pathname = '/votes/scheduled-budget/edit';
     const requestUpload = vi
       .spyOn(voteAttachmentApi, 'requestVoteUpload')
       .mockImplementation(async (_target, metadata) => ({
@@ -351,32 +352,60 @@ describe('vote containers', () => {
       .mockResolvedValue(undefined);
     const confirmUpload = vi
       .spyOn(voteAttachmentApi, 'confirmVoteUpload')
-      .mockResolvedValue({
-        attachmentId: 'attachment-one',
-        fileId: 'file-one',
-        storageKey: 'votes/notice-one',
+      .mockImplementation(async () => {
+        const voteIndex = voteFixtureDetails.findIndex(
+          (item) => item.id === 'scheduled-budget',
+        );
+        const vote = voteFixtureDetails[voteIndex];
+        if (!vote) throw new Error('scheduled-budget fixture is required');
+        voteFixtureDetails.splice(voteIndex, 1, {
+          ...vote,
+          attachments: [
+            ...(vote.attachments ?? []),
+            {
+              createdAt: '2026-09-06T12:00:00.000Z',
+              fileId: 'file-one',
+              id: 'attachment-one',
+              mimeType: 'application/pdf',
+              originalName: '공고문.pdf',
+              sizeBytes: 6,
+              sortOrder: 0,
+              type: 'NOTICE',
+            },
+          ],
+        });
+        return {
+          attachmentId: 'attachment-one',
+          fileId: 'file-one',
+          storageKey: 'votes/notice-one',
+        };
       });
 
     try {
-      renderWithQueryClient(<VoteDetailContainer voteId="scheduled-budget" />);
+      renderWithQueryClient(<VoteEditContainer voteId="scheduled-budget" />);
       expect(
         await screen.findByRole('heading', {
-          name: '투표 첨부파일 업로드',
+          name: '투표 첨부파일',
         }),
       ).toBeTruthy();
       expect(
-        screen
-          .getByRole('link', { name: '후보자 첨부파일' })
-          .getAttribute('href'),
-      ).toBe(
-        '/votes/scheduled-budget/sub-votes/budget-approval#candidate-attachments',
-      );
-      const input = await screen.findByLabelText('파일');
+        screen.getByRole('heading', {
+          name: '안건 및 후보자 첨부파일',
+        }),
+      ).toBeTruthy();
+      const input = (await screen.findAllByLabelText('파일'))[0];
+      if (!input) throw new Error('vote attachment file input is required');
       const file = new File(['notice'], '공고문.pdf', {
         type: 'application/pdf',
       });
       fireEvent.change(input, { target: { files: [file] } });
-      fireEvent.click(screen.getByRole('button', { name: '첨부 등록' }));
+      const registerButton = screen.getAllByRole('button', {
+        name: '첨부 등록',
+      })[0];
+      if (!registerButton) {
+        throw new Error('vote attachment register button is required');
+      }
+      fireEvent.click(registerButton);
 
       expect(await screen.findByText('공고문.pdf')).toBeTruthy();
       expect(requestUpload).toHaveBeenCalledWith(
@@ -400,6 +429,36 @@ describe('vote containers', () => {
       uploadObject.mockRestore();
       confirmUpload.mockRestore();
     }
+  });
+
+  it('shows vote attachments as download-only content on the detail page', async () => {
+    const vote = voteFixtureDetails.find(
+      (item) => item.id === 'scheduled-budget',
+    );
+    if (!vote) throw new Error('scheduled-budget fixture is required');
+    vote.attachments = [
+      {
+        createdAt: '2026-09-06T12:00:00.000Z',
+        fileId: 'file-read-only',
+        id: 'attachment-read-only',
+        mimeType: 'application/pdf',
+        originalName: '상세 공고문.pdf',
+        sizeBytes: 1024,
+        sortOrder: 0,
+        type: 'NOTICE',
+      },
+    ];
+
+    renderWithQueryClient(<VoteDetailContainer voteId={vote.id} />);
+
+    expect(await screen.findByText('상세 공고문.pdf')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: '상세 공고문.pdf 다운로드' }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '첨부 등록' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: '상세 공고문.pdf 삭제' }),
+    ).toBeNull();
   });
 
   it('requires confirmation and deletes a draft vote from the edit page', async () => {
@@ -442,11 +501,8 @@ describe('vote containers', () => {
     expect(
       screen.getByRole('heading', { name: '후보자 및 첨부파일' }),
     ).toBeTruthy();
-    const attachmentButtons = screen.getAllByRole('button', {
-      name: '첨부 등록',
-    }) as HTMLButtonElement[];
-    expect(attachmentButtons.length).toBeGreaterThan(0);
-    expect(attachmentButtons.every((button) => button.disabled)).toBe(true);
+    expect(screen.queryByRole('button', { name: '첨부 등록' })).toBeNull();
+    expect(screen.queryByLabelText('파일')).toBeNull();
   });
 
   it('renders elector management with the registration form', async () => {

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createVoteAttachmentApiClient,
 } from '@/features/votes/api/vote-attachment-api';
+import { voteFixtureDetails } from '@/features/votes/api/votes-fixtures';
 import {
   attachmentMetadataFromFile,
   validateAttachmentMetadata,
@@ -17,6 +18,10 @@ const candidateTarget = {
   voteId: 'vote/id',
   voteDetailId: 'detail/id',
   candidateId: 'candidate/id',
+};
+const voteDetailTarget = {
+  voteId: 'vote/id',
+  voteDetailId: 'detail/id',
 };
 const metadata = {
   attachmentType: 'NOTICE' as const,
@@ -135,6 +140,91 @@ describe('vote attachment API', () => {
     expect(fetcher.mock.calls[1]?.[0]).toBe(`${basePath}/confirm`);
   });
 
+  it('downloads and deletes vote, sub-vote, and candidate attachments', async () => {
+    const fetcher = vi.fn(async (_input: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return new Response(null, { status: 204 });
+      }
+      return response({
+        attachmentId: 'attachment/id',
+        downloadUrl: 'https://storage.example/download?signature=signed',
+        expiresAt: grant.expiresAt,
+      });
+    });
+    const client = createVoteAttachmentApiClient({
+      baseUrl: 'https://api.example.com',
+      fetcher,
+      mode: 'live',
+    });
+    const targets = [
+      {
+        basePath: 'https://api.example.com/votes/vote%2Fid/attachments',
+        download: () =>
+          client.fetchVoteDownloadUrl(voteTarget, 'attachment/id'),
+        remove: () =>
+          client.deleteVoteAttachment(voteTarget, 'attachment/id'),
+      },
+      {
+        basePath:
+          'https://api.example.com/votes/vote%2Fid/sub-votes/detail%2Fid/attachments',
+        download: () =>
+          client.fetchVoteDetailDownloadUrl(
+            voteDetailTarget,
+            'attachment/id',
+          ),
+        remove: () =>
+          client.deleteVoteDetailAttachment(voteDetailTarget, 'attachment/id'),
+      },
+      {
+        basePath:
+          'https://api.example.com/votes/vote%2Fid/sub-votes/detail%2Fid/candidates/candidate%2Fid/attachments',
+        download: () =>
+          client.fetchCandidateDownloadUrl(candidateTarget, 'attachment/id'),
+        remove: () =>
+          client.deleteCandidateAttachment(candidateTarget, 'attachment/id'),
+      },
+    ];
+
+    for (const target of targets) {
+      await expect(target.download()).resolves.toEqual(
+        expect.objectContaining({ attachmentId: 'attachment/id' }),
+      );
+      await expect(target.remove()).resolves.toBeUndefined();
+    }
+
+    targets.forEach((target, index) => {
+      expect(fetcher).toHaveBeenNthCalledWith(
+        index * 2 + 1,
+        `${target.basePath}/attachment%2Fid/download-url`,
+        { headers: { Accept: 'application/json' } },
+      );
+      expect(fetcher).toHaveBeenNthCalledWith(
+        index * 2 + 2,
+        `${target.basePath}/attachment%2Fid`,
+        { method: 'DELETE', headers: { Accept: 'application/json' } },
+      );
+    });
+  });
+
+  it('does not parse a successful 204 attachment deletion response', async () => {
+    const json = vi.fn();
+    const fetcher = vi.fn().mockResolvedValue({
+      json,
+      ok: true,
+      status: 204,
+    } as unknown as Response);
+    const client = createVoteAttachmentApiClient({
+      baseUrl: 'https://api.example.com',
+      fetcher,
+      mode: 'live',
+    });
+
+    await expect(
+      client.deleteVoteAttachment(voteTarget, 'attachment-one'),
+    ).resolves.toBeUndefined();
+    expect(json).not.toHaveBeenCalled();
+  });
+
   it('validates empty, oversized, unsupported, and non-image profile files', () => {
     expect(
       validateAttachmentMetadata({ ...metadata, originalName: '  ' }),
@@ -184,5 +274,31 @@ describe('vote attachment API', () => {
     });
     expect(fetcher).not.toHaveBeenCalled();
     expect(objectFetcher).not.toHaveBeenCalled();
+  });
+
+  it('updates the mock server projection immutably after confirm and delete', async () => {
+    const mockVoteDetails = structuredClone(voteFixtureDetails);
+    const client = createVoteAttachmentApiClient({
+      mockVoteDetails,
+      mode: 'mock',
+    });
+    const target = { voteId: 'active-general' };
+    const previousVote = mockVoteDetails[0];
+    const prepared = await client.requestVoteUpload(target, metadata);
+    const result = await client.confirmVoteUpload(target, {
+      ...metadata,
+      storageKey: prepared.storageKey,
+    });
+
+    expect(mockVoteDetails[0]).not.toBe(previousVote);
+    expect(mockVoteDetails[0]?.attachments).toEqual([
+      expect.objectContaining({
+        id: result.attachmentId,
+        originalName: metadata.originalName,
+      }),
+    ]);
+
+    await client.deleteVoteAttachment(target, result.attachmentId);
+    expect(mockVoteDetails[0]?.attachments).toEqual([]);
   });
 });

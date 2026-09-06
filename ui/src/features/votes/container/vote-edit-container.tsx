@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Paperclip } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -313,6 +313,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
             }}
           />
           <AttachmentUploadSection
+            attachments={vote.attachments ?? []}
             title="투표 첨부파일"
             description="공고문, 안내 자료와 기타 문서를 등록합니다. 파일은 20MB까지 등록할 수 있습니다."
             disabled={!isEditable}
@@ -325,10 +326,161 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
               voteAttachmentApi.requestVoteUpload({ voteId }, metadata)
             }
             onUploadObject={voteAttachmentApi.uploadObject}
-            onConfirmUpload={(input) =>
-              voteAttachmentApi.confirmVoteUpload({ voteId }, input)
+            onConfirmUpload={async (input) => {
+              const result = await voteAttachmentApi.confirmVoteUpload(
+                { voteId },
+                input,
+              );
+              await queryClient.invalidateQueries({ queryKey: ["votes"] });
+              return result;
+            }}
+            onDeleteAttachment={async (attachmentId) => {
+              await voteAttachmentApi.deleteVoteAttachment(
+                { voteId },
+                attachmentId,
+              );
+              await queryClient.invalidateQueries({ queryKey: ["votes"] });
+            }}
+            onDownloadAttachment={(attachmentId) =>
+              voteAttachmentApi.fetchVoteDownloadUrl(
+                { voteId },
+                attachmentId,
+              )
             }
           />
+          {vote.subVotes.length > 0 ? (
+            <section
+              aria-labelledby="vote-detail-attachments-title"
+              className="space-y-4"
+            >
+              <div className="flex items-center gap-2">
+                <Paperclip
+                  className="size-5 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <h2
+                  id="vote-detail-attachments-title"
+                  className="text-lg font-semibold"
+                >
+                  안건 및 후보자 첨부파일
+                </h2>
+              </div>
+              {[...vote.subVotes]
+                .sort((left, right) => left.order - right.order)
+                .map((subVote) => (
+                  <div key={subVote.id} className="space-y-3">
+                    <AttachmentUploadSection
+                      attachments={subVote.attachments ?? []}
+                      title={`${subVote.title} 안건 첨부파일`}
+                      description="안건 공고문, 안내 자료와 기타 문서를 관리합니다."
+                      disabled={!isEditable}
+                      typeOptions={[
+                        { label: "공고문", value: "NOTICE" },
+                        { label: "안내 자료", value: "GUIDE" },
+                        { label: "기타", value: "ETC" },
+                      ]}
+                      onRequestUpload={(metadata) =>
+                        voteAttachmentApi.requestVoteDetailUpload(
+                          { voteDetailId: subVote.id, voteId },
+                          metadata,
+                        )
+                      }
+                      onUploadObject={voteAttachmentApi.uploadObject}
+                      onConfirmUpload={async (input) => {
+                        const result =
+                          await voteAttachmentApi.confirmVoteDetailUpload(
+                            { voteDetailId: subVote.id, voteId },
+                            input,
+                          );
+                        await queryClient.invalidateQueries({
+                          queryKey: ["votes"],
+                        });
+                        return result;
+                      }}
+                      onDeleteAttachment={async (attachmentId) => {
+                        await voteAttachmentApi.deleteVoteDetailAttachment(
+                          { voteDetailId: subVote.id, voteId },
+                          attachmentId,
+                        );
+                        await queryClient.invalidateQueries({
+                          queryKey: ["votes"],
+                        });
+                      }}
+                      onDownloadAttachment={(attachmentId) =>
+                        voteAttachmentApi.fetchVoteDetailDownloadUrl(
+                          { voteDetailId: subVote.id, voteId },
+                          attachmentId,
+                        )
+                      }
+                    />
+                    {subVote.candidates.map((candidate) => (
+                      <AttachmentUploadSection
+                        key={candidate.id}
+                        attachments={candidate.attachments ?? []}
+                        title={`${subVote.title} · ${candidate.name} 첨부파일`}
+                        description="후보자 프로필 이미지, 공약집, 포스터와 기타 자료를 관리합니다."
+                        disabled={!isEditable}
+                        typeOptions={[
+                          { label: "프로필 이미지", value: "PROFILE_IMAGE" },
+                          { label: "공약집", value: "PLEDGE" },
+                          { label: "포스터", value: "POSTER" },
+                          { label: "기타", value: "ETC" },
+                        ]}
+                        onRequestUpload={(metadata) =>
+                          voteAttachmentApi.requestCandidateUpload(
+                            {
+                              candidateId: candidate.id,
+                              voteDetailId: subVote.id,
+                              voteId,
+                            },
+                            metadata,
+                          )
+                        }
+                        onUploadObject={voteAttachmentApi.uploadObject}
+                        onConfirmUpload={async (input) => {
+                          const result =
+                            await voteAttachmentApi.confirmCandidateUpload(
+                              {
+                                candidateId: candidate.id,
+                                voteDetailId: subVote.id,
+                                voteId,
+                              },
+                              input,
+                            );
+                          await queryClient.invalidateQueries({
+                            queryKey: ["votes"],
+                          });
+                          return result;
+                        }}
+                        onDeleteAttachment={async (attachmentId) => {
+                          await voteAttachmentApi.deleteCandidateAttachment(
+                            {
+                              candidateId: candidate.id,
+                              voteDetailId: subVote.id,
+                              voteId,
+                            },
+                            attachmentId,
+                          );
+                          await queryClient.invalidateQueries({
+                            queryKey: ["votes"],
+                          });
+                        }}
+                        onDownloadAttachment={(attachmentId) =>
+                          voteAttachmentApi.fetchCandidateDownloadUrl(
+                            {
+                              candidateId: candidate.id,
+                              voteDetailId: subVote.id,
+                              voteId,
+                            },
+                            attachmentId,
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                ))}
+            </section>
+          ) : null}
           {isDraftStatus || effectiveBillingOrderId || billingOrder ? (
             effectiveBillingOrderId && !billingOrder ? (
               billingOrderQuery.isError ? (

@@ -426,7 +426,27 @@ describe('vote operations api', () => {
       }
       if (url.pathname.endsWith('/candidates')) {
         return jsonResponse({
-          items: [],
+          items: [
+            {
+              attachments: [
+                {
+                  createdAt: '2026-09-06T12:00:00.000Z',
+                  fileId: 'candidate-file-1',
+                  id: 'candidate-attachment-1',
+                  mimeType: 'application/pdf',
+                  originalName: '공약.pdf',
+                  sizeBytes: 2048,
+                  sortOrder: 0,
+                  type: 'PLEDGE',
+                },
+              ],
+              candidateNo: 1,
+              description: '후보 소개',
+              id: 'candidate-1',
+              name: '김후보',
+              status: 'ACTIVE',
+            },
+          ],
           page: 1,
           pageSize: 100,
           totalItems: 0,
@@ -435,6 +455,18 @@ describe('vote operations api', () => {
       }
       if (url.pathname.endsWith('/sub-votes/detail-1')) {
         return jsonResponse({
+          attachments: [
+            {
+              createdAt: '2026-09-06T12:00:00.000Z',
+              fileId: 'detail-file-1',
+              id: 'detail-attachment-1',
+              mimeType: 'application/pdf',
+              originalName: '안건 안내.pdf',
+              sizeBytes: 1024,
+              sortOrder: 0,
+              type: 'GUIDE',
+            },
+          ],
           description: '대표 선출',
           id: 'detail-1',
           sortOrder: 0,
@@ -462,7 +494,20 @@ describe('vote operations api', () => {
     await expect(
       client.fetchSubVoteOperations('vote-1', 'detail-1'),
     ).resolves.toEqual(
-      expect.objectContaining({ result: null, turnout: null }),
+      expect.objectContaining({
+        attachments: [
+          expect.objectContaining({ id: 'detail-attachment-1' }),
+        ],
+        candidates: [
+          expect.objectContaining({
+            attachments: [
+              expect.objectContaining({ id: 'candidate-attachment-1' }),
+            ],
+          }),
+        ],
+        result: null,
+        turnout: null,
+      }),
     );
   });
 

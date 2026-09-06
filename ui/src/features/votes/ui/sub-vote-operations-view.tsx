@@ -24,11 +24,13 @@ const policyLabels = {
 } as const;
 
 interface SubVoteOperationsViewProps {
+  attachmentsPanel?: ReactNode;
   candidateAttachments?: Record<string, ReactNode>;
   operations: SubVoteOperations;
 }
 
 export function SubVoteOperationsView({
+  attachmentsPanel,
   candidateAttachments,
   operations,
 }: SubVoteOperationsViewProps) {
@@ -63,6 +65,8 @@ export function SubVoteOperationsView({
           ))}
         </CardContent>
       </Card>
+
+      {attachmentsPanel}
 
       <section aria-labelledby="turnout-title" className="space-y-3">
         <div className="flex items-center gap-2">

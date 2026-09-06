@@ -61,12 +61,12 @@ export function VoteSubVoteSection({ subVotes, voteId }: VoteSubVoteSectionProps
                       <ArrowRight aria-hidden="true" />
                     </Link>
                   </Button>
-                  <Button type="button" asChild>
+                  <Button type="button" variant="outline" asChild>
                     <Link
                       href={`/votes/${voteId}/sub-votes/${subVote.id}#candidate-attachments`}
                     >
                       <Paperclip aria-hidden="true" />
-                      후보자 첨부파일
+                      첨부파일 보기
                     </Link>
                   </Button>
                 </div>

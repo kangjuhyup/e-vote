@@ -13,6 +13,12 @@ import type {
   VoteSubVote,
   VoteSummary,
 } from "@/features/votes/model/vote.types";
+import type {
+  AttachmentRecord,
+  AttachmentType,
+  CandidateAttachmentType,
+  VoteAttachmentType,
+} from "@/features/votes/model/vote-attachment.types";
 import {
   isApiMockMode,
   resolveApiMode,
@@ -59,9 +65,21 @@ interface IdentityVerificationPolicyResponseDto {
   method?: string;
 }
 
+export interface AttachmentResponseDto {
+  createdAt: string;
+  fileId: string;
+  id: string;
+  mimeType: string;
+  originalName: string;
+  sizeBytes: number;
+  sortOrder: number;
+  type: string;
+}
+
 export interface VoteSummaryResponseDto {
   activeBillingOrderId?: string;
   billingOrderStatus?: ActiveVoteBillingOrderStatus;
+  attachments: AttachmentResponseDto[];
   id: string;
   commissionId: string;
   electoralRollSnapshotId?: string;
@@ -79,6 +97,7 @@ export interface VoteSummaryResponseDto {
 }
 
 export interface VoteCandidateResponseDto {
+  attachments: AttachmentResponseDto[];
   id: string;
   voteId?: string;
   voteDetailId: string;
@@ -91,6 +110,7 @@ export interface VoteCandidateResponseDto {
 }
 
 interface VoteDetailItemResponseDto {
+  attachments: AttachmentResponseDto[];
   id: string;
   voteId: string;
   title: string;
@@ -235,6 +255,9 @@ export function mapVoteSummaryResponse(
     ...(response.billingOrderStatus
       ? { billingOrderStatus: response.billingOrderStatus }
       : {}),
+    attachments: (response.attachments ?? []).map((attachment) =>
+      mapAttachmentResponse<VoteAttachmentType>(attachment),
+    ),
     commissionId: response.commissionId,
     electoralRollSnapshotId: response.electoralRollSnapshotId,
     id: response.id,
@@ -252,6 +275,9 @@ function mapVoteCandidateResponse(
   response: VoteCandidateResponseDto,
 ): VoteCandidate {
   return {
+    attachments: (response.attachments ?? []).map((attachment) =>
+      mapAttachmentResponse<CandidateAttachmentType>(attachment),
+    ),
     id: response.id,
     name: response.name,
     description: response.description,
@@ -263,6 +289,9 @@ function mapVoteSubVoteResponse(
   response: VoteDetailItemResponseDto,
 ): VoteSubVote {
   return {
+    attachments: (response.attachments ?? []).map((attachment) =>
+      mapAttachmentResponse<VoteAttachmentType>(attachment),
+    ),
     id: response.id,
     title: response.title,
     description: response.description,
@@ -270,6 +299,21 @@ function mapVoteSubVoteResponse(
     status: mapVoteStatus(response.status),
     order: response.sortOrder,
     candidates: response.candidates.map(mapVoteCandidateResponse),
+  };
+}
+
+function mapAttachmentResponse<TType extends AttachmentType>(
+  response: AttachmentResponseDto,
+): AttachmentRecord<TType> {
+  return {
+    createdAt: response.createdAt,
+    fileId: response.fileId,
+    id: response.id,
+    mimeType: response.mimeType,
+    originalName: response.originalName,
+    sizeBytes: response.sizeBytes,
+    sortOrder: response.sortOrder,
+    type: response.type as TType,
   };
 }
 

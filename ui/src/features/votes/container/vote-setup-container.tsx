@@ -16,6 +16,7 @@ import { voteAttachmentApi } from '@/features/votes/api/vote-attachment-api';
 import { voteOperationsApi } from '@/features/votes/api/vote-operations-api';
 import { commissionManagementQueryOptions } from '@/features/votes/api/vote-operations-query-options';
 import { isVoteApiMockMode } from '@/features/votes/api/votes-api';
+import { voteDetailQueryOptions } from '@/features/votes/api/votes-query-options';
 import { resolveVoteSchedule } from '@/features/votes/lib/vote-schedule';
 import type {
   CreateVoteInput,
@@ -70,6 +71,11 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
   const electoralRollsQuery = useQuery(
     electoralRollPageQueryOptions({ page: 1, pageSize: 100 }),
   );
+  const createdVoteQuery = useQuery({
+    ...voteDetailQueryOptions(createdVote?.id ?? ''),
+    enabled: Boolean(createdVote?.id),
+  });
+  const createdVoteProjection = createdVoteQuery.data;
   const billingOrderQuery = useQuery({
     ...billingOrderQueryOptions(billingOrderId ?? ''),
     enabled: Boolean(billingOrderId),
@@ -259,6 +265,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
         attachmentsPanel={
           createdVote ? (
             <AttachmentUploadSection
+              attachments={createdVoteProjection?.attachments ?? []}
               title="투표 첨부파일"
               description="결제를 시작하기 전에 공고문, 안내 자료와 기타 문서를 등록하세요."
               disabled={attachmentLocked}
@@ -274,10 +281,25 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
                 )
               }
               onUploadObject={voteAttachmentApi.uploadObject}
-              onConfirmUpload={(input) =>
-                voteAttachmentApi.confirmVoteUpload(
+              onConfirmUpload={async (input) => {
+                const result = await voteAttachmentApi.confirmVoteUpload(
                   { voteId: createdVote.id },
                   input,
+                );
+                await queryClient.invalidateQueries({ queryKey: ['votes'] });
+                return result;
+              }}
+              onDeleteAttachment={async (attachmentId) => {
+                await voteAttachmentApi.deleteVoteAttachment(
+                  { voteId: createdVote.id },
+                  attachmentId,
+                );
+                await queryClient.invalidateQueries({ queryKey: ['votes'] });
+              }}
+              onDownloadAttachment={(attachmentId) =>
+                voteAttachmentApi.fetchVoteDownloadUrl(
+                  { voteId: createdVote.id },
+                  attachmentId,
                 )
               }
             />
@@ -288,9 +310,19 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
           createdBallots.some((ballot) => ballot.candidates.length > 0) ? (
             <div className="space-y-4">
               {createdBallots.flatMap((ballot) =>
-                ballot.candidates.map((candidate) => (
-                  <AttachmentUploadSection
+                ballot.candidates.map((candidate) => {
+                  const projectedCandidate = createdVoteProjection?.subVotes
+                    .find((subVote) => subVote.id === ballot.id)
+                    ?.candidates.find((item) => item.id === candidate.id);
+                  const target = {
+                    candidateId: candidate.id,
+                    voteDetailId: ballot.id,
+                    voteId: createdVote.id,
+                  };
+                  return (
+                    <AttachmentUploadSection
                     key={candidate.id}
+                    attachments={projectedCandidate?.attachments ?? []}
                     title={`${ballot.title} · ${candidate.name} 첨부파일`}
                     description="후보자 프로필 이미지, 공약집, 포스터와 기타 자료를 등록하세요."
                     disabled={attachmentLocked}
@@ -301,28 +333,33 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
                       { label: '기타', value: 'ETC' },
                     ]}
                     onRequestUpload={(metadata) =>
-                      voteAttachmentApi.requestCandidateUpload(
-                        {
-                          candidateId: candidate.id,
-                          voteDetailId: ballot.id,
-                          voteId: createdVote.id,
-                        },
-                        metadata,
-                      )
+                      voteAttachmentApi.requestCandidateUpload(target, metadata)
                     }
                     onUploadObject={voteAttachmentApi.uploadObject}
-                    onConfirmUpload={(input) =>
-                      voteAttachmentApi.confirmCandidateUpload(
-                        {
-                          candidateId: candidate.id,
-                          voteDetailId: ballot.id,
-                          voteId: createdVote.id,
-                        },
+                    onConfirmUpload={async (input) => {
+                      const result = await voteAttachmentApi.confirmCandidateUpload(
+                        target,
                         input,
+                      );
+                      await queryClient.invalidateQueries({ queryKey: ['votes'] });
+                      return result;
+                    }}
+                    onDeleteAttachment={async (attachmentId) => {
+                      await voteAttachmentApi.deleteCandidateAttachment(
+                        target,
+                        attachmentId,
+                      );
+                      await queryClient.invalidateQueries({ queryKey: ['votes'] });
+                    }}
+                    onDownloadAttachment={(attachmentId) =>
+                      voteAttachmentApi.fetchCandidateDownloadUrl(
+                        target,
+                        attachmentId,
                       )
                     }
                   />
-                )),
+                  );
+                }),
               )}
             </div>
           ) : undefined

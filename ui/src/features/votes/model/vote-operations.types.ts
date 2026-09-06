@@ -1,3 +1,8 @@
+import type {
+  CandidateAttachmentRecord,
+  VoteAttachmentRecord,
+} from './vote-attachment.types';
+
 export type VoteDetailType = 'CANDIDATE' | 'YES_NO';
 export type VoteLifecycleStatus =
   | 'DRAFT'
@@ -23,6 +28,7 @@ export interface VotePolicyRecord {
 }
 
 export interface OperationCandidate {
+  attachments?: CandidateAttachmentRecord[];
   id: string;
   candidateNo: number;
   description: string;
@@ -71,6 +77,7 @@ export interface VoteResultRecord {
 }
 
 export interface SubVoteOperations {
+  attachments?: VoteAttachmentRecord[];
   candidates: OperationCandidate[];
   description: string;
   id: string;

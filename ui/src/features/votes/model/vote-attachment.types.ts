@@ -25,6 +25,21 @@ export type CandidateAttachmentType =
   | 'ETC';
 export type AttachmentType = VoteAttachmentType | CandidateAttachmentType;
 
+export interface AttachmentRecord<TType extends AttachmentType = AttachmentType> {
+  createdAt: string;
+  fileId: string;
+  id: string;
+  mimeType: string;
+  originalName: string;
+  sizeBytes: number;
+  sortOrder: number;
+  type: TType;
+}
+
+export type VoteAttachmentRecord = AttachmentRecord<VoteAttachmentType>;
+export type CandidateAttachmentRecord =
+  AttachmentRecord<CandidateAttachmentType>;
+
 export interface AttachmentUploadMetadata<TType extends AttachmentType> {
   attachmentType: TType;
   mimeType: string;
@@ -47,27 +62,26 @@ export interface ConfirmAttachmentUploadInput<
   storageKey: string;
 }
 
-export interface ConfirmedAttachmentUpload<TType extends AttachmentType> {
-  attachmentId: string;
-  attachmentType: TType;
-  fileId: string;
-  mimeType: string;
-  originalName: string;
-  sizeBytes: number;
-  storageKey: string;
-}
-
 export interface AttachmentUploadResult {
   attachmentId: string;
   fileId: string;
   storageKey: string;
 }
 
+export interface AttachmentDownloadGrant {
+  attachmentId: string;
+  downloadUrl: string;
+  expiresAt: string;
+}
+
 export interface VoteAttachmentTarget {
   voteId: string;
 }
 
-export interface CandidateAttachmentTarget extends VoteAttachmentTarget {
-  candidateId: string;
+export interface VoteDetailAttachmentTarget extends VoteAttachmentTarget {
   voteDetailId: string;
+}
+
+export interface CandidateAttachmentTarget extends VoteDetailAttachmentTarget {
+  candidateId: string;
 }

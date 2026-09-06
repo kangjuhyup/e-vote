@@ -6,6 +6,12 @@ import {
 } from '@/shared/api/vote-api-error';
 
 import { ELECTORAL_ROLL_IDENTITY_REQUIRED_MESSAGE } from '../model/electoral-roll.types';
+import type {
+  AttachmentRecord,
+  AttachmentType,
+  CandidateAttachmentType,
+  VoteAttachmentType,
+} from '../model/vote-attachment.types';
 
 import type {
   AttachElectoralRollInput,
@@ -39,7 +45,10 @@ import type {
 import { resolveCurrentMockElectoralRollSnapshot } from './electoral-roll-fixtures';
 import { createVoteOperationsFixtures } from './vote-operations-fixtures';
 import { voteFixtureDetails } from './votes-fixtures';
-import { unwrapVoteApiResponse } from './votes-api';
+import {
+  type AttachmentResponseDto,
+  unwrapVoteApiResponse,
+} from './votes-api';
 
 type ApiFetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -59,6 +68,7 @@ interface PageDto<T> {
 }
 
 interface SubVoteDto {
+  attachments: AttachmentResponseDto[];
   description: string;
   id: string;
   overrides?: Partial<VotePolicyRecord>;
@@ -75,6 +85,7 @@ interface ParentVoteDto {
 }
 
 interface CandidateDto {
+  attachments: AttachmentResponseDto[];
   candidateNo: number;
   description: string;
   id: string;
@@ -246,11 +257,29 @@ function hasCompleteIdentityProfile(member: {
 
 function toCandidate(dto: CandidateDto): OperationCandidate {
   return {
+    attachments: (dto.attachments ?? []).map((attachment) =>
+      toAttachment<CandidateAttachmentType>(attachment),
+    ),
     id: dto.id,
     candidateNo: dto.candidateNo,
     name: dto.name,
     description: dto.description,
     status: dto.status,
+  };
+}
+
+function toAttachment<TType extends AttachmentType>(
+  dto: AttachmentResponseDto,
+): AttachmentRecord<TType> {
+  return {
+    createdAt: dto.createdAt,
+    fileId: dto.fileId,
+    id: dto.id,
+    mimeType: dto.mimeType,
+    originalName: dto.originalName,
+    sizeBytes: dto.sizeBytes,
+    sortOrder: dto.sortOrder,
+    type: dto.type as TType,
   };
 }
 
@@ -303,11 +332,25 @@ export function createVoteOperationsApiClient(
     voteDetailId: string,
   ): Promise<SubVoteOperations | null> {
     if (mode === 'mock') {
-      return (
-        mockState.subVotes.find(
-          (item) => item.voteId === voteId && item.id === voteDetailId,
-        ) ?? null
+      const operations = mockState.subVotes.find(
+        (item) => item.voteId === voteId && item.id === voteDetailId,
       );
+      if (!operations) return null;
+      const projection = voteFixtureDetails
+        .find((vote) => vote.id === voteId)
+        ?.subVotes.find((subVote) => subVote.id === voteDetailId);
+      return {
+        ...operations,
+        attachments: projection?.attachments ?? operations.attachments ?? [],
+        candidates: operations.candidates.map((candidate) => ({
+          ...candidate,
+          attachments:
+            projection?.candidates.find((item) => item.id === candidate.id)
+              ?.attachments ??
+            candidate.attachments ??
+            [],
+        })),
+      };
     }
 
     const votePath = `/votes/${encode(voteId)}`;
@@ -341,6 +384,9 @@ export function createVoteOperationsApiClient(
 
     return {
       ...detail,
+      attachments: (detail.attachments ?? []).map((attachment) =>
+        toAttachment<VoteAttachmentType>(attachment),
+      ),
       policy: { ...parentVote.defaultPolicy, ...detail.overrides },
       candidates: candidatePage.items.map(toCandidate),
       turnout,

@@ -233,10 +233,10 @@ export function VoteDetailContainer({
             vote={vote}
           />
           <AttachmentUploadSection
-            title="투표 첨부파일 업로드"
-            description="공고문, 안내 자료와 기타 문서를 이 화면에서 바로 등록합니다. 파일은 20MB까지 등록할 수 있습니다."
-            disabled={!isVoteSetupEditable(vote.status, billingOrderStatus)}
-            disabledMessage="초안 상태이며 결제가 시작되기 전인 투표만 첨부파일을 등록할 수 있습니다."
+            attachments={vote.attachments ?? []}
+            title="투표 첨부파일"
+            description="등록된 공고문과 안내 자료를 확인하고 내려받을 수 있습니다. 추가와 삭제는 투표 수정에서 할 수 있습니다."
+            readOnly
             typeOptions={[
               { label: "공고문", value: "NOTICE" },
               { label: "안내 자료", value: "GUIDE" },
@@ -246,8 +246,26 @@ export function VoteDetailContainer({
               voteAttachmentApi.requestVoteUpload({ voteId: vote.id }, metadata)
             }
             onUploadObject={voteAttachmentApi.uploadObject}
-            onConfirmUpload={(input) =>
-              voteAttachmentApi.confirmVoteUpload({ voteId: vote.id }, input)
+            onConfirmUpload={async (input) => {
+              const result = await voteAttachmentApi.confirmVoteUpload(
+                { voteId: vote.id },
+                input,
+              );
+              await queryClient.invalidateQueries({ queryKey: ["votes"] });
+              return result;
+            }}
+            onDeleteAttachment={async (attachmentId) => {
+              await voteAttachmentApi.deleteVoteAttachment(
+                { voteId: vote.id },
+                attachmentId,
+              );
+              await queryClient.invalidateQueries({ queryKey: ["votes"] });
+            }}
+            onDownloadAttachment={(attachmentId) =>
+              voteAttachmentApi.fetchVoteDownloadUrl(
+                { voteId: vote.id },
+                attachmentId,
+              )
             }
           />
           <VoteSmsContainer voteId={vote.id} voteStatus={vote.status} />
