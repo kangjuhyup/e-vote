@@ -22,11 +22,18 @@ interface VoteStateParams {
   readonly electoralRollSnapshotId?: string;
   readonly billingOrderId?: string;
   readonly finalizedAt?: Date;
+  readonly startedAt: Date;
+  readonly endedAt: Date;
   readonly status?: VoteStatus;
 }
 
-type CreateVoteParams = Omit<VoteStateParams, 'createdByUserPrincipalId'> & {
+type CreateVoteParams = Omit<
+  VoteStateParams,
+  'createdByUserPrincipalId' | 'startedAt' | 'endedAt'
+> & {
   readonly createdByUserPrincipalId: string;
+  readonly startedAt?: Date;
+  readonly endedAt?: Date;
 };
 
 type ReconstituteVoteParams = Omit<VoteStateParams, 'status'> & {
@@ -47,11 +54,18 @@ export class VoteAggregate {
     public electoralRollSnapshotId: string | undefined,
     public billingOrderId: string | undefined,
     public finalizedAt: Date | undefined,
+    public startedAt: Date,
+    public endedAt: Date,
     public status: VoteStatus,
   ) {}
 
   static create(params: CreateVoteParams): VoteAggregate {
-    return VoteAggregate.build(params);
+    const createdAt = new Date();
+    return VoteAggregate.build({
+      ...params,
+      startedAt: params.startedAt ?? createdAt,
+      endedAt: params.endedAt ?? params.startedAt ?? createdAt,
+    });
   }
 
   static reconstitute(params: ReconstituteVoteParams): VoteAggregate {
@@ -78,6 +92,7 @@ export class VoteAggregate {
     VoteAggregate.assertIdentityVerificationPolicy(
       params.identityVerificationPolicy,
     );
+    VoteAggregate.assertVotingWindow(params.startedAt, params.endedAt);
     if (params.finalizedAt && !params.billingOrderId) {
       throw new DomainError(
         'vote finalization timestamp requires a billing order',
@@ -107,6 +122,8 @@ export class VoteAggregate {
         : undefined,
       params.billingOrderId ? createId(params.billingOrderId) : undefined,
       params.finalizedAt,
+      params.startedAt,
+      params.endedAt,
       params.status ?? VoteStatus.Draft,
     );
   }
@@ -174,6 +191,8 @@ export class VoteAggregate {
     readonly votingChannels: readonly VotingChannel[];
     readonly defaultPolicy: VotePolicy;
     readonly identityVerificationPolicy: IdentityVerificationPolicy;
+    readonly startedAt?: Date;
+    readonly endedAt?: Date;
   }): void {
     this.assertSetupMutable('updated');
 
@@ -185,11 +204,16 @@ export class VoteAggregate {
     VoteAggregate.assertIdentityVerificationPolicy(
       params.identityVerificationPolicy,
     );
+    const startedAt = params.startedAt ?? this.startedAt;
+    const endedAt = params.endedAt ?? this.endedAt;
+    VoteAggregate.assertVotingWindow(startedAt, endedAt);
 
     this.title = title;
     this.votingChannels = [...params.votingChannels];
     this.defaultPolicy = params.defaultPolicy;
     this.identityVerificationPolicy = params.identityVerificationPolicy;
+    this.startedAt = startedAt;
+    this.endedAt = endedAt;
   }
 
   attachElectoralRollSnapshot(snapshotId: string): void {
@@ -202,6 +226,9 @@ export class VoteAggregate {
     if (this.status !== VoteStatus.Finalized) {
       throw new DomainError('only finalized votes can be opened');
     }
+    if (openedAt.getTime() < this.startedAt.getTime()) {
+      throw new DomainError('vote cannot be opened before its start time');
+    }
 
     this.status = VoteStatus.Open;
     this.events.push(
@@ -213,11 +240,38 @@ export class VoteAggregate {
     if (this.status !== VoteStatus.Open) {
       throw new DomainError('only open votes can be closed');
     }
+    if (closedAt.getTime() < this.endedAt.getTime()) {
+      throw new DomainError('vote cannot be closed before its end time');
+    }
 
     this.status = VoteStatus.Closed;
     this.events.push(
       VoteClosed.of({ aggregateId: this.id, occurredAt: closedAt }),
     );
+  }
+
+  openWhenDue(now: Date): boolean {
+    if (
+      this.status !== VoteStatus.Finalized ||
+      now.getTime() < this.startedAt.getTime()
+    ) {
+      return false;
+    }
+
+    this.open(now);
+    return true;
+  }
+
+  closeWhenDue(now: Date): boolean {
+    if (
+      this.status !== VoteStatus.Open ||
+      now.getTime() < this.endedAt.getTime()
+    ) {
+      return false;
+    }
+
+    this.close(now);
+    return true;
   }
 
   cancel(canceledAt: Date): void {
@@ -339,6 +393,18 @@ export class VoteAggregate {
   ): void {
     if (votingChannels.length === 0) {
       throw new DomainError('vote must allow at least one voting channel');
+    }
+  }
+
+  private static assertVotingWindow(startedAt: Date, endedAt: Date): void {
+    if (
+      !Number.isFinite(startedAt.getTime()) ||
+      !Number.isFinite(endedAt.getTime())
+    ) {
+      throw new DomainError('vote start and end times must be valid dates');
+    }
+    if (endedAt.getTime() < startedAt.getTime()) {
+      throw new DomainError('vote end time must not be before start time');
     }
   }
 }

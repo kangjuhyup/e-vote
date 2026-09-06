@@ -1,5 +1,20 @@
 # Billing API
 
+## Vote schedule lifecycle
+
+After an order reaches `PAID`, the linked vote becomes `FINALIZED`. It remains
+finalized until its configured `startedAt`; the standalone worker then opens it
+automatically. The same worker closes an `OPEN` vote at `endedAt`. These
+transitions use server time and do not require a UI status-change call.
+
+Automatic scheduling applies only when `endedAt > startedAt`. Historical and
+schedule-omitting requests use an equal-time compatibility window and are not
+automatically transitioned, preventing legacy paid votes from closing as soon
+as the worker is deployed.
+
+Only the standalone worker entrypoint (`start:worker:dev` or
+`start:worker:prod`) polls schedules. API replicas never start polling loops.
+
 Vote 서비스의 Billing은 투표 이용료의 상품·가격 정책과 주문 상태를 소유합니다.
 카드 승인, PG 웹훅, 환불 실행, 대사와 원장은 추후 별도 Payment 서비스가
 담당합니다.

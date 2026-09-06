@@ -38,6 +38,8 @@ describe('aggregate reconstitution', () => {
         provider: 'PASS',
         method: 'MOBILE',
       }),
+      startedAt: new Date('2026-08-09T00:00:00.000Z'),
+      endedAt: new Date('2026-08-10T00:00:00.000Z'),
       status: VoteStatus.Open,
     });
 

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MODULE_METADATA } from '@nestjs/common/constants';
 import { Test } from '@nestjs/testing';
 import { ATTACHMENT_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/attachment-repository.port';
 import { CANDIDATE_READ_REPOSITORY_PORT } from './modules/vote/application/port/persistence/query/candidate-read-repository.port';
@@ -24,6 +25,7 @@ import { VOTE_REPOSITORY_PORT } from './modules/vote/application/port/persistenc
 import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from './modules/participation/application/port/persistence/query/vote-statistics-read-repository.port';
 import { AppModule } from './app.module';
 import { PlatformModule } from './platform/platform.module';
+import { VoteScheduleWorker } from './modules/vote/infrastructure/scheduling/vote-schedule.worker';
 
 @Module({
   providers: [
@@ -194,6 +196,16 @@ import { PlatformModule } from './platform/platform.module';
 class PlatformModuleStub {}
 
 describe('AppModule', () => {
+  it('does not register background schedule polling in the API root', () => {
+    const providers =
+      (Reflect.getMetadata(
+        MODULE_METADATA.PROVIDERS,
+        AppModule,
+      ) as unknown[]) ?? [];
+
+    expect(providers).not.toContain(VoteScheduleWorker);
+  });
+
   it('imports the platform module', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],

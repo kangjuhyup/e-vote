@@ -240,6 +240,8 @@ describe('VoteController', () => {
       identityVerificationPolicy: {
         required: false,
       },
+      startedAt: '2026-09-06T10:00:00.000Z',
+      endedAt: '2026-09-06T11:00:00.000Z',
     });
 
     expect(response).toEqual({
@@ -253,6 +255,8 @@ describe('VoteController', () => {
       commissionId: 'commission-1',
       title: 'Board election',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
+      startedAt: new Date('2026-09-06T10:00:00.000Z'),
+      endedAt: new Date('2026-09-06T11:00:00.000Z'),
     });
   });
 

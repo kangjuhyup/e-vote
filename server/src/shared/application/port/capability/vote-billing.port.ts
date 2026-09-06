@@ -27,4 +27,5 @@ export const VOTE_USAGE_ENTITLEMENT_ACCESS_PORT = Symbol(
 
 export interface VoteUsageEntitlementAccessPort {
   hasPaidOrder(voteId: string): Promise<boolean>;
+  findPaidVoteIds(voteIds: readonly string[]): Promise<ReadonlySet<string>>;
 }
