@@ -240,38 +240,24 @@ describe('vote operations api', () => {
     ).rejects.toThrow('electoralRollId must be a UUID');
   });
 
-  it('issues an elector-bound participation link without a request body', async () => {
-    const expiresAt = '2026-09-12T00:00:00.000Z';
-    const fetcher = vi.fn(async () =>
-      jsonResponse({
-        expiresAt,
-        invitationId: '55555555-5555-4555-8555-555555555555',
-        participationUrl: 'https://vote.example.com/participate#private-token',
-      }, 201),
-    );
+  it('creates an authenticated elector link without calling an invitation API', async () => {
+    const fetcher = vi.fn();
     const client = createVoteOperationsApiClient({
       baseUrl: 'https://api.example.com',
       fetcher,
       mode: 'live',
+      participationBaseUrl: 'https://vote.example.com',
     });
 
-    await expect(
-      client.issueParticipationInvitation({
-        electorId: 'elector /1',
-        voteId: 'vote /1',
-      }),
-    ).resolves.toEqual({
-      expiresAt,
-      invitationId: '55555555-5555-4555-8555-555555555555',
-      participationUrl: 'https://vote.example.com/participate#private-token',
+    const result = await client.issueParticipationInvitation({
+      electorId: 'elector /1',
+      voteId: 'vote /1',
     });
-    expect(fetcher).toHaveBeenCalledWith(
-      'https://api.example.com/votes/vote%20%2F1/electors/elector%20%2F1/participation-invitation',
-      expect.objectContaining({
-        headers: { Accept: 'application/json' },
-        method: 'POST',
-      }),
+
+    expect(result.participationUrl).toBe(
+      'https://vote.example.com/participate?voteId=vote+%2F1&electorId=elector+%2F1',
     );
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
   it('rejects incomplete mock rolls for identity-required votes', async () => {

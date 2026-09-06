@@ -125,7 +125,8 @@ export function ParticipationLinkDialog({
                 </Button>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                만료: {new Date(invitation.expiresAt).toLocaleString("ko-KR")}
+                링크를 열어 로그인하면 서버가 해당 계정과 선거인의 연결을
+                확인합니다.
               </p>
               {copyStatus === "error" ? (
                 <p role="alert" className="mt-2 text-sm text-destructive">
@@ -159,10 +160,10 @@ export function ParticipationLinkDialog({
             <div className="flex items-start gap-3 rounded-lg border border-amber-300/70 bg-amber-50 p-4 text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-100">
               <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
               <div className="text-sm leading-6">
-                <p className="font-medium">새 링크를 발급하시겠습니까?</p>
+                <p className="font-medium">참여 링크를 만드시겠습니까?</p>
                 <p className="mt-1">
-                  이미 발급했거나 문자로 보낸 링크가 있다면 즉시 무효화되고,
-                  새 링크만 사용할 수 있습니다.
+                  링크에는 투표와 선거인 식별자만 포함됩니다. 링크를 받은 사람도
+                  본인 계정으로 로그인하고 Mock 확인을 마쳐야 투표할 수 있습니다.
                 </p>
               </div>
             </div>
@@ -185,7 +186,7 @@ export function ParticipationLinkDialog({
               </Button>
               <Button type="button" disabled={isIssuing} onClick={onIssue}>
                 <Link2 aria-hidden="true" />
-                {isIssuing ? "발급 중…" : "새 링크 발급"}
+                {isIssuing ? "생성 중…" : "참여 링크 생성"}
               </Button>
             </div>
           </>

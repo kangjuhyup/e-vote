@@ -453,13 +453,15 @@ describe('vote containers', () => {
     expect(
       screen.getByRole('heading', { name: '선거인 참여 링크' }),
     ).toBeTruthy();
-    expect(screen.getByText('새 링크를 발급하시겠습니까?')).toBeTruthy();
+    expect(screen.getByText('참여 링크를 만드시겠습니까?')).toBeTruthy();
     expect(screen.queryByLabelText('이선거 선거인 참여 링크')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: '새 링크 발급' }));
+    fireEvent.click(screen.getByRole('button', { name: '참여 링크 생성' }));
 
     const issuedLink = await screen.findByLabelText('이선거 선거인 참여 링크');
-    expect(issuedLink.getAttribute('value')).toContain('/participate#mock-');
+    expect(issuedLink.getAttribute('value')).toContain(
+      '/participate?voteId=active-general&electorId=',
+    );
     expect(screen.getByRole('link', { name: '새 창에서 열기' })).toHaveProperty(
       'target',
       '_blank',

@@ -47,6 +47,7 @@ interface CreateVoteOperationsApiClientOptions {
   baseUrl?: string;
   fetcher?: ApiFetcher;
   mode?: 'live' | 'mock';
+  participationBaseUrl?: string;
 }
 
 interface PageDto<T> {
@@ -291,6 +292,11 @@ export function createVoteOperationsApiClient(
   const mode = options.mode ?? (isApiMockMode() ? 'mock' : 'live');
   const baseUrl = (options.baseUrl ?? resolveBaseUrl()).replace(/\/+$/, '');
   const fetcher = options.fetcher ?? voteApiFetch;
+  const participationBaseUrl =
+    options.participationBaseUrl ??
+    (typeof window === 'undefined'
+      ? 'http://localhost:3001'
+      : window.location.origin);
 
   async function fetchSubVoteOperations(
     voteId: string,
@@ -796,20 +802,16 @@ export function createVoteOperationsApiClient(
       if (!elector) {
         throw new Error('선거인을 찾을 수 없습니다.');
       }
-
-      return {
-        invitationId: nextMockId('participation-invitation'),
-        participationUrl: `/participate#mock-${input.voteId}-${input.electorId}-${mockSequence}`,
-        expiresAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
-      };
     }
 
-    return request<ParticipationInvitationRecord>(
-      fetcher,
-      baseUrl,
-      `/votes/${encode(input.voteId)}/electors/${encode(input.electorId)}/participation-invitation`,
-      { method: 'POST' },
-    );
+    const participationUrl = new URL('/participate', participationBaseUrl);
+    participationUrl.searchParams.set('voteId', input.voteId);
+    participationUrl.searchParams.set('electorId', input.electorId);
+
+    return {
+      invitationId: nextMockId('participation-link'),
+      participationUrl: participationUrl.toString(),
+    };
   }
 
   async function fetchCommissions(

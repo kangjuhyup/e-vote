@@ -240,7 +240,6 @@ export interface IssueParticipationInvitationInput {
 }
 
 export interface ParticipationInvitationRecord {
-  expiresAt: string;
   invitationId: string;
   participationUrl: string;
 }

@@ -3,7 +3,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider, signOut, useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 
 import { subscribeToVoteApiAuthRequired } from "@/shared/auth/vote-api-auth-events";
 import { isApiMockMode } from "@/shared/config/api-mode";
@@ -20,7 +19,6 @@ function SessionStatus({ children }: { children: string }) {
 }
 
 function LiveSessionBoundary({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const { data: session, status, update } = useSession();
   const [isReauthenticating, setIsReauthenticating] = useState(false);
   const refreshStarted = useRef(false);
@@ -61,8 +59,6 @@ function LiveSessionBoundary({ children }: { children: React.ReactNode }) {
       })
       .catch(startReauthentication);
   }, [session?.voteApiAuthStatus, startReauthentication, status, update]);
-
-  if (pathname === "/participate") return children;
 
   if (isReauthenticating || session?.voteApiAuthStatus === "reauth-required") {
     return <SessionStatus>로그인 화면으로 이동하는 중…</SessionStatus>;
