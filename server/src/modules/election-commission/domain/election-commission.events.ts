@@ -75,7 +75,18 @@ export class ElectionCommissionMemberDeactivated extends DomainEvent {
   }
 }
 
+export class ElectionCommissionMemberUpdated extends DomainEvent {
+  readonly type = 'ElectionCommissionMemberUpdated' as const;
+  static of(params: DomainEventProps): ElectionCommissionMemberUpdated {
+    return new ElectionCommissionMemberUpdated(
+      params.aggregateId,
+      params.occurredAt,
+    );
+  }
+}
+
 export type ElectionCommissionDomainEvent =
+  | ElectionCommissionMemberUpdated
   | ElectionCommissionCreated
   | ElectionCommissionSuspended
   | ElectionCommissionReactivated

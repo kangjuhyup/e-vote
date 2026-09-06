@@ -1,3 +1,10 @@
+import { DeleteElectoralRollHandler } from './modules/electoral-roll/application/command/handler/delete-electoral-roll.handler';
+import { DeleteElectionCommissionHandler } from './modules/election-commission/application/command/handler/delete-election-commission.handler';
+import { RemoveElectionCommissionMemberHandler } from './modules/election-commission/application/command/handler/remove-election-commission-member.handler';
+import { UpdateElectionCommissionMemberHandler } from './modules/election-commission/application/command/handler/update-election-commission-member.handler';
+import { ElectionCommissionManagementAccess } from './modules/election-commission/application/command/election-commission-management.access';
+import { ElectoralRollDeletionController } from './modules/electoral-roll/presentation/electoral-roll/electoral-roll-deletion.controller';
+import { ElectionCommissionManagementController } from './modules/election-commission/presentation/election-commission/election-commission-management.controller';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
@@ -131,6 +138,8 @@ import { BillingOrderOutboxRecorder } from './modules/billing/application/event/
     }),
   ],
   controllers: [
+    ElectoralRollDeletionController,
+    ElectionCommissionManagementController,
     AppController,
     VoteController,
     VoteSmsController,
@@ -158,6 +167,11 @@ import { BillingOrderOutboxRecorder } from './modules/billing/application/event/
     BillingOrderCancellationController,
   ],
   providers: [
+    DeleteElectoralRollHandler,
+    DeleteElectionCommissionHandler,
+    RemoveElectionCommissionMemberHandler,
+    UpdateElectionCommissionMemberHandler,
+    ElectionCommissionManagementAccess,
     AppService,
     {
       provide: APP_GUARD,

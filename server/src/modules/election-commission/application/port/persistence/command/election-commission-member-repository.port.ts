@@ -5,6 +5,9 @@ export const ELECTION_COMMISSION_MEMBER_REPOSITORY_PORT = Symbol(
 );
 
 export interface ElectionCommissionMemberRepositoryPort {
+  findActiveAdmins(
+    commissionId: string,
+  ): Promise<ElectionCommissionMemberAggregate[]>;
   nextId(): string;
   findByIds(
     commissionId: string,

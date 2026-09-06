@@ -16,6 +16,15 @@ import {
 export class ElectionCommissionRepositoryAdapter implements ElectionCommissionRepositoryPort {
   constructor(private readonly em: EntityManager) {}
 
+  async softDelete(commissionId: string, deletedAt: Date): Promise<void> {
+    const { ElectionCommissionEntity } = await getDatabaseEntities();
+    await this.em.nativeUpdate(
+      ElectionCommissionEntity as any,
+      { id: commissionId },
+      { deletedAt, status: 'SUSPENDED', updatedAt: deletedAt },
+    );
+  }
+
   nextId(): string {
     return nextRepositoryId();
   }
@@ -26,6 +35,7 @@ export class ElectionCommissionRepositoryAdapter implements ElectionCommissionRe
     const { ElectionCommissionEntity } = await getDatabaseEntities();
     const entity = (await this.em.findOne(ElectionCommissionEntity as any, {
       id: commissionId,
+      deletedAt: null,
     })) as unknown as ElectionCommissionPersistence | null;
 
     return entity ? ElectionCommissionMapper.toDomain(entity) : undefined;

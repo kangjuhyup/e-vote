@@ -471,6 +471,7 @@ function createRollRepository(
   let memberSequence = storedMembers.length;
 
   return {
+    softDelete: jest.fn(),
     nextId: jest.fn().mockReturnValue('roll-2'),
     nextMemberId: jest
       .fn()
@@ -604,7 +605,9 @@ function createVoteRepository(
 
 function immediateTransactionManager(): jest.Mocked<DatabaseTransactionManager> {
   return {
-    runInTransaction: jest.fn(async (work) => work()),
+    runInTransaction: jest.fn(async (work: () => Promise<unknown>) =>
+      work(),
+    ) as jest.Mocked<DatabaseTransactionManager>['runInTransaction'],
   };
 }
 

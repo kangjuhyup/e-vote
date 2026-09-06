@@ -15,6 +15,7 @@ export function createElectoralRollEntities(
     tableName: 'electoral_rolls',
     properties: {
       id: p.uuid().primary(),
+      deletedAt: p.datetime().fieldName('deleted_at').nullable(),
       name: p.string(),
       revision: p.integer().default(1),
       createdAt: p.datetime().fieldName('created_at'),

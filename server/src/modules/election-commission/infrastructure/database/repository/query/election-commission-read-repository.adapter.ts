@@ -45,7 +45,7 @@ export class ElectionCommissionReadRepositoryAdapter implements ElectionCommissi
     const { ElectionCommissionEntity } = await getDatabaseEntities();
     const entity = (await this.em.findOne(
       ElectionCommissionEntity as any,
-      { id: commissionId },
+      { id: commissionId, deletedAt: null },
       {
         populate: ['members'],
         ...JOINED_RELATION_LOAD_OPTIONS,
@@ -59,6 +59,7 @@ export class ElectionCommissionReadRepositoryAdapter implements ElectionCommissi
     return ElectionCommissionView.of({
       ...this.toSummary(entity),
       members: loadedItems(entity.members)
+        .filter((member) => member.status === 'ACTIVE')
         .map((member) =>
           ElectionCommissionMemberView.of({
             id: member.id,
@@ -81,7 +82,7 @@ export class ElectionCommissionReadRepositoryAdapter implements ElectionCommissi
     const { ElectionCommissionEntity } = await getDatabaseEntities();
     const [entities, totalItems] = (await this.em.findAndCount(
       ElectionCommissionEntity as any,
-      {},
+      { deletedAt: null },
       {
         limit: request.pageSize,
         offset: (request.page - 1) * request.pageSize,

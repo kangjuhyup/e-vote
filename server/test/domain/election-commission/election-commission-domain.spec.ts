@@ -97,3 +97,45 @@ describe('election commission domain', () => {
     ).toThrow('user principal id must not be empty');
   });
 });
+
+describe('commission member changes', () => {
+  const changedAt = new Date('2026-09-06T00:00:00Z');
+  function createMember() {
+    return ElectionCommissionMemberAggregate.create({
+      id: 'member-1',
+      commissionId: 'commission-1',
+      userPrincipalId: 'user-1',
+      name: 'Original',
+      role: 'ADMIN',
+      registeredAt: changedAt,
+    });
+  }
+  it.each(['', '   ', 'a'.repeat(101)])(
+    'rejects invalid names without changing the role',
+    (name) => {
+      const member = createMember();
+      expect(() =>
+        member.update({ name, role: 'FIELD_MANAGER' }, changedAt),
+      ).toThrow(DomainError);
+      expect(member).toMatchObject({ name: 'Original', role: 'ADMIN' });
+    },
+  );
+  it('rejects unsupported roles even outside HTTP validation', () => {
+    const member = createMember();
+    expect(() =>
+      member.update(
+        { name: 'Changed', role: 'OWNER' as ElectionCommissionMemberRole },
+        changedAt,
+      ),
+    ).toThrow(DomainError);
+    expect(member).toMatchObject({ name: 'Original', role: 'ADMIN' });
+  });
+  it('prevents a deactivated member from managing field voting', () => {
+    const member = createMember();
+    member.deactivate(changedAt);
+    expect(member.canManageFieldVoting('commission-1')).toBe(false);
+    expect(() => member.update({ name: 'Changed' }, changedAt)).toThrow(
+      DomainError,
+    );
+  });
+});
