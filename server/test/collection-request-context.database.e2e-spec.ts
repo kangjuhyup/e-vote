@@ -4,6 +4,7 @@ import { MikroORM } from '@mikro-orm/postgresql';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { WorkerModule } from '../src/worker.module';
 import { OIDC_AUTHENTICATION_CONFIG } from '../src/platform/authentication/oidc-authentication.config';
 import { OIDC_TOKEN_INTROSPECTOR } from '../src/platform/authentication/oidc-token-introspector';
 import { getDatabaseEntities } from '../src/platform/database/repository/database-repository.util';
@@ -29,7 +30,9 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     assertDedicatedTestDatabase();
     previousPaymentMode = process.env.BILLING_PAYMENT_MODE;
     process.env.BILLING_PAYMENT_MODE = 'mock';
-    moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    moduleRef = await Test.createTestingModule({
+      imports: [AppModule, WorkerModule],
+    })
       .overrideProvider(OIDC_AUTHENTICATION_CONFIG)
       .useValue({})
       .overrideProvider(OIDC_TOKEN_INTROSPECTOR)
