@@ -17,6 +17,7 @@ import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
 import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
+import type { ParticipationAccessRevocationPort } from '../../../../src/shared/application/port/capability/participation-access-revocation.port';
 
 describe('snapshot-managed elector commands', () => {
   it('rejects direct updates and blocks for snapshot-derived electors', async () => {
@@ -53,9 +54,33 @@ describe('snapshot-managed elector commands', () => {
     ).rejects.toThrow('managed by the attached electoral roll snapshot');
     expect(electorRepository.save.mock.calls).toHaveLength(0);
   });
+
+  it('revokes capability invitations and sessions when an elector is blocked', async () => {
+    const voteRepository = createVoteRepository(false);
+    const electorRepository = createElectorRepository();
+    const revocation = revocationStub();
+
+    await new BlockElectorHandler(
+      voteRepository,
+      electorRepository,
+      voteLifecycleStub(),
+      transactionManagerStub(),
+      revocation,
+    ).execute(
+      BlockElectorCommand.of({
+        voteId: 'vote-1',
+        electorId: 'elector-1',
+      }),
+    );
+
+    const [electorId, revokedAt] =
+      revocation.revokeAccessForElector.mock.calls[0];
+    expect(electorId).toBe('elector-1');
+    expect(revokedAt).toBeInstanceOf(Date);
+  });
 });
 
-function createVoteRepository(): VoteRepositoryPort {
+function createVoteRepository(withSnapshot = true): VoteRepositoryPort {
   const vote = VoteAggregate.create({
     id: 'vote-1',
     createdByUserPrincipalId: 'user-1',
@@ -71,12 +96,19 @@ function createVoteRepository(): VoteRepositoryPort {
     identityVerificationPolicy: IdentityVerificationPolicy.of({
       required: false,
     }),
-    electoralRollSnapshotId: 'snapshot-1',
+    electoralRollSnapshotId: withSnapshot ? 'snapshot-1' : undefined,
   });
   return {
     nextId: jest.fn(),
     findById: jest.fn().mockResolvedValue(vote),
     save: jest.fn(),
+  };
+}
+
+function revocationStub(): jest.Mocked<ParticipationAccessRevocationPort> {
+  return {
+    revokeAccessForVote: jest.fn().mockResolvedValue(undefined),
+    revokeAccessForElector: jest.fn().mockResolvedValue(undefined),
   };
 }
 

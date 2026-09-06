@@ -6,6 +6,7 @@ import { ElectionCommissionManagementAccess } from './modules/election-commissio
 import { ElectoralRollDeletionController } from './modules/electoral-roll/presentation/electoral-roll/electoral-roll-deletion.controller';
 import { ElectionCommissionManagementController } from './modules/election-commission/presentation/election-commission/election-commission-management.controller';
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
 import { ConfirmAttachmentUploadHandler } from './modules/vote/application/command/handler/confirm-attachment-upload.handler';
@@ -135,6 +136,35 @@ import { CastParticipationHandler } from './modules/participation/application/co
 import { ElectorSignatureController } from './modules/elector/presentation/elector/elector-signature.controller';
 import { RequestElectorSignatureUploadHandler } from './modules/elector/application/command/handler/request-elector-signature-upload.handler';
 import { ConfirmElectorSignatureUploadHandler } from './modules/elector/application/command/handler/confirm-elector-signature-upload.handler';
+import {
+  ParticipationAccessController,
+  PARTICIPATION_ALLOWED_ORIGINS,
+} from './modules/participation/presentation/participation-access/participation-access.controller';
+import { ParticipationInvitationController } from './modules/participation/presentation/participation-invitation/participation-invitation.controller';
+import { DispatchParticipationInvitationsHandler } from './modules/participation/application/command/handler/dispatch-participation-invitations.handler';
+import { ExchangeParticipationAccessHandler } from './modules/participation/application/command/handler/exchange-participation-access.handler';
+import { ResolveParticipationAccessSessionHandler } from './modules/participation/application/query/handler/resolve-participation-access-session.handler';
+import { ParticipantSignatureUploadHandler } from './modules/participation/application/command/handler/participant-signature-upload.handler';
+import { CastParticipationWithAccessHandler } from './modules/participation/application/command/handler/cast-participation-with-access.handler';
+import { GetParticipationResultWithAccessHandler } from './modules/participation/application/query/handler/get-participation-result-with-access.handler';
+import { GetParticipationAccessHandler } from './modules/participation/application/query/handler/get-participation-access.handler';
+import { RevokeParticipationAccessSessionHandler } from './modules/participation/application/command/handler/revoke-participation-access-session.handler';
+import { PARTICIPATION_INVITATION_RECIPIENT_ACCESS_PORT } from './modules/participation/application/port/capability/participation-invitation-recipient-access.port';
+import { ParticipationInvitationRecipientAccessAdapter } from './modules/participation/infrastructure/database/repository/query/participation-invitation-recipient-access.adapter';
+import {
+  AUTHORIZED_PARTICIPATION_CAST_PORT,
+  ELECTOR_SIGNATURE_OPERATION_PORT,
+  type AuthorizedParticipationCastPort,
+  type ElectorSignatureOperationPort,
+} from './shared/application/port/capability/participant-operations.port';
+import { PARTICIPATION_ACCESS_TOKEN_PORT } from './modules/participation/application/port/security/participation-access-token.port';
+import {
+  createParticipationAccessTokenAdapter,
+  resolveParticipationAllowedOrigins,
+  type ParticipationAccessEnvironment,
+} from './modules/participation/infrastructure/security/participation-access-token.config';
+import { PARTICIPATION_ACCESS_RATE_LIMIT_PORT } from './modules/participation/application/port/security/participation-access-rate-limit.port';
+import { RedisParticipationAccessRateLimitAdapter } from './modules/participation/infrastructure/security/redis-participation-access-rate-limit.adapter';
 
 @Module({
   imports: [
@@ -174,6 +204,8 @@ import { ConfirmElectorSignatureUploadHandler } from './modules/elector/applicat
     FieldParticipationEvidenceController,
     BillingOrderController,
     BillingOrderCancellationController,
+    ParticipationAccessController,
+    ParticipationInvitationController,
   ],
   providers: [
     DeleteElectoralRollHandler,
@@ -278,6 +310,68 @@ import { ConfirmElectorSignatureUploadHandler } from './modules/elector/applicat
     CreateVoteUsageBillingOrderHandler,
     CancelVoteUsageBillingOrderHandler,
     GetBillingOrderHandler,
+    DispatchParticipationInvitationsHandler,
+    ExchangeParticipationAccessHandler,
+    ResolveParticipationAccessSessionHandler,
+    ParticipantSignatureUploadHandler,
+    CastParticipationWithAccessHandler,
+    GetParticipationResultWithAccessHandler,
+    GetParticipationAccessHandler,
+    RevokeParticipationAccessSessionHandler,
+    RedisParticipationAccessRateLimitAdapter,
+    {
+      provide: PARTICIPATION_ACCESS_RATE_LIMIT_PORT,
+      useExisting: RedisParticipationAccessRateLimitAdapter,
+    },
+    {
+      provide: ELECTOR_SIGNATURE_OPERATION_PORT,
+      inject: [
+        RequestElectorSignatureUploadHandler,
+        ConfirmElectorSignatureUploadHandler,
+      ],
+      useFactory: (
+        request: RequestElectorSignatureUploadHandler,
+        confirm: ConfirmElectorSignatureUploadHandler,
+      ): ElectorSignatureOperationPort => ({
+        requestUpload: (command) => request.executeAuthorized(command),
+        confirmUpload: (command, reauthorize) =>
+          confirm.executeAuthorized(command, reauthorize),
+      }),
+    },
+    {
+      provide: AUTHORIZED_PARTICIPATION_CAST_PORT,
+      inject: [CastParticipationHandler],
+      useFactory: (
+        casting: CastParticipationHandler,
+      ): AuthorizedParticipationCastPort => ({
+        cast: (command) =>
+          casting.executeAuthorized({
+            ...command,
+            fieldVotingSessionId: command.fieldVotingSessionId,
+          }),
+      }),
+    },
+    ParticipationInvitationRecipientAccessAdapter,
+    {
+      provide: PARTICIPATION_INVITATION_RECIPIENT_ACCESS_PORT,
+      useExisting: ParticipationInvitationRecipientAccessAdapter,
+    },
+    {
+      provide: PARTICIPATION_ACCESS_TOKEN_PORT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        createParticipationAccessTokenAdapter(
+          participationAccessEnvironment(config),
+        ),
+    },
+    {
+      provide: PARTICIPATION_ALLOWED_ORIGINS,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        resolveParticipationAllowedOrigins(
+          participationAccessEnvironment(config),
+        ),
+    },
     {
       provide: ELECTOR_IDENTITY_VERIFICATION_PORT,
       useFactory: createElectorIdentityVerificationAdapter,
@@ -293,3 +387,23 @@ import { ConfirmElectorSignatureUploadHandler } from './modules/elector/applicat
   ],
 })
 export class AppModule {}
+
+function participationAccessEnvironment(
+  config: ConfigService,
+): ParticipationAccessEnvironment {
+  return {
+    PARTICIPATION_LINK_SIGNING_KEY: config.get<string>(
+      'PARTICIPATION_LINK_SIGNING_KEY',
+    ),
+    PARTICIPATION_LINK_SIGNING_KEY_ID: config.get<string>(
+      'PARTICIPATION_LINK_SIGNING_KEY_ID',
+    ),
+    PARTICIPATION_LINK_VERIFICATION_KEYS: config.get<string>(
+      'PARTICIPATION_LINK_VERIFICATION_KEYS',
+    ),
+    PARTICIPATION_UI_URL: config.get<string>('PARTICIPATION_UI_URL'),
+    PARTICIPATION_ALLOWED_ORIGINS: config.get<string>(
+      'PARTICIPATION_ALLOWED_ORIGINS',
+    ),
+  };
+}

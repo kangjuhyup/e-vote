@@ -15,6 +15,9 @@ import { BillingOrderCancellationController } from '../src/modules/billing/prese
 import { CancelVoteUsageBillingOrderHandler } from '../src/modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
 import { DATABASE_HEALTH_PORT } from '../src/shared/application/port/health/database-health.port';
 import { MockPaymentOutboxWorker } from '../src/modules/billing/infrastructure/payment/mock-payment-outbox.worker';
+import { ParticipationAccessController } from '../src/modules/participation/presentation/participation-access/participation-access.controller';
+import { ParticipationInvitationController } from '../src/modules/participation/presentation/participation-invitation/participation-invitation.controller';
+import { ParticipationInvitationSmsWorker } from '../src/modules/participation/infrastructure/sms/participation-invitation-sms.worker';
 
 describe('AppModule', () => {
   it('registers vote statistics query endpoints and handlers', () => {
@@ -85,6 +88,20 @@ describe('AppModule', () => {
     ) as unknown[];
 
     expect(providers).not.toContain(MockPaymentOutboxWorker);
+    expect(providers).not.toContain(ParticipationInvitationSmsWorker);
+  });
+
+  it('registers public participation access and authenticated invitation endpoints', () => {
+    const controllers = Reflect.getMetadata(
+      MODULE_METADATA.CONTROLLERS,
+      AppModule,
+    ) as unknown[];
+    expect(controllers).toEqual(
+      expect.arrayContaining([
+        ParticipationAccessController,
+        ParticipationInvitationController,
+      ]),
+    );
   });
 
   it('does not override the database health port owned by DatabaseModule', () => {

@@ -30,6 +30,9 @@ export interface DatabaseEntityClasses {
   readonly SmsDeliveryEntity: EntityClass<AnyEntity>;
   readonly BillingOrderEntity: EntityClass<AnyEntity>;
   readonly IntegrationOutboxEntity: EntityClass<AnyEntity>;
+  readonly ParticipationInvitationEntity: EntityClass<AnyEntity>;
+  readonly ElectorParticipantSessionEntity: EntityClass<AnyEntity>;
+  readonly ParticipationInvitationDeliveryEntity: EntityClass<AnyEntity>;
 }
 
 export interface DatabaseEntityFactoryContext {

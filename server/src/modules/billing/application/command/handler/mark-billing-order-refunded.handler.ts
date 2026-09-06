@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
@@ -20,6 +20,10 @@ import {
   type VoteSetupLifecyclePort,
 } from '../../../../../shared/application/port/capability/vote-billing.port';
 import { BillingOrderStatus } from '../../../domain/type/billing-order-status.type';
+import {
+  PARTICIPATION_ACCESS_REVOCATION_PORT,
+  type ParticipationAccessRevocationPort,
+} from '../../../../../shared/application/port/capability/participation-access-revocation.port';
 
 @Injectable()
 export class MarkBillingOrderRefundedHandler {
@@ -33,6 +37,9 @@ export class MarkBillingOrderRefundedHandler {
     private readonly outboxRecorder: BillingOrderOutboxRecorder,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
+    @Optional()
+    @Inject(PARTICIPATION_ACCESS_REVOCATION_PORT)
+    private readonly participationAccess?: ParticipationAccessRevocationPort,
   ) {
     this[DATABASE_TRANSACTION_MANAGER_PROPERTY] = transactionManager;
   }
@@ -55,6 +62,10 @@ export class MarkBillingOrderRefundedHandler {
         voteId: order.voteId,
         billingOrderId: order.id,
       });
+      await this.participationAccess?.revokeAccessForVote(
+        order.voteId,
+        command.refundedAt,
+      );
     }
     await this.repository.save(order);
     await this.outboxRecorder.record(order);

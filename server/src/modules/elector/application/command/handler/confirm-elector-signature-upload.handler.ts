@@ -38,6 +38,16 @@ export class ElectorSignatureMetadataMismatchError extends Error {
   }
 }
 
+export interface AuthorizedElectorSignatureUploadConfirmation {
+  readonly voteId: string;
+  readonly electorId: string;
+  readonly storageKey: string;
+  readonly originalName: string;
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+  readonly checksum?: string;
+}
+
 @Injectable()
 export class ConfirmElectorSignatureUploadHandler {
   constructor(
@@ -54,9 +64,19 @@ export class ConfirmElectorSignatureUploadHandler {
   async execute(
     command: ConfirmElectorSignatureUploadCommand,
   ): Promise<ConfirmElectorSignatureUploadResult> {
+    await this.assertAuthorized(command);
+
+    return this.executeAuthorized(command, () =>
+      this.assertAuthorized(command),
+    );
+  }
+
+  async executeAuthorized(
+    command: AuthorizedElectorSignatureUploadConfirmation,
+    reauthorize: () => Promise<void> = () => Promise.resolve(),
+  ): Promise<ConfirmElectorSignatureUploadResult> {
     assertElectorSignatureUploadMetadata(command);
     assertElectorSignatureStorageKey(command.storageKey);
-    await this.assertAuthorized(command);
 
     const metadata = await this.storage.getObjectMetadata(command.storageKey);
     if (!metadata) {
@@ -66,7 +86,7 @@ export class ConfirmElectorSignatureUploadHandler {
 
     const saved = await this.transactionManager.runInTransaction(
       async () => {
-        await this.assertAuthorized(command);
+        await reauthorize();
         return this.repository.save({
           voteId: command.voteId,
           electorId: command.electorId,
@@ -100,7 +120,7 @@ export class ConfirmElectorSignatureUploadHandler {
   }
 
   private assertMetadataMatches(
-    command: ConfirmElectorSignatureUploadCommand,
+    command: AuthorizedElectorSignatureUploadConfirmation,
     metadata: StoredObjectMetadata,
   ): void {
     const objectMetadata = metadata.metadata ?? {};

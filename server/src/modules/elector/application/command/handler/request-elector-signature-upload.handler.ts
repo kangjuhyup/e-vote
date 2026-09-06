@@ -18,6 +18,14 @@ import { RequestElectorSignatureUploadResult } from '../dto/response/request-ele
 export const ELECTOR_SIGNATURE_UPLOAD_PURPOSE =
   'elector-participation-signature';
 
+export interface AuthorizedElectorSignatureUploadRequest {
+  readonly voteId: string;
+  readonly electorId: string;
+  readonly originalName: string;
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+}
+
 @Injectable()
 export class RequestElectorSignatureUploadHandler {
   constructor(
@@ -42,6 +50,12 @@ export class RequestElectorSignatureUploadHandler {
       throw new ElectorParticipantForbiddenError();
     }
 
+    return this.executeAuthorized(command);
+  }
+
+  async executeAuthorized(
+    command: AuthorizedElectorSignatureUploadRequest,
+  ): Promise<RequestElectorSignatureUploadResult> {
     const presignedUrl = await this.storage.createPresignedPutObjectUrl({
       contentType: normalizeElectorSignatureMimeType(command.mimeType),
       contentLength: command.sizeBytes,

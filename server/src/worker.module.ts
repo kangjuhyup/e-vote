@@ -35,9 +35,26 @@ import {
   OUTBOX_MESSAGE_REPOSITORY_PORT,
   type OutboxMessageRepositoryPort,
 } from './shared/application/port/messaging/outbox-message-repository.port';
+import { ParticipationInvitationSmsWorker } from './modules/participation/infrastructure/sms/participation-invitation-sms.worker';
+import { ProcessParticipationInvitationDeliveryHandler } from './modules/participation/application/command/handler/process-participation-invitation-delivery.handler';
+import {
+  PARTICIPATION_INVITATION_SMS_SENDER_PORT,
+  PARTICIPATION_UI_URL,
+} from './modules/participation/application/port/gateway/participation-invitation-sms-sender.port';
+import { MockParticipationInvitationSmsSenderAdapter } from './modules/participation/infrastructure/sms/mock-participation-invitation-sms-sender.adapter';
+import { PARTICIPATION_ACCESS_TOKEN_PORT } from './modules/participation/application/port/security/participation-access-token.port';
+import {
+  createParticipationAccessTokenAdapter,
+  resolveParticipationUiUrl,
+  type ParticipationAccessEnvironment,
+} from './modules/participation/infrastructure/security/participation-access-token.config';
+import { SecurityModule } from './platform/security/security.module';
+import { PARTICIPATION_INVITATION_RECIPIENT_ACCESS_PORT } from './modules/participation/application/port/capability/participation-invitation-recipient-access.port';
+import { ParticipationInvitationRecipientAccessAdapter } from './modules/participation/infrastructure/database/repository/query/participation-invitation-recipient-access.adapter';
 
 @Module({
   imports: [
+    SecurityModule,
     DatabaseModule.register({
       entityRegistryFactory: createDatabaseEntityRegistry,
       repositoryProviders: databaseRepositoryProviders,
@@ -111,6 +128,48 @@ import {
     MockPaymentOutboxWorker,
     ProcessDueVoteSchedulesHandler,
     VoteScheduleWorker,
+    ProcessParticipationInvitationDeliveryHandler,
+    ParticipationInvitationSmsWorker,
+    ParticipationInvitationRecipientAccessAdapter,
+    {
+      provide: PARTICIPATION_INVITATION_RECIPIENT_ACCESS_PORT,
+      useExisting: ParticipationInvitationRecipientAccessAdapter,
+    },
+    {
+      provide: PARTICIPATION_ACCESS_TOKEN_PORT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        createParticipationAccessTokenAdapter(
+          participationAccessEnvironment(config),
+        ),
+    },
+    {
+      provide: PARTICIPATION_UI_URL,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        resolveParticipationUiUrl(participationAccessEnvironment(config)),
+    },
+    {
+      provide: PARTICIPATION_INVITATION_SMS_SENDER_PORT,
+      useFactory: () => new MockParticipationInvitationSmsSenderAdapter(),
+    },
   ],
 })
 export class WorkerModule {}
+
+function participationAccessEnvironment(
+  config: ConfigService,
+): ParticipationAccessEnvironment {
+  return {
+    PARTICIPATION_LINK_SIGNING_KEY: config.get<string>(
+      'PARTICIPATION_LINK_SIGNING_KEY',
+    ),
+    PARTICIPATION_LINK_SIGNING_KEY_ID: config.get<string>(
+      'PARTICIPATION_LINK_SIGNING_KEY_ID',
+    ),
+    PARTICIPATION_LINK_VERIFICATION_KEYS: config.get<string>(
+      'PARTICIPATION_LINK_VERIFICATION_KEYS',
+    ),
+    PARTICIPATION_UI_URL: config.get<string>('PARTICIPATION_UI_URL'),
+  };
+}

@@ -9,6 +9,8 @@ import { WorkerModule } from '../src/worker.module';
 import { VoteScheduleWorker } from '../src/modules/vote/infrastructure/scheduling/vote-schedule.worker';
 import { ProcessDueVoteSchedulesHandler } from '../src/modules/vote/application/command/handler/process-due-vote-schedules.handler';
 import { VOTE_SCHEDULE_REPOSITORY_PORT } from '../src/modules/vote/application/port/persistence/command/vote-schedule-repository.port';
+import { ParticipationInvitationSmsWorker } from '../src/modules/participation/infrastructure/sms/participation-invitation-sms.worker';
+import { ProcessParticipationInvitationDeliveryHandler } from '../src/modules/participation/application/command/handler/process-participation-invitation-delivery.handler';
 
 describe('WorkerModule', () => {
   it('registers payment outbox polling only in the controller-free worker root', () => {
@@ -28,6 +30,8 @@ describe('WorkerModule', () => {
         MockPaymentOutboxWorker,
         VoteScheduleWorker,
         ProcessDueVoteSchedulesHandler,
+        ParticipationInvitationSmsWorker,
+        ProcessParticipationInvitationDeliveryHandler,
         expect.objectContaining({ provide: VOTE_SCHEDULE_REPOSITORY_PORT }),
         expect.objectContaining({ provide: PAYMENT_INTEGRATION_MODE }),
         expect.objectContaining({ provide: MOCK_PAYMENT_RANDOM_SOURCE }),

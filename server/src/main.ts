@@ -6,6 +6,7 @@ import { RvlogHttpExceptionLogger } from './platform/logging/rvlog-http-exceptio
 import { configureSwagger } from './platform/openapi/swagger.config';
 import { HttpExceptionFilter } from './shared/presentation/common/filter/http-exception.filter';
 import { ResponseInterceptor } from './shared/presentation/common/interceptor/response.interceptor';
+import { resolveParticipationAllowedOrigins } from './modules/participation/infrastructure/security/participation-access-token.config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -13,6 +14,10 @@ async function bootstrap() {
   });
   app.useBodyParser('json', { limit: '32mb' });
   app.useBodyParser('urlencoded', { extended: true, limit: '100kb' });
+  app.enableCors({
+    origin: [...resolveParticipationAllowedOrigins(process.env)],
+    credentials: true,
+  });
   app.enableShutdownHooks(['SIGTERM', 'SIGINT']);
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new ResponseInterceptor());
