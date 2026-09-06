@@ -11,7 +11,6 @@ import type {
 } from '../../../src/shared/application/port/capability/sms-recipient-access.port';
 import { SmsDeliveryStatus } from '../../../src/shared/domain/sms/type/sms-delivery-status.type';
 import { ElectorStatus } from '../../../src/shared/domain/voting/type/elector-status.type';
-import type { ParticipationInvitationIssuerPort } from '../../../src/shared/application/port/capability/participation-invitation-issuer.port';
 
 describe('RandomSmsSenderAdapter', () => {
   afterEach(() => jest.restoreAllMocks());
@@ -24,16 +23,8 @@ describe('RandomSmsSenderAdapter', () => {
     ]);
     jest.spyOn(Math, 'random').mockReturnValue(0.1);
 
-    const issueInvitation = jest.fn().mockResolvedValue({
-      rawToken: 'token-that-is-never-persisted-in-dispatch-history',
-      expiresAt: new Date('2026-09-12T00:00:00.000Z'),
-    });
-    const invitationIssuer: ParticipationInvitationIssuerPort = {
-      issue: issueInvitation,
-    };
     const result = await new RandomSmsSenderAdapter(
       recipientAccess,
-      invitationIssuer,
     ).sendParticipationReminderToNonParticipants({
       voteId: 'vote-1',
       message: '투표해 주세요',
@@ -47,7 +38,6 @@ describe('RandomSmsSenderAdapter', () => {
         status: SmsDeliveryStatus.Success,
       },
     ]);
-    expect(issueInvitation).toHaveBeenCalledWith('vote-1', 'elector-1');
   });
 
   it.each([

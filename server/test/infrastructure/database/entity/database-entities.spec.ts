@@ -24,7 +24,6 @@ describe('database entities registry', () => {
       'FieldVotingSessionManagerEntity',
       'FileEntity',
       'IntegrationOutboxEntity',
-      'ParticipationInvitationEntity',
       'SmsDeliveryEntity',
       'SmsDispatchEntity',
       'VoteAttachmentEntity',
