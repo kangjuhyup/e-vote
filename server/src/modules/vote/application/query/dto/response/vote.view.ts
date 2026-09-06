@@ -12,6 +12,15 @@ import type {
 } from '../../../../../../shared/domain/voting/type/vote-status.type';
 import type { VotingChannel } from '../../../../../../shared/domain/voting/type/voting-channel.type';
 
+export const ActiveBillingOrderStatus = {
+  PendingPayment: 'PENDING_PAYMENT',
+  Paid: 'PAID',
+  RefundPending: 'REFUND_PENDING',
+} as const;
+
+type ActiveBillingOrderStatus =
+  (typeof ActiveBillingOrderStatus)[keyof typeof ActiveBillingOrderStatus];
+
 type VotePolicyViewProps = {
   readonly privacyMode: PrivacyMode;
   readonly participationUnit: ParticipationUnit;
@@ -196,6 +205,8 @@ type VoteSummaryViewProps = {
   readonly defaultPolicy: VotePolicyView;
   readonly identityVerificationPolicy: IdentityVerificationPolicyView;
   readonly electoralRollSnapshotId?: string;
+  readonly activeBillingOrderId?: string;
+  readonly billingOrderStatus?: ActiveBillingOrderStatus;
   readonly status: VoteStatus;
   readonly startedAt: Date;
   readonly endedAt: Date;
@@ -205,6 +216,8 @@ type VoteSummaryViewProps = {
 
 export class VoteSummaryView {
   readonly electoralRollSnapshotId?: string;
+  declare readonly activeBillingOrderId?: string;
+  declare readonly billingOrderStatus?: ActiveBillingOrderStatus;
 
   private constructor(
     readonly id: string,
@@ -214,6 +227,8 @@ export class VoteSummaryView {
     readonly defaultPolicy: VotePolicyView,
     readonly identityVerificationPolicy: IdentityVerificationPolicyView,
     electoralRollSnapshotId: string | undefined,
+    activeBillingOrderId: string | undefined,
+    billingOrderStatus: ActiveBillingOrderStatus | undefined,
     readonly status: VoteStatus,
     readonly startedAt: Date,
     readonly endedAt: Date,
@@ -222,6 +237,12 @@ export class VoteSummaryView {
   ) {
     if (electoralRollSnapshotId !== undefined) {
       this.electoralRollSnapshotId = electoralRollSnapshotId;
+    }
+    if (activeBillingOrderId !== undefined) {
+      this.activeBillingOrderId = activeBillingOrderId;
+    }
+    if (billingOrderStatus !== undefined) {
+      this.billingOrderStatus = billingOrderStatus;
     }
   }
 
@@ -234,6 +255,8 @@ export class VoteSummaryView {
       params.defaultPolicy,
       params.identityVerificationPolicy,
       params.electoralRollSnapshotId,
+      params.activeBillingOrderId,
+      params.billingOrderStatus,
       params.status,
       params.startedAt,
       params.endedAt,
@@ -250,6 +273,8 @@ type VoteViewProps = VoteSummaryViewProps & {
 
 export class VoteView {
   readonly electoralRollSnapshotId?: string;
+  declare readonly activeBillingOrderId?: string;
+  declare readonly billingOrderStatus?: ActiveBillingOrderStatus;
 
   private constructor(
     readonly id: string,
@@ -260,6 +285,8 @@ export class VoteView {
     readonly defaultPolicy: VotePolicyView,
     readonly identityVerificationPolicy: IdentityVerificationPolicyView,
     electoralRollSnapshotId: string | undefined,
+    activeBillingOrderId: string | undefined,
+    billingOrderStatus: ActiveBillingOrderStatus | undefined,
     readonly status: VoteStatus,
     readonly voteDetails: readonly VoteDetailView[],
     readonly startedAt: Date,
@@ -269,6 +296,12 @@ export class VoteView {
   ) {
     if (electoralRollSnapshotId !== undefined) {
       this.electoralRollSnapshotId = electoralRollSnapshotId;
+    }
+    if (activeBillingOrderId !== undefined) {
+      this.activeBillingOrderId = activeBillingOrderId;
+    }
+    if (billingOrderStatus !== undefined) {
+      this.billingOrderStatus = billingOrderStatus;
     }
   }
 
@@ -282,6 +315,8 @@ export class VoteView {
       params.defaultPolicy,
       params.identityVerificationPolicy,
       params.electoralRollSnapshotId,
+      params.activeBillingOrderId,
+      params.billingOrderStatus,
       params.status,
       params.voteDetails,
       params.startedAt,

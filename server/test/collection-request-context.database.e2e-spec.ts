@@ -55,7 +55,12 @@ describeDatabase('MikroORM collections in Nest request context', () => {
             );
           }
 
-          return UserPrincipal.of({ id: USER_PRINCIPAL_ID });
+          return UserPrincipal.of({
+            id:
+              accessToken === 'different-user'
+                ? DIFFERENT_USER_PRINCIPAL_ID
+                : USER_PRINCIPAL_ID,
+          });
         },
       })
       .overrideProvider(MOCK_PAYMENT_RANDOM_SOURCE)
@@ -248,7 +253,12 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       billingOrderId,
       finalized: false,
     });
-    await expectVoteStatus(voteId, 'DRAFT');
+    await expectVoteBillingLifecycle(voteId, {
+      status: 'DRAFT',
+      activeBillingOrderId: billingOrderId,
+      billingOrderStatus: 'PENDING_PAYMENT',
+    });
+    await expectVoteBillingHiddenFromDifferentUser(voteId);
     await updateVote(voteId, 'Payment-pending update').expect(409);
     await request(app.getHttpServer())
       .put(`/votes/${voteId}/sub-votes`)
@@ -268,13 +278,16 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       billingOrderId,
       finalized: true,
     });
-    await expectVoteStatus(voteId, 'FINALIZED');
+    await expectVoteBillingLifecycle(voteId, {
+      status: 'FINALIZED',
+      activeBillingOrderId: billingOrderId,
+      billingOrderStatus: 'PAID',
+    });
     await expectPersistedVoteBilling(voteId, {
       status: 'FINALIZED',
       billingOrderId,
       finalized: true,
     });
-    await expectVotePageStatus(voteId, 'FINALIZED');
     await updateVote(voteId, 'Paid update').expect(409);
 
     await request(app.getHttpServer())
@@ -290,7 +303,11 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       billingOrderId,
       finalized: true,
     });
-    await expectVoteStatus(voteId, 'FINALIZED');
+    await expectVoteBillingLifecycle(voteId, {
+      status: 'FINALIZED',
+      activeBillingOrderId: billingOrderId,
+      billingOrderStatus: 'REFUND_PENDING',
+    });
     await updateVote(voteId, 'Refund-pending update').expect(409);
 
     await mockPaymentWorker.dispatchOnce();
@@ -301,8 +318,7 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       billingOrderId: null,
       finalized: false,
     });
-    await expectVoteStatus(voteId, 'DRAFT');
-    await expectVotePageStatus(voteId, 'DRAFT');
+    await expectVoteBillingLifecycle(voteId, { status: 'DRAFT' });
     await updateVote(voteId, 'Editable after refund').expect(200);
 
     const replacementOrder = await request(app.getHttpServer())
@@ -317,6 +333,12 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     expect((replacementOrder.body as { readonly id: string }).id).not.toBe(
       billingOrderId,
     );
+    await expectVoteBillingLifecycle(voteId, {
+      status: 'DRAFT',
+      activeBillingOrderId: (replacementOrder.body as { readonly id: string })
+        .id,
+      billingOrderStatus: 'PENDING_PAYMENT',
+    });
 
     const em = orm.em.fork();
     const [persistedVote] = await em
@@ -450,15 +472,57 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     throw new Error(`billing order did not reach ${expectedStatus}`);
   }
 
-  async function expectVoteStatus(
+  async function expectVoteBillingLifecycle(
     voteId: string,
-    expectedStatus: string,
+    expected: {
+      readonly status: string;
+      readonly activeBillingOrderId?: string;
+      readonly billingOrderStatus?: string;
+    },
   ): Promise<void> {
-    const response = await request(app.getHttpServer())
+    const detailResponse = await request(app.getHttpServer())
       .get(`/votes/${voteId}`)
       .set('authorization', 'Bearer get-vote')
       .expect(200);
-    expect(response.body).toMatchObject({ id: voteId, status: expectedStatus });
+    const pageResponse = await request(app.getHttpServer())
+      .get('/votes?page=1&pageSize=100')
+      .set('authorization', 'Bearer get-vote-page')
+      .expect(200);
+    const pageBody = pageResponse.body as unknown as {
+      readonly items: Array<Record<string, unknown>>;
+    };
+    const summary = pageBody.items.find((item) => item.id === voteId);
+
+    expect(detailResponse.body).toMatchObject({ id: voteId, ...expected });
+    expect(summary).toMatchObject({ id: voteId, ...expected });
+    if (expected.activeBillingOrderId === undefined) {
+      expect(detailResponse.body).not.toHaveProperty('activeBillingOrderId');
+      expect(detailResponse.body).not.toHaveProperty('billingOrderStatus');
+      expect(summary).not.toHaveProperty('activeBillingOrderId');
+      expect(summary).not.toHaveProperty('billingOrderStatus');
+    }
+  }
+
+  async function expectVoteBillingHiddenFromDifferentUser(
+    voteId: string,
+  ): Promise<void> {
+    const detailResponse = await request(app.getHttpServer())
+      .get(`/votes/${voteId}`)
+      .set('authorization', 'Bearer different-user')
+      .expect(200);
+    const pageResponse = await request(app.getHttpServer())
+      .get('/votes?page=1&pageSize=100')
+      .set('authorization', 'Bearer different-user')
+      .expect(200);
+    const pageBody = pageResponse.body as unknown as {
+      readonly items: Array<Record<string, unknown>>;
+    };
+    const summary = pageBody.items.find((item) => item.id === voteId);
+
+    expect(detailResponse.body).not.toHaveProperty('activeBillingOrderId');
+    expect(detailResponse.body).not.toHaveProperty('billingOrderStatus');
+    expect(summary).not.toHaveProperty('activeBillingOrderId');
+    expect(summary).not.toHaveProperty('billingOrderStatus');
   }
 
   async function expectPersistedVoteBilling(
@@ -490,20 +554,6 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     });
   }
 
-  async function expectVotePageStatus(
-    voteId: string,
-    expectedStatus: string,
-  ): Promise<void> {
-    const response = await request(app.getHttpServer())
-      .get('/votes?page=1&pageSize=20')
-      .set('authorization', 'Bearer get-vote-page')
-      .expect(200);
-    const body = response.body as unknown as { readonly items: unknown[] };
-    expect(body.items).toContainEqual(
-      expect.objectContaining({ id: voteId, status: expectedStatus }),
-    );
-  }
-
   function updateVote(voteId: string, title: string): request.Test {
     return request(app.getHttpServer())
       .patch(`/votes/${voteId}`)
@@ -523,6 +573,7 @@ describeDatabase('MikroORM collections in Nest request context', () => {
 });
 
 const USER_PRINCIPAL_ID = 'collection-request-context-user';
+const DIFFERENT_USER_PRINCIPAL_ID = 'different-user-principal';
 const COMMISSION_ID = '10000000-0000-4000-8000-000000000001';
 const VOTE_ID = '10000000-0000-4000-8000-000000000002';
 const VOTING_CHANNEL_ID = '10000000-0000-4000-8000-000000000003';

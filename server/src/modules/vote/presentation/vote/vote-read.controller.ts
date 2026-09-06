@@ -64,6 +64,7 @@ export class VoteReadController {
       GetVotePageApplicationQuery.of({
         page: Number(query.page),
         pageSize: Number(query.pageSize),
+        userPrincipalId: user.id,
       }),
     );
 
@@ -93,7 +94,10 @@ export class VoteReadController {
   ): Promise<GetVoteResponse> {
     try {
       const result = await this.getVoteHandler.execute(
-        GetVoteQuery.of({ voteId: params.voteId }),
+        GetVoteQuery.of({
+          voteId: params.voteId,
+          userPrincipalId: user.id,
+        }),
       );
 
       return GetVoteResponse.of(result);

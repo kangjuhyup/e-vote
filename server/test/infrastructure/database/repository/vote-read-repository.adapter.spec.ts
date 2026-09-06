@@ -13,6 +13,7 @@ import {
 } from '../../../../src/shared/domain/voting/type/vote-status.type';
 
 type MockEntityManager = {
+  readonly find: jest.Mock<Promise<unknown[]>, [unknown, unknown, unknown?]>;
   readonly findAndCount: jest.Mock<
     Promise<[unknown[], number]>,
     [unknown, unknown, unknown?]
@@ -26,7 +27,14 @@ describe('VoteReadRepositoryAdapter', () => {
     em.findOne.mockResolvedValue(createVoteEntity());
     const adapter = new VoteReadRepositoryAdapter(em as any);
 
-    const result = await adapter.findDetailById('vote-1');
+    em.find.mockResolvedValue([
+      createBillingOrderEntity('PENDING_PAYMENT', 'user-principal-1'),
+    ]);
+
+    const result = await adapter.findDetailById({
+      voteId: 'vote-1',
+      userPrincipalId: 'user-principal-1',
+    });
 
     expect(em.findOne.mock.calls[0][1]).toEqual({ id: 'vote-1' });
     expect(em.findOne.mock.calls[0][2]).toMatchObject({
@@ -57,6 +65,8 @@ describe('VoteReadRepositoryAdapter', () => {
         method: 'MOBILE',
       },
       status: VoteStatus.Draft,
+      activeBillingOrderId: 'billing-order-1',
+      billingOrderStatus: 'PENDING_PAYMENT',
       voteDetails: [
         {
           id: 'vote-detail-1',
@@ -96,14 +106,27 @@ describe('VoteReadRepositoryAdapter', () => {
     });
     expect(result).not.toHaveProperty('electors');
     expect(result).not.toHaveProperty('participations');
+    expect(em.find).toHaveBeenCalledTimes(1);
+    expect(em.find.mock.calls[0][1]).toEqual({
+      id: { $in: ['billing-order-1'] },
+      orderedByUserPrincipalId: 'user-principal-1',
+      status: { $in: ['PENDING_PAYMENT', 'PAID', 'REFUND_PENDING'] },
+    });
   });
 
   it('maps a vote page using limit, offset, and stable ordering', async () => {
     const em = createMockEntityManager();
     em.findAndCount.mockResolvedValue([[createVoteEntity()], 21]);
+    em.find.mockResolvedValue([
+      createBillingOrderEntity('REFUND_PENDING', 'user-principal-1'),
+    ]);
     const adapter = new VoteReadRepositoryAdapter(em as any);
 
-    const result = await adapter.findPage({ page: 2, pageSize: 20 });
+    const result = await adapter.findPage({
+      page: 2,
+      pageSize: 20,
+      userPrincipalId: 'user-principal-1',
+    });
 
     expect(em.findAndCount.mock.calls[0][2]).toMatchObject({
       populate: ['commission', 'electoralRollSnapshot', 'votingChannels'],
@@ -126,14 +149,39 @@ describe('VoteReadRepositoryAdapter', () => {
           commissionId: 'commission-1',
           title: 'Board election',
           status: VoteStatus.Draft,
+          activeBillingOrderId: 'billing-order-1',
+          billingOrderStatus: 'REFUND_PENDING',
         },
       ],
     });
+    expect(em.find).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits active billing details when the order is not owned by the current principal', async () => {
+    const em = createMockEntityManager();
+    em.findAndCount.mockResolvedValue([[createVoteEntity()], 1]);
+    em.find.mockResolvedValue([]);
+    const adapter = new VoteReadRepositoryAdapter(em as any);
+
+    const result = await adapter.findPage({
+      page: 1,
+      pageSize: 20,
+      userPrincipalId: 'another-user',
+    });
+
+    expect(result.items[0]).not.toHaveProperty('activeBillingOrderId');
+    expect(result.items[0]).not.toHaveProperty('billingOrderStatus');
+    expect(em.find.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ orderedByUserPrincipalId: 'another-user' }),
+    );
   });
 });
 
 function createMockEntityManager(): MockEntityManager {
   return {
+    find: jest
+      .fn<Promise<unknown[]>, [unknown, unknown, unknown?]>()
+      .mockResolvedValue([]),
     findAndCount: jest
       .fn<Promise<[unknown[], number]>, [unknown, unknown, unknown?]>()
       .mockResolvedValue([[], 0]),
@@ -148,6 +196,7 @@ function createVoteEntity(): Record<string, unknown> {
 
   return {
     id: 'vote-1',
+    billingOrderId: 'billing-order-1',
     commission: { id: 'commission-1' },
     electoralRollSnapshot: { id: 'snapshot-1' },
     title: 'Board election',
@@ -219,5 +268,16 @@ function createVoteEntity(): Record<string, unknown> {
         ],
       },
     ],
+  };
+}
+
+function createBillingOrderEntity(
+  status: 'PENDING_PAYMENT' | 'PAID' | 'REFUND_PENDING',
+  orderedByUserPrincipalId: string,
+): Record<string, unknown> {
+  return {
+    id: 'billing-order-1',
+    orderedByUserPrincipalId,
+    status,
   };
 }

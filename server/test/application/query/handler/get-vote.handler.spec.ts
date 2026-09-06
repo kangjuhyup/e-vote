@@ -21,6 +21,10 @@ import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-statu
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import { GetVotePageHandler } from '../../../../src/modules/vote/application/query/handler/get-vote-page.handler';
 import { GetVotePageQuery } from '../../../../src/modules/vote/application/query/dto/request/get-vote-page.query';
+import type {
+  DatabaseTransactionManager,
+  DatabaseTransactionOptions,
+} from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 
 describe('vote query handlers', () => {
   it('loads a vote detail through the read repository', async () => {
@@ -30,12 +34,24 @@ describe('vote query handlers', () => {
       findDetailById,
       findPage: jest.fn().mockResolvedValue(createVotePageView()),
     };
-    const handler = new GetVoteHandler(repository);
+    const transactionManager = new RecordingTransactionManager();
+    const handler = new GetVoteHandler(repository, transactionManager);
 
     await expect(
-      handler.execute(GetVoteQuery.of({ voteId: 'vote-1' })),
+      handler.execute(
+        GetVoteQuery.of({
+          voteId: 'vote-1',
+          userPrincipalId: 'user-principal-1',
+        }),
+      ),
     ).resolves.toBe(vote);
-    expect(findDetailById).toHaveBeenCalledWith('vote-1');
+    expect(findDetailById).toHaveBeenCalledWith({
+      voteId: 'vote-1',
+      userPrincipalId: 'user-principal-1',
+    });
+    expect(transactionManager.options).toEqual([
+      { isolationLevel: 'repeatable-read' },
+    ]);
   });
 
   it('throws when a vote detail is missing', async () => {
@@ -44,10 +60,18 @@ describe('vote query handlers', () => {
       findDetailById,
       findPage: jest.fn().mockResolvedValue(createVotePageView()),
     };
-    const handler = new GetVoteHandler(repository);
+    const handler = new GetVoteHandler(
+      repository,
+      new RecordingTransactionManager(),
+    );
 
     await expect(
-      handler.execute(GetVoteQuery.of({ voteId: 'missing-vote' })),
+      handler.execute(
+        GetVoteQuery.of({
+          voteId: 'missing-vote',
+          userPrincipalId: 'user-principal-1',
+        }),
+      ),
     ).rejects.toBeInstanceOf(VoteNotFoundError);
   });
 
@@ -58,17 +82,40 @@ describe('vote query handlers', () => {
       findDetailById: jest.fn().mockResolvedValue(createVoteView()),
       findPage,
     };
-    const handler = new GetVotePageHandler(repository);
+    const transactionManager = new RecordingTransactionManager();
+    const handler = new GetVotePageHandler(repository, transactionManager);
 
     await expect(
-      handler.execute(GetVotePageQuery.of({ page: 0, pageSize: 101 })),
+      handler.execute(
+        GetVotePageQuery.of({
+          page: 0,
+          pageSize: 101,
+          userPrincipalId: 'user-principal-1',
+        }),
+      ),
     ).resolves.toBe(page);
     expect(findPage).toHaveBeenCalledWith({
       page: 1,
       pageSize: 100,
+      userPrincipalId: 'user-principal-1',
     });
+    expect(transactionManager.options).toEqual([
+      { isolationLevel: 'repeatable-read' },
+    ]);
   });
 });
+
+class RecordingTransactionManager implements DatabaseTransactionManager {
+  readonly options: DatabaseTransactionOptions[] = [];
+
+  async runInTransaction<T>(
+    work: () => Promise<T>,
+    options: DatabaseTransactionOptions = {},
+  ): Promise<T> {
+    this.options.push(options);
+    return work();
+  }
+}
 
 function createVoteView(): VoteView {
   return VoteView.of({
@@ -102,6 +149,8 @@ function createVotePageView(): VotePageView {
         identityVerificationPolicy: IdentityVerificationPolicyView.of({
           required: false,
         }),
+        activeBillingOrderId: 'billing-order-1',
+        billingOrderStatus: 'PENDING_PAYMENT',
         status: VoteStatus.Draft,
         startedAt: new Date('2026-08-13T00:00:00.000Z'),
         endedAt: new Date('2026-08-14T00:00:00.000Z'),
