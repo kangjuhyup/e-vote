@@ -125,6 +125,8 @@ describe('VoteController', () => {
           identityVerificationPolicy: {
             required: false,
           },
+          activeBillingOrderId: 'billing-order-1',
+          billingOrderStatus: 'PENDING_PAYMENT',
           status: VoteStatus.Draft,
           startedAt: '2026-08-13T00:00:00.000Z',
           endedAt: '2026-08-14T00:00:00.000Z',
@@ -141,6 +143,7 @@ describe('VoteController', () => {
     expect(getVotePageExecute.mock.calls[0][0]).toMatchObject({
       page: 2,
       pageSize: 10,
+      userPrincipalId: TEST_USER_PRINCIPAL.id,
     });
   });
 
@@ -166,6 +169,8 @@ describe('VoteController', () => {
       identityVerificationPolicy: {
         required: false,
       },
+      activeBillingOrderId: 'billing-order-1',
+      billingOrderStatus: 'PENDING_PAYMENT',
       status: VoteStatus.Draft,
       voteDetails: [
         {
@@ -203,6 +208,7 @@ describe('VoteController', () => {
     expect(getVoteExecute).toHaveBeenCalledTimes(1);
     expect(getVoteExecute.mock.calls[0][0]).toMatchObject({
       voteId: 'vote-1',
+      userPrincipalId: TEST_USER_PRINCIPAL.id,
     });
   });
 
@@ -418,6 +424,8 @@ function createVoteSummaryProps(): Parameters<typeof VoteSummaryView.of>[0] {
     identityVerificationPolicy: IdentityVerificationPolicyView.of({
       required: false,
     }),
+    activeBillingOrderId: 'billing-order-1',
+    billingOrderStatus: 'PENDING_PAYMENT',
     status: VoteStatus.Draft,
     startedAt: new Date('2026-08-13T00:00:00.000Z'),
     endedAt: new Date('2026-08-14T00:00:00.000Z'),

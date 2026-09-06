@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/postgresql';
 import type {
+  VoteDetailRequest,
   VotePageRequest,
   VoteReadRepositoryPort,
 } from '../../../../application/port/persistence/query/vote-read-repository.port';
 import {
+  ActiveBillingOrderStatus,
   CandidateView,
   IdentityVerificationPolicyView,
   VoteDetailView,
@@ -48,6 +50,7 @@ const VOTE_PAGE_READ_RELATIONS = [
 
 type VoteReadPersistence = {
   readonly id: string;
+  readonly billingOrderId: string | null;
   readonly commission: { readonly id: string };
   readonly electoralRollSnapshot: { readonly id: string } | null;
   readonly title: string;
@@ -98,18 +101,35 @@ type CandidateReadPersistence = {
   readonly updatedAt: Date;
 };
 
+type ActiveBillingOrderReadPersistence = {
+  readonly id: string;
+  readonly status: (typeof ActiveBillingOrderStatus)[keyof typeof ActiveBillingOrderStatus];
+};
+
 @Injectable()
 export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
   constructor(private readonly em: EntityManager) {}
 
-  async findDetailById(voteId: string): Promise<VoteView | undefined> {
+  async findDetailById(
+    request: VoteDetailRequest,
+  ): Promise<VoteView | undefined> {
     const { VoteEntity } = await getDatabaseEntities();
-    const entity = (await this.em.findOne(VoteEntity as any, { id: voteId }, {
-      populate: VOTE_DETAIL_READ_RELATIONS,
-      ...SELECT_IN_RELATION_LOAD_OPTIONS,
-    } as any)) as unknown as VoteReadPersistence | null;
+    const entity = (await this.em.findOne(
+      VoteEntity as any,
+      { id: request.voteId },
+      {
+        populate: VOTE_DETAIL_READ_RELATIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
+      } as any,
+    )) as unknown as VoteReadPersistence | null;
 
-    return entity ? this.toVoteView(entity) : undefined;
+    if (!entity) return undefined;
+    const billingOrders = await this.findOwnedActiveBillingOrders(
+      [entity],
+      request.userPrincipalId,
+    );
+
+    return this.toVoteView(entity, billingOrders.get(entity.id));
   }
 
   async findPage(request: VotePageRequest): Promise<VotePageView> {
@@ -129,8 +149,15 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
       } as any,
     )) as unknown as [VoteSummaryReadPersistence[], number];
 
+    const billingOrders = await this.findOwnedActiveBillingOrders(
+      entities,
+      request.userPrincipalId,
+    );
+
     return VotePageView.of({
-      items: entities.map((entity) => this.toVoteSummaryView(entity)),
+      items: entities.map((entity) =>
+        this.toVoteSummaryView(entity, billingOrders.get(entity.id)),
+      ),
       page: request.page,
       pageSize: request.pageSize,
       totalItems,
@@ -138,9 +165,12 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
     });
   }
 
-  private toVoteView(entity: VoteReadPersistence): VoteView {
+  private toVoteView(
+    entity: VoteReadPersistence,
+    billingOrder: ActiveBillingOrderReadPersistence | undefined,
+  ): VoteView {
     return VoteView.of({
-      ...this.toVoteSummaryView(entity),
+      ...this.toVoteSummaryView(entity, billingOrder),
       description: entity.description,
       voteDetails: loadedItems(entity.voteDetails)
         .map((voteDetail) => this.toVoteDetailView(entity.id, voteDetail))
@@ -150,6 +180,7 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
 
   private toVoteSummaryView(
     entity: VoteSummaryReadPersistence,
+    billingOrder: ActiveBillingOrderReadPersistence | undefined,
   ): VoteSummaryView {
     return VoteSummaryView.of({
       id: entity.id,
@@ -170,12 +201,52 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
         method: entity.identityVerificationMethod ?? undefined,
       }),
       electoralRollSnapshotId: entity.electoralRollSnapshot?.id,
+      activeBillingOrderId: billingOrder?.id,
+      billingOrderStatus: billingOrder?.status,
       status: entity.status,
       startedAt: entity.startedAt,
       endedAt: entity.endedAt,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });
+  }
+
+  private async findOwnedActiveBillingOrders(
+    votes: readonly VoteSummaryReadPersistence[],
+    userPrincipalId: string,
+  ): Promise<ReadonlyMap<string, ActiveBillingOrderReadPersistence>> {
+    const voteIdsByBillingOrderId = new Map<string, string>();
+    for (const vote of votes) {
+      if (vote.billingOrderId) {
+        voteIdsByBillingOrderId.set(vote.billingOrderId, vote.id);
+      }
+    }
+    const billingOrderIds = [...voteIdsByBillingOrderId.keys()];
+    if (billingOrderIds.length === 0) return new Map();
+
+    const { BillingOrderEntity } = await getDatabaseEntities();
+    const orders = (await this.em.find(
+      BillingOrderEntity as any,
+      {
+        id: { $in: billingOrderIds },
+        orderedByUserPrincipalId: userPrincipalId,
+        status: {
+          $in: [
+            ActiveBillingOrderStatus.PendingPayment,
+            ActiveBillingOrderStatus.Paid,
+            ActiveBillingOrderStatus.RefundPending,
+          ],
+        },
+      },
+      { fields: ['id', 'status'] } as any,
+    )) as unknown as ActiveBillingOrderReadPersistence[];
+
+    return new Map(
+      orders.flatMap((order) => {
+        const voteId = voteIdsByBillingOrderId.get(order.id);
+        return voteId ? [[voteId, order] as const] : [];
+      }),
+    );
   }
 
   private toVoteDetailView(
