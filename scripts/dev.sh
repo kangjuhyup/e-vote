@@ -53,12 +53,20 @@ REDIS_PORT="$REDIS_PORT" \
 pnpm start:dev &
 server_pid=$!
 
+DATABASE_HOST="${DATABASE_HOST:-127.0.0.1}" \
+DATABASE_PORT="${DATABASE_PORT:-$POSTGRES_PORT}" \
+DATABASE_NAME="${DATABASE_NAME:-$POSTGRES_DB}" \
+DATABASE_USER="${DATABASE_USER:-$POSTGRES_USER}" \
+DATABASE_PASSWORD="${DATABASE_PASSWORD:-$POSTGRES_PASSWORD}" \
+pnpm start:worker:dev &
+worker_pid=$!
+
 pnpm dev:ui &
 ui_pid=$!
 
 cleanup() {
-  kill "$server_pid" "$ui_pid" 2>/dev/null || true
+  kill "$server_pid" "$worker_pid" "$ui_pid" 2>/dev/null || true
 }
 
 trap cleanup INT TERM EXIT
-wait "$server_pid" "$ui_pid"
+wait "$server_pid" "$worker_pid" "$ui_pid"

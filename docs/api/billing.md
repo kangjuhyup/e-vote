@@ -174,8 +174,8 @@ Payment 서비스가 환불을 완료해 주문이 `REFUNDED`로 전이하면 �
 `PAID`로 바꾸는 엔드포인트는 제공하지 않습니다. 주문 금액 및 통화가 Payment
 결과와 정확히 일치할 때만 상태가 변경됩니다.
 
-실제 Payment 서비스가 없는 개발 환경에서는 in-process mock Payment 어댑터가
-기본으로 활성화됩니다. 주문 트랜잭션에서 직접 결제 처리하지 않고, 커밋된
+실제 Payment 서비스가 없는 개발 환경에서는 별도 worker 프로세스의 mock Payment
+어댑터가 기본으로 활성화됩니다. API 주문 트랜잭션에서 직접 결제 처리하지 않고, 커밋된
 `billing.order-issued.v1` outbox를 `@rvkang/batch-core/polling` 기반 background
 worker가 전달하면 mock 어댑터가 동일한 내부 결제완료 핸들러를 호출합니다. worker는
 대기 상태에서는 500ms 간격으로 확인하고, 처리할 메시지가 남아 있으면 다음 batch를
@@ -199,6 +199,13 @@ payment ID를 사용하며 도메인의 멱등 전이를 그대로 적용합니�
 `mock`을 지정하면 서버가 기동을 거부하므로 개발용 가짜 결제가 운영에서 승인으로
 처리되지 않습니다. 실제 Payment transport가 구현되기 전에는 `real` 같은 별도 모드는
 지원하지 않습니다.
+
+HTTP API는 `main.ts`, outbox worker는 `worker.ts`를 각각 root entrypoint로 사용합니다.
+API `AppModule`에는 polling lifecycle provider가 없으므로 API deployment를 HPA로
+수평 확장해도 worker 수가 함께 증가하지 않습니다. worker는 별도 deployment에서
+`start:worker:prod`로 실행하고 독립된 replica 정책을 적용합니다. 여러 worker replica를
+사용하더라도 PostgreSQL lease와 `FOR UPDATE SKIP LOCKED`로 claim을 분산하지만 전달
+보장은 exactly-once가 아니라 기존과 동일한 at-least-once입니다.
 
 결제된 주문의 취소 요청은 `BillingOrderRefundRequested` 도메인 이벤트를
 발행하며 주문을 `REFUND_PENDING`으로 유지합니다. 향후 Payment 서비스는 이
