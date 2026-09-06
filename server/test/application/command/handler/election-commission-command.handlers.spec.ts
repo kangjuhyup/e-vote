@@ -16,6 +16,7 @@ describe('election commission command handlers', () => {
       .fn<Promise<void>, [ElectionCommissionAggregate]>()
       .mockResolvedValue(undefined);
     const handler = new CreateElectionCommissionHandler({
+      softDelete: jest.fn(),
       nextId: jest.fn().mockReturnValue('commission-1'),
       findById: jest.fn().mockResolvedValue(undefined),
       save,
@@ -45,11 +46,13 @@ describe('election commission command handlers', () => {
       .fn<Promise<void>, [ElectionCommissionMemberAggregate]>()
       .mockResolvedValue(undefined);
     const commissionRepository: ElectionCommissionRepositoryPort = {
+      softDelete: jest.fn(),
       nextId: jest.fn().mockReturnValue('commission-unused'),
       findById: jest.fn().mockResolvedValue(commission),
       save: jest.fn().mockResolvedValue(undefined),
     };
     const memberRepository: ElectionCommissionMemberRepositoryPort = {
+      findActiveAdmins: jest.fn(),
       nextId: jest.fn().mockReturnValue('member-1'),
       findByIds: jest.fn().mockResolvedValue([]),
       save,

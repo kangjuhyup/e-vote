@@ -15,7 +15,7 @@ export class ElectionCommissionMembershipAccessAdapter implements ElectionCommis
     const member = await this.em.findOne(
       ElectionCommissionMemberEntity as any,
       {
-        commission: { id: commissionId },
+        commission: { id: commissionId, deletedAt: null, status: 'ACTIVE' },
         userPrincipalId,
         status: 'ACTIVE',
       },

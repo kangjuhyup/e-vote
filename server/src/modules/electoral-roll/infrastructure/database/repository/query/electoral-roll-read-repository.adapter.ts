@@ -61,6 +61,7 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
       ElectoralRollEntity as any,
       {
         id: electoralRollId,
+        deletedAt: null,
         accessGrants: { userPrincipalId },
       } as any,
       {
@@ -105,6 +106,7 @@ export class ElectoralRollReadRepositoryAdapter implements ElectoralRollReadRepo
   ): Promise<ElectoralRollPageView> {
     const { ElectoralRollEntity } = await getDatabaseEntities();
     const where: Record<string, unknown> = {
+      deletedAt: null,
       accessGrants: { userPrincipalId: request.userPrincipalId },
     };
     if (request.query !== undefined) {

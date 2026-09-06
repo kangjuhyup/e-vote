@@ -71,6 +71,7 @@ describe('CreateFieldVotingSessionHandler', () => {
       .fn<Promise<void>, [FieldVotingSessionAggregate]>()
       .mockResolvedValue(undefined);
     const commissionRepository: ElectionCommissionRepositoryPort = {
+      softDelete: jest.fn(),
       nextId: jest.fn().mockReturnValue('commission-unused'),
       findById: jest.fn().mockResolvedValue(commission),
       save: jest.fn().mockResolvedValue(undefined),
@@ -81,6 +82,7 @@ describe('CreateFieldVotingSessionHandler', () => {
       save: jest.fn().mockResolvedValue(undefined),
     };
     const memberRepository: ElectionCommissionMemberRepositoryPort = {
+      findActiveAdmins: jest.fn(),
       findByIds: jest.fn().mockResolvedValue([manager]),
       nextId: jest.fn().mockReturnValue('member-unused'),
       save: jest.fn().mockResolvedValue(undefined),

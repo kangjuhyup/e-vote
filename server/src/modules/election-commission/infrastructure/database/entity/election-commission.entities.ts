@@ -20,6 +20,7 @@ export function createElectionCommissionEntities(
     tableName: 'election_commissions',
     properties: {
       id: p.uuid().primary(),
+      deletedAt: p.datetime().fieldName('deleted_at').nullable(),
       name: p.string(),
       status: p.string().$type<ElectionCommissionStatus>(),
       createdAt: p.datetime().fieldName('created_at'),

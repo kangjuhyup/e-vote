@@ -4,6 +4,7 @@ import {
   ElectionCommissionDomainEvent,
   ElectionCommissionMemberDeactivated,
   ElectionCommissionMemberRegistered,
+  ElectionCommissionMemberUpdated,
 } from './election-commission.events';
 import { ElectionCommissionMemberRole } from './type/election-commission-member-role.type';
 import { ElectionCommissionMemberStatus } from './type/election-commission-member-status.type';
@@ -34,8 +35,8 @@ export class ElectionCommissionMemberAggregate {
     readonly id: string,
     readonly commissionId: string,
     readonly userPrincipalId: string | undefined,
-    readonly name: string,
-    readonly role: ElectionCommissionMemberRole,
+    public name: string,
+    public role: ElectionCommissionMemberRole,
     public status: ElectionCommissionMemberStatus,
   ) {}
 
@@ -73,6 +74,32 @@ export class ElectionCommissionMemberAggregate {
       this.status === ElectionCommissionMemberStatus.Active &&
       (this.role === ElectionCommissionMemberRole.Admin ||
         this.role === ElectionCommissionMemberRole.FieldManager)
+    );
+  }
+
+  update(
+    params: { name?: string; role?: ElectionCommissionMemberRole },
+    changedAt: Date,
+  ): void {
+    if (this.status !== ElectionCommissionMemberStatus.Active)
+      throw new DomainError(
+        'inactive election commission member cannot be updated',
+      );
+    const name = params.name === undefined ? this.name : params.name.trim();
+    const role = params.role ?? this.role;
+    if (!name || name.length > 100)
+      throw new DomainError(
+        'election commission member name must contain 1 to 100 characters',
+      );
+    if (!Object.values(ElectionCommissionMemberRole).includes(role))
+      throw new DomainError('invalid election commission member role');
+    this.name = name;
+    this.role = role;
+    this.events.push(
+      ElectionCommissionMemberUpdated.of({
+        aggregateId: this.id,
+        occurredAt: changedAt,
+      }),
     );
   }
 

@@ -115,6 +115,7 @@ describe('electoral roll repository adapters', () => {
     });
 
     expect(findAndCount.mock.calls[0]?.[1]).toEqual({
+      deletedAt: null,
       accessGrants: { userPrincipalId: 'user-1' },
       name: { $ilike: '%상반기%' },
     });
@@ -175,6 +176,7 @@ describe('electoral roll repository adapters', () => {
 
     expect(findOne.mock.calls[0]?.[1]).toEqual({
       id: 'roll-1',
+      deletedAt: null,
       accessGrants: { userPrincipalId: 'user-1' },
     });
     expect(findOne.mock.calls[0]?.[2]).toMatchObject({
