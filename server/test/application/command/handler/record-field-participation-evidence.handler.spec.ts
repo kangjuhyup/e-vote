@@ -119,6 +119,7 @@ describe('RecordFieldParticipationEvidenceHandler', () => {
       save: jest.fn().mockResolvedValue(undefined),
     };
     const memberRepository: ElectionCommissionMemberRepositoryPort = {
+      findActiveAdmins: jest.fn(),
       nextId: jest.fn().mockReturnValue('member-unused'),
       findByIds: jest.fn().mockResolvedValue([createManagerFixture()]),
       save: jest.fn().mockResolvedValue(undefined),

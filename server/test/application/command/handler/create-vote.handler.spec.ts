@@ -24,6 +24,7 @@ describe('CreateVoteHandler', () => {
       save,
     };
     const commissionRepository: ElectionCommissionRepositoryPort = {
+      softDelete: jest.fn(),
       nextId: jest.fn().mockReturnValue('commission-unused'),
       findById: jest.fn().mockResolvedValue(
         ElectionCommissionAggregate.create({

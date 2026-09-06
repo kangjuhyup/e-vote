@@ -6,6 +6,7 @@ export const ELECTORAL_ROLL_REPOSITORY_PORT = Symbol(
 );
 
 export interface ElectoralRollRepositoryPort {
+  softDelete(electoralRollId: string, deletedAt: Date): Promise<void>;
   nextId(): string;
   nextMemberId(): string;
   findById(

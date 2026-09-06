@@ -5,6 +5,7 @@ export const ELECTION_COMMISSION_REPOSITORY_PORT = Symbol(
 );
 
 export interface ElectionCommissionRepositoryPort {
+  softDelete(commissionId: string, deletedAt: Date): Promise<void>;
   nextId(): string;
   findById(
     commissionId: string,

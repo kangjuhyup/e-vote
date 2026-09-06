@@ -20,7 +20,10 @@ describe('ElectionCommissionReadRepositoryAdapter', () => {
 
     const result = await adapter.findDetailById('commission-1');
 
-    expect(em.findOne.mock.calls[0][1]).toEqual({ id: 'commission-1' });
+    expect(em.findOne.mock.calls[0][1]).toEqual({
+      id: 'commission-1',
+      deletedAt: null,
+    });
     expect(em.findOne.mock.calls[0][2]).toMatchObject({
       populate: ['members'],
       strategy: LoadStrategy.JOINED,
@@ -63,7 +66,7 @@ describe('ElectionCommissionReadRepositoryAdapter', () => {
 
     const result = await adapter.findPage({ page: 2, pageSize: 20 });
 
-    expect(em.findAndCount.mock.calls[0][1]).toEqual({});
+    expect(em.findAndCount.mock.calls[0][1]).toEqual({ deletedAt: null });
     expect(em.findAndCount.mock.calls[0][2]).toMatchObject({
       limit: 20,
       offset: 20,

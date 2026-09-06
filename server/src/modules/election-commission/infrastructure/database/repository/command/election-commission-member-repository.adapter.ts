@@ -20,6 +20,24 @@ const ELECTION_COMMISSION_MEMBER_RELATIONS = ['commission'] as const;
 export class ElectionCommissionMemberRepositoryAdapter implements ElectionCommissionMemberRepositoryPort {
   constructor(private readonly em: EntityManager) {}
 
+  async findActiveAdmins(
+    commissionId: string,
+  ): Promise<ElectionCommissionMemberAggregate[]> {
+    const { ElectionCommissionMemberEntity } = await getDatabaseEntities();
+    const entities = await this.em.find(
+      ElectionCommissionMemberEntity as any,
+      {
+        commission: { id: commissionId, deletedAt: null },
+        status: 'ACTIVE',
+        role: 'ADMIN',
+      } as any,
+      { populate: ['commission'], ...JOINED_RELATION_LOAD_OPTIONS },
+    );
+    return (entities as unknown as ElectionCommissionMemberPersistence[]).map(
+      (entity) => ElectionCommissionMemberMapper.toDomain(entity),
+    );
+  }
+
   nextId(): string {
     return nextRepositoryId();
   }
@@ -37,7 +55,7 @@ export class ElectionCommissionMemberRepositoryAdapter implements ElectionCommis
       ElectionCommissionMemberEntity as any,
       {
         id: { $in: [...memberIds] },
-        commission: { id: commissionId },
+        commission: { id: commissionId, deletedAt: null },
       } as any,
       {
         populate: ELECTION_COMMISSION_MEMBER_RELATIONS,

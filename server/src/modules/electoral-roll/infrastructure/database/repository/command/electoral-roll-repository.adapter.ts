@@ -39,6 +39,15 @@ type ElectoralRollMemberPersistence = {
 export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPort {
   constructor(private readonly em: EntityManager) {}
 
+  async softDelete(electoralRollId: string, deletedAt: Date): Promise<void> {
+    const { ElectoralRollEntity } = await getDatabaseEntities();
+    await this.em.nativeUpdate(
+      ElectoralRollEntity as any,
+      { id: electoralRollId },
+      { deletedAt },
+    );
+  }
+
   nextId(): string {
     return nextRepositoryId();
   }
@@ -56,6 +65,7 @@ export class ElectoralRollRepositoryAdapter implements ElectoralRollRepositoryPo
       ElectoralRollEntity as any,
       {
         id: electoralRollId,
+        deletedAt: null,
         accessGrants: { userPrincipalId },
       },
       { ...JOINED_RELATION_LOAD_OPTIONS },
