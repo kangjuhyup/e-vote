@@ -1,12 +1,15 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { RetryErrorCard } from '@/components/feedback/retry-error-card';
 import { SkeletonCardGrid } from '@/components/feedback/skeleton-card-grid';
 import { PageShell } from '@/components/layout/page-shell';
+import { Button } from '@/components/ui/button';
 import { electoralRollApi } from '@/features/votes/api/electoral-roll-api';
 import {
   electoralRollPageQueryOptions,
@@ -72,16 +75,6 @@ export function ElectoralRollManagementContainer({
     ]);
   }
 
-  const createMutation = useMutation({
-    mutationFn: electoralRollApi.createElectoralRoll,
-    onSuccess: async (result) => {
-      setSelectedRollId(result.id);
-      setMemberPage(1);
-      setMemberSearchText('');
-      setMessage(`${result.name} 명부를 생성했습니다.`);
-      await refreshRoll(result.id);
-    },
-  });
   const saveMembersMutation = useMutation({
     mutationFn: async () => {
       const roll = rollQuery.data;
@@ -173,11 +166,9 @@ export function ElectoralRollManagementContainer({
       await refreshRoll(input.electoralRollId);
     },
   });
-  const mutationError = createMutation.error ?? saveMembersMutation.error;
+  const mutationError = saveMembersMutation.error;
   const isSubmitting =
-    createMutation.isPending ||
-    saveMembersMutation.isPending ||
-    deleteMutation.isPending;
+    saveMembersMutation.isPending || deleteMutation.isPending;
   const pendingChangeCount = countMemberDraftChanges(
     rollQuery.data?.members ?? [],
     memberDrafts,
@@ -187,7 +178,6 @@ export function ElectoralRollManagementContainer({
     setMessage(undefined);
     setDraftErrorMessage(undefined);
     setIsDeleteDialogOpen(false);
-    createMutation.reset();
     saveMembersMutation.reset();
     deleteMutation.reset();
   }
@@ -201,6 +191,14 @@ export function ElectoralRollManagementContainer({
       eyebrow="선거인 관리"
       title="선거인명부 관리"
       description="선거인명부와 구성원을 관리합니다."
+      actions={
+        <Button type="button" asChild>
+          <Link href="/electoral-rolls/new">
+            <Plus aria-hidden="true" />
+            새 선거인명부 만들기
+          </Link>
+        </Button>
+      }
     >
       {selectedRollId.length === 0 && rollPageQuery.isLoading ? (
         <SkeletonCardGrid count={3} label="선거인명부 목록을 불러오는 중…" />
@@ -281,12 +279,6 @@ export function ElectoralRollManagementContainer({
           onMemberSearchTextChange={(searchText) => {
             setMemberPage(1);
             setMemberSearchText(searchText);
-          }}
-          onCreate={(data) => {
-            clearStatus();
-            createMutation.mutate({
-              name: String(data.get('name') ?? ''),
-            });
           }}
           onAddMember={(data) => {
             clearStatus();

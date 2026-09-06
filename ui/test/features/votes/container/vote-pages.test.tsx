@@ -24,6 +24,7 @@ import { VoteDashboardContainer } from '@/features/votes/container/vote-dashboar
 import { CommissionManagementContainer } from '@/features/votes/container/commission-management-container';
 import { ElectorManagementContainer } from '@/features/votes/container/elector-management-container';
 import { ElectoralRollManagementContainer } from '@/features/votes/container/electoral-roll-management-container';
+import { ElectoralRollSetupContainer } from '@/features/votes/container/electoral-roll-setup-container';
 import { SubVoteOperationsContainer } from '@/features/votes/container/sub-vote-operations-container';
 import { VoteDetailContainer } from '@/features/votes/container/vote-detail-container';
 import { VoteEditContainer } from '@/features/votes/container/vote-edit-container';
@@ -1232,26 +1233,104 @@ describe('vote containers', () => {
     ).toBeNull();
   });
 
-  it('creates a new electoral roll without snapshot guidance', async () => {
+  it('links the roll list to the dedicated creation flow', async () => {
     renderWithQueryClient(<ElectoralRollManagementContainer />);
 
     expect(await screen.findByText('2026 상반기 선거인명부')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('명부 이름'), {
-      target: { value: 'revision 없는 명부' },
-    });
-    expect(screen.queryByLabelText('선거관리위원회 ID')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '명부 생성' }));
-
-    expect(await screen.findByText('revision 없는 명부')).toBeTruthy();
-    expect(screen.getByText('revision 1')).toBeTruthy();
     expect(
-      screen.getByRole('button', { name: '구성원 초안 추가' }),
+      screen
+        .getByRole('link', { name: '새 선거인명부 만들기' })
+        .getAttribute('href'),
+    ).toBe('/electoral-rolls/new');
+    expect(screen.queryByLabelText('명부 이름')).toBeNull();
+  });
+
+  it('creates a reviewed electoral roll with manually entered members', async () => {
+    const createRoll = vi
+      .spyOn(electoralRollApi, 'createElectoralRoll')
+      .mockResolvedValue({
+        id: 'new-electoral-roll',
+        name: '2026 정기총회 명부',
+        revision: 1,
+      });
+    const addMembers = vi
+      .spyOn(electoralRollApi, 'addMembers')
+      .mockResolvedValue({
+        addedMemberCount: 1,
+        electoralRollId: 'new-electoral-roll',
+        revision: 2,
+      });
+    renderWithQueryClient(<ElectoralRollSetupContainer />);
+
+    expect(
+      screen.getByRole('navigation', {
+        name: '선거인명부 생성 진행 상태',
+      }),
+    ).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('선거인명부 이름'), {
+      target: { value: '2026 정기총회 명부' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: '구성원 등록으로 이동' }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: '구성원 등록 방식' }),
     ).toBeTruthy();
     expect(
-      screen.queryByText(
-        '구성원을 한 번 이상 변경하면 첫 스냅샷이 자동 보관됩니다.',
-      ),
-    ).toBeNull();
+      screen
+        .getByRole('button', { name: /^엑셀로 일괄 등록/ })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: /^직접 입력/ }));
+    fireEvent.change(screen.getByLabelText('식별자'), {
+      target: { value: 'member-new' },
+    });
+    fireEvent.change(screen.getByLabelText('이름'), {
+      target: { value: '김선거' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '구성원 추가' }));
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      '이름과 휴대폰번호는 함께 입력하세요.',
+    );
+
+    fireEvent.change(screen.getByLabelText('휴대폰번호'), {
+      target: { value: '010-1234-5678' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '구성원 추가' }));
+    expect((await screen.findAllByText('member-new')).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText('김선거 · 010-1234-5678').length,
+    ).toBeGreaterThan(0);
+    fireEvent.click(
+      screen.getByRole('button', { name: '구성원 검토로 이동' }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: '생성 내용 검토' }),
+    ).toBeTruthy();
+    expect(screen.getByText('2026 정기총회 명부')).toBeTruthy();
+    expect(screen.getAllByText('1명').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: '선거인명부 생성' }));
+
+    expect(
+      await screen.findByRole('heading', { name: '선거인명부 생성 완료' }),
+    ).toBeTruthy();
+    expect(createRoll).toHaveBeenCalledWith({ name: '2026 정기총회 명부' });
+    expect(addMembers).toHaveBeenCalledWith({
+      electoralRollId: 'new-electoral-roll',
+      members: [
+        {
+          birthDate: undefined,
+          groupKey: undefined,
+          identifier: 'member-new',
+          name: '김선거',
+          phoneNumber: '010-1234-5678',
+          rowNumber: 1,
+          voteWeight: 1,
+        },
+      ],
+    });
   });
 
   it('deletes an electoral roll after explicit confirmation', async () => {

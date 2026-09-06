@@ -1,10 +1,8 @@
-import { ArrowLeft, ClipboardList, Plus, Trash2 } from 'lucide-react';
-import type { FormEvent } from 'react';
+import { ArrowLeft, ClipboardList, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import type {
   ElectoralRollPageRecord,
   ElectoralRollRecord,
@@ -38,7 +36,6 @@ interface ElectoralRollManagementProps {
     field: ElectoralRollMemberDraftField,
     value: string,
   ) => void;
-  onCreate: (data: FormData) => void;
   onDiscardMemberChanges: () => void;
   onMemberPageChange: (page: number) => void;
   onMemberSearchTextChange: (searchText: string) => void;
@@ -68,7 +65,6 @@ export function ElectoralRollManagement({
   onConfirmDelete,
   onImportMembers,
   onMemberChange,
-  onCreate,
   onDiscardMemberChanges,
   onMemberPageChange,
   onMemberSearchTextChange,
@@ -103,37 +99,11 @@ export function ElectoralRollManagement({
       ) : null}
 
       {selectedRollId.length === 0 ? (
-        <>
-          <ElectoralRollList
-            page={rollPage}
-            onPageChange={onRollPageChange}
-            onSelect={onSelectRoll}
-          />
-
-          <Card className="rounded-lg">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Plus
-                  className="size-5 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <CardTitle className="text-base">독립 명부 생성</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form
-                className="grid gap-4"
-                onSubmit={formHandler(onCreate, true)}
-              >
-                <Field label="명부 이름" name="name" required />
-                <Button type="submit" disabled={isSubmitting}>
-                  <Plus aria-hidden="true" />
-                  명부 생성
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </>
+        <ElectoralRollList
+          page={rollPage}
+          onPageChange={onRollPageChange}
+          onSelect={onSelectRoll}
+        />
       ) : !roll ? (
         <>
           <Button type="button" variant="outline" onClick={onShowList}>
@@ -256,25 +226,4 @@ function Summary({ label, value }: { label: string; value: string }) {
       <dd className="mt-1 break-all font-medium">{value}</dd>
     </div>
   );
-}
-
-function Field({
-  label,
-  name,
-  ...props
-}: { label: string; name: string } & React.ComponentProps<typeof Input>) {
-  return (
-    <label className="grid gap-2 text-sm font-medium">
-      {label}
-      <Input name={name} {...props} />
-    </label>
-  );
-}
-
-function formHandler(handler: (data: FormData) => void, reset = false) {
-  return (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    handler(new FormData(event.currentTarget));
-    if (reset) event.currentTarget.reset();
-  };
 }
