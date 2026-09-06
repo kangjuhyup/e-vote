@@ -2,6 +2,8 @@ import {
   Check,
   ChevronRight,
   Circle,
+  GripVertical,
+  ListChecks,
   Plus,
   Trash2,
   UsersRound,
@@ -29,7 +31,6 @@ export type VoteSetupStep =
 
 export interface VoteSetupBallotDraft {
   candidateNames: string[];
-  sortOrder: number;
   title: string;
   type: 'CANDIDATE' | 'YES_NO';
 }
@@ -54,6 +55,7 @@ interface VoteSetupWizardProps {
   onCreateVote: (formData: FormData) => void;
   onElectoralRollChange: (electoralRollId: string) => void;
   onRemoveBallot: (ballotIndex: number) => void;
+  onReorderBallot: (fromIndex: number, toIndex: number) => void;
   onStepChange: (step: VoteSetupStep) => void;
   selectedCommissionId?: string;
   selectedElectoralRoll?: ElectoralRollPageItemRecord;
@@ -164,6 +166,7 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
             onNext={() => props.onStepChange('electors')}
             onTypeChange={props.onBallotTypeChange}
             onRemove={props.onRemoveBallot}
+            onReorder={props.onReorderBallot}
             onSubmit={props.onCreateBallot}
           />
         ) : null}
@@ -374,6 +377,7 @@ function BallotForm({
   isSubmitting,
   onNext,
   onRemove,
+  onReorder,
   onSubmit,
   onTypeChange,
 }: {
@@ -382,6 +386,7 @@ function BallotForm({
   isSubmitting: boolean;
   onNext: () => void;
   onRemove: (ballotIndex: number) => void;
+  onReorder: (fromIndex: number, toIndex: number) => void;
   onSubmit: (data: FormData) => void;
   onTypeChange: (type: VoteSetupBallotDraft['type']) => void;
 }) {
@@ -392,23 +397,74 @@ function BallotForm({
     >
       {ballots.length > 0 ? (
         <div className="mb-6 space-y-3" aria-label="추가된 안건 목록">
+          <p className="text-sm text-muted-foreground">
+            드래그 핸들을 끌어 안건 순서를 변경하세요. 핸들에 초점을 둔 뒤
+            위·아래 방향키로도 이동할 수 있습니다.
+          </p>
           {ballots.map((ballot, index) => (
             <article
               key={`${ballot.title}-${index}`}
-              className="rounded-md border bg-muted/35 p-4"
+              aria-label={`${ballot.title} 안건`}
+              className="rounded-md border bg-muted/35 p-4 transition-[border-color,background-color,opacity]"
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const fromIndex = Number(
+                  event.dataTransfer.getData('application/x-vote-ballot-index'),
+                );
+                if (
+                  Number.isInteger(fromIndex) &&
+                  fromIndex >= 0 &&
+                  fromIndex < ballots.length &&
+                  fromIndex !== index
+                ) {
+                  onReorder(fromIndex, index);
+                }
+              }}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">안건 {index + 1}</Badge>
-                    <Badge variant="outline">
-                      {ballot.type === 'CANDIDATE' ? '후보자형' : '찬반형'}
-                    </Badge>
+                <div className="flex min-w-0 items-start gap-2">
+                  <button
+                    type="button"
+                    draggable={!isSubmitting}
+                    disabled={isSubmitting}
+                    aria-label={`${ballot.title} 안건 끌어서 이동`}
+                    className="mt-0.5 inline-flex size-9 shrink-0 touch-none cursor-grab items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = 'move';
+                      event.dataTransfer.setData(
+                        'application/x-vote-ballot-index',
+                        String(index),
+                      );
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowUp' && index > 0) {
+                        event.preventDefault();
+                        onReorder(index, index - 1);
+                      }
+                      if (
+                        event.key === 'ArrowDown' &&
+                        index < ballots.length - 1
+                      ) {
+                        event.preventDefault();
+                        onReorder(index, index + 1);
+                      }
+                    }}
+                  >
+                    <GripVertical aria-hidden="true" />
+                  </button>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary">안건 {index + 1}</Badge>
+                      <Badge variant="outline">
+                        {ballot.type === 'CANDIDATE' ? '후보자형' : '찬반형'}
+                      </Badge>
+                    </div>
+                    <h3 className="mt-3 font-medium">{ballot.title}</h3>
                   </div>
-                  <h3 className="mt-3 font-medium">{ballot.title}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    정렬 순서 {ballot.sortOrder}
-                  </p>
                 </div>
                 <Button
                   type="button"
@@ -440,56 +496,154 @@ function BallotForm({
         </div>
       ) : null}
       <div className={ballots.length > 0 ? 'border-t pt-6' : undefined}>
-        <h3 className="mb-4 text-sm font-medium">새 안건 추가</h3>
-        <form
-          className="grid gap-4 sm:grid-cols-2"
-          onSubmit={toFormHandler(onSubmit, true)}
-        >
-          <Field
-            label={ballotType === 'YES_NO' ? '찬반 안건' : '안건 제목'}
-            name="title"
-            required
-            className="sm:col-span-2"
-          />
-          <label className="grid gap-2 text-sm font-medium">
-            유형
-            <Select
-              name="type"
-              value={ballotType}
-              onChange={(event) =>
-                onTypeChange(event.target.value as VoteSetupBallotDraft['type'])
+        <div className="mb-5">
+          <h3 className="font-medium">새 안건 추가</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            먼저 투표 방식을 선택하면 필요한 입력 항목만 보여드립니다.
+          </p>
+        </div>
+        <form className="space-y-5" onSubmit={toFormHandler(onSubmit, true)}>
+          <fieldset>
+            <legend className="text-sm font-medium">어떤 투표인가요?</legend>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <label
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-[border-color,background-color,box-shadow] hover:bg-muted/40 ${
+                  ballotType === 'CANDIDATE'
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                    : ''
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="type"
+                  value="CANDIDATE"
+                  checked={ballotType === 'CANDIDATE'}
+                  onChange={() => onTypeChange('CANDIDATE')}
+                  className="mt-1 size-4 shrink-0 accent-primary"
+                />
+                <span>
+                  <span className="flex items-center gap-2 font-medium">
+                    <UsersRound className="size-4" aria-hidden="true" />
+                    후보자 선택
+                  </span>
+                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                    등록한 후보 중 한 명을 선택합니다.
+                  </span>
+                </span>
+              </label>
+              <label
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-[border-color,background-color,box-shadow] hover:bg-muted/40 ${
+                  ballotType === 'YES_NO'
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                    : ''
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="type"
+                  value="YES_NO"
+                  checked={ballotType === 'YES_NO'}
+                  onChange={() => onTypeChange('YES_NO')}
+                  className="mt-1 size-4 shrink-0 accent-primary"
+                />
+                <span>
+                  <span className="flex items-center gap-2 font-medium">
+                    <ListChecks className="size-4" aria-hidden="true" />
+                    찬성·반대
+                  </span>
+                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                    하나의 제안에 찬성 또는 반대를 선택합니다.
+                  </span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div className="grid gap-2 text-sm font-medium">
+            <label htmlFor="vote-ballot-title">
+              {ballotType === 'YES_NO'
+                ? '표결할 내용'
+                : '선출할 직책 또는 안건'}
+            </label>
+            <Input
+              id="vote-ballot-title"
+              name="title"
+              required
+              autoComplete="off"
+              aria-describedby="vote-ballot-title-description"
+              placeholder={
+                ballotType === 'YES_NO'
+                  ? '예: 2027년도 사업 예산 승인'
+                  : '예: 회장 선출'
               }
+            />
+            <span
+              id="vote-ballot-title-description"
+              className="text-xs font-normal text-muted-foreground"
             >
-              <option value="CANDIDATE">후보자형</option>
-              <option value="YES_NO">찬반형</option>
-            </Select>
-          </label>
-          <Field
-            label="정렬 순서"
-            name="sortOrder"
-            type="number"
-            min="0"
-            defaultValue="0"
-            required
-          />
+              투표 참여자가 목록에서 바로 이해할 수 있도록 짧고 분명하게
+              작성하세요.
+            </span>
+          </div>
+
           {ballotType === 'CANDIDATE' ? (
-            <>
-              <Field label="후보 1" name="candidate1" required />
-              <Field label="후보 2" name="candidate2" required />
-            </>
-          ) : null}
-          <Button type="submit" variant="outline" disabled={isSubmitting}>
-            <Plus aria-hidden="true" />
-            안건 추가
-          </Button>
-          <Button
-            type="button"
-            disabled={ballots.length === 0}
-            onClick={onNext}
-          >
-            선거인명부로 이동
-            <ChevronRight aria-hidden="true" />
-          </Button>
+            <fieldset className="rounded-lg border bg-muted/25 p-4">
+              <legend className="px-1 text-sm font-medium">후보자</legend>
+              <p className="mb-4 text-sm text-muted-foreground">
+                투표용지에 표시할 이름을 순서대로 입력하세요.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-2 text-sm font-medium">
+                  후보 1
+                  <Input
+                    name="candidate1"
+                    required
+                    autoComplete="off"
+                    placeholder="첫 번째 후보 이름"
+                  />
+                </label>
+                <label className="grid gap-2 text-sm font-medium">
+                  후보 2
+                  <Input
+                    name="candidate2"
+                    required
+                    autoComplete="off"
+                    placeholder="두 번째 후보 이름"
+                  />
+                </label>
+              </div>
+            </fieldset>
+          ) : (
+            <div className="flex items-start gap-3 rounded-lg border bg-muted/25 p-4">
+              <ListChecks
+                className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <div>
+                <p className="text-sm font-medium">
+                  선택지는 자동으로 만듭니다.
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  투표 화면에는 ‘찬성’과 ‘반대’ 두 선택지가 표시됩니다.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-3 border-t pt-5 sm:grid-cols-2">
+            <Button type="submit" variant="outline" disabled={isSubmitting}>
+              <Plus aria-hidden="true" />
+              {ballotType === 'YES_NO' ? '찬반 안건 추가' : '후보자 안건 추가'}
+            </Button>
+            <Button
+              type="button"
+              disabled={ballots.length === 0}
+              onClick={onNext}
+            >
+              선거인명부로 이동
+              <ChevronRight aria-hidden="true" />
+            </Button>
+          </div>
         </form>
       </div>
     </WizardCard>
@@ -546,7 +700,12 @@ function Review({
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {createdSubVoteIds.map((voteDetailId, index) => (
-              <Button key={voteDetailId} type="button" variant="outline" asChild>
+              <Button
+                key={voteDetailId}
+                type="button"
+                variant="outline"
+                asChild
+              >
                 <Link
                   href={`/votes/${createdVote.id}/sub-votes/${voteDetailId}`}
                 >

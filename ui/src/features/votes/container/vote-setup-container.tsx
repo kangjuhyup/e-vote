@@ -96,12 +96,12 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
         electoralRollId: selectedElectoralRollId,
       });
       const subVotes = await Promise.all(
-        ballotDrafts.map(async (ballot) => {
+        ballotDrafts.map(async (ballot, ballotIndex) => {
           const subVote = await voteOperationsApi.createSubVote({
             voteId: vote.id,
             title: ballot.title,
             type: ballot.type,
-            sortOrder: ballot.sortOrder,
+            sortOrder: ballotIndex,
           });
           await Promise.all(
             ballot.candidateNames.map((name, index) =>
@@ -212,7 +212,6 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
     const ballot = {
       title: String(data.get('title') ?? ''),
       type,
-      sortOrder: Number(data.get('sortOrder') ?? 0),
       candidateNames:
         type === 'CANDIDATE'
           ? [
@@ -321,6 +320,16 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
           setBallotDrafts((current) =>
             current.filter((_, index) => index !== ballotIndex),
           );
+        }}
+        onReorderBallot={(fromIndex, toIndex) => {
+          clearStatus();
+          setBallotDrafts((current) => {
+            const reordered = [...current];
+            const [moved] = reordered.splice(fromIndex, 1);
+            if (!moved) return current;
+            reordered.splice(toIndex, 0, moved);
+            return reordered;
+          });
         }}
         onElectoralRollChange={(electoralRollId) => {
           clearStatus();

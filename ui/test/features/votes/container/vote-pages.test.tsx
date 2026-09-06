@@ -96,6 +96,7 @@ describe('vote containers', () => {
 
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
     queryClients.splice(0).forEach((queryClient) => queryClient.clear());
     voteFixtureDetails.splice(
       0,
@@ -319,9 +320,10 @@ describe('vote containers', () => {
       expect(
         screen.getByRole('button', { name: '명부 다시 연결 또는 교체' }),
       ).toHaveProperty('disabled', true);
-      expect(
-        screen.getByRole('button', { name: '투표 삭제' }),
-      ).toHaveProperty('disabled', true);
+      expect(screen.getByRole('button', { name: '투표 삭제' })).toHaveProperty(
+        'disabled',
+        true,
+      );
     } finally {
       vote.status = originalStatus;
     }
@@ -612,6 +614,7 @@ describe('vote containers', () => {
   });
 
   it('creates a vote by connecting an existing electoral roll', async () => {
+    const createSubVote = vi.spyOn(voteOperationsApi, 'createSubVote');
     renderWithQueryClient(<VoteSetupContainer />);
 
     fireEvent.change(screen.getByLabelText('투표 제목'), {
@@ -634,7 +637,7 @@ describe('vote containers', () => {
     expect(
       await screen.findByRole('heading', { name: '안건과 후보' }),
     ).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('안건 제목'), {
+    fireEvent.change(await screen.findByLabelText('선출할 직책 또는 안건'), {
       target: { value: 'Mock 대표 선출' },
     });
     fireEvent.change(screen.getByLabelText('후보 1'), {
@@ -643,7 +646,7 @@ describe('vote containers', () => {
     fireEvent.change(screen.getByLabelText('후보 2'), {
       target: { value: '후보 나' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '안건 추가' }));
+    fireEvent.click(screen.getByRole('button', { name: '후보자 안건 추가' }));
 
     expect(screen.getByText(/현재 1개 안건을 입력했습니다/)).toBeTruthy();
     expect(
@@ -651,15 +654,13 @@ describe('vote containers', () => {
     ).toBeTruthy();
     expect(screen.getByText('후보 1 · 후보 가')).toBeTruthy();
     expect(screen.getByText('후보 2 · 후보 나')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('유형'), {
-      target: { value: 'YES_NO' },
-    });
+    fireEvent.click(screen.getByRole('radio', { name: /찬성·반대/ }));
     expect(screen.queryByLabelText('후보 1')).toBeNull();
     expect(screen.queryByLabelText('후보 2')).toBeNull();
-    fireEvent.change(screen.getByLabelText('찬반 안건'), {
+    fireEvent.change(screen.getByLabelText('표결할 내용'), {
       target: { value: 'Mock 예산 승인' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '안건 추가' }));
+    fireEvent.click(screen.getByRole('button', { name: '찬반 안건 추가' }));
 
     expect(screen.getByText(/현재 2개 안건을 입력했습니다/)).toBeTruthy();
     expect(
@@ -669,6 +670,37 @@ describe('vote containers', () => {
       screen.getByRole('heading', { name: 'Mock 예산 승인' }),
     ).toBeTruthy();
     expect(screen.getByText('찬성 / 반대')).toBeTruthy();
+    expect(screen.queryByLabelText('정렬 순서')).toBeNull();
+
+    let draggedIndex = '';
+    const dataTransfer = {
+      dropEffect: 'none',
+      effectAllowed: 'none',
+      getData: vi.fn(() => draggedIndex),
+      setData: vi.fn((_type: string, value: string) => {
+        draggedIndex = value;
+      }),
+    };
+    fireEvent.dragStart(
+      screen.getByRole('button', {
+        name: 'Mock 대표 선출 안건 끌어서 이동',
+      }),
+      { dataTransfer },
+    );
+    fireEvent.dragOver(
+      screen.getByRole('article', { name: 'Mock 예산 승인 안건' }),
+      { dataTransfer },
+    );
+    fireEvent.drop(
+      screen.getByRole('article', { name: 'Mock 예산 승인 안건' }),
+      { dataTransfer },
+    );
+
+    const reorderedArticles = screen
+      .getByLabelText('추가된 안건 목록')
+      .querySelectorAll('article');
+    expect(reorderedArticles[0]?.textContent).toContain('Mock 예산 승인');
+    expect(reorderedArticles[1]?.textContent).toContain('Mock 대표 선출');
     fireEvent.click(screen.getByRole('button', { name: '선거인명부로 이동' }));
 
     expect(
@@ -722,13 +754,9 @@ describe('vote containers', () => {
     expect(screen.queryByText('electoral-roll-1')).toBeNull();
     expect(screen.queryByText('electoral-roll-snapshot-1')).toBeNull();
     expect(
-      screen.queryByText(
-        /부모 투표 ID|위원회 ID|스냅샷 ID|자식 투표 ID/,
-      ),
+      screen.queryByText(/부모 투표 ID|위원회 ID|스냅샷 ID|자식 투표 ID/),
     ).toBeNull();
-    expect(
-      screen.getByRole('heading', { name: '투표 첨부파일' }),
-    ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '투표 첨부파일' })).toBeTruthy();
     expect(
       screen.getByRole('link', { name: '1번 안건 후보 첨부' }),
     ).toHaveProperty('href', expect.stringContaining('/sub-votes/'));
@@ -738,6 +766,15 @@ describe('vote containers', () => {
     expect(
       screen.getByRole('heading', { name: '투표 이용료 결제 주문' }),
     ).toBeTruthy();
+    expect(
+      createSubVote.mock.calls.slice(-2).map(([input]) => ({
+        sortOrder: input.sortOrder,
+        title: input.title,
+      })),
+    ).toEqual([
+      { sortOrder: 0, title: 'Mock 예산 승인' },
+      { sortOrder: 1, title: 'Mock 대표 선출' },
+    ]);
     expect(screen.getByRole('checkbox')).toBeTruthy();
     expect(
       screen.getByRole('button', {
@@ -1035,9 +1072,10 @@ describe('vote containers', () => {
     expect(
       screen.getByLabelText('member-101 구성원 휴대폰번호'),
     ).toHaveProperty('value', '010-****-1201');
-    expect(
-      screen.getByLabelText('member-101 구성원 생년월일'),
-    ).toHaveProperty('value', '1990-**-**');
+    expect(screen.getByLabelText('member-101 구성원 생년월일')).toHaveProperty(
+      'value',
+      '1990-**-**',
+    );
 
     fireEvent.change(screen.getByLabelText('새 구성원 식별자'), {
       target: { value: 'invalid-member' },
@@ -1096,9 +1134,7 @@ describe('vote containers', () => {
     expect(
       screen.getByRole('columnheader', { name: '휴대폰번호' }),
     ).toBeTruthy();
-    expect(
-      screen.getByRole('columnheader', { name: '생년월일' }),
-    ).toBeTruthy();
+    expect(screen.getByRole('columnheader', { name: '생년월일' })).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: '그룹 키' })).toBeTruthy();
     expect(
       screen.getByRole('columnheader', { name: '투표 가중치' }),
@@ -1210,10 +1246,10 @@ describe('vote containers', () => {
       role: 'FIELD_MANAGER',
     });
 
-    fireEvent.click(
-      screen.getByRole('button', { name: '오현장 위원 삭제' }),
-    );
-    expect(screen.getByText(/마지막 활성 관리자는 삭제할 수 없습니다/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '오현장 위원 삭제' }));
+    expect(
+      screen.getByText(/마지막 활성 관리자는 삭제할 수 없습니다/),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '삭제' }));
     expect(
       await screen.findByText(
