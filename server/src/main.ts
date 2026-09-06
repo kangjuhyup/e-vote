@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { RvlogHttpExceptionLogger } from './platform/logging/rvlog-http-exception.logger';
+import { configureSwagger } from './platform/openapi/swagger.config';
 import { HttpExceptionFilter } from './shared/presentation/common/filter/http-exception.filter';
 import { ResponseInterceptor } from './shared/presentation/common/interceptor/response.interceptor';
 
@@ -16,6 +17,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter(new RvlogHttpExceptionLogger()));
+  configureSwagger(app);
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();

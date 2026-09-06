@@ -25,6 +25,10 @@ The default local ports are `5432` for PostgreSQL, `6381` for Redis, `3000`
 for the API server, `3001` for the vote UI, `3002` for the OIDC auth service,
 and `3003` for the auth admin UI.
 
+Swagger UI is available at <http://localhost:3000/docs>, and the OpenAPI JSON
+document at <http://localhost:3000/docs-json>. Use the Swagger UI `Authorize`
+action to provide the Bearer access token required by protected API routes.
+
 Open the auth admin UI at <http://localhost:3003>. Its Nginx gateway proxies
 admin and tenant API requests to the `auth-service` container so the UI and
 API share the same browser origin.
