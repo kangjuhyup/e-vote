@@ -13,8 +13,8 @@ import type { BillingOrder } from "@/features/billing/model/billing.types";
 
 import {
   billingStatusLabels,
-  formatBillingAmount,
 } from "../lib/billing-view-models";
+import { BillingPriceBreakdown } from "./billing-price-breakdown";
 
 interface BillingOrderConfirmationProps {
   blockingReasons?: string[];
@@ -61,11 +61,7 @@ export function BillingOrderConfirmation({
         ) : null}
         {showOrder ? (
           <div className="space-y-4">
-            <dl className="grid gap-3 sm:grid-cols-3">
-              <Summary label="주문 금액" value={formatBillingAmount(order.amount, order.currency)} />
-              <Summary label="선거인 수" value={`${order.electorCount.toLocaleString()}명`} />
-              <Summary label="가격 구간" value={`${order.pricingUnitCount.toLocaleString()}구간`} />
-            </dl>
+            <BillingPriceBreakdown order={order} />
             <p className="text-sm leading-6 text-muted-foreground">
               {order.status === "PENDING_PAYMENT"
                 ? "결제 처리 중입니다. 완료될 때까지 투표는 초안으로 표시되지만 설정은 잠깁니다."
@@ -139,14 +135,5 @@ export function BillingOrderConfirmation({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function Summary({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-muted p-3">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-medium">{value}</dd>
-    </div>
   );
 }

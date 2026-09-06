@@ -97,6 +97,10 @@ export function createBillingApiClient(
       const issuedAt = now();
       const order: BillingOrder = {
         amount: 3_000,
+        baseAmount: 3_000,
+        blockchainStorageAmount: 0,
+        blockchainStorageCount: 0,
+        blockchainStorageUnitPrice: 3_000,
         cancelableUntil: new Date(
           new Date(issuedAt).getTime() + 7 * 86_400_000,
         ).toISOString(),

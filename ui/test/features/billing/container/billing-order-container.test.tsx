@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { billingApi } from "@/features/billing/api/billing-api";
 import { BillingOrderContainer } from "@/features/billing/container/billing-order-container";
+import type { BillingOrder } from "@/features/billing/model/billing.types";
 import { BillingOrderConfirmation } from "@/features/billing/ui/billing-order-confirmation";
 
 afterEach(() => {
@@ -25,6 +26,31 @@ function renderWithQueryClient(children: React.ReactNode) {
   return render(
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
   );
+}
+
+function billingOrder(overrides: Partial<BillingOrder> = {}): BillingOrder {
+  return {
+    amount: 3_000,
+    baseAmount: 3_000,
+    blockchainStorageAmount: 0,
+    blockchainStorageCount: 0,
+    blockchainStorageUnitPrice: 3_000,
+    cancelableUntil: "2026-09-12T00:00:00.000Z",
+    cancellationWindowDays: 7,
+    currency: "KRW",
+    electorCount: 3,
+    id: "billing-order-1",
+    issuedAt: "2026-09-05T00:00:00.000Z",
+    orderedByUserPrincipalId: "user-1",
+    pricingUnitCount: 1,
+    pricingUnitSize: 100,
+    productCode: "VOTE_USAGE",
+    productName: "투표 개설 이용료",
+    status: "PENDING_PAYMENT",
+    unitPrice: 3_000,
+    voteId: "vote-1",
+    ...overrides,
+  };
 }
 
 describe("billing order UI", () => {
@@ -58,29 +84,58 @@ describe("billing order UI", () => {
         isSubmitting={false}
         onConfirmChange={vi.fn()}
         onCreateOrder={onCreateOrder}
-        order={{
-          amount: 3_000,
-          cancelableUntil: "2026-09-12T00:00:00.000Z",
-          cancellationWindowDays: 7,
-          currency: "KRW",
-          electorCount: 3,
+        order={billingOrder({
           id: "refunded-order",
-          issuedAt: "2026-09-05T00:00:00.000Z",
-          orderedByUserPrincipalId: "user-1",
-          pricingUnitCount: 1,
-          pricingUnitSize: 100,
-          productCode: "VOTE_USAGE",
-          productName: "투표 개설 이용료",
           refundedAt: "2026-09-05T00:10:00.000Z",
           status: "REFUNDED",
-          unitPrice: 3_000,
-          voteId: "vote-1",
-        }}
+        })}
       />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "이용료 다시 결제" }));
     expect(onCreateOrder).toHaveBeenCalledOnce();
+  });
+
+  it("shows a zero blockchain surcharge in the payment confirmation", () => {
+    render(
+      <BillingOrderConfirmation
+        hasCommission
+        isConfirmed
+        isSubmitting={false}
+        onConfirmChange={vi.fn()}
+        onCreateOrder={vi.fn()}
+        order={billingOrder()}
+      />,
+    );
+
+    expect(screen.getByText("기본 이용료")).toBeTruthy();
+    expect(screen.getByText("블록체인 결과 저장 추가금")).toBeTruthy();
+    expect(screen.getByText("0건 × ₩3,000")).toBeTruthy();
+    expect(screen.getByText("최종 결제 금액")).toBeTruthy();
+    expect(screen.getAllByText("₩3,000")).toHaveLength(2);
+    expect(screen.getByText("₩0")).toBeTruthy();
+  });
+
+  it("shows the server-provided blockchain surcharge and total in order details", async () => {
+    const order = billingOrder({
+      amount: 12_000,
+      baseAmount: 6_000,
+      blockchainStorageAmount: 6_000,
+      blockchainStorageCount: 2,
+      electorCount: 120,
+      id: "blockchain-billing-order",
+      pricingUnitCount: 2,
+    });
+    vi.spyOn(billingApi, "fetchVoteUsageOrder").mockResolvedValue(order);
+
+    renderWithQueryClient(
+      <BillingOrderContainer billingOrderId={order.id} />,
+    );
+
+    expect(await screen.findByText("120명 · 100명 단위 2구간 · 구간당 ₩3,000")).toBeTruthy();
+    expect(screen.getByText("2건 × ₩3,000")).toBeTruthy();
+    expect(screen.getAllByText("₩6,000")).toHaveLength(2);
+    expect(screen.getByText("₩12,000")).toBeTruthy();
   });
 
   it("shows the server price snapshot and cancels after confirmation", async () => {
@@ -91,7 +146,9 @@ describe("billing order UI", () => {
 
     expect(await screen.findAllByText("₩3,000")).toHaveLength(2);
     expect(screen.getByText("결제 대기")).toBeTruthy();
-    expect(screen.getByText("3명")).toBeTruthy();
+    expect(
+      screen.getByText("3명 · 100명 단위 1구간 · 구간당 ₩3,000"),
+    ).toBeTruthy();
     expect(screen.queryByText(order.id)).toBeNull();
     expect(screen.queryByText(order.voteId)).toBeNull();
     expect(screen.queryByText("투표 ID")).toBeNull();

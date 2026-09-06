@@ -15,8 +15,8 @@ import { formatKoreanDateTime } from "@/shared/lib/date-format";
 
 import {
   billingStatusLabels,
-  formatBillingAmount,
 } from "../lib/billing-view-models";
+import { BillingPriceBreakdown } from "./billing-price-breakdown";
 
 interface BillingOrderManagementProps {
   cancelConfirmed: boolean;
@@ -68,17 +68,8 @@ export function BillingOrderManagement({
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div>
-            <p className="text-sm text-muted-foreground">주문 금액</p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight">
-              {formatBillingAmount(order.amount, order.currency)}
-            </p>
-          </div>
+          <BillingPriceBreakdown order={order} />
           <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Summary label="선거인 수" value={`${order.electorCount.toLocaleString()}명`} />
-            <Summary label="가격 단위" value={`${order.pricingUnitSize.toLocaleString()}명`} />
-            <Summary label="가격 구간" value={`${order.pricingUnitCount.toLocaleString()}구간`} />
-            <Summary label="구간당 금액" value={formatBillingAmount(order.unitPrice, order.currency)} />
             <Summary label="주문 시각" value={formatKoreanDateTime(order.issuedAt)} />
             <Summary label="취소 가능 기한" value={formatKoreanDateTime(order.cancelableUntil)} />
             <Summary label="상품 코드" value={order.productCode} />
