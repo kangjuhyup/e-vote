@@ -15,7 +15,7 @@ function jsonResponse(data: unknown, status = 200) {
 
 function billingOrder(overrides: Record<string, unknown> = {}) {
   return {
-    amount: 12_000,
+    amount: 15_000,
     baseAmount: 6_000,
     blockchainStorageAmount: 6_000,
     blockchainStorageCount: 2,
@@ -25,6 +25,9 @@ function billingOrder(overrides: Record<string, unknown> = {}) {
     currency: "KRW",
     electorCount: 120,
     id: "billing-order-1",
+    identityVerificationAmount: 3_000,
+    identityVerificationRequired: true,
+    identityVerificationUnitPrice: 3_000,
     issuedAt: "2026-08-31T00:00:00.000Z",
     orderedByUserPrincipalId: "user-principal-1",
     pricingUnitCount: 2,
@@ -48,12 +51,15 @@ describe("billing api", () => {
     });
 
     await expect(client.createVoteUsageOrder("vote/1")).resolves.toMatchObject({
-      amount: 12_000,
+      amount: 15_000,
       baseAmount: 6_000,
       blockchainStorageAmount: 6_000,
       blockchainStorageCount: 2,
       blockchainStorageUnitPrice: 3_000,
       id: "billing-order-1",
+      identityVerificationAmount: 3_000,
+      identityVerificationRequired: true,
+      identityVerificationUnitPrice: 3_000,
     });
     expect(fetcher).toHaveBeenCalledWith(
       "https://api.example.com/billing/vote-usage-orders",
@@ -96,11 +102,14 @@ describe("billing api", () => {
         reason: "투표 일정 변경",
       }),
     ).resolves.toMatchObject({
-      amount: 12_000,
+      amount: 15_000,
       baseAmount: 6_000,
       blockchainStorageAmount: 6_000,
       blockchainStorageCount: 2,
       blockchainStorageUnitPrice: 3_000,
+      identityVerificationAmount: 3_000,
+      identityVerificationRequired: true,
+      identityVerificationUnitPrice: 3_000,
     });
 
     expect(fetcher).toHaveBeenCalledWith(
@@ -128,6 +137,9 @@ describe("billing api", () => {
       blockchainStorageAmount: 0,
       blockchainStorageCount: 0,
       blockchainStorageUnitPrice: 3_000,
+      identityVerificationAmount: 0,
+      identityVerificationRequired: false,
+      identityVerificationUnitPrice: 3_000,
       orderedByUserPrincipalId: "mock-user-principal",
       pricingUnitCount: 1,
       pricingUnitSize: 100,

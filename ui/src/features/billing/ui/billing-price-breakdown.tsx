@@ -24,6 +24,16 @@ export function BillingPriceBreakdown({
           order.currency,
         )}
       />
+      {order.identityVerificationRequired ? (
+        <PriceRow
+          description={`1회 × ${formatBillingAmount(order.identityVerificationUnitPrice, order.currency)}`}
+          label="본인인증 필수"
+          value={formatBillingAmount(
+            order.identityVerificationAmount,
+            order.currency,
+          )}
+        />
+      ) : null}
       <div className="flex items-center justify-between gap-4 border-t bg-muted/40 px-4 py-4 sm:px-5">
         <dt className="font-semibold">최종 결제 금액</dt>
         <dd className="shrink-0 text-xl font-semibold tabular-nums">

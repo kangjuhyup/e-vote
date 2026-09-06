@@ -19,6 +19,9 @@ export interface BillingOrder {
   currency: string;
   electorCount: number;
   id: string;
+  identityVerificationAmount: number;
+  identityVerificationRequired: boolean;
+  identityVerificationUnitPrice: number;
   issuedAt: string;
   orderedByUserPrincipalId: string;
   paidAt?: string;
