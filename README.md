@@ -34,6 +34,9 @@ Swagger UI is available at <http://localhost:3000/docs>, and the OpenAPI JSON
 document at <http://localhost:3000/docs-json>. Use the Swagger UI `Authorize`
 action to provide the Bearer access token required by protected API routes.
 
+For the development participant authentication and voting flow, see
+[Mock participant authentication](docs/participant-mock-authentication.md).
+
 Open the auth admin UI at <http://localhost:3003>. Its Nginx gateway proxies
 admin and tenant API requests to the `auth-service` container so the UI and
 API share the same browser origin.

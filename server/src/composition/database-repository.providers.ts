@@ -1,3 +1,6 @@
+import { ELECTOR_VERIFICATION_REPOSITORY_PORT } from '../modules/elector/application/port/persistence/command/elector-verification-repository.port';
+import { ELECTOR_PARTICIPANT_ACCESS_PORT } from '../shared/application/port/capability/elector-participant-access.port';
+import { ElectorVerificationRepositoryAdapter } from '../modules/elector/infrastructure/database/repository/command/elector-verification-repository.adapter';
 import type { Provider } from '@nestjs/common';
 import { ATTACHMENT_REPOSITORY_PORT } from '../modules/vote/application/port/persistence/command/attachment-repository.port';
 import { CANDIDATE_READ_REPOSITORY_PORT } from '../modules/vote/application/port/persistence/query/candidate-read-repository.port';
@@ -58,6 +61,15 @@ import { OUTBOX_MESSAGE_REPOSITORY_PORT } from '../shared/application/port/messa
 import { IntegrationOutboxRepositoryAdapter } from '../platform/outbox/infrastructure/database/repository/integration-outbox-repository.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
+  ElectorVerificationRepositoryAdapter,
+  {
+    provide: ELECTOR_VERIFICATION_REPOSITORY_PORT,
+    useExisting: ElectorVerificationRepositoryAdapter,
+  },
+  {
+    provide: ELECTOR_PARTICIPANT_ACCESS_PORT,
+    useExisting: ElectorVerificationRepositoryAdapter,
+  },
   IntegrationOutboxRepositoryAdapter,
   {
     provide: INTEGRATION_EVENT_OUTBOX_PORT,
@@ -178,6 +190,8 @@ export const databaseRepositoryProviders: Provider[] = [
 ];
 
 export const databaseRepositoryPortTokens = [
+  ELECTOR_VERIFICATION_REPOSITORY_PORT,
+  ELECTOR_PARTICIPANT_ACCESS_PORT,
   INTEGRATION_EVENT_OUTBOX_PORT,
   OUTBOX_MESSAGE_REPOSITORY_PORT,
   ELECTION_COMMISSION_REPOSITORY_PORT,

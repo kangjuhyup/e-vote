@@ -1,3 +1,8 @@
+import {
+  ELECTOR_PARTICIPANT_ACCESS_PORT,
+  ElectorParticipantForbiddenError,
+  type ElectorParticipantAccessPort,
+} from '../../../../../shared/application/port/capability/elector-participant-access.port';
 import { Inject, Injectable } from '@nestjs/common';
 import { ParticipationAggregate } from '../../../domain/participation.aggregate';
 import { ParticipationEligibilityPolicy } from '../../../domain/participation-eligibility.policy';
@@ -69,6 +74,8 @@ export class CastParticipationHandler {
     private readonly participationRepository: ParticipationRepositoryPort,
     @Inject(FIELD_VOTING_SESSION_ACCESS_PORT)
     private readonly fieldVotingSessionRepository: FieldVotingSessionAccessPort,
+    @Inject(ELECTOR_PARTICIPANT_ACCESS_PORT)
+    private readonly participantAccess: ElectorParticipantAccessPort,
   ) {}
 
   async execute(
@@ -89,6 +96,16 @@ export class CastParticipationHandler {
   private async castWithinTransaction(
     command: CastParticipationCommand,
   ): Promise<CastParticipationResult> {
+    if (
+      !command.userPrincipalId?.trim() ||
+      !(await this.participantAccess.isAuthorized(
+        command.voteId,
+        command.electorId,
+        command.userPrincipalId,
+      ))
+    )
+      throw new ElectorParticipantForbiddenError();
+
     const [vote, voteDetail, elector, candidate, existingParticipations] =
       await Promise.all([
         this.voteRepository.findById(command.voteId),

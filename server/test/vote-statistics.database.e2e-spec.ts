@@ -1,3 +1,10 @@
+import { createDatabaseEntityRegistry } from '../src/composition/database-entity.registry';
+import { configureDatabaseEntityRegistryFactory } from '../src/platform/database/repository/database-repository.util';
+import { ElectorVerificationRepositoryAdapter } from '../src/modules/elector/infrastructure/database/repository/command/elector-verification-repository.adapter';
+import { AuthenticateElectorHandler } from '../src/modules/elector/application/command/handler/authenticate-elector.handler';
+import { AuthenticateElectorCommand } from '../src/modules/elector/application/command/dto/request/authenticate-elector.command';
+import { MockElectorIdentityVerificationAdapter } from '../src/modules/elector/infrastructure/security/mock-elector-identity-verification.adapter';
+import { ElectorIdentityVerificationResult } from '../src/modules/elector/domain/vo/elector-identity-verification.vo';
 import { MikroORM, type EntityManager } from '@mikro-orm/postgresql';
 import { GetVoteResultHandler } from '../src/modules/participation/application/query/handler/get-vote-result.handler';
 import { GetVoteResultQuery } from '../src/modules/participation/application/query/dto/request/get-vote-result.query';
@@ -30,12 +37,25 @@ const describeDatabase =
     : describe.skip;
 
 describeDatabase('vote statistics database integration', () => {
+  const previousMode = process.env.VOTE_IDENTITY_VERIFICATION_MODE;
+  beforeAll(() => {
+    process.env.VOTE_IDENTITY_VERIFICATION_MODE = 'mock';
+  });
+  afterAll(() => {
+    if (previousMode === undefined)
+      delete process.env.VOTE_IDENTITY_VERIFICATION_MODE;
+    else process.env.VOTE_IDENTITY_VERIFICATION_MODE = previousMode;
+  });
   let orm: MikroORM | undefined;
   let em: EntityManager;
 
   beforeAll(async () => {
     assertDedicatedTestDatabase();
-    const config = await createDatabaseConfig();
+    configureDatabaseEntityRegistryFactory(createDatabaseEntityRegistry);
+    const config = await createDatabaseConfig(
+      process.env,
+      createDatabaseEntityRegistry,
+    );
     orm = await MikroORM.init({
       ...config,
       migrations: {
@@ -50,6 +70,141 @@ describeDatabase('vote statistics database integration', () => {
   beforeEach(async () => {
     await clearTestFixtures(em);
     await seedStatisticsFixtures(em);
+  });
+
+  it('persists mock success and authorizes only its principal after a fresh database read', async () => {
+    await expect(
+      authenticateParticipant(em, 'participant-1', 'mock-success:success01'),
+    ).resolves.toMatchObject({ identityVerified: true });
+    const access = new ElectorVerificationRepositoryAdapter(em.fork());
+    await expect(
+      access.isAuthorized(VOTE_ID, ELECTOR_FOUR_ID, 'participant-1'),
+    ).resolves.toBe(true);
+    await expect(
+      access.isAuthorized(VOTE_ID, ELECTOR_FOUR_ID, 'participant-2'),
+    ).resolves.toBe(false);
+    await expect(
+      access.isAuthorized(VOTE_ID, ELECTOR_ONE_ID, 'participant-1'),
+    ).resolves.toBe(false);
+    const elector = await new ElectorRepositoryAdapter(em.fork()).findById(
+      VOTE_ID,
+      ELECTOR_FOUR_ID,
+    );
+    expect(elector?.isIdentityVerified()).toBe(true);
+    process.env.VOTE_IDENTITY_VERIFICATION_MODE = 'disabled';
+    try {
+      await expect(
+        new ElectorVerificationRepositoryAdapter(em.fork()).isAuthorized(
+          VOTE_ID,
+          ELECTOR_FOUR_ID,
+          'participant-1',
+        ),
+      ).resolves.toBe(false);
+    } finally {
+      process.env.VOTE_IDENTITY_VERIFICATION_MODE = 'mock';
+    }
+  });
+
+  it('records failed verification without granting access', async () => {
+    await expect(
+      authenticateParticipant(em, 'participant-1', 'mock-failure:failure01'),
+    ).resolves.toMatchObject({ identityVerified: false });
+    await expect(
+      new ElectorVerificationRepositoryAdapter(em.fork()).isAuthorized(
+        VOTE_ID,
+        ELECTOR_FOUR_ID,
+        'participant-1',
+      ),
+    ).resolves.toBe(false);
+    const rows = await em
+      .getConnection()
+      .execute<Array<{ status: string }>>(
+        'select status from elector_identity_verifications',
+      );
+    expect(rows).toEqual([{ status: 'FAILED' }]);
+  });
+
+  it('rejects replay and rebinding to a different principal', async () => {
+    await authenticateParticipant(
+      em,
+      'participant-1',
+      'mock-success:replay001',
+    );
+    await expect(
+      authenticateParticipant(
+        em.fork(),
+        'participant-1',
+        'mock-success:replay001',
+      ),
+    ).rejects.toThrow('already consumed');
+    await expect(
+      authenticateParticipant(
+        em.fork(),
+        'participant-2',
+        'mock-success:rebind001',
+      ),
+    ).rejects.toThrow('does not own');
+  });
+
+  it('serializes concurrent attempts to bind one elector to different principals', async () => {
+    const results = await Promise.allSettled([
+      authenticateParticipant(
+        em.fork(),
+        'participant-1',
+        'mock-success:parallel1',
+      ),
+      authenticateParticipant(
+        em.fork(),
+        'participant-2',
+        'mock-success:parallel2',
+      ),
+    ]);
+    expect(
+      results.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1);
+    expect(
+      results.filter((result) => result.status === 'rejected'),
+    ).toHaveLength(1);
+    const rows = await em
+      .getConnection()
+      .execute('select id from elector_identity_verifications');
+    expect(rows).toHaveLength(1);
+  });
+
+  it('rechecks blocked or changed electors inside the recording transaction', async () => {
+    const elector = await new ElectorRepositoryAdapter(em).findById(
+      VOTE_ID,
+      ELECTOR_FOUR_ID,
+    );
+    if (!elector) throw new Error('fixture missing');
+    const params = {
+      elector,
+      userPrincipalId: 'participant-1',
+      transactionId: 'mock-success:changed01',
+      result: ElectorIdentityVerificationResult.of({
+        verified: true,
+        provider: 'ETC',
+        method: 'ADMIN',
+        isMock: true,
+      }),
+    };
+    await em
+      .getConnection()
+      .execute("update electors set status = 'BLOCKED' where id = ?", [
+        ELECTOR_FOUR_ID,
+      ]);
+    await expect(
+      new ElectorVerificationRepositoryAdapter(em.fork()).record(params),
+    ).rejects.toThrow('not eligible');
+    await em
+      .getConnection()
+      .execute(
+        "update electors set status = 'ELIGIBLE', identifier = 'changed' where id = ?",
+        [ELECTOR_FOUR_ID],
+      );
+    await expect(
+      new ElectorVerificationRepositoryAdapter(em.fork()).record(params),
+    ).rejects.toThrow('identity changed');
   });
 
   it('executes group/share turnout and result aggregation in PostgreSQL', async () => {
@@ -285,6 +440,11 @@ describeDatabase('vote statistics database integration', () => {
     );
     em.clear();
     const handlerEm = em.fork();
+    await authenticateParticipant(
+      handlerEm,
+      'participant-1',
+      'mock-success:cast0001',
+    );
     const handler = new CastParticipationHandler(
       new VoteRepositoryAdapter(handlerEm),
       new VoteDetailRepositoryAdapter(handlerEm),
@@ -292,11 +452,13 @@ describeDatabase('vote statistics database integration', () => {
       new CandidateRepositoryAdapter(handlerEm),
       new ParticipationRepositoryAdapter(handlerEm),
       new FieldVotingSessionRepositoryAdapter(handlerEm),
+      new ElectorVerificationRepositoryAdapter(handlerEm),
     );
 
     await expect(
       handler.execute(
         CastParticipationCommand.of({
+          userPrincipalId: 'participant-1',
           voteId: VOTE_ID,
           voteDetailId: VOTE_DETAIL_ID,
           electorId: ELECTOR_FOUR_ID,
@@ -558,4 +720,25 @@ async function seedStatisticsFixtures(
   for (const statement of statements) {
     await entityManager.getConnection().execute(statement);
   }
+}
+
+async function authenticateParticipant(
+  em: EntityManager,
+  userPrincipalId: string,
+  transactionId: string,
+) {
+  return new AuthenticateElectorHandler(
+    new ElectorRepositoryAdapter(em),
+    new MockElectorIdentityVerificationAdapter(),
+    new ElectorVerificationRepositoryAdapter(em),
+  ).execute(
+    AuthenticateElectorCommand.of({
+      voteId: VOTE_ID,
+      electorId: ELECTOR_FOUR_ID,
+      userPrincipalId,
+      provider: 'MOCK',
+      transactionId,
+      verifiedAt: new Date(),
+    }),
+  );
 }

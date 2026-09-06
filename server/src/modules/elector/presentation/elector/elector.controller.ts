@@ -1,8 +1,14 @@
+import { ElectorIdentityVerificationUnavailableError } from '../../application/port/gateway/elector-identity-verification.port';
+import { ElectorParticipantForbiddenError } from '../../../../shared/application/port/capability/elector-participant-access.port';
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Body,
   ConflictException,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  ServiceUnavailableException,
   Controller,
   Delete,
   HttpCode,
@@ -20,7 +26,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthenticateElectorCommand } from '../../application/command/dto/request/authenticate-elector.command';
-import { AuthenticateElectorHandler } from '../../application/command/handler/authenticate-elector.handler';
+import {
+  ElectorNotFoundError,
+  AuthenticateElectorHandler,
+} from '../../application/command/handler/authenticate-elector.handler';
 import { CreateElectorCommand } from '../../application/command/dto/request/create-elector.command';
 import { CreateElectorHandler } from '../../application/command/handler/create-elector.handler';
 import { DomainError } from '../../../../shared/domain/domain-error';
@@ -156,16 +165,31 @@ export class ElectorController {
     @Param() params: AuthenticateElectorParam,
     @Body() body: AuthenticateElectorBody,
   ): Promise<AuthenticateElectorResponse> {
-    const result = await this.authenticateElectorHandler.execute(
-      AuthenticateElectorCommand.of({
-        voteId: params.voteId,
-        electorId: params.electorId,
-        provider: body.provider,
-        transactionId: body.transactionId,
-        verifiedAt: new Date(body.verifiedAt),
-      }),
-    );
+    try {
+      const result = await this.authenticateElectorHandler.execute(
+        AuthenticateElectorCommand.of({
+          voteId: params.voteId,
+          electorId: params.electorId,
+          userPrincipalId: user.id,
+          provider: body.provider,
+          transactionId: body.transactionId,
+          verifiedAt: new Date(),
+        }),
+      );
 
-    return AuthenticateElectorResponse.of(result);
+      return AuthenticateElectorResponse.of(result);
+    } catch (error) {
+      if (error instanceof ElectorNotFoundError)
+        throw new NotFoundException(error.message);
+      if (error instanceof ElectorParticipantForbiddenError)
+        throw new ForbiddenException(error.message);
+      if (error instanceof ElectorIdentityVerificationUnavailableError)
+        throw new ServiceUnavailableException(error.message);
+      if (error instanceof DomainError)
+        throw new ConflictException(error.message);
+      if (error instanceof TypeError)
+        throw new BadRequestException('invalid verification request');
+      throw error;
+    }
   }
 }

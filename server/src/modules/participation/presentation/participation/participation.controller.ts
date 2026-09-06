@@ -1,9 +1,11 @@
+import { ElectorParticipantForbiddenError } from '../../../../shared/application/port/capability/elector-participant-access.port';
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   BadRequestException,
   Body,
   ConflictException,
+  ForbiddenException,
   Controller,
   NotFoundException,
   Post,
@@ -71,13 +73,14 @@ export class ParticipationController {
     try {
       const result = await this.castParticipationHandler.execute(
         CastParticipationCommand.of({
+          userPrincipalId: user.id,
           voteId: body.voteId,
           voteDetailId: body.voteDetailId,
           electorId: body.electorId,
           selectedCandidateId: body.selectedCandidateId,
           votingChannel: body.votingChannel,
           fieldVotingSessionId: body.fieldVotingSessionId,
-          participatedAt: new Date(body.participatedAt),
+          participatedAt: new Date(),
         }),
       );
 
@@ -89,6 +92,8 @@ export class ParticipationController {
 }
 
 function throwParticipationHttpError(error: unknown): never {
+  if (error instanceof ElectorParticipantForbiddenError)
+    throw new ForbiddenException(error.message);
   if (
     error instanceof VoteNotFoundError ||
     error instanceof VoteDetailNotFoundError ||
