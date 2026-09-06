@@ -16,6 +16,12 @@ export class AttachmentTargetNotFoundError extends Error {
   }
 }
 
+export class AttachmentAccessDeniedError extends Error {
+  constructor() {
+    super('only the vote creator can manage attachments');
+  }
+}
+
 @Injectable()
 export class AttachmentTargetValidator {
   constructor(
@@ -54,10 +60,13 @@ export class AttachmentTargetValidator {
     }
   }
 
-  async assertMutable(target: AttachmentTarget): Promise<void> {
+  async assertMutable(
+    target: AttachmentTarget,
+    action: 'created' | 'deleted' = 'created',
+  ): Promise<void> {
     const vote = await this.voteRepository.findById(target.voteId);
     if (!vote) throw new AttachmentTargetNotFoundError();
-    vote.assertChildResourcesMutable('created');
+    vote.assertChildResourcesMutable(action);
 
     if (target.targetType === AttachmentTargetType.Vote) return;
 
@@ -67,7 +76,7 @@ export class AttachmentTargetValidator {
     if (!voteDetail || !voteDetail.belongsToVote(vote.id)) {
       throw new AttachmentTargetNotFoundError();
     }
-    voteDetail.assertChildResourcesMutable('created');
+    voteDetail.assertChildResourcesMutable(action);
 
     if (target.targetType === AttachmentTargetType.VoteDetail) return;
 
@@ -75,6 +84,34 @@ export class AttachmentTargetValidator {
       target.candidateId,
     );
     if (!candidate || !candidate.belongsToVoteDetail(voteDetail.id)) {
+      throw new AttachmentTargetNotFoundError();
+    }
+  }
+
+  async assertOwnedBy(
+    target: AttachmentTarget,
+    userPrincipalId: string,
+  ): Promise<void> {
+    const vote = await this.voteRepository.findById(target.voteId);
+    if (!vote) throw new AttachmentTargetNotFoundError();
+    if (!vote.isCreatedBy(userPrincipalId)) {
+      throw new AttachmentAccessDeniedError();
+    }
+
+    if (target.targetType === AttachmentTargetType.Vote) return;
+
+    const voteDetail = await this.voteDetailRepository.findById(
+      target.voteDetailId,
+    );
+    if (!voteDetail || voteDetail.voteId !== target.voteId) {
+      throw new AttachmentTargetNotFoundError();
+    }
+    if (target.targetType === AttachmentTargetType.VoteDetail) return;
+
+    const candidate = await this.candidateRepository.findById(
+      target.candidateId,
+    );
+    if (!candidate || candidate.voteDetailId !== target.voteDetailId) {
       throw new AttachmentTargetNotFoundError();
     }
   }

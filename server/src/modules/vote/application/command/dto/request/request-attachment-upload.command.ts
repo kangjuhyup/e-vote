@@ -5,6 +5,7 @@ import type {
 
 export class RequestAttachmentUploadCommand {
   private constructor(
+    readonly userPrincipalId: string,
     readonly target: AttachmentTarget,
     readonly attachmentType: AttachmentType,
     readonly originalName: string,
@@ -14,6 +15,7 @@ export class RequestAttachmentUploadCommand {
   ) {}
 
   static of(params: {
+    userPrincipalId: string;
     target: AttachmentTarget;
     attachmentType: AttachmentType;
     originalName: string;
@@ -22,6 +24,7 @@ export class RequestAttachmentUploadCommand {
     sortOrder?: number;
   }): RequestAttachmentUploadCommand {
     return new RequestAttachmentUploadCommand(
+      params.userPrincipalId,
       params.target,
       params.attachmentType,
       params.originalName,

@@ -6,6 +6,7 @@ import type {
   VoteWeightMode,
 } from '../../../../../../shared/domain/voting/type/vote-policy.type';
 import type { VoteDetailStatus } from '../../../../../../shared/domain/voting/type/vote-status.type';
+import type { AttachmentView } from './attachment.view';
 
 type VoteDetailPolicyOverridesReadViewProps = {
   readonly privacyMode?: PrivacyMode;
@@ -51,6 +52,7 @@ type VoteDetailReadViewProps = {
   readonly overrides?: VoteDetailPolicyOverridesReadView;
   readonly sortOrder: number;
   readonly status: VoteDetailStatus;
+  readonly attachments?: readonly AttachmentView[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -67,6 +69,7 @@ export class VoteDetailReadView {
     overrides: VoteDetailPolicyOverridesReadView | undefined,
     readonly sortOrder: number,
     readonly status: VoteDetailStatus,
+    readonly attachments: readonly AttachmentView[],
     readonly createdAt: Date,
     readonly updatedAt: Date,
   ) {
@@ -85,6 +88,7 @@ export class VoteDetailReadView {
       params.overrides,
       params.sortOrder,
       params.status,
+      params.attachments ?? [],
       params.createdAt,
       params.updatedAt,
     );

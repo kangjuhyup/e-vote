@@ -21,4 +21,8 @@ export class NotConfiguredStorageAdapter implements StoragePort {
   getObjectMetadata(): Promise<StoredObjectMetadata | undefined> {
     return Promise.reject(new StorageNotConfiguredError());
   }
+
+  deleteObject(): Promise<void> {
+    return Promise.reject(new StorageNotConfiguredError());
+  }
 }

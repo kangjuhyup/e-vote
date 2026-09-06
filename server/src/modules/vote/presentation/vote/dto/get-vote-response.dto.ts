@@ -1,4 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  AttachmentMetadataResponse,
+  type AttachmentMetadataSource,
+} from '../../attachment/dto/attachment-metadata-response.dto';
 
 const PrivacyModeResponse = {
   Secret: 'SECRET',
@@ -79,6 +83,7 @@ type VoteSummarySource = {
   readonly id: string;
   readonly commissionId: string;
   readonly title: string;
+  readonly attachments?: readonly AttachmentMetadataSource[];
   readonly votingChannels: readonly string[];
   readonly defaultPolicy: VotePolicySource;
   readonly identityVerificationPolicy: IdentityVerificationPolicySource;
@@ -99,6 +104,7 @@ type CandidateSource = {
   readonly name: string;
   readonly description: string;
   readonly status: string;
+  readonly attachments?: readonly AttachmentMetadataSource[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -112,6 +118,7 @@ type VoteDetailSource = {
   readonly overrides?: VotePolicyOverridesSource;
   readonly sortOrder: number;
   readonly status: string;
+  readonly attachments?: readonly AttachmentMetadataSource[];
   readonly candidates: readonly CandidateSource[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -316,6 +323,12 @@ export class VoteSummaryResponse {
   readonly title: string;
 
   @ApiProperty({
+    type: () => [AttachmentMetadataResponse],
+    description: '부모 투표 첨부파일 메타데이터입니다.',
+  })
+  readonly attachments: readonly AttachmentMetadataResponse[];
+
+  @ApiProperty({
     enum: Object.values(VotingChannelResponse),
     isArray: true,
     example: [VotingChannelResponse.Online],
@@ -383,6 +396,9 @@ export class VoteSummaryResponse {
       this.billingOrderStatus = source.billingOrderStatus;
     }
     this.title = source.title;
+    this.attachments = (source.attachments ?? []).map((attachment) =>
+      AttachmentMetadataResponse.of(attachment),
+    );
     this.votingChannels = source.votingChannels;
     this.defaultPolicy = VotePolicyResponse.of(source.defaultPolicy);
     this.identityVerificationPolicy = IdentityVerificationPolicyResponse.of(
@@ -439,6 +455,12 @@ class CandidateResponse {
   readonly status: string;
 
   @ApiProperty({
+    type: () => [AttachmentMetadataResponse],
+    description: '후보자 첨부파일 메타데이터입니다.',
+  })
+  readonly attachments: readonly AttachmentMetadataResponse[];
+
+  @ApiProperty({
     example: '2026-08-12T00:00:00.000Z',
     format: 'date-time',
     description: '생성 시각입니다.',
@@ -459,6 +481,9 @@ class CandidateResponse {
     this.name = source.name;
     this.description = source.description;
     this.status = source.status;
+    this.attachments = (source.attachments ?? []).map((attachment) =>
+      AttachmentMetadataResponse.of(attachment),
+    );
     this.createdAt = source.createdAt.toISOString();
     this.updatedAt = source.updatedAt.toISOString();
   }
@@ -521,6 +546,12 @@ class VoteDetailResponse {
   readonly status: string;
 
   @ApiProperty({
+    type: () => [AttachmentMetadataResponse],
+    description: '자식 투표 첨부파일 메타데이터입니다.',
+  })
+  readonly attachments: readonly AttachmentMetadataResponse[];
+
+  @ApiProperty({
     type: () => [CandidateResponse],
     description: '자식 투표에 등록된 후보 목록입니다.',
   })
@@ -551,6 +582,9 @@ class VoteDetailResponse {
     }
     this.sortOrder = source.sortOrder;
     this.status = source.status;
+    this.attachments = (source.attachments ?? []).map((attachment) =>
+      AttachmentMetadataResponse.of(attachment),
+    );
     this.candidates = source.candidates.map((candidate) =>
       CandidateResponse.of(candidate),
     );

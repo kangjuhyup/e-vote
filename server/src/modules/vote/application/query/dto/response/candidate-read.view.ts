@@ -1,4 +1,5 @@
 import type { CandidateStatus } from '../../../../../../shared/domain/voting/type/candidate-status.type';
+import type { AttachmentView } from './attachment.view';
 
 type CandidateReadViewProps = {
   readonly id: string;
@@ -8,6 +9,7 @@ type CandidateReadViewProps = {
   readonly name: string;
   readonly description: string;
   readonly status: CandidateStatus;
+  readonly attachments?: readonly AttachmentView[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -21,6 +23,7 @@ export class CandidateReadView {
     readonly name: string,
     readonly description: string,
     readonly status: CandidateStatus,
+    readonly attachments: readonly AttachmentView[],
     readonly createdAt: Date,
     readonly updatedAt: Date,
   ) {}
@@ -34,6 +37,7 @@ export class CandidateReadView {
       params.name,
       params.description,
       params.status,
+      params.attachments ?? [],
       params.createdAt,
       params.updatedAt,
     );

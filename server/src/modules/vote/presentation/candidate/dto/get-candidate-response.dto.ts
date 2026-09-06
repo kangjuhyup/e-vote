@@ -1,4 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  AttachmentMetadataResponse,
+  type AttachmentMetadataSource,
+} from '../../attachment/dto/attachment-metadata-response.dto';
 
 const CandidateStatusResponse = {
   Active: 'ACTIVE',
@@ -13,6 +17,7 @@ type CandidateSource = {
   readonly name: string;
   readonly description: string;
   readonly status: string;
+  readonly attachments?: readonly AttachmentMetadataSource[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -62,6 +67,12 @@ export class GetCandidateResponse {
   readonly status: string;
 
   @ApiProperty({
+    type: () => [AttachmentMetadataResponse],
+    description: '후보자 첨부파일 메타데이터입니다.',
+  })
+  readonly attachments: readonly AttachmentMetadataResponse[];
+
+  @ApiProperty({
     example: '2026-08-12T00:00:00.000Z',
     format: 'date-time',
     description: '생성 시각입니다.',
@@ -83,6 +94,9 @@ export class GetCandidateResponse {
     this.name = source.name;
     this.description = source.description;
     this.status = source.status;
+    this.attachments = (source.attachments ?? []).map((attachment) =>
+      AttachmentMetadataResponse.of(attachment),
+    );
     this.createdAt = source.createdAt.toISOString();
     this.updatedAt = source.updatedAt.toISOString();
   }

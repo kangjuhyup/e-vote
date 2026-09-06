@@ -125,3 +125,13 @@ export class VoteDetailAttachmentParam extends CreateVoteDetailParam {
   })
   readonly voteDetailId!: string;
 }
+
+export class VoteDetailAttachmentManagementParam extends VoteDetailAttachmentParam {
+  @IsUUID()
+  @ApiProperty({
+    format: 'uuid',
+    example: '66666666-6666-4666-8666-666666666666',
+    description: '첨부파일 관계 ID입니다.',
+  })
+  readonly attachmentId!: string;
+}

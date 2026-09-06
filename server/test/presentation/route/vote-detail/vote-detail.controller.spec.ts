@@ -215,6 +215,7 @@ describe('VoteDetailController', () => {
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
     expect(requestAttachmentUploadExecute.mock.calls[0][0]).toMatchObject({
+      userPrincipalId: TEST_USER_PRINCIPAL.id,
       target: {
         targetType: AttachmentTargetType.VoteDetail,
         voteId: 'vote-1',
@@ -258,6 +259,7 @@ describe('VoteDetailController', () => {
       storageKey: 'attachments/detail-key',
     });
     expect(confirmAttachmentUploadExecute.mock.calls[0][0]).toMatchObject({
+      userPrincipalId: TEST_USER_PRINCIPAL.id,
       target: {
         targetType: AttachmentTargetType.VoteDetail,
         voteId: 'vote-1',

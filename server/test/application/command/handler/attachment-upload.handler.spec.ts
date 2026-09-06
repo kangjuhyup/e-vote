@@ -9,6 +9,7 @@ import { StoragePort } from '../../../../src/shared/application/port/gateway/sto
 import { VoteDetailRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-detail-repository.port';
 import { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
 import {
+  AttachmentAccessDeniedError,
   AttachmentTargetNotFoundError,
   AttachmentTargetValidator,
 } from '../../../../src/modules/vote/application/command/attachment-target.validator';
@@ -16,6 +17,7 @@ import { UnsupportedAttachmentTypeError } from '../../../../src/modules/vote/app
 import { ConfirmAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/confirm-attachment-upload.command';
 import {
   ConfirmAttachmentUploadHandler,
+  UploadedAttachmentMetadataMismatchError,
   UploadedAttachmentObjectNotFoundError,
 } from '../../../../src/modules/vote/application/command/handler/confirm-attachment-upload.handler';
 import { RequestAttachmentUploadCommand } from '../../../../src/modules/vote/application/command/dto/request/request-attachment-upload.command';
@@ -43,6 +45,7 @@ describe('attachment upload handlers', () => {
 
     const result = await handler.execute(
       RequestAttachmentUploadCommand.of({
+        userPrincipalId: 'user-1',
         target: {
           targetType: AttachmentTargetType.Vote,
           voteId: 'vote-1',
@@ -91,6 +94,7 @@ describe('attachment upload handlers', () => {
     await expect(
       handler.execute(
         RequestAttachmentUploadCommand.of({
+          userPrincipalId: 'user-1',
           target: {
             targetType: AttachmentTargetType.Candidate,
             voteId: 'vote-1',
@@ -104,6 +108,31 @@ describe('attachment upload handlers', () => {
         }),
       ),
     ).rejects.toThrow(UnsupportedAttachmentTypeError);
+    expect(storage.createPresignedPutObjectUrl.mock.calls).toHaveLength(0);
+  });
+
+  it('rejects a non-creator before issuing an upload URL', async () => {
+    const storage = createStoragePort();
+    const handler = new RequestAttachmentUploadHandler(
+      storage,
+      createTargetValidator({ vote: { id: 'vote-1' } }),
+    );
+
+    await expect(
+      handler.execute(
+        RequestAttachmentUploadCommand.of({
+          userPrincipalId: 'other-user',
+          target: {
+            targetType: AttachmentTargetType.Vote,
+            voteId: 'vote-1',
+          },
+          attachmentType: VoteAttachmentType.Notice,
+          originalName: 'notice.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        }),
+      ),
+    ).rejects.toThrow(AttachmentAccessDeniedError);
     expect(storage.createPresignedPutObjectUrl.mock.calls).toHaveLength(0);
   });
 
@@ -124,6 +153,7 @@ describe('attachment upload handlers', () => {
     await expect(
       handler.execute(
         ConfirmAttachmentUploadCommand.of({
+          userPrincipalId: 'user-1',
           target: {
             targetType: AttachmentTargetType.Vote,
             voteId: 'vote-1',
@@ -145,6 +175,14 @@ describe('attachment upload handlers', () => {
       storageKey: 'attachments/poster-key',
       contentType: 'IMAGE/PNG',
       contentLength: 2048,
+      metadata: {
+        targettype: AttachmentTargetType.Candidate,
+        voteid: 'vote-1',
+        votedetailid: 'detail-1',
+        candidateid: 'candidate-1',
+        attachmenttype: CandidateAttachmentType.Poster,
+        sortorder: '2',
+      },
     });
     const attachmentRepository = createAttachmentRepository();
     attachmentRepository.saveAttachedFile.mockResolvedValue({
@@ -171,6 +209,7 @@ describe('attachment upload handlers', () => {
 
     const result = await handler.execute(
       ConfirmAttachmentUploadCommand.of({
+        userPrincipalId: 'user-1',
         target: {
           targetType: AttachmentTargetType.Candidate,
           voteId: 'vote-1',
@@ -211,18 +250,67 @@ describe('attachment upload handlers', () => {
     });
   });
 
+  it('rejects a storage key issued for a different attachment target', async () => {
+    const storage = createStoragePort();
+    storage.getObjectMetadata.mockResolvedValue({
+      storageKey: 'attachments/other-target-key',
+      contentType: 'application/pdf',
+      contentLength: 1024,
+      metadata: {
+        targettype: AttachmentTargetType.Vote,
+        voteid: 'different-vote',
+        attachmenttype: VoteAttachmentType.Notice,
+        sortorder: '0',
+      },
+    });
+    const repository = createAttachmentRepository();
+    const handler = new ConfirmAttachmentUploadHandler(
+      storage,
+      repository,
+      createTargetValidator({ vote: { id: 'vote-1' } }),
+      voteLifecycleStub(),
+      transactionManagerStub(),
+    );
+
+    await expect(
+      handler.execute(
+        ConfirmAttachmentUploadCommand.of({
+          userPrincipalId: 'user-1',
+          target: {
+            targetType: AttachmentTargetType.Vote,
+            voteId: 'vote-1',
+          },
+          attachmentType: VoteAttachmentType.Notice,
+          storageKey: 'attachments/other-target-key',
+          originalName: 'notice.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        }),
+      ),
+    ).rejects.toThrow(UploadedAttachmentMetadataMismatchError);
+    expect(repository.saveAttachedFile.mock.calls).toHaveLength(0);
+  });
+
   it('revalidates mutability under the vote lock before persisting metadata', async () => {
     const storage = createStoragePort();
     storage.getObjectMetadata.mockResolvedValue({
       storageKey: 'attachments/notice-key',
       contentType: 'application/pdf',
       contentLength: 1024,
+      metadata: {
+        targettype: AttachmentTargetType.Vote,
+        voteid: 'vote-1',
+        attachmenttype: VoteAttachmentType.Notice,
+        sortorder: '0',
+      },
     });
     const attachmentRepository = createAttachmentRepository();
     const validator = {
       assertExists: jest.fn().mockResolvedValue(undefined),
+      assertOwnedBy: jest.fn().mockResolvedValue(undefined),
       assertMutable: jest
         .fn()
+        .mockResolvedValueOnce(undefined)
         .mockRejectedValue(
           new Error('billing-locked vote resources cannot be created'),
         ),
@@ -240,6 +328,7 @@ describe('attachment upload handlers', () => {
     await expect(
       handler.execute(
         ConfirmAttachmentUploadCommand.of({
+          userPrincipalId: 'user-1',
           target: {
             targetType: AttachmentTargetType.Vote,
             voteId: 'vote-1',
@@ -284,12 +373,15 @@ function createStoragePort(): jest.Mocked<StoragePort> {
     createPresignedGetObjectUrl: jest.fn(),
     createPresignedDeleteObjectUrl: jest.fn(),
     getObjectMetadata: jest.fn(),
+    deleteObject: jest.fn(),
   };
 }
 
 function createAttachmentRepository(): jest.Mocked<AttachmentRepositoryPort> {
   return {
     saveAttachedFile: jest.fn(),
+    findAttachedFile: jest.fn(),
+    deleteAttachedFile: jest.fn(),
   };
 }
 
@@ -314,6 +406,7 @@ function createTargetValidator(records: {
   const voteRecord = vote
     ? {
         ...vote,
+        isCreatedBy: (userPrincipalId: string) => userPrincipalId === 'user-1',
         assertChildResourcesMutable: jest.fn(),
       }
     : undefined;

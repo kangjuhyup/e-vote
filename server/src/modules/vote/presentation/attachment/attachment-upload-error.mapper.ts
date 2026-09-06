@@ -1,9 +1,14 @@
 import {
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { AttachmentTargetNotFoundError } from '../../application/command/attachment-target.validator';
+import {
+  AttachmentAccessDeniedError,
+  AttachmentTargetNotFoundError,
+} from '../../application/command/attachment-target.validator';
+import { AttachmentNotFoundError } from '../../application/command/attachment.error';
 import {
   AttachmentSizeExceededError,
   EmptyAttachmentFileNameError,
@@ -18,6 +23,10 @@ import {
 import { StorageNotConfiguredError } from '../../../../shared/application/port/gateway/storage.port';
 
 export function throwAttachmentUploadHttpError(error: unknown): never {
+  if (error instanceof AttachmentAccessDeniedError) {
+    throw new ForbiddenException(error.message);
+  }
+
   if (
     error instanceof EmptyAttachmentFileNameError ||
     error instanceof InvalidAttachmentSizeError ||
@@ -31,6 +40,7 @@ export function throwAttachmentUploadHttpError(error: unknown): never {
 
   if (
     error instanceof AttachmentTargetNotFoundError ||
+    error instanceof AttachmentNotFoundError ||
     error instanceof UploadedAttachmentObjectNotFoundError
   ) {
     throw new NotFoundException(error.message);

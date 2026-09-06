@@ -10,11 +10,32 @@ import {
 } from '../../../../application/query/dto/response/candidate-read.view';
 import type { CandidateStatus } from '../../../../../../shared/domain/voting/type/candidate-status.type';
 import {
-  JOINED_RELATION_LOAD_OPTIONS,
+  SELECT_IN_RELATION_LOAD_OPTIONS,
   getDatabaseEntities,
+  loadedItems,
+  type LoadedCollectionLike,
 } from '../../../../../../platform/database/repository/database-repository.util';
+import { AttachmentView } from '../../../../application/query/dto/response/attachment.view';
+import type { AttachmentType } from '../../../../application/port/persistence/command/attachment-repository.port';
 
-const CANDIDATE_READ_RELATIONS = ['voteDetail.vote'] as const;
+const CANDIDATE_READ_RELATIONS = [
+  'voteDetail.vote',
+  'attachments.file',
+] as const;
+
+type AttachmentReadPersistence = {
+  readonly id: string;
+  readonly type: AttachmentType;
+  readonly sortOrder: number;
+  readonly createdAt: Date;
+  readonly file: {
+    readonly id: string;
+    readonly originalName: string;
+    readonly mimeType: string;
+    readonly sizeBytes: number;
+    readonly status: string;
+  };
+};
 
 type CandidateReadPersistence = {
   readonly id: string;
@@ -26,6 +47,7 @@ type CandidateReadPersistence = {
   readonly name: string;
   readonly description: string;
   readonly status: CandidateStatus;
+  readonly attachments?: LoadedCollectionLike<AttachmentReadPersistence>;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -51,7 +73,7 @@ export class CandidateReadRepositoryAdapter implements CandidateReadRepositoryPo
       },
       {
         populate: CANDIDATE_READ_RELATIONS,
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       } as any,
     )) as unknown as CandidateReadPersistence | null;
 
@@ -79,7 +101,7 @@ export class CandidateReadRepositoryAdapter implements CandidateReadRepositoryPo
           createdAt: 'desc',
           id: 'desc',
         },
-        ...JOINED_RELATION_LOAD_OPTIONS,
+        ...SELECT_IN_RELATION_LOAD_OPTIONS,
       } as any,
     )) as unknown as [CandidateReadPersistence[], number];
 
@@ -101,6 +123,26 @@ export class CandidateReadRepositoryAdapter implements CandidateReadRepositoryPo
       name: entity.name,
       description: entity.description,
       status: entity.status,
+      attachments: loadedItems(entity.attachments ?? [])
+        .filter((attachment) => attachment.file.status === 'ACTIVE')
+        .map((attachment) =>
+          AttachmentView.of({
+            id: attachment.id,
+            fileId: attachment.file.id,
+            type: attachment.type,
+            originalName: attachment.file.originalName,
+            mimeType: attachment.file.mimeType,
+            sizeBytes: attachment.file.sizeBytes,
+            sortOrder: attachment.sortOrder,
+            createdAt: attachment.createdAt,
+          }),
+        )
+        .sort(
+          (left, right) =>
+            left.sortOrder - right.sortOrder ||
+            left.createdAt.getTime() - right.createdAt.getTime() ||
+            left.id.localeCompare(right.id),
+        ),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });

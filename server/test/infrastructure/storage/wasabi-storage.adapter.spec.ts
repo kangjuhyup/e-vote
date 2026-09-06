@@ -23,6 +23,9 @@ type SendHeadObject = (command: HeadObjectCommand) => Promise<{
   LastModified: Date;
   Metadata: Record<string, string>;
 }>;
+type SendStorageCommand = (
+  command: HeadObjectCommand | DeleteObjectCommand,
+) => Promise<unknown>;
 
 const config: WasabiStorageConfig = {
   endpoint: 'https://s3.ap-northeast-1.wasabisys.com',
@@ -176,6 +179,27 @@ describe('WasabiStorageAdapter', () => {
     });
   });
 
+  it('deletes an object directly with the server storage credential', async () => {
+    const send = jest.fn<SendStorageCommand>().mockResolvedValue({});
+    const adapter = new WasabiStorageAdapter(
+      createStorageClient(),
+      config,
+      jest.fn<PresignStorageUrl>(),
+      () => 'unused-key',
+      () => now,
+      send,
+    );
+
+    await adapter.deleteObject('attachments/generated-key');
+
+    const command = firstStorageCommand(send);
+    expect(command).toBeInstanceOf(DeleteObjectCommand);
+    expect(command.input).toEqual({
+      Bucket: 'vote-files',
+      Key: 'attachments/generated-key',
+    });
+  });
+
   it('returns undefined when uploaded object is missing', async () => {
     const send = jest.fn<SendHeadObject>().mockRejectedValue({
       name: 'NotFound',
@@ -244,6 +268,19 @@ function firstHeadObjectCommand(
 
   if (!firstCall) {
     throw new Error('expected storage client to receive a HEAD command');
+  }
+
+  return firstCall[0];
+}
+
+function firstStorageCommand(
+  send: jest.MockedFunction<SendStorageCommand>,
+): HeadObjectCommand | DeleteObjectCommand {
+  const calls = send.mock.calls as [HeadObjectCommand | DeleteObjectCommand][];
+  const firstCall = calls[0];
+
+  if (!firstCall) {
+    throw new Error('expected storage client to receive a command');
   }
 
   return firstCall[0];

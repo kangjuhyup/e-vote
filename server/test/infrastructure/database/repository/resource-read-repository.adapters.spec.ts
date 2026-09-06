@@ -34,8 +34,8 @@ describe('resource read repository adapters', () => {
       vote: { id: 'vote-1' },
     });
     expect(em.findOne.mock.calls[0][2]).toMatchObject({
-      populate: ['vote'],
-      strategy: LoadStrategy.JOINED,
+      populate: ['vote', 'attachments.file'],
+      strategy: LoadStrategy.SELECT_IN,
     });
     expect(em.findAndCount.mock.calls[0][1]).toEqual({
       vote: { id: 'vote-1' },
@@ -167,7 +167,8 @@ describe('resource read repository adapters', () => {
       },
     });
     expect(em.findAndCount.mock.calls[0][2]).toMatchObject({
-      populate: ['voteDetail.vote'],
+      populate: ['voteDetail.vote', 'attachments.file'],
+      strategy: LoadStrategy.SELECT_IN,
       orderBy: {
         candidateNo: 'asc',
         createdAt: 'desc',
@@ -181,6 +182,12 @@ describe('resource read repository adapters', () => {
       candidateNo: 1,
       name: 'Kim',
       status: CandidateStatus.Active,
+      attachments: [
+        expect.objectContaining({
+          id: 'candidate-attachment-1',
+          originalName: 'poster.png',
+        }),
+      ],
     });
     expect(page).toMatchObject({
       items: [
@@ -193,6 +200,7 @@ describe('resource read repository adapters', () => {
       totalItems: 1,
       totalPages: 1,
     });
+    expect(detail).not.toHaveProperty('attachments.0.storageKey');
   });
 });
 
@@ -276,6 +284,22 @@ function createCandidateEntity(): Record<string, unknown> {
     name: 'Kim',
     description: '',
     status: CandidateStatus.Active,
+    attachments: [
+      {
+        id: 'candidate-attachment-1',
+        type: 'POSTER',
+        sortOrder: 0,
+        createdAt: now,
+        file: {
+          id: 'file-1',
+          storageKey: 'attachments/opaque-key',
+          originalName: 'poster.png',
+          mimeType: 'image/png',
+          sizeBytes: 1024,
+          status: 'ACTIVE',
+        },
+      },
+    ],
     createdAt: now,
     updatedAt: now,
   };

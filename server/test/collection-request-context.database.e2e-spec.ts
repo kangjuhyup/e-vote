@@ -15,6 +15,7 @@ import { RvlogHttpExceptionLogger } from '../src/platform/logging/rvlog-http-exc
 import { MockPaymentOutboxWorker } from '../src/modules/billing/infrastructure/payment/mock-payment-outbox.worker';
 import { MOCK_PAYMENT_RANDOM_SOURCE } from '../src/modules/billing/infrastructure/payment/payment-integration.config';
 import { VoteScheduleWorker } from '../src/modules/vote/infrastructure/scheduling/vote-schedule.worker';
+import { STORAGE_PORT } from '../src/shared/application/port/gateway/storage.port';
 
 const describeDatabase =
   process.env.COLLECTION_REQUEST_CONTEXT_E2E_DATABASE === 'true'
@@ -26,6 +27,13 @@ describeDatabase('MikroORM collections in Nest request context', () => {
   let moduleRef: TestingModule;
   let orm: MikroORM;
   let previousPaymentMode: string | undefined;
+  const storage = {
+    createPresignedPutObjectUrl: jest.fn(),
+    createPresignedGetObjectUrl: jest.fn(),
+    createPresignedDeleteObjectUrl: jest.fn(),
+    getObjectMetadata: jest.fn(),
+    deleteObject: jest.fn(),
+  };
 
   beforeAll(async () => {
     assertDedicatedTestDatabase();
@@ -69,6 +77,8 @@ describeDatabase('MikroORM collections in Nest request context', () => {
       })
       .overrideProvider(MOCK_PAYMENT_RANDOM_SOURCE)
       .useValue(() => 0)
+      .overrideProvider(STORAGE_PORT)
+      .useValue(storage)
       .compile();
 
     orm = moduleRef.get(MikroORM);
@@ -86,11 +96,12 @@ describeDatabase('MikroORM collections in Nest request context', () => {
   });
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     const em = orm.em.fork();
     await em
       .getConnection()
       .execute(
-        'truncate table integration_outbox, election_commissions, electoral_rolls cascade',
+        'truncate table integration_outbox, files, election_commissions, electoral_rolls cascade',
       );
     await seedFixtures(em);
   });
@@ -106,10 +117,59 @@ describeDatabase('MikroORM collections in Nest request context', () => {
         {
           id: VOTE_ID,
           votingChannels: ['ONLINE'],
+          attachments: [
+            {
+              id: VOTE_ATTACHMENT_ID,
+              fileId: FILE_ID,
+              type: 'NOTICE',
+              originalName: 'notice.pdf',
+            },
+          ],
         },
       ],
       totalItems: 1,
     });
+  });
+
+  it('authorizes attachment download and deletion by vote creator against real collections', async () => {
+    storage.createPresignedGetObjectUrl.mockResolvedValue({
+      storageKey: 'attachments/opaque-key',
+      url: 'https://storage.example/download',
+      expiresAt: new Date('2026-09-06T00:05:00.000Z'),
+    });
+
+    await request(app.getHttpServer())
+      .get(`/votes/${VOTE_ID}/attachments/${VOTE_ATTACHMENT_ID}/download-url`)
+      .set('authorization', 'Bearer owner-download')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          attachmentId: VOTE_ATTACHMENT_ID,
+          downloadUrl: 'https://storage.example/download',
+          expiresAt: '2026-09-06T00:05:00.000Z',
+        });
+        expect(body).not.toHaveProperty('storageKey');
+      });
+
+    await request(app.getHttpServer())
+      .get(`/votes/${VOTE_ID}/attachments/${VOTE_ATTACHMENT_ID}/download-url`)
+      .set('authorization', 'Bearer different-user')
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .delete(`/votes/${VOTE_ID}/attachments/${VOTE_ATTACHMENT_ID}`)
+      .set('authorization', 'Bearer owner-delete')
+      .expect(204);
+    expect(storage.deleteObject).toHaveBeenCalledWith('attachments/opaque-key');
+
+    const detail = await request(app.getHttpServer())
+      .get(`/votes/${VOTE_ID}`)
+      .set('authorization', 'Bearer owner-read')
+      .expect(200);
+    const detailBody = detail.body as unknown as {
+      readonly attachments: readonly unknown[];
+    };
+    expect(detailBody.attachments).toEqual([]);
   });
 
   it('returns an electoral roll detail with initialized members', async () => {
@@ -523,7 +583,7 @@ describeDatabase('MikroORM collections in Nest request context', () => {
         .fork()
         .getConnection()
         .execute(
-          'truncate table integration_outbox, election_commissions, electoral_rolls cascade',
+          'truncate table integration_outbox, files, election_commissions, electoral_rolls cascade',
         );
     }
     await app?.close();
@@ -666,6 +726,8 @@ const ELECTORAL_ROLL_SNAPSHOT_ID = '10000000-0000-4000-8000-000000000007';
 const ELECTORAL_ROLL_SNAPSHOT_MEMBER_ID =
   '10000000-0000-4000-8000-000000000008';
 const ELECTOR_ID = '10000000-0000-4000-8000-000000000009';
+const FILE_ID = '10000000-0000-4000-8000-000000000010';
+const VOTE_ATTACHMENT_ID = '10000000-0000-4000-8000-000000000011';
 
 function assertDedicatedTestDatabase(): void {
   if (!process.env.DATABASE_NAME?.endsWith('_test')) {
@@ -702,19 +764,27 @@ async function seedFixtures(em: MikroORM['em']): Promise<void> {
        '${ELECTORAL_ROLL_MEMBER_ID}', 'member-1', null, 1, current_timestamp
      )`,
     `insert into votes (
-       id, commission_id, electoral_roll_snapshot_id, title, description, default_privacy_mode,
+       id, created_by_user_principal_id, commission_id, electoral_roll_snapshot_id, title, description, default_privacy_mode,
        default_participation_unit, default_result_storage_mode,
        default_vote_weight_mode, identity_verification_required,
        identity_verification_provider, identity_verification_method,
        status, started_at, ended_at, created_at, updated_at
      ) values (
-       '${VOTE_ID}', '${COMMISSION_ID}', '${ELECTORAL_ROLL_SNAPSHOT_ID}',
+       '${VOTE_ID}', '${USER_PRINCIPAL_ID}', '${COMMISSION_ID}', '${ELECTORAL_ROLL_SNAPSHOT_ID}',
        'Collection regression vote', '', 'SECRET',
        'INDIVIDUAL', 'DATABASE', 'EQUAL', false, null, null, 'DRAFT',
        current_timestamp, current_timestamp, current_timestamp, current_timestamp
      )`,
     `insert into vote_voting_channels (id, vote_id, channel, created_at)
      values ('${VOTING_CHANNEL_ID}', '${VOTE_ID}', 'ONLINE', current_timestamp)`,
+    `insert into files (
+       id, storage_key, original_name, mime_type, size_bytes, checksum, status, created_at, deleted_at
+     ) values (
+       '${FILE_ID}', 'attachments/opaque-key', 'notice.pdf', 'application/pdf', 1024,
+       null, 'ACTIVE', current_timestamp, null
+     )`,
+    `insert into vote_attachments (id, vote_id, file_id, type, sort_order, created_at)
+     values ('${VOTE_ATTACHMENT_ID}', '${VOTE_ID}', '${FILE_ID}', 'NOTICE', 0, current_timestamp)`,
     `insert into electors (
        id, vote_id, snapshot_member_id, name, identifier, phone_number,
        phone_number_hash, birth_date, group_key, vote_weight, status,

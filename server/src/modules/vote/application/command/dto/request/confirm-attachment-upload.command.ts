@@ -5,6 +5,7 @@ import type {
 
 export class ConfirmAttachmentUploadCommand {
   private constructor(
+    readonly userPrincipalId: string,
     readonly target: AttachmentTarget,
     readonly attachmentType: AttachmentType,
     readonly storageKey: string,
@@ -16,6 +17,7 @@ export class ConfirmAttachmentUploadCommand {
   ) {}
 
   static of(params: {
+    userPrincipalId: string;
     target: AttachmentTarget;
     attachmentType: AttachmentType;
     storageKey: string;
@@ -26,6 +28,7 @@ export class ConfirmAttachmentUploadCommand {
     checksum?: string;
   }): ConfirmAttachmentUploadCommand {
     return new ConfirmAttachmentUploadCommand(
+      params.userPrincipalId,
       params.target,
       params.attachmentType,
       params.storageKey,
