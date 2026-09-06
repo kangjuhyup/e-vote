@@ -5,8 +5,16 @@ import type {
 import { ElectorIdentityVerificationResult } from '../../domain/vo/elector-identity-verification.vo';
 import { DomainError } from '../../../../shared/domain/domain-error';
 
+const MOCK_VERIFICATION_SUCCESS_RATE = 0.8;
+
+export type MockElectorIdentityVerificationRandomSource = () => number;
+
 /** Development simulator; this does not establish a real person's identity. */
 export class MockElectorIdentityVerificationAdapter implements ElectorIdentityVerificationPort {
+  constructor(
+    private readonly random: MockElectorIdentityVerificationRandomSource = Math.random,
+  ) {}
+
   verify(
     request: ElectorIdentityVerificationRequest,
   ): Promise<ElectorIdentityVerificationResult> {
@@ -21,9 +29,14 @@ export class MockElectorIdentityVerificationAdapter implements ElectorIdentityVe
         'use mock-success:<unique-id> or mock-failure:<unique-id>',
       );
     }
+
+    const explicitlyFailed =
+      request.evidence.transactionId.startsWith('mock-failure:');
+
     return Promise.resolve(
       ElectorIdentityVerificationResult.of({
-        verified: request.evidence.transactionId.startsWith('mock-success:'),
+        verified:
+          !explicitlyFailed && this.random() < MOCK_VERIFICATION_SUCCESS_RATE,
         provider: 'ETC',
         method: 'ADMIN',
         isMock: true,
