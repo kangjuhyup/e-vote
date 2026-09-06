@@ -26,7 +26,7 @@ Content-Type: application/json
 }
 ```
 
-Use a fresh identifier per attempt. `mock-success:<unique-id>` succeeds; `mock-failure:<unique-id>` records a failed attempt and returns `identityVerified: false`. The identifier after the colon accepts 8–100 ASCII letters, digits or hyphens. Reusing a consumed transaction returns 409, including failed transactions. A previously authenticated elector cannot be rebound to another account (403).
+Use a fresh identifier per attempt. `mock-success:<unique-id>` has an 80% chance of succeeding and a 20% chance of recording a failed attempt with `identityVerified: false`. `mock-failure:<unique-id>` always fails, which is useful for reproducing the failure path. The identifier after the colon accepts 8–100 ASCII letters, digits or hyphens. Reusing a consumed transaction returns 409, including failed transactions. A previously authenticated elector cannot be rebound to another account (403).
 
 4. Request a signature upload URL with the same login, PUT the exact image bytes to the returned `uploadUrl`, and confirm the upload. PNG, JPEG and WebP images up to 5 MiB are accepted.
 

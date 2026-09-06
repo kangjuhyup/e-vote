@@ -26,25 +26,31 @@ describe('mock elector verification', () => {
     ).toBe(true);
   });
   it.each([
-    ['mock-success:12345678', true],
-    ['mock-failure:12345678', false],
-  ] as const)('simulates %s', async (transactionId, verified) => {
-    const result = await new MockElectorIdentityVerificationAdapter().verify({
-      voteId: 'vote-1',
-      userPrincipalId: 'user-1',
-      elector: ElectorAggregate.create({
-        id: 'elector-1',
+    ['mock-success:12345678', 0.79, true],
+    ['mock-success:12345678', 0.8, false],
+    ['mock-failure:12345678', 0, false],
+  ] as const)(
+    'simulates %s with random value %s',
+    async (transactionId, randomValue, verified) => {
+      const result = await new MockElectorIdentityVerificationAdapter(
+        () => randomValue,
+      ).verify({
         voteId: 'vote-1',
-        identifier: 'member-1',
-      }),
-      evidence: ElectorIdentityVerificationEvidence.of({
-        provider: 'MOCK',
-        transactionId,
-        verifiedAt: new Date(),
-      }),
-    });
-    expect(result).toMatchObject({ verified, isMock: true, provider: 'ETC' });
-  });
+        userPrincipalId: 'user-1',
+        elector: ElectorAggregate.create({
+          id: 'elector-1',
+          voteId: 'vote-1',
+          identifier: 'member-1',
+        }),
+        evidence: ElectorIdentityVerificationEvidence.of({
+          provider: 'MOCK',
+          transactionId,
+          verifiedAt: new Date(),
+        }),
+      });
+      expect(result).toMatchObject({ verified, isMock: true, provider: 'ETC' });
+    },
+  );
   it('does not pretend to verify a real provider', () => {
     expect(() =>
       new MockElectorIdentityVerificationAdapter().verify({
