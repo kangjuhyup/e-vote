@@ -36,3 +36,6 @@ export type ContentChangeActorType = 'ADMIN' | 'SYSTEM';
 export type ResultStorageStatus = 'PENDING' | 'SAVED' | 'FAILED';
 export type BillingOrderStatus =
   'PENDING_PAYMENT' | 'PAID' | 'CANCELED' | 'REFUND_PENDING' | 'REFUNDED';
+export type ParticipantSessionScope = 'PARTICIPATE' | 'RESULT_READ';
+export type ParticipationInvitationDeliveryStatus =
+  'PENDING' | 'PROCESSING' | 'SENT' | 'SKIPPED' | 'DEAD';

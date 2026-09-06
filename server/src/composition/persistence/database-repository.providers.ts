@@ -64,8 +64,26 @@ import { ElectorSignatureRepositoryAdapter } from '../../modules/elector/infrast
 import { INTEGRATION_EVENT_OUTBOX_PORT } from '../../shared/application/port/messaging/integration-event-outbox.port';
 import { OUTBOX_MESSAGE_REPOSITORY_PORT } from '../../shared/application/port/messaging/outbox-message-repository.port';
 import { IntegrationOutboxRepositoryAdapter } from '../../platform/outbox/infrastructure/database/repository/integration-outbox-repository.adapter';
+import { PARTICIPATION_ACCESS_REPOSITORY_PORT } from '../../modules/participation/application/port/persistence/command/participation-access-repository.port';
+import { ParticipationAccessRepositoryAdapter } from '../../modules/participation/infrastructure/database/repository/command/participation-access-repository.adapter';
+import { PARTICIPATION_ACCESS_REVOCATION_PORT } from '../../shared/application/port/capability/participation-access-revocation.port';
+import { PARTICIPATION_ACCESS_READ_PORT } from '../../modules/participation/application/port/persistence/query/participation-access-read.port';
+import { ParticipationAccessReadAdapter } from '../../modules/participation/infrastructure/database/repository/query/participation-access-read.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
+  {
+    provide: PARTICIPATION_ACCESS_READ_PORT,
+    useClass: ParticipationAccessReadAdapter,
+  },
+  ParticipationAccessRepositoryAdapter,
+  {
+    provide: PARTICIPATION_ACCESS_REPOSITORY_PORT,
+    useExisting: ParticipationAccessRepositoryAdapter,
+  },
+  {
+    provide: PARTICIPATION_ACCESS_REVOCATION_PORT,
+    useExisting: ParticipationAccessRepositoryAdapter,
+  },
   ElectorSignatureRepositoryAdapter,
   {
     provide: ELECTOR_SIGNATURE_REPOSITORY_PORT,
@@ -208,6 +226,9 @@ export const databaseRepositoryProviders: Provider[] = [
 ];
 
 export const databaseRepositoryPortTokens = [
+  PARTICIPATION_ACCESS_READ_PORT,
+  PARTICIPATION_ACCESS_REPOSITORY_PORT,
+  PARTICIPATION_ACCESS_REVOCATION_PORT,
   ELECTOR_SIGNATURE_REPOSITORY_PORT,
   ELECTOR_SIGNATURE_ACCESS_PORT,
   ELECTOR_VERIFICATION_REPOSITORY_PORT,

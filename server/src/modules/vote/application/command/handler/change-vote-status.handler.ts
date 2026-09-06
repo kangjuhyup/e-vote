@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
@@ -21,6 +21,10 @@ import {
   DATABASE_TRANSACTION_MANAGER,
   type DatabaseTransactionManager,
 } from '../../../../../shared/application/port/persistence/transaction/database-transaction-manager.port';
+import {
+  PARTICIPATION_ACCESS_REVOCATION_PORT,
+  type ParticipationAccessRevocationPort,
+} from '../../../../../shared/application/port/capability/participation-access-revocation.port';
 
 @Injectable()
 export class ChangeVoteStatusHandler {
@@ -35,6 +39,9 @@ export class ChangeVoteStatusHandler {
     private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
+    @Optional()
+    @Inject(PARTICIPATION_ACCESS_REVOCATION_PORT)
+    private readonly participationAccess?: ParticipationAccessRevocationPort,
   ) {
     this[DATABASE_TRANSACTION_MANAGER_PROPERTY] = transactionManager;
   }
@@ -52,7 +59,13 @@ export class ChangeVoteStatusHandler {
       }
       vote.open(command.changedAt);
     } else if (command.action === 'close') vote.close(command.changedAt);
-    else vote.cancel(command.changedAt);
+    else {
+      vote.cancel(command.changedAt);
+      await this.participationAccess?.revokeAccessForVote(
+        vote.id,
+        command.changedAt,
+      );
+    }
     await this.repository.save(vote);
     return ManageVoteResult.of({ id: vote.id, status: vote.status });
   }

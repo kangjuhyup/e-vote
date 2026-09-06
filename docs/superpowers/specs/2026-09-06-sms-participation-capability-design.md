@@ -1,7 +1,7 @@
 # SMS Participation Capability Design
 
 **Date:** 2026-09-06
-**Status:** Approved design, pending implementation plan
+**Status:** Implemented in the server worktree
 
 ## Context
 

@@ -25,6 +25,7 @@ import type {
   VoteUsageEntitlementAccessPort,
 } from '../../../../src/shared/application/port/capability/vote-billing.port';
 import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
+import type { ParticipationAccessRevocationPort } from '../../../../src/shared/application/port/capability/participation-access-revocation.port';
 
 describe('vote management command handlers', () => {
   it('updates and opens a vote through the authoritative repository', async () => {
@@ -88,6 +89,32 @@ describe('vote management command handlers', () => {
         }),
       ),
     ).rejects.toThrow('paid billing order is required');
+  });
+
+  it('revokes capability invitations and sessions when a vote is canceled', async () => {
+    const vote = createVote();
+    const revokeAccessForVote = jest.fn().mockResolvedValue(undefined);
+    const revocation: jest.Mocked<ParticipationAccessRevocationPort> = {
+      revokeAccessForVote,
+      revokeAccessForElector: jest.fn().mockResolvedValue(undefined),
+    };
+    const changedAt = new Date('2026-09-06T12:00:00.000Z');
+
+    await new ChangeVoteStatusHandler(
+      voteRepository(vote),
+      entitlementStub(true),
+      voteLifecycleStub(),
+      transactionManagerStub(),
+      revocation,
+    ).execute(
+      ChangeVoteStatusCommand.of({
+        voteId: vote.id,
+        action: 'cancel',
+        changedAt,
+      }),
+    );
+
+    expect(revokeAccessForVote).toHaveBeenCalledWith(vote.id, changedAt);
   });
 
   it('rejects a candidate outside the requested parent scope', async () => {

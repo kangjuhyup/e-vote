@@ -30,6 +30,17 @@ import {
   ELECTOR_SIGNATURE_ACCESS_PORT,
   type ElectorSignatureAccessPort,
 } from '../../../../../shared/application/port/capability/elector-signature-access.port';
+import type { VotingChannel } from '../../../../../shared/domain/voting/type/voting-channel.type';
+
+export interface AuthorizedCastParticipationCommand {
+  readonly voteId: string;
+  readonly voteDetailId: string;
+  readonly electorId: string;
+  readonly selectedCandidateId: string | undefined;
+  readonly votingChannel: VotingChannel;
+  readonly fieldVotingSessionId: string | undefined;
+  readonly participatedAt: Date;
+}
 
 export class VoteNotFoundError extends Error {
   constructor() {
@@ -101,23 +112,40 @@ export class CastParticipationHandler {
         candidateId: command.selectedCandidateId,
         fieldVotingSessionId: command.fieldVotingSessionId,
       },
+      async () => {
+        if (
+          !command.userPrincipalId?.trim() ||
+          !(await this.participantAccess.isAuthorized(
+            command.voteId,
+            command.electorId,
+            command.userPrincipalId,
+          ))
+        ) {
+          throw new ElectorParticipantForbiddenError();
+        }
+        return this.castWithinTransaction(command);
+      },
+    );
+  }
+
+  async executeAuthorized(
+    command: AuthorizedCastParticipationCommand,
+  ): Promise<CastParticipationResult> {
+    return this.participationRepository.runCastTransaction(
+      {
+        voteId: command.voteId,
+        voteDetailId: command.voteDetailId,
+        electorId: command.electorId,
+        candidateId: command.selectedCandidateId,
+        fieldVotingSessionId: command.fieldVotingSessionId,
+      },
       () => this.castWithinTransaction(command),
     );
   }
 
   private async castWithinTransaction(
-    command: CastParticipationCommand,
+    command: AuthorizedCastParticipationCommand,
   ): Promise<CastParticipationResult> {
-    if (
-      !command.userPrincipalId?.trim() ||
-      !(await this.participantAccess.isAuthorized(
-        command.voteId,
-        command.electorId,
-        command.userPrincipalId,
-      ))
-    )
-      throw new ElectorParticipantForbiddenError();
-
     const [vote, voteDetail, elector, candidate, existingParticipations] =
       await Promise.all([
         this.voteRepository.findById(command.voteId),
@@ -198,7 +226,9 @@ export class CastParticipationHandler {
     });
   }
 
-  private async findFieldVotingSession(command: CastParticipationCommand) {
+  private async findFieldVotingSession(
+    command: AuthorizedCastParticipationCommand,
+  ) {
     if (!command.fieldVotingSessionId) {
       return undefined;
     }

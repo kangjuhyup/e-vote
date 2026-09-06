@@ -14,6 +14,7 @@ import { createVoteEntities } from '../../modules/vote/infrastructure/database/e
 import { createSmsDispatchEntities } from '../../shared/infrastructure/database/entity/sms-dispatch.entities';
 import { createBillingEntities } from '../../modules/billing/infrastructure/database/entity/billing.entities';
 import { createIntegrationOutboxEntities } from '../../platform/outbox/infrastructure/database/entity/integration-outbox.entities';
+import { createParticipationAccessEntities } from '../../modules/participation/infrastructure/database/entity/participation-access.entities';
 
 export interface DatabaseEntityRegistry extends DatabaseEntityClasses {
   readonly databaseEntities: EntityClass<AnyEntity>[];
@@ -43,6 +44,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   registerEntities(context, createSmsDispatchEntities(context));
   registerEntities(context, createBillingEntities(context));
   registerEntities(context, createIntegrationOutboxEntities(context));
+  registerEntities(context, createParticipationAccessEntities(context));
 
   const entities = context.entities as DatabaseEntityClasses;
   const databaseEntities = [
@@ -75,6 +77,9 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
     entities.SmsDeliveryEntity,
     entities.BillingOrderEntity,
     entities.IntegrationOutboxEntity,
+    entities.ParticipationInvitationEntity,
+    entities.ElectorParticipantSessionEntity,
+    entities.ParticipationInvitationDeliveryEntity,
   ];
 
   cachedRegistry = {

@@ -24,6 +24,8 @@ export interface VoteReference {
   readonly electoralRollSnapshotId?: string;
   readonly billingOrderId?: string;
   readonly finalizedAt?: Date;
+  readonly startedAt: Date;
+  readonly endedAt: Date;
   readonly defaultPolicy: VotePolicy;
   readonly identityVerificationPolicy: { readonly required: boolean };
   allowsVotingChannel(channel: VotingChannel): boolean;

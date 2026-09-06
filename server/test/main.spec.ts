@@ -56,6 +56,7 @@ describe('bootstrap', () => {
       useGlobalInterceptors: jest.fn(),
       useGlobalPipes: jest.fn(),
       useBodyParser: jest.fn(),
+      enableCors: jest.fn(),
     };
     const create = jest.fn().mockResolvedValue(app);
     class AppModuleStub {}
@@ -81,6 +82,10 @@ describe('bootstrap', () => {
       ['json', { limit: '32mb' }],
       ['urlencoded', { extended: true, limit: '100kb' }],
     ]);
+    expect(app.enableCors).toHaveBeenCalledWith({
+      origin: ['http://localhost:3001'],
+      credentials: true,
+    });
     expect(app.enableShutdownHooks).toHaveBeenCalledWith(['SIGTERM', 'SIGINT']);
     expect(app.useGlobalPipes).toHaveBeenCalledTimes(1);
     expect(setTitle).toHaveBeenCalledWith('Vote API');

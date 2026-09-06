@@ -93,6 +93,7 @@ describe('User decorator', () => {
 
     for (const file of controllerFiles) {
       const source = readFileSync(file, 'utf8');
+      if (source.includes('@Public()')) continue;
       const fileRouteCount = (
         source.match(/@(Get|Post|Put|Patch|Delete)\b/g) ?? []
       ).length;

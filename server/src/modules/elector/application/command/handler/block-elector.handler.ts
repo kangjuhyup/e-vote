@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   ELECTOR_REPOSITORY_PORT,
   type ElectorRepositoryPort,
@@ -22,6 +22,10 @@ import {
   DATABASE_TRANSACTION_MANAGER,
   type DatabaseTransactionManager,
 } from '../../../../../shared/application/port/persistence/transaction/database-transaction-manager.port';
+import {
+  PARTICIPATION_ACCESS_REVOCATION_PORT,
+  type ParticipationAccessRevocationPort,
+} from '../../../../../shared/application/port/capability/participation-access-revocation.port';
 
 @Injectable()
 export class BlockElectorHandler {
@@ -35,6 +39,9 @@ export class BlockElectorHandler {
     private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
+    @Optional()
+    @Inject(PARTICIPATION_ACCESS_REVOCATION_PORT)
+    private readonly participationAccess?: ParticipationAccessRevocationPort,
   ) {
     this[DATABASE_TRANSACTION_MANAGER_PROPERTY] = transactionManager;
   }
@@ -51,6 +58,10 @@ export class BlockElectorHandler {
     vote.assertElectorsMutable('deleted');
     elector.block();
     await this.electors.save(elector);
+    await this.participationAccess?.revokeAccessForElector(
+      elector.id,
+      new Date(),
+    );
     return ManageElectorResult.of({
       id: elector.id,
       voteId: elector.voteId,
