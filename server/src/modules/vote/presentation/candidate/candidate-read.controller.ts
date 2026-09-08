@@ -1,4 +1,5 @@
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
@@ -30,6 +31,7 @@ import { GetCandidateResponse } from './dto/get-candidate-response.dto';
 
 @ApiTags('candidates')
 @Controller('votes/:voteId/sub-votes/:voteDetailId/candidates')
+@VoteOrganizationProtected()
 export class CandidateReadController {
   constructor(
     private readonly getCandidateHandler: GetCandidateHandler,

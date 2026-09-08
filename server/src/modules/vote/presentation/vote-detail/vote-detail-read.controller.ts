@@ -1,4 +1,5 @@
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
@@ -30,6 +31,7 @@ import { GetVoteDetailResponse } from './dto/get-vote-detail-response.dto';
 
 @ApiTags('vote-details')
 @Controller('votes/:voteId/sub-votes')
+@VoteOrganizationProtected()
 export class VoteDetailReadController {
   constructor(
     private readonly getVoteDetailHandler: GetVoteDetailHandler,

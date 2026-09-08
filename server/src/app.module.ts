@@ -91,6 +91,7 @@ import { VoteDetailController } from './modules/vote/presentation/vote-detail/vo
 import { VoteAttachmentController } from './modules/vote/presentation/vote/vote-attachment.controller';
 import { VoteReadController } from './modules/vote/presentation/vote/vote-read.controller';
 import { VoteController } from './modules/vote/presentation/vote/vote.controller';
+import { VoteOrganizationAccessGuard } from './modules/vote/presentation/vote/vote-organization-access.guard';
 import { VoteSmsController } from './modules/vote/presentation/vote-sms/vote-sms.controller';
 import { VoteSmsReadController } from './modules/vote/presentation/vote-sms/vote-sms-read.controller';
 import { VoteStatisticsController } from './modules/participation/presentation/vote-statistics/vote-statistics.controller';
@@ -284,6 +285,10 @@ const developmentParticipationLinkEnabled =
     },
     AttachmentTargetValidator,
     CreateVoteHandler,
+    {
+      provide: APP_GUARD,
+      useClass: VoteOrganizationAccessGuard,
+    },
     CreateVoteDetailHandler,
     CreateCandidateHandler,
     CreateElectionCommissionHandler,

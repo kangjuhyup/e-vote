@@ -6,6 +6,7 @@ The browser calls only the Vote API through the existing `/api/vote-server` sess
 
 - `POST /organization-applications`
 - `GET /organization-applications/me` (`404` means no application)
+- `GET /organizations/managed` (organizations proven by direct OIDC group membership)
 - `GET /admin/organization-applications?page&pageSize&status`
 - `POST /admin/organization-applications/:applicationId/approve`
 - `POST /admin/organization-applications/:applicationId/reject` with `{ "rejectionReason": string }`
@@ -38,3 +39,9 @@ groups: Array<{
 ```
 
 Membership mutation revokes existing sessions and linked tokens when it changes state. After approval, the applicant UI asks for a fresh login. Idempotent no-op provisioning does not require revocation.
+
+## Organization-owned votes
+
+`POST /votes` requires `organizationGroupId` and `organizationGroupCode`. The code is the organization management number. The Vote server verifies both values against the caller's direct organization group and its `<code>.vote-managers` child group before persisting them with `tenantId` on the vote.
+
+Vote lists and details are tenant- and organization-scoped. Management routes for sub-votes, candidates, electors, attachments, SMS, invitations, and statistics use the same ownership check. `vote-admin` can manage organization-owned votes within its tenant. Legacy votes without organization ownership remain visible only to their original creator until they are migrated.

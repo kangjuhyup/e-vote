@@ -1,6 +1,7 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { DispatchParticipationInvitationsCommand } from '../../application/command/dto/request/dispatch-participation-invitations.command';
 import { DispatchParticipationInvitationsHandler } from '../../application/command/handler/dispatch-participation-invitations.handler';
@@ -13,6 +14,7 @@ import {
 
 @ApiTags('participation-invitations')
 @Controller('votes/:voteId')
+@VoteOrganizationProtected()
 export class ParticipationInvitationController {
   constructor(
     private readonly dispatchHandler: DispatchParticipationInvitationsHandler,

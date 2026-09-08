@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { ElectorParticipantForbiddenError } from '../../../../shared/application/port/capability/elector-participant-access.port';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { ConfirmElectorSignatureUploadCommand } from '../../application/command/dto/request/confirm-elector-signature-upload.command';
@@ -48,6 +49,7 @@ import {
 
 @ApiTags('electors')
 @Controller('votes/:voteId/electors/:electorId/signature')
+@VoteOrganizationProtected()
 export class ElectorSignatureController {
   constructor(
     private readonly requestHandler: RequestElectorSignatureUploadHandler,

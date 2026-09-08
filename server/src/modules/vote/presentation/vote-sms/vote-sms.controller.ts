@@ -1,4 +1,5 @@
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { throwMappedSmsSenderError } from '../../../../shared/presentation/common/mapper/sms-sender-error.mapper';
 import {
@@ -36,6 +37,7 @@ import { GetParticipationReminderTemplateResponse } from './dto/get-participatio
 
 @ApiTags('vote-sms')
 @Controller('votes/:voteId/sms')
+@VoteOrganizationProtected()
 export class VoteSmsController {
   constructor(
     private readonly sendVoteSmsHandler: SendVoteSmsHandler,

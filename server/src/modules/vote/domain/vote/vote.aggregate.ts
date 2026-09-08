@@ -14,6 +14,9 @@ import { VoteFinalizationWindowClosedError } from '../../../../shared/domain/vot
 
 interface VoteStateParams {
   readonly id: string;
+  readonly tenantId?: string;
+  readonly organizationGroupId?: string;
+  readonly organizationGroupCode?: string;
   readonly createdByUserPrincipalId?: string;
   readonly commissionId: string;
   readonly title: string;
@@ -30,9 +33,17 @@ interface VoteStateParams {
 
 type CreateVoteParams = Omit<
   VoteStateParams,
-  'createdByUserPrincipalId' | 'startedAt' | 'endedAt'
+  | 'createdByUserPrincipalId'
+  | 'tenantId'
+  | 'organizationGroupId'
+  | 'organizationGroupCode'
+  | 'startedAt'
+  | 'endedAt'
 > & {
   readonly createdByUserPrincipalId: string;
+  readonly tenantId: string;
+  readonly organizationGroupId: string;
+  readonly organizationGroupCode: string;
   readonly startedAt?: Date;
   readonly endedAt?: Date;
 };
@@ -46,6 +57,9 @@ export class VoteAggregate {
 
   private constructor(
     readonly id: string,
+    readonly tenantId: string | undefined,
+    readonly organizationGroupId: string | undefined,
+    readonly organizationGroupCode: string | undefined,
     readonly createdByUserPrincipalId: string | undefined,
     readonly commissionId: string,
     public title: string,
@@ -75,6 +89,9 @@ export class VoteAggregate {
 
   private static build(params: VoteStateParams): VoteAggregate {
     const id = createId(params.id);
+    const tenantId = params.tenantId?.trim();
+    const organizationGroupId = params.organizationGroupId?.trim();
+    const organizationGroupCode = params.organizationGroupCode?.trim();
     const commissionId = createId(params.commissionId);
     const createdByUserPrincipalId = params.createdByUserPrincipalId?.trim();
     const title = params.title.trim();
@@ -84,6 +101,16 @@ export class VoteAggregate {
       !createdByUserPrincipalId
     ) {
       throw new DomainError('vote creator user principal id must not be empty');
+    }
+    if (
+      [
+        params.tenantId,
+        params.organizationGroupId,
+        params.organizationGroupCode,
+      ].filter((value) => value !== undefined).length !== 0 &&
+      (!tenantId || !organizationGroupId || !organizationGroupCode)
+    ) {
+      throw new DomainError('vote organization ownership must be complete');
     }
     if (title.length === 0) {
       throw new DomainError('vote title must not be empty');
@@ -112,6 +139,9 @@ export class VoteAggregate {
     }
     return new VoteAggregate(
       id,
+      tenantId,
+      organizationGroupId,
+      organizationGroupCode,
       createdByUserPrincipalId,
       commissionId,
       title,

@@ -14,6 +14,13 @@ export function myOrganizationApplicationQueryOptions() {
   });
 }
 
+export function managedOrganizationsQueryOptions() {
+  return queryOptions({
+    queryKey: ['organizations', apiMode, 'managed'],
+    queryFn: organizationApi.fetchManagedOrganizations,
+  });
+}
+
 export function organizationApplicationAdminQueryOptions(
   page: number,
   status?: OrganizationApplicationStatus,

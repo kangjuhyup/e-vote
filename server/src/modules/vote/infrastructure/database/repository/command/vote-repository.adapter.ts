@@ -95,6 +95,9 @@ export class VoteRepositoryAdapter
         createdAt: now,
       },
       {
+        tenantId: vote.tenantId ?? null,
+        organizationGroupId: vote.organizationGroupId ?? null,
+        organizationGroupCode: vote.organizationGroupCode ?? null,
         createdByUserPrincipalId: vote.createdByUserPrincipalId ?? null,
         commission: entityReference(
           this.em,
@@ -190,6 +193,9 @@ export class VoteRepositoryAdapter
   private toDomain(entity: VoteEntityPersistence): VoteAggregate {
     return VoteMapper.toDomain({
       id: entity.id,
+      tenantId: entity.tenantId,
+      organizationGroupId: entity.organizationGroupId,
+      organizationGroupCode: entity.organizationGroupCode,
       createdByUserPrincipalId: entity.createdByUserPrincipalId,
       commission: entity.commission,
       electoralRollSnapshot: entity.electoralRollSnapshot,

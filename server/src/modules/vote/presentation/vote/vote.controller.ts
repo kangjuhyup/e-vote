@@ -36,9 +36,11 @@ import { AttachElectoralRollSnapshotHandler } from '../../application/command/ha
 import { throwMappedVoteElectoralRollError } from './vote-electoral-roll-error.mapper';
 import { AttachElectoralRollSnapshotBody } from './dto/attach-electoral-roll-snapshot-request.dto';
 import { AttachElectoralRollSnapshotResponse } from './dto/attach-electoral-roll-snapshot-response.dto';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 
 @ApiTags('votes')
 @Controller('votes')
+@VoteOrganizationProtected()
 export class VoteController {
   constructor(
     private readonly createVoteHandler: CreateVoteHandler,
@@ -69,6 +71,9 @@ export class VoteController {
     const result = await this.createVoteHandler.execute(
       CreateVoteCommand.of({
         createdByUserPrincipalId: user.id,
+        tenantId: user.tenantId ?? '',
+        organizationGroupId: body.organizationGroupId,
+        organizationGroupCode: body.organizationGroupCode,
         commissionId: body.commissionId,
         title: body.title,
         votingChannels: body.votingChannels,
@@ -77,6 +82,7 @@ export class VoteController {
         startedAt,
         endedAt,
       }),
+      user,
     );
 
     return CreateVoteResponse.of(result);

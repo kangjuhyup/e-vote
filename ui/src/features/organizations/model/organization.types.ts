@@ -38,3 +38,8 @@ export interface RejectOrganizationApplicationInput {
   applicationId: string;
   rejectionReason: string;
 }
+
+export interface ManagedOrganization {
+  id: string;
+  code: string;
+}

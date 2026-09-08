@@ -56,6 +56,9 @@ const VOTE_PAGE_READ_RELATIONS = [
 
 type VoteReadPersistence = {
   readonly id: string;
+  readonly tenantId: string | null;
+  readonly organizationGroupId: string | null;
+  readonly createdByUserPrincipalId: string | null;
   readonly billingOrderId: string | null;
   readonly commission: { readonly id: string };
   readonly electoralRollSnapshot: { readonly id: string } | null;
@@ -139,7 +142,10 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
     const { VoteEntity } = await getDatabaseEntities();
     const entity = (await this.em.findOne(
       VoteEntity as any,
-      { id: request.voteId },
+      {
+        id: request.voteId,
+        ...this.accessWhere(request),
+      },
       {
         populate: VOTE_DETAIL_READ_RELATIONS,
         ...SELECT_IN_RELATION_LOAD_OPTIONS,
@@ -159,7 +165,7 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
     const { VoteEntity } = await getDatabaseEntities();
     const [entities, totalItems] = (await this.em.findAndCount(
       VoteEntity as any,
-      {},
+      this.accessWhere(request),
       {
         populate: VOTE_PAGE_READ_RELATIONS,
         limit: request.pageSize,
@@ -186,6 +192,29 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
       totalItems,
       totalPages: Math.ceil(totalItems / request.pageSize),
     });
+  }
+
+  private accessWhere(request: VotePageRequest | VoteDetailRequest) {
+    if (!request.tenantId) return {};
+    const filters: Array<Record<string, unknown>> = [
+      {
+        tenantId: null,
+        organizationGroupId: null,
+        createdByUserPrincipalId: request.userPrincipalId,
+      },
+    ];
+    if (request.tenantId && request.voteAdmin) {
+      filters.push({ tenantId: request.tenantId });
+    } else if (
+      request.tenantId &&
+      (request.organizationGroupIds?.length ?? 0) > 0
+    ) {
+      filters.push({
+        tenantId: request.tenantId,
+        organizationGroupId: { $in: [...(request.organizationGroupIds ?? [])] },
+      });
+    }
+    return { $or: filters };
   }
 
   private toVoteView(

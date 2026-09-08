@@ -15,6 +15,8 @@ import {
 } from '../../../../../shared/application/error/election-commission-access.error';
 import { VOTE_REPOSITORY_PORT } from '../../port/persistence/command/vote-repository.port';
 import type { VoteRepositoryPort } from '../../port/persistence/command/vote-repository.port';
+import { ManagedResourceNotFoundError } from '../../../../../shared/application/error/managed-resource.error';
+import { UserPrincipal } from '../../../../../shared/application/security/user-principal';
 
 @Injectable()
 export class CreateVoteHandler {
@@ -25,7 +27,19 @@ export class CreateVoteHandler {
     private readonly electionCommissionRepository: ElectionCommissionAccessPort,
   ) {}
 
-  async execute(command: CreateVoteCommand): Promise<CreateVoteResult> {
+  async execute(
+    command: CreateVoteCommand,
+    user: UserPrincipal,
+  ): Promise<CreateVoteResult> {
+    if (
+      user.tenantId !== command.tenantId ||
+      !user.managesOrganization({
+        organizationGroupId: command.organizationGroupId,
+        organizationGroupCode: command.organizationGroupCode,
+      })
+    ) {
+      throw new ManagedResourceNotFoundError('vote');
+    }
     const commission = await this.electionCommissionRepository.findById(
       command.commissionId,
     );
@@ -40,6 +54,9 @@ export class CreateVoteHandler {
 
     const vote = VoteAggregate.create({
       id: this.voteRepository.nextId(),
+      tenantId: command.tenantId,
+      organizationGroupId: command.organizationGroupId,
+      organizationGroupCode: command.organizationGroupCode,
       createdByUserPrincipalId: command.createdByUserPrincipalId,
       commissionId: command.commissionId,
       title: command.title,

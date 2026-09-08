@@ -1,4 +1,5 @@
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
@@ -32,6 +33,7 @@ import { GetElectorResponse } from './dto/get-elector-response.dto';
 
 @ApiTags('electors')
 @Controller('votes/:voteId/electors')
+@VoteOrganizationProtected()
 export class ElectorReadController {
   constructor(
     private readonly getElectorHandler: GetElectorHandler,

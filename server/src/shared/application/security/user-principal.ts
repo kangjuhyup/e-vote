@@ -10,6 +10,11 @@ export interface UserPrincipalGroup {
   readonly roles: readonly UserPrincipalGroupRole[];
 }
 
+export interface ManagedOrganization {
+  readonly id: string;
+  readonly code: string;
+}
+
 export class UserPrincipal {
   private constructor(
     readonly id: string,
@@ -76,5 +81,18 @@ export class UserPrincipal {
         group.roles.some((role) => role.code === 'vote-manager'),
     );
     return belongsToOrganization && hasScopedManagerRole;
+  }
+
+  managedOrganizations(): readonly ManagedOrganization[] {
+    return this.groups
+      .filter(
+        (group) =>
+          group.parentId === undefined &&
+          this.managesOrganization({
+            organizationGroupId: group.id,
+            organizationGroupCode: group.code,
+          }),
+      )
+      .map((group) => Object.freeze({ id: group.id, code: group.code }));
   }
 }

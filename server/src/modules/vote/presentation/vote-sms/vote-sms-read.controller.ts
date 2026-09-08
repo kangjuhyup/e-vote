@@ -1,4 +1,5 @@
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Controller,
@@ -33,6 +34,7 @@ import {
 
 @ApiTags('vote-sms')
 @Controller('votes/:voteId/sms/dispatches')
+@VoteOrganizationProtected()
 export class VoteSmsReadController {
   constructor(
     private readonly getPageHandler: GetSmsDispatchPageHandler,

@@ -1,4 +1,5 @@
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   ConflictException,
@@ -30,6 +31,7 @@ import { GetVoteTurnoutResponse } from './dto/get-vote-turnout-response.dto';
 
 @ApiTags('vote-statistics')
 @Controller('votes/:voteId/sub-votes/:voteDetailId')
+@VoteOrganizationProtected()
 export class VoteStatisticsController {
   constructor(
     private readonly getVoteTurnoutHandler: GetVoteTurnoutHandler,

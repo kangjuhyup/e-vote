@@ -180,6 +180,8 @@ export interface FieldSessionRecord {
 
 export interface CreateVoteInput {
   commissionId: string;
+  organizationGroupId?: string;
+  organizationGroupCode?: string;
   defaultPolicy: VotePolicyRecord;
   endedAt: string;
   identityVerificationPolicy: IdentityVerificationPolicy;
@@ -216,7 +218,10 @@ export interface AttachElectoralRollResult {
 
 export interface UpdateVoteInput extends Omit<
   CreateVoteInput,
-  'commissionId' | 'electoralRollId'
+  | 'commissionId'
+  | 'electoralRollId'
+  | 'organizationGroupId'
+  | 'organizationGroupCode'
 > {
   voteId: string;
 }

@@ -36,6 +36,13 @@ export class GetVoteHandler {
     const vote = await this.voteReadRepository.findDetailById({
       voteId: query.voteId,
       userPrincipalId: query.userPrincipalId,
+      ...(query.tenantId
+        ? {
+            tenantId: query.tenantId,
+            organizationGroupIds: query.organizationGroupIds,
+            voteAdmin: query.voteAdmin,
+          }
+        : {}),
     });
 
     if (!vote) {

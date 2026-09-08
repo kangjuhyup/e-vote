@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsISO8601, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsISO8601,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 const PrivacyModeBody = {
   Secret: 'SECRET',
@@ -94,6 +100,16 @@ class IdentityVerificationPolicyBody {
 }
 
 export class CreateVoteBody {
+  @IsString()
+  @MaxLength(255)
+  @ApiProperty({ description: '투표를 소유할 Auth 조직 그룹 ID' })
+  readonly organizationGroupId!: string;
+
+  @IsString()
+  @MaxLength(50)
+  @ApiProperty({ description: '조직관리번호와 동일한 Auth 조직 그룹 code' })
+  readonly organizationGroupCode!: string;
+
   @IsUUID()
   @ApiProperty({
     format: 'uuid',

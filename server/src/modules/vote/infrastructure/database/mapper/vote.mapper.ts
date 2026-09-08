@@ -13,6 +13,9 @@ import { EntityRelationReference } from '../../../../../platform/database/mapper
 
 export type VotePersistence = {
   readonly id: string;
+  readonly tenantId: string | null;
+  readonly organizationGroupId: string | null;
+  readonly organizationGroupCode: string | null;
   readonly createdByUserPrincipalId: string | null;
   readonly commission: EntityRelationReference;
   readonly electoralRollSnapshot: EntityRelationReference | null;
@@ -38,6 +41,9 @@ export class VoteMapper {
   static toDomain(entity: VotePersistence): VoteAggregate {
     return VoteAggregate.reconstitute({
       id: entity.id,
+      tenantId: entity.tenantId ?? undefined,
+      organizationGroupId: entity.organizationGroupId ?? undefined,
+      organizationGroupCode: entity.organizationGroupCode ?? undefined,
       createdByUserPrincipalId: entity.createdByUserPrincipalId ?? undefined,
       commissionId: entity.commission.id,
       electoralRollSnapshotId: entity.electoralRollSnapshot?.id,

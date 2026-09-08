@@ -1,4 +1,5 @@
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Body,
@@ -40,6 +41,7 @@ import {
 
 @ApiTags('vote-details')
 @Controller('votes/:voteId/sub-votes')
+@VoteOrganizationProtected()
 export class VoteDetailAttachmentController {
   constructor(
     private readonly requestAttachmentUploadHandler: RequestAttachmentUploadHandler,

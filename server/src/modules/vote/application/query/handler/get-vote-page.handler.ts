@@ -31,6 +31,13 @@ export class GetVotePageHandler {
       page: query.page,
       pageSize: query.pageSize,
       userPrincipalId: query.userPrincipalId,
+      ...(query.tenantId
+        ? {
+            tenantId: query.tenantId,
+            organizationGroupIds: query.organizationGroupIds,
+            voteAdmin: query.voteAdmin,
+          }
+        : {}),
     });
   }
 }

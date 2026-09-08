@@ -43,6 +43,11 @@ export class OrganizationOnboardingController {
     return this.map(() => this.service.getMine(user));
   }
 
+  @Get('organizations/managed')
+  getManagedOrganizations(@User() user: UserPrincipal) {
+    return { items: user.managedOrganizations() };
+  }
+
   @Get('admin/organization-applications')
   async getPage(
     @User() user: UserPrincipal,

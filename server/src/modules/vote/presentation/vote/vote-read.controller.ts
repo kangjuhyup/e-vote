@@ -26,9 +26,11 @@ import { GetVotePageQuery as GetVotePageRequestQuery } from './dto/get-vote-page
 import { GetVotePageResponse } from './dto/get-vote-page-response.dto';
 import { GetVoteParam } from './dto/get-vote-request.dto';
 import { GetVoteResponse } from './dto/get-vote-response.dto';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 
 @ApiTags('votes')
 @Controller('votes')
+@VoteOrganizationProtected()
 export class VoteReadController {
   constructor(
     private readonly getVoteHandler: GetVoteHandler,
@@ -65,6 +67,11 @@ export class VoteReadController {
         page: Number(query.page),
         pageSize: Number(query.pageSize),
         userPrincipalId: user.id,
+        tenantId: user.tenantId,
+        organizationGroupIds: user
+          .managedOrganizations()
+          .map((item) => item.id),
+        voteAdmin: user.roles.includes('vote-admin'),
       }),
     );
 
@@ -97,6 +104,11 @@ export class VoteReadController {
         GetVoteQuery.of({
           voteId: params.voteId,
           userPrincipalId: user.id,
+          tenantId: user.tenantId,
+          organizationGroupIds: user
+            .managedOrganizations()
+            .map((item) => item.id),
+          voteAdmin: user.roles.includes('vote-admin'),
         }),
       );
 

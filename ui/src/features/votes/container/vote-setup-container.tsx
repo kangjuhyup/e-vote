@@ -10,6 +10,7 @@ import { PageShell } from '@/components/layout/page-shell';
 import { Button } from '@/components/ui/button';
 import { billingApi } from '@/features/billing/api/billing-api';
 import { billingOrderQueryOptions } from '@/features/billing/api/billing-query-options';
+import { managedOrganizationsQueryOptions } from '@/features/organizations/api/organization-query-options';
 import { BillingOrderConfirmation } from '@/features/billing/ui/billing-order-confirmation';
 import { electoralRollPageQueryOptions } from '@/features/votes/api/electoral-roll-query-options';
 import { voteAttachmentApi } from '@/features/votes/api/vote-attachment-api';
@@ -70,6 +71,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
   const [billingConfirmed, setBillingConfirmed] = useState(false);
 
   const commissionsQuery = useQuery(commissionManagementQueryOptions(1, 100));
+  const organizationsQuery = useQuery(managedOrganizationsQueryOptions());
   const electoralRollsQuery = useQuery(
     electoralRollPageQueryOptions({ page: 1, pageSize: 100 }),
   );
@@ -195,6 +197,17 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
 
   function handleCreateVote(data: FormData) {
     clearStatus();
+    let [organizationGroupId = '', organizationGroupCode = ''] = String(
+      data.get('organizationSelection') ?? '',
+    ).split('\t');
+    if (isMockMode && !organizationGroupId) {
+      organizationGroupId = 'mock-organization';
+      organizationGroupCode = 'ORG-001';
+    }
+    if (!organizationGroupId || !organizationGroupCode) {
+      setErrorMessage('승인된 조직의 투표 관리자 권한이 필요합니다.');
+      return;
+    }
     const channels = data.getAll('channel').map(String) as VotingChannel[];
     const schedule = resolveVoteSchedule(
       String(data.get('startedAt') ?? ''),
@@ -224,6 +237,8 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
         voteWeightMode: String(data.get('voteWeightMode')) as VoteWeightMode,
       },
       identityVerificationPolicy: readIdentityVerificationPolicy(data),
+      organizationGroupId,
+      organizationGroupCode,
     });
     setMessage('기본 정책을 저장했습니다.');
     setStep('ballot');
@@ -399,6 +414,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
           ) : undefined
         }
         commissions={commissionsQuery.data?.items ?? []}
+        organizations={organizationsQuery.data ?? []}
         electoralRolls={electoralRollsQuery.data?.items ?? []}
         ballots={ballotDrafts}
         ballotType={draftBallotType}

@@ -233,6 +233,8 @@ describe('VoteController', () => {
 
     const response = await controller.createVote(TEST_USER_PRINCIPAL, {
       commissionId: 'commission-1',
+      organizationGroupId: 'organization-1',
+      organizationGroupCode: 'ORG-001',
       title: 'Board election',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
       defaultPolicy: {

@@ -1,6 +1,7 @@
 import { ElectorIdentityVerificationUnavailableError } from '../../application/port/gateway/elector-identity-verification.port';
 import { ElectorParticipantForbiddenError } from '../../../../shared/application/port/capability/elector-participant-access.port';
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
+import { VoteOrganizationProtected } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import {
   Body,
@@ -55,6 +56,7 @@ import { ManageElectorResponse } from './dto/manage-elector-response.dto';
 
 @ApiTags('electors')
 @Controller('votes/:voteId/electors')
+@VoteOrganizationProtected()
 export class ElectorController {
   constructor(
     private readonly createElectorHandler: CreateElectorHandler,

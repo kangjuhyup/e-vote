@@ -5,6 +5,9 @@ import type { VotePolicyProps } from '../../../../../../shared/domain/voting/vo/
 export class CreateVoteCommand {
   private constructor(
     readonly createdByUserPrincipalId: string,
+    readonly tenantId: string,
+    readonly organizationGroupId: string,
+    readonly organizationGroupCode: string,
     readonly commissionId: string,
     readonly title: string,
     readonly votingChannels: readonly VotingChannel[],
@@ -16,6 +19,9 @@ export class CreateVoteCommand {
 
   static of(params: {
     createdByUserPrincipalId: string;
+    tenantId: string;
+    organizationGroupId: string;
+    organizationGroupCode: string;
     commissionId: string;
     title: string;
     votingChannels: readonly VotingChannel[];
@@ -26,6 +32,9 @@ export class CreateVoteCommand {
   }): CreateVoteCommand {
     return new CreateVoteCommand(
       params.createdByUserPrincipalId,
+      params.tenantId,
+      params.organizationGroupId,
+      params.organizationGroupCode,
       params.commissionId,
       params.title,
       params.votingChannels,

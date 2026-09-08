@@ -7,6 +7,7 @@ import type {
   OrganizationApplication,
   OrganizationApplicationPage,
   OrganizationApplicationStatus,
+  ManagedOrganization,
   RejectOrganizationApplicationInput,
 } from '../model/organization.types';
 
@@ -76,6 +77,16 @@ export function createOrganizationApiClient(
   const now = options.now ?? (() => new Date().toISOString());
   let currentApplication: OrganizationApplication | undefined;
   const adminApplications: OrganizationApplication[] = [];
+
+  async function fetchManagedOrganizations(): Promise<ManagedOrganization[]> {
+    if (mode === 'mock') return [{ id: 'mock-organization', code: 'ORG-001' }];
+    const result = await request<{ items: ManagedOrganization[] }>(
+      fetcher,
+      baseUrl,
+      '/organizations/managed',
+    );
+    return result.items;
+  }
 
   async function fetchMyApplication() {
     if (mode === 'mock') return currentApplication ?? null;
@@ -205,6 +216,7 @@ export function createOrganizationApiClient(
     createApplication,
     fetchAdminApplications,
     fetchMyApplication,
+    fetchManagedOrganizations,
     rejectApplication,
     retryProvisioning,
   };

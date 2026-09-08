@@ -12,6 +12,7 @@ import {
 } from '../../../../src/shared/domain/voting/type/vote-policy.type';
 import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { UserPrincipal } from '../../../../src/shared/application/security/user-principal';
 
 describe('CreateVoteHandler', () => {
   it('creates a draft vote and saves it through the repository', async () => {
@@ -40,6 +41,9 @@ describe('CreateVoteHandler', () => {
     const result = await handler.execute(
       CreateVoteCommand.of({
         createdByUserPrincipalId: 'user-1',
+        tenantId: 'tenant-1',
+        organizationGroupId: 'organization-1',
+        organizationGroupCode: 'ORG-001',
         commissionId: 'commission-1',
         title: 'Board election',
         votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
@@ -55,6 +59,19 @@ describe('CreateVoteHandler', () => {
         startedAt: new Date('2026-09-06T10:00:00.000Z'),
         endedAt: new Date('2026-09-06T11:00:00.000Z'),
       }),
+      UserPrincipal.of({
+        id: 'user-1',
+        tenantId: 'tenant-1',
+        groups: [
+          { id: 'organization-1', code: 'ORG-001', roles: [] },
+          {
+            id: 'managers-1',
+            code: 'ORG-001.vote-managers',
+            parentId: 'organization-1',
+            roles: [{ id: 'role-1', code: 'vote-manager' }],
+          },
+        ],
+      }),
     );
 
     expect(result).toEqual({
@@ -68,6 +85,9 @@ describe('CreateVoteHandler', () => {
       id: 'vote-1',
       commissionId: 'commission-1',
       createdByUserPrincipalId: 'user-1',
+      tenantId: 'tenant-1',
+      organizationGroupId: 'organization-1',
+      organizationGroupCode: 'ORG-001',
       title: 'Board election',
       votingChannels: [VotingChannel.Online, VotingChannel.Onsite],
       startedAt: new Date('2026-09-06T10:00:00.000Z'),

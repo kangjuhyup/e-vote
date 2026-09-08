@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import type { ElectoralRollPageItemRecord } from '@/features/votes/model/electoral-roll.types';
+import type { ManagedOrganization } from '@/features/organizations/model/organization.types';
 import type {
   CommissionRecord,
   CreateVoteResult,
@@ -49,6 +50,7 @@ interface VoteSetupWizardProps {
   ballotType: VoteSetupBallotDraft['type'];
   billingPanel?: ReactNode;
   commissions: CommissionRecord[];
+  organizations: ManagedOrganization[];
   createdSubVoteIds: string[];
   createdVote?: CreateVoteResult;
   electoralRolls: ElectoralRollPageItemRecord[];
@@ -172,6 +174,7 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
         {props.step === 'basics' ? (
           <BasicsForm
             isSubmitting={props.isSubmitting}
+            organizations={props.organizations}
             onSubmit={props.onCreateVote}
           />
         ) : null}
@@ -225,9 +228,11 @@ export function VoteSetupWizard(props: VoteSetupWizardProps) {
 
 function BasicsForm({
   isSubmitting,
+  organizations,
   onSubmit,
 }: {
   isSubmitting: boolean;
+  organizations: ManagedOrganization[];
   onSubmit: (data: FormData) => void;
 }) {
   return (
@@ -239,6 +244,29 @@ function BasicsForm({
         className="grid gap-4 sm:grid-cols-2"
         onSubmit={toFormHandler(onSubmit)}
       >
+        <label className="grid gap-2 text-sm font-medium sm:col-span-2">
+          관리 조직
+          <Select
+            key={organizations.map((organization) => organization.id).join(',')}
+            name="organizationSelection"
+            required={organizations.length > 0}
+            defaultValue={
+              organizations[0]
+                ? `${organizations[0].id}\t${organizations[0].code}`
+                : ''
+            }
+          >
+            <option value="" disabled>투표를 관리할 조직을 선택하세요</option>
+            {organizations.map((organization) => (
+              <option
+                key={organization.id}
+                value={`${organization.id}\t${organization.code}`}
+              >
+                {organization.code}
+              </option>
+            ))}
+          </Select>
+        </label>
         <Field
           label="투표 제목"
           name="title"

@@ -59,6 +59,8 @@ const validRequest: Record<string, unknown> = {
   billingOrderId: VALID_UUID,
   candidateId: VALID_UUID,
   commissionId: VALID_UUID,
+  organizationGroupId: 'organization-1',
+  organizationGroupCode: 'ORG-001',
   electoralRollId: VALID_UUID,
   electorId: VALID_UUID,
   evidenceFileId: VALID_UUID,

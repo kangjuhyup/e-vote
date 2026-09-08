@@ -27,6 +27,15 @@ export function createVoteEntities(
     tableName: 'votes',
     properties: {
       id: p.uuid().primary(),
+      tenantId: p.string().fieldName('tenant_id').nullable(),
+      organizationGroupId: p
+        .string()
+        .fieldName('organization_group_id')
+        .nullable(),
+      organizationGroupCode: p
+        .string()
+        .fieldName('organization_group_code')
+        .nullable(),
       createdByUserPrincipalId: p
         .string()
         .fieldName('created_by_user_principal_id')
