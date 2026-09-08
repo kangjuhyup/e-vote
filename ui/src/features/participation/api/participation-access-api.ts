@@ -90,6 +90,16 @@ function encode(value: string) {
   return encodeURIComponent(value);
 }
 
+function isUploadHeaders(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length > 0 &&
+    Object.values(value).every((header) => typeof header === 'string')
+  );
+}
+
 async function request<T>(
   fetcher: ApiFetcher,
   baseUrl: string,
@@ -210,11 +220,20 @@ export function createParticipationAccessApiClient(options: ClientOptions = {}) 
         },
         200,
       );
+      if (
+        typeof upload.uploadUrl !== 'string' ||
+        !upload.uploadUrl ||
+        typeof upload.storageKey !== 'string' ||
+        !upload.storageKey ||
+        !isUploadHeaders(upload.uploadHeaders)
+      ) {
+        throw new Error('Invalid signature upload response');
+      }
       input.onStage?.('uploading');
       const storageResponse = await storageFetcher(upload.uploadUrl, {
         body: input.blob,
         credentials: 'omit',
-        headers: { 'Content-Type': input.blob.type },
+        headers: upload.uploadHeaders,
         method: 'PUT',
       });
       if (!storageResponse.ok) throw new Error('Signature storage upload failed');

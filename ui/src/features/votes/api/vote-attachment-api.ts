@@ -43,6 +43,16 @@ function encode(value: string) {
   return encodeURIComponent(value);
 }
 
+function isUploadHeaders(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length > 0 &&
+    Object.values(value).every((header) => typeof header === 'string')
+  );
+}
+
 function buildVoteBasePath({ voteId }: VoteAttachmentTarget) {
   return `/votes/${encode(voteId)}/attachments`;
 }
@@ -140,6 +150,7 @@ export function createVoteAttachmentApiClient(
         expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
         metadata,
         storageKey,
+        uploadHeaders: { 'Content-Type': metadata.mimeType },
         uploadUrl: `https://storage.mock/${storageKey}`,
       };
     }
@@ -151,7 +162,12 @@ export function createVoteAttachmentApiClient(
       metadata,
       200,
     );
-    if (!grant.storageKey || !grant.uploadUrl || !grant.expiresAt) {
+    if (
+      !grant.storageKey ||
+      !grant.uploadUrl ||
+      !grant.expiresAt ||
+      !isUploadHeaders(grant.uploadHeaders)
+    ) {
       throw new Error('업로드 URL 응답이 올바르지 않습니다.');
     }
     return { ...grant, metadata };
@@ -170,7 +186,7 @@ export function createVoteAttachmentApiClient(
 
     const response = await objectFetcher(grant.uploadUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': grant.metadata.mimeType },
+      headers: grant.uploadHeaders,
       body: file,
       credentials: 'omit',
     });

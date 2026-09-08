@@ -52,6 +52,7 @@ export interface AttachmentUploadGrant<TType extends AttachmentType> {
   expiresAt: string;
   metadata: AttachmentUploadMetadata<TType>;
   storageKey: string;
+  uploadHeaders: Readonly<Record<string, string>>;
   uploadUrl: string;
 }
 

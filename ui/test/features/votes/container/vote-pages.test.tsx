@@ -345,6 +345,7 @@ describe('vote containers', () => {
         expiresAt: '2099-09-06T12:00:00.000Z',
         metadata,
         storageKey: 'votes/notice-one',
+        uploadHeaders: { 'Content-Type': metadata.mimeType },
         uploadUrl: 'https://storage.example/notice',
       }));
     const uploadObject = vi

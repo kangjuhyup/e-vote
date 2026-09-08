@@ -32,6 +32,12 @@ const metadata = {
 };
 const grant = {
   storageKey: 'votes/notice-one',
+  uploadHeaders: {
+    'Content-Type': metadata.mimeType,
+    'x-amz-meta-attachmenttype': metadata.attachmentType,
+    'x-amz-meta-targettype': 'VOTE',
+    'x-amz-meta-voteid': voteTarget.voteId,
+  },
   uploadUrl: 'https://storage.example/notice?signature=signed',
   expiresAt: '2099-09-06T12:00:00.000Z',
 };
@@ -83,7 +89,7 @@ describe('vote attachment API', () => {
     ]);
     expect(objectFetcher).toHaveBeenCalledWith(grant.uploadUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': metadata.mimeType },
+      headers: grant.uploadHeaders,
       body: file,
       credentials: 'omit',
     });

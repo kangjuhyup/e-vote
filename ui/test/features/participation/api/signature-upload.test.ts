@@ -6,6 +6,12 @@ function response(data: unknown, status = 200) {
 }
 const upload = {
   storageKey: 'signatures/one',
+  uploadHeaders: {
+    'Content-Type': 'image/png',
+    'x-amz-meta-electorid': 'elector/id',
+    'x-amz-meta-purpose': 'PARTICIPATION_SIGNATURE',
+    'x-amz-meta-voteid': 'vote/id',
+  },
   uploadUrl: 'https://storage.example/one?token=signed',
   expiresAt: '2026-09-07',
 };
@@ -65,7 +71,7 @@ describe('Required participation signature upload', () => {
         method: 'PUT',
         body: value.blob,
         credentials: 'omit',
-        headers: { 'Content-Type': type },
+        headers: upload.uploadHeaders,
       });
       expect(storageFetcher.mock.calls[0][1].body).toBe(value.blob);
       expect(fetcher.mock.calls[1]).toEqual([

@@ -56,9 +56,15 @@ describe('participation access API', () => {
   });
 
   it('uploads the same blob, confirms, then sends only the ballot selection with CSRF', async () => {
+    const uploadHeaders = {
+      'Content-Type': 'image/png',
+      'x-amz-meta-electorid': 'elector',
+      'x-amz-meta-purpose': 'PARTICIPATION_SIGNATURE',
+      'x-amz-meta-voteid': 'vote',
+    };
     const fetcher = vi
       .fn()
-      .mockResolvedValueOnce(envelope({ storageKey: 'signatures/key', uploadUrl: 'https://storage.example/key', expiresAt: '2026-09-07' }))
+      .mockResolvedValueOnce(envelope({ storageKey: 'signatures/key', uploadHeaders, uploadUrl: 'https://storage.example/key', expiresAt: '2026-09-07' }))
       .mockResolvedValueOnce(envelope({ fileId: 'file', storageKey: 'signatures/key' }, 201))
       .mockResolvedValueOnce(envelope({ id: 'participation', status: 'CAST', voteDetailId: 'detail' }, 201));
     const storageFetcher = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
@@ -68,6 +74,7 @@ describe('participation access API', () => {
     await client.participate({ csrfToken: 'csrf-secret', selectedCandidateId: 'candidate', voteDetailId: 'detail' });
 
     expect(storageFetcher.mock.calls[0][1].body).toBe(blob);
+    expect(storageFetcher.mock.calls[0][1].headers).toEqual(uploadHeaders);
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
       'https://api.example/participation-access/signature/upload-url',
       'https://api.example/participation-access/signature/confirm',

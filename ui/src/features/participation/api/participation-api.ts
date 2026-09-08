@@ -118,6 +118,16 @@ function encode(value: string) {
   return encodeURIComponent(value);
 }
 
+function isUploadHeaders(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length > 0 &&
+    Object.values(value).every((header) => typeof header === 'string')
+  );
+}
+
 function mapStatus(value: string): ParticipationAccessState {
   if (
     value === 'DRAFT' ||
@@ -333,7 +343,8 @@ export function createParticipationApiClient(
         typeof upload.uploadUrl !== 'string' ||
         !upload.uploadUrl ||
         typeof upload.storageKey !== 'string' ||
-        !upload.storageKey
+        !upload.storageKey ||
+        !isUploadHeaders(upload.uploadHeaders)
       )
         throw new Error('Invalid signature upload response');
       input.onStage?.('uploading');
@@ -342,7 +353,7 @@ export function createParticipationApiClient(
         method: 'PUT',
         body: blob,
         credentials: 'omit',
-        headers: { 'Content-Type': metadata.mimeType },
+        headers: upload.uploadHeaders,
       });
       if (!response.ok)
         throw new Error('서명 이미지 전송에 실패했습니다. 다시 시도해 주세요.');

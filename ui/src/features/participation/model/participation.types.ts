@@ -80,6 +80,7 @@ export interface SignatureUploadMetadata {
 
 export interface RequestSignatureUploadResult {
   uploadUrl: string;
+  uploadHeaders: Readonly<Record<string, string>>;
   storageKey: string;
   expiresAt: string;
 }
