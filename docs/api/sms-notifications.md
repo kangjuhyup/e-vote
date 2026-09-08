@@ -4,7 +4,7 @@
 
 ## 공통 요청과 응답
 
-모든 엔드포인트는 인증된 관리자 요청을 요구합니다.
+모든 엔드포인트는 인증된 관리자 요청을 요구합니다. 투표 참여 독려는 서버가 관리하는 승인 템플릿을 사용하므로 요청 본문을 받지 않습니다. 그 외 자유 문구 엔드포인트는 아래 본문을 사용합니다.
 
 ```json
 {
@@ -29,10 +29,22 @@
 ## 투표 참여 독려 문자
 
 ```text
+GET /votes/:voteId/sms/participation-reminder/template
+```
+
+- UI가 실제 발송 예정 내용을 보여줄 수 있도록 서버 소유 템플릿의 코드, 본문, 버튼명을 반환합니다.
+- 개인 참여 링크 자체는 응답하지 않으며, 실제 발송 시 수신자별 링크 변수로 치환합니다.
+
+```text
 POST /votes/:voteId/sms/participation-reminder
 ```
 
 - 투표 상태가 `OPEN`일 때만 가능합니다.
+- 본인인증 필수 여부와 관계없이 투표 생성자가 발송할 수 있습니다.
+- 본인인증이 선택인 투표는 개인 링크로 참여 세션을 발급합니다. 본인인증 필수 투표는 링크를 검증한 뒤 로그인·본인인증 참여 화면으로 안내하며, 링크만으로 참여 세션이나 투표 권한을 발급하지 않습니다.
+- 필수 인증 투표의 `POST /participation-access/exchange` 응답은 `{ "authenticationRequired": true, "voteId": "...", "electorId": "..." }`입니다. 식별자는 인증 대상을 지정하며, 투표 제출은 기존 계정·선거인 인증 검증을 통과해야 합니다. 교체되거나 폐기된 링크는 사용할 수 없습니다.
+- 요청 본문을 받지 않으며, 클라이언트가 발송 문구를 변경할 수 없습니다.
+- 발송 포트에는 서버가 지정한 `VOTE_PARTICIPATION_REMINDER` 템플릿 코드만 전달됩니다. 실제 알림톡/SMS Adapter는 이 코드를 공급자 템플릿과 링크 변수에 매핑합니다.
 - `SmsSenderPort.sendParticipationReminderToNonParticipants()`를 호출합니다.
 - 개발용 Adapter는 해당 투표의 활성 선거인 중 참여 기록이 없는 선거인만 수신자로 선택합니다.
 
@@ -114,10 +126,11 @@ GET /votes/:voteId/sms/dispatches?page=1&pageSize=20
 ## 문자 발송 상세 조회
 
 ```text
-GET /votes/:voteId/sms/dispatches/:smsDispatchId
+GET /votes/:voteId/sms/dispatches/:smsDispatchId?page=1&pageSize=50
 ```
 
-- 요약 정보와 수신자별 결과를 조회합니다.
+- 요약 정보와 수신자별 결과를 페이지 단위로 조회합니다.
+- 기본 페이지 크기는 20이고 최대 100입니다. 관리 화면은 페이지당 50명을 요청합니다.
 - 수신자 결과는 `electorId`, 마스킹되는 `recipientName`, `recipientIdentifier`, `status`를 포함합니다.
 - `FAILURE` 결과에만 `failureReason`이 포함됩니다.
 - 전화번호는 저장하거나 반환하지 않습니다.
@@ -132,6 +145,10 @@ GET /votes/:voteId/sms/dispatches/:smsDispatchId
   "recipientCount": 2,
   "successCount": 1,
   "failureCount": 1,
+  "page": 1,
+  "pageSize": 50,
+  "totalItems": 2,
+  "totalPages": 1,
   "deliveries": [
     {
       "electorId": "elector-1",
