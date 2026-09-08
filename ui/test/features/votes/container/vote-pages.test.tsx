@@ -741,12 +741,12 @@ describe('vote containers', () => {
     expect(await screen.findByText(/발송 대기열에 등록했습니다/)).toBeTruthy();
 
     const linkButtons = screen.getAllByRole('button', {
-      name: '링크 재발급',
+      name: '현재 링크 보기',
     });
     fireEvent.click(linkButtons[0]);
 
     expect(
-      screen.getByRole('heading', { name: '참여 링크 재발급' }),
+      screen.getByRole('heading', { name: '선거인 참여 링크' }),
     ).toBeTruthy();
     expect(screen.getByText(/기존 참여 링크를 폐기/)).toBeTruthy();
     const developmentLink = await screen.findByRole('textbox', {

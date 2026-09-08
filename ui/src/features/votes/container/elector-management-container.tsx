@@ -85,7 +85,14 @@ export function ElectorManagementContainer({
   });
   const dispatchMutation = useMutation({
     mutationFn: participationInvitationApi.dispatch,
-    onSuccess: (result) => setMessage(formatInvitationDispatchResult(result)),
+    onSuccess: (result) =>
+      setMessage(
+        `${formatInvitationDispatchResult(result)}${
+          canShowDevelopmentParticipationLink
+            ? " 발송된 최신 링크는 아래 선거인별 ‘현재 링크 보기’에서 확인할 수 있습니다."
+            : ""
+        }`,
+      ),
   });
   const deleteMutation = useMutation({
     mutationFn: voteOperationsApi.deleteElector,

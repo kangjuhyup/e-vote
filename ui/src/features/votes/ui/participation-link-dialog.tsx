@@ -72,11 +72,11 @@ export function ParticipationLinkDialog({
         <div>
           <div className="flex items-center gap-2">
             <MessageSquareText className="size-5 text-primary" aria-hidden="true" />
-            <h2 id="participation-link-dialog-title" className="text-lg font-semibold">참여 링크 재발급</h2>
+            <h2 id="participation-link-dialog-title" className="text-lg font-semibold">{showDevelopmentLink ? '선거인 참여 링크' : '참여 링크 재발급'}</h2>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{elector.name} · {elector.identifier}</p>
         </div>
-        <Button type="button" variant="ghost" size="icon" aria-label="참여 링크 재발급 팝업 닫기" disabled={isBusy} onClick={onClose}>
+        <Button type="button" variant="ghost" size="icon" aria-label="선거인 참여 링크 팝업 닫기" disabled={isBusy} onClick={onClose}>
           <X aria-hidden="true" />
         </Button>
       </div>

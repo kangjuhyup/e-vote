@@ -230,7 +230,7 @@ export function ElectorManagementView({
                           onClick={() => onOpenInvitation(elector)}
                         >
                           <Link2 aria-hidden="true" />
-                          링크 재발급
+                          {showDevelopmentLink ? "현재 링크 보기" : "링크 재발급"}
                         </Button>
                         <Button
                           type="button"
