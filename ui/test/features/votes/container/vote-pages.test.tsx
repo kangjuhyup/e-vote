@@ -213,6 +213,23 @@ describe('vote containers', () => {
     expect(await screen.findByText('투표를 찾을 수 없습니다.')).toBeTruthy();
   });
 
+  it('keeps candidates inside their child vote instead of duplicating them on the parent detail', async () => {
+    renderWithQueryClient(<VoteDetailContainer voteId="active-general" />);
+
+    expect(
+      await screen.findByRole('heading', { name: '자식 투표' }),
+    ).toBeTruthy();
+    expect(screen.getByText('후보자형')).toBeTruthy();
+    const candidateList = screen.getByRole('list', {
+      name: '대표 후보 선출 후보자',
+    });
+    expect(candidateList.textContent).toContain('김대표');
+    expect(candidateList.textContent).toContain('박운영');
+    expect(screen.queryByText('초안')).toBeNull();
+    expect(screen.queryByRole('heading', { name: '후보자' })).toBeNull();
+    expect(screen.getByRole('heading', { name: '선거인명부' })).toBeTruthy();
+  });
+
   it('shows a finalized vote consistently and disables editing from detail', async () => {
     const vote = voteFixtureDetails.find(
       (item) => item.id === 'scheduled-budget',

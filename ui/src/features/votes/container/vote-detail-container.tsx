@@ -25,7 +25,7 @@ import { filterElectors } from "@/features/votes/model/vote-selectors";
 import { useVotesUiStore } from "@/features/votes/store/votes-ui.store";
 
 import { isVoteSetupEditable } from "../lib/vote-finalization";
-import { toCandidateItems, toRosterItems } from "../lib/vote-view-models";
+import { toRosterItems } from "../lib/vote-view-models";
 import { FieldSessionContainer } from "./field-session-container";
 import { VoteSmsContainer } from "./vote-sms-container";
 import { VoteDetailRosterSection } from "../ui/vote-detail-roster-section";
@@ -171,7 +171,7 @@ export function VoteDetailContainer({
       }
       eyebrow="투표 정보"
       title="투표 상세"
-      description="투표 내용, 후보자, 선거인명부와 참여 상태를 확인합니다."
+      description="투표 내용, 자식 투표, 선거인명부와 참여 상태를 확인합니다."
       actions={
         <>
           {vote && isVoteSetupEditable(vote.status, billingOrderStatus) ? (
@@ -271,7 +271,6 @@ export function VoteDetailContainer({
           <VoteSmsContainer voteId={vote.id} voteStatus={vote.status} />
           <VoteSubVoteSection voteId={vote.id} subVotes={vote.subVotes} />
           <VoteDetailRosterSection
-            candidateItems={toCandidateItems(vote.candidates)}
             electorPage={electorPage}
             electorParticipationFilter={electorParticipationFilter}
             rosterItems={toRosterItems(filteredElectors)}

@@ -2,12 +2,9 @@ import { ArrowRight, ListTree, Paperclip } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyStateCard } from "@/components/feedback/empty-state-card";
-import { StatusBadge } from "@/components/data/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { VoteSubVote } from "@/features/votes/model/vote.types";
-
-import { getVoteStatusLabel, getVoteStatusVariant } from "../lib/vote-view-models";
 
 interface VoteSubVoteSectionProps {
   subVotes: VoteSubVote[];
@@ -37,24 +34,37 @@ export function VoteSubVoteSection({ subVotes, voteId }: VoteSubVoteSectionProps
           .sort((left, right) => left.order - right.order)
           .map((subVote) => (
             <Card key={subVote.id} className="rounded-lg">
-              <CardHeader className="flex-row items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <CardTitle className="text-base">{subVote.title}</CardTitle>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {subVote.type === "yes-no" ? "찬반형" : "후보자형"}
-                    {` / 후보 ${subVote.candidates.length.toLocaleString()}명`}
-                  </p>
-                </div>
-                <StatusBadge
-                  label={getVoteStatusLabel(subVote.status)}
-                  variant={getVoteStatusVariant(subVote.status)}
-                />
+              <CardHeader>
+                <CardTitle className="text-base">{subVote.title}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {subVote.type === "yes-no" ? "찬반형" : "후보자형"}
+                </p>
               </CardHeader>
-              <CardContent>
-                <p className="line-clamp-2 min-h-10 text-sm text-muted-foreground">
+              <CardContent className="space-y-4">
+                <p className="text-sm leading-6 text-muted-foreground">
                   {subVote.description || "등록된 설명이 없습니다."}
                 </p>
-                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {subVote.type === "candidate" ? (
+                  <ol
+                    aria-label={`${subVote.title} 후보자`}
+                    className="space-y-2"
+                  >
+                    {[...subVote.candidates]
+                      .sort((left, right) => left.order - right.order)
+                      .map((candidate) => (
+                        <li
+                          key={candidate.id}
+                          className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm"
+                        >
+                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                            {candidate.order}
+                          </span>
+                          <span className="font-medium">{candidate.name}</span>
+                        </li>
+                      ))}
+                  </ol>
+                ) : null}
+                <div className="grid gap-2 sm:grid-cols-2">
                   <Button type="button" variant="outline" asChild>
                     <Link href={`/votes/${voteId}/sub-votes/${subVote.id}`}>
                       통계와 결과
