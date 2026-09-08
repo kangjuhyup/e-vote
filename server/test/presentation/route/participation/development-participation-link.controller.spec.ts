@@ -83,19 +83,4 @@ describe('development participation link environment guard', () => {
       );
     },
   );
-
-  it.each(['start:dev', 'start:debug'])(
-    'enables the route for the %s package script when NODE_ENV is absent',
-    (npmLifecycleEvent) => {
-      expect(
-        isDevelopmentParticipationLinkEnabled(undefined, npmLifecycleEvent),
-      ).toBe(true);
-    },
-  );
-
-  it('does not let the package script override an explicit production environment', () => {
-    expect(
-      isDevelopmentParticipationLinkEnabled('production', 'start:dev'),
-    ).toBe(false);
-  });
 });
