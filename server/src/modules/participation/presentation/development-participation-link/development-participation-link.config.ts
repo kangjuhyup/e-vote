@@ -1,5 +1,10 @@
 export function isDevelopmentParticipationLinkEnabled(
   nodeEnvironment: string | undefined,
 ): boolean {
-  return nodeEnvironment === 'development' || nodeEnvironment === 'test';
+  const normalizedNodeEnvironment = nodeEnvironment?.trim();
+
+  return (
+    normalizedNodeEnvironment === 'development' ||
+    normalizedNodeEnvironment === 'test'
+  );
 }

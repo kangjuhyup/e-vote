@@ -68,7 +68,7 @@ describe('DevelopmentParticipationLinkController', () => {
 });
 
 describe('development participation link environment guard', () => {
-  it.each(['development', 'test'])(
+  it.each(['development', 'test', ' development ', 'test\n'])(
     'enables the route in %s',
     (nodeEnvironment) => {
       expect(isDevelopmentParticipationLinkEnabled(nodeEnvironment)).toBe(true);
