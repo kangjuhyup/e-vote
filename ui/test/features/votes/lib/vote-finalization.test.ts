@@ -77,6 +77,9 @@ describe("vote finalization", () => {
     ["draft", "PENDING_PAYMENT", "payment-processing", false],
     ["finalized", "PAID", "finalized", false],
     ["finalized", "REFUND_PENDING", "finalized", false],
+    ["active", "PAID", "active", false],
+    ["completed", "PAID", "completed", false],
+    ["canceled", "PAID", "canceled", false],
     ["draft", "CANCELED", "draft", true],
     ["draft", "REFUNDED", "draft", true],
   ] as const)(

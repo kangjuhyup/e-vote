@@ -18,6 +18,13 @@ export function getVoteDisplayStatus(
   voteStatus: VoteStatus,
   billingStatus?: VoteBillingLifecycleStatus,
 ): VoteDisplayStatus {
+  if (
+    voteStatus === "active" ||
+    voteStatus === "completed" ||
+    voteStatus === "canceled"
+  ) {
+    return voteStatus;
+  }
   if (billingStatus === "PENDING_PAYMENT") {
     return "payment-processing";
   }

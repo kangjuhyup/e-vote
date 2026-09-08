@@ -7,7 +7,7 @@ import {
 } from "@/features/votes/lib/vote-view-models";
 
 describe("vote view models", () => {
-  it("shows active billing lifecycle states ahead of the stored vote status", () => {
+  it("uses billing lifecycle only before the authoritative vote lifecycle starts", () => {
     expect(getVoteStatusLabel("draft", "PENDING_PAYMENT")).toBe(
       "결제 처리 중",
     );
@@ -20,6 +20,8 @@ describe("vote view models", () => {
     expect(getVoteStatusLabel("finalized", "REFUND_PENDING")).toBe(
       "확정됨(개시 전)",
     );
+    expect(getVoteStatusLabel("active", "PAID")).toBe("진행 중");
+    expect(getVoteStatusLabel("completed", "PAID")).toBe("종료");
     expect(getVoteStatusLabel("draft")).toBe("초안");
   });
 
