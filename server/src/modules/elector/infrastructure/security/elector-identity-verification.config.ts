@@ -4,11 +4,11 @@ import { NotConfiguredElectorIdentityVerificationAdapter } from './not-configure
 export function isMockElectorVerificationEnabled(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): boolean {
-  const mode = environment.VOTE_IDENTITY_VERIFICATION_MODE;
+  const mode = environment.VOTE_IDENTITY_VERIFICATION_MODE?.trim();
   if (mode === undefined || mode === 'disabled') return false;
   if (mode !== 'mock')
     throw new Error('unsupported VOTE_IDENTITY_VERIFICATION_MODE');
-  if (!['development', 'test'].includes(environment.NODE_ENV ?? '')) {
+  if (!['development', 'test'].includes(environment.NODE_ENV?.trim() ?? '')) {
     throw new Error(
       'Mock elector verification requires NODE_ENV=development or test',
     );

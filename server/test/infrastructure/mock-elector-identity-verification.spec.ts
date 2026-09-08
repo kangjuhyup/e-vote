@@ -17,14 +17,21 @@ describe('mock elector verification', () => {
       ).toThrow();
     },
   );
-  it.each(['development', 'test'])('allows explicit mock in %s', (NODE_ENV) => {
-    expect(
-      isMockElectorVerificationEnabled({
-        NODE_ENV,
-        VOTE_IDENTITY_VERIFICATION_MODE: 'mock',
-      }),
-    ).toBe(true);
-  });
+  it.each([
+    ['development', 'mock'],
+    ['test', 'mock'],
+    [' development ', ' mock '],
+  ])(
+    'allows explicit mock in %s',
+    (NODE_ENV, VOTE_IDENTITY_VERIFICATION_MODE) => {
+      expect(
+        isMockElectorVerificationEnabled({
+          NODE_ENV,
+          VOTE_IDENTITY_VERIFICATION_MODE,
+        }),
+      ).toBe(true);
+    },
+  );
   it.each([
     ['mock-success:12345678', 0.79, true],
     ['mock-success:12345678', 0.8, false],
