@@ -1,5 +1,11 @@
 export function isDevelopmentParticipationLinkEnabled(
   nodeEnvironment: string | undefined,
+  npmLifecycleEvent?: string,
 ): boolean {
-  return nodeEnvironment === 'development' || nodeEnvironment === 'test';
+  if (nodeEnvironment !== undefined) {
+    return nodeEnvironment === 'development' || nodeEnvironment === 'test';
+  }
+  return (
+    npmLifecycleEvent === 'start:dev' || npmLifecycleEvent === 'start:debug'
+  );
 }

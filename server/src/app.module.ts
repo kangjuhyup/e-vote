@@ -176,7 +176,10 @@ import { PARTICIPATION_UI_URL } from './modules/participation/application/port/g
 import { PARTICIPATION_REMINDER_LINK_ISSUER_PORT } from './shared/application/port/capability/participation-reminder-link-issuer.port';
 
 const developmentParticipationLinkEnabled =
-  isDevelopmentParticipationLinkEnabled(process.env.NODE_ENV);
+  isDevelopmentParticipationLinkEnabled(
+    process.env.NODE_ENV,
+    process.env.npm_lifecycle_event,
+  );
 
 @Module({
   imports: [
