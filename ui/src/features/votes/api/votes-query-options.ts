@@ -8,14 +8,14 @@ const votesApiClient = createVotesApiClient();
 export const VOTE_LIFECYCLE_REFETCH_INTERVAL_MS = 500;
 const VOTE_FINALIZED_MAX_REFETCH_INTERVAL_MS = 60_000;
 
-export function getVoteListRefetchInterval(votes?: VoteSummary[]) {
-  return votes?.some(
-    (vote) =>
-      vote.billingOrderStatus === "PENDING_PAYMENT" ||
-      vote.billingOrderStatus === "REFUND_PENDING",
-  )
-    ? VOTE_LIFECYCLE_REFETCH_INTERVAL_MS
-    : false;
+export function getVoteListRefetchInterval(
+  votes?: VoteSummary[],
+  now = Date.now(),
+) {
+  const intervals = (votes ?? [])
+    .map((vote) => getVoteDetailRefetchInterval(vote, now))
+    .filter((interval): interval is number => typeof interval === "number");
+  return intervals.length > 0 ? Math.min(...intervals) : false;
 }
 
 export function getVoteDetailRefetchInterval(

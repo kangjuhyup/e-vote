@@ -107,6 +107,26 @@ describe("votes query options", () => {
     ]);
   });
 
+  it("keeps list polling through a finalized vote's opening transition", () => {
+    const finalizedVote = {
+      ...draftVote,
+      billingOrderStatus: "PAID" as const,
+      status: "finalized" as const,
+    };
+
+    expect(
+      getVoteListRefetchInterval(
+        [finalizedVote],
+        Date.parse(finalizedVote.startsAt),
+      ),
+    ).toBe(VOTE_LIFECYCLE_REFETCH_INTERVAL_MS);
+    expect(
+      getVoteListRefetchInterval([
+        { ...finalizedVote, status: "active" },
+      ]),
+    ).toBe(false);
+  });
+
   it("polls a finalized detail through its scheduled opening transition", () => {
     const finalizedVote = {
       ...draftVote,
