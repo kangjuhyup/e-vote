@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import {
   consumeParticipationAccessToken,
@@ -22,6 +23,7 @@ interface ParticipationAccessContainerProps {
 }
 
 export function ParticipationAccessContainer({ previewMode = false }: ParticipationAccessContainerProps) {
+  const router = useRouter();
   const client = previewMode ? participationAccessPreviewApi : participationAccessApi;
   const initialized = useRef(false);
   const submitting = useRef(false);
@@ -29,6 +31,7 @@ export function ParticipationAccessContainer({ previewMode = false }: Participat
   const [completedIds, setCompletedIds] = useState<Set<string>>(() => new Set());
   const [errorMessage, setErrorMessage] = useState<string>();
   const [loading, setLoading] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
   const [loadingResultId, setLoadingResultId] = useState<string>();
   const [results, setResults] = useState<Record<string, ParticipationResult>>({});
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
@@ -57,7 +60,18 @@ export function ParticipationAccessContainer({ previewMode = false }: Participat
     void (async () => {
       setLoading(true);
       try {
-        if (token) await client.exchange(token);
+        if (token) {
+          const exchange = await client.exchange(token);
+          if ('authenticationRequired' in exchange) {
+            const query = new URLSearchParams({
+              voteId: exchange.voteId,
+              electorId: exchange.electorId,
+            });
+            setRedirecting(true);
+            router.replace(`/participate?${query.toString()}`);
+            return;
+          }
+        }
         const next = await client.getAccess();
         setAccess(next);
         setCompletedIds(new Set((next.voteDetails ?? []).filter((detail) => detail.participated).map((detail) => detail.id)));
@@ -67,9 +81,9 @@ export function ParticipationAccessContainer({ previewMode = false }: Participat
         setLoading(false);
       }
     })();
-  }, [client, previewMode]);
+  }, [client, previewMode, router]);
 
-  if (loading) {
+  if (loading || redirecting) {
     return (
       <ParticipationView
         accessMode="permanent-link"

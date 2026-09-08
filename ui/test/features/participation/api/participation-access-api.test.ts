@@ -28,6 +28,16 @@ const session = {
 };
 
 describe('participation access API', () => {
+  it('preserves the authentication target without retaining session credentials', async () => {
+    const fetcher = vi.fn().mockResolvedValue(envelope({
+      authenticationRequired: true, voteId: 'vote-1', electorId: 'elector-1', csrfToken: 'must-not-retain',
+    }));
+    const client = createParticipationAccessApiClient({ baseUrl: 'https://api.example', fetcher, mode: 'live' });
+    expect(await client.exchange('signed-token')).toEqual({
+      authenticationRequired: true, voteId: 'vote-1', electorId: 'elector-1',
+    });
+  });
+
   it('consumes the fragment once and immediately removes it without storing the token', () => {
     const replaceState = vi.fn();
     const token = consumeParticipationAccessToken(

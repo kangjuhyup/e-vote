@@ -15,6 +15,38 @@ import type { ParticipationAccessRateLimitPort } from '../../../../src/modules/p
 /* eslint-disable @typescript-eslint/unbound-method -- Jest verifies injected controller collaborator mocks without invoking an unbound implementation. */
 
 describe('participation access controllers', () => {
+  it('returns an authentication target without issuing an anonymous cookie or CSRF token', async () => {
+    const exchange = {
+      execute: jest.fn().mockResolvedValue({
+        authenticationRequired: true,
+        voteId: 'vote-1',
+        electorId: 'elector-1',
+      }),
+    } as unknown as jest.Mocked<ExchangeParticipationAccessHandler>;
+    const resolve = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<ResolveParticipationAccessSessionHandler>;
+    const controller = new ParticipationAccessController(exchange, resolve, [
+      'http://localhost:3001',
+    ]);
+    const response = responseStub();
+    const result = await controller.exchange(
+      { token: 'signed-reference' },
+      { headers: { origin: 'http://localhost:3001' } },
+      response as never,
+    );
+    expect(result).toEqual({
+      authenticationRequired: true,
+      voteId: 'vote-1',
+      electorId: 'elector-1',
+    });
+    expect(response.cookie).not.toHaveBeenCalled();
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Cache-Control',
+      'no-store',
+    );
+  });
+
   it('exchanges a fragment token into a secure cookie without returning it', async () => {
     const exchange = {
       execute: jest.fn().mockResolvedValue({

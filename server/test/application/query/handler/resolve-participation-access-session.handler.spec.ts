@@ -86,9 +86,22 @@ describe('ResolveParticipationAccessSessionHandler', () => {
     ).rejects.toThrow(ParticipationAccessSessionInvalidError);
   });
 
+  it('rejects anonymous participation sessions when identity verification is required', async () => {
+    await expect(
+      createHandler(VoteStatus.Open, 'PARTICIPATE', true).execute({
+        sessionToken: 'session-token',
+        csrfToken: 'csrf-token',
+        expectedScope: 'PARTICIPATE',
+        requireCsrf: true,
+        now,
+      }),
+    ).rejects.toThrow(ParticipationAccessSessionInvalidError);
+  });
+
   function createHandler(
     voteStatus: (typeof VoteStatus)[keyof typeof VoteStatus],
     scope: 'PARTICIPATE' | 'RESULT_READ',
+    identityRequired = false,
   ) {
     const session =
       scope === 'PARTICIPATE'
@@ -109,7 +122,7 @@ describe('ResolveParticipationAccessSessionHandler', () => {
       saveSession: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<ParticipationAccessRepositoryPort>;
     const votes = {
-      findById: jest.fn().mockResolvedValue(vote(voteStatus)),
+      findById: jest.fn().mockResolvedValue(vote(voteStatus, identityRequired)),
     } as unknown as jest.Mocked<VoteRepositoryPort>;
     const electors = {
       findById: jest.fn().mockResolvedValue(
@@ -145,7 +158,10 @@ describe('ResolveParticipationAccessSessionHandler', () => {
     };
   }
 
-  function vote(status: (typeof VoteStatus)[keyof typeof VoteStatus]) {
+  function vote(
+    status: (typeof VoteStatus)[keyof typeof VoteStatus],
+    identityRequired = false,
+  ) {
     return VoteAggregate.reconstitute({
       id: 'vote-1',
       createdByUserPrincipalId: 'creator-1',
@@ -158,9 +174,11 @@ describe('ResolveParticipationAccessSessionHandler', () => {
         resultStorageMode: ResultStorageMode.Database,
         voteWeightMode: VoteWeightMode.Equal,
       }),
-      identityVerificationPolicy: IdentityVerificationPolicy.of({
-        required: false,
-      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of(
+        identityRequired
+          ? { required: true, provider: 'PASS', method: 'MOBILE' }
+          : { required: false },
+      ),
       startedAt: new Date('2026-09-06T00:00:00.000Z'),
       endedAt: new Date('2026-09-07T00:00:00.000Z'),
       status,

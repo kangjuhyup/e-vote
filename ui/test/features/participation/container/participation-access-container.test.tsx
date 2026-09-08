@@ -11,6 +11,9 @@ const api = vi.hoisted(() => ({
   uploadSignature: vi.fn(),
 }));
 
+const router = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
 vi.mock('@/features/participation/api/participation-access-api', () => ({
   consumeParticipationAccessToken: (location: Location, history: History) => {
     const token = new URLSearchParams(location.hash.slice(1)).get('access_token');
@@ -48,6 +51,16 @@ const session = {
 };
 
 describe('ParticipationAccessContainer', () => {
+  it('routes identity-required links to authentication without loading an anonymous session', async () => {
+    api.exchange.mockResolvedValue({ authenticationRequired: true, voteId: 'vote-1', electorId: 'elector-1' });
+    render(<ParticipationAccessContainer />);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/participate?voteId=vote-1&electorId=elector-1'));
+    expect(window.location.hash).toBe('');
+    expect(api.getAccess).not.toHaveBeenCalled();
+    expect(api.participate).not.toHaveBeenCalled();
+    expect(api.uploadSignature).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     window.history.replaceState(null, '', '/participate#access_token=signed-token');
     api.exchange.mockResolvedValue(session);

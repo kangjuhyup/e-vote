@@ -23,7 +23,10 @@ import {
 } from '../../../domain/access/elector-participant-session.aggregate';
 import { ParticipationInvitationAlreadyClaimedError } from '../../../domain/access/participation-access.error';
 import { ExchangeParticipationAccessCommand } from '../dto/request/exchange-participation-access.command';
-import { ExchangeParticipationAccessResult } from '../dto/response/exchange-participation-access-result.dto';
+import {
+  ExchangeParticipationAccessResult,
+  ParticipationAuthenticationRequiredResult,
+} from '../dto/response/exchange-participation-access-result.dto';
 import {
   ParticipationAccessConflictError,
   ParticipationAccessInvalidError,
@@ -62,7 +65,10 @@ export class ExchangeParticipationAccessHandler {
   async execute(
     command: ExchangeParticipationAccessCommand,
     now = new Date(),
-  ): Promise<ExchangeParticipationAccessResult> {
+  ): Promise<
+    | ExchangeParticipationAccessResult
+    | ParticipationAuthenticationRequiredResult
+  > {
     const claims = this.tokens.verifyReference(command.token);
     const invitation = await this.access.findInvitationByIdForUpdate(
       claims.invitationId,
@@ -78,13 +84,23 @@ export class ExchangeParticipationAccessHandler {
       this.votes.findById(invitation.voteId),
       this.electors.findById(invitation.voteId, invitation.electorId),
     ]);
+    if (!vote || !elector || elector.status !== ElectorStatus.Eligible) {
+      throw new ParticipationAccessUnavailableError();
+    }
+
     if (
-      !vote ||
-      !elector ||
-      elector.status !== ElectorStatus.Eligible ||
-      vote.identityVerificationPolicy.required
+      vote.status !== VoteStatus.Finalized &&
+      vote.status !== VoteStatus.Open &&
+      vote.status !== VoteStatus.Closed
     ) {
       throw new ParticipationAccessUnavailableError();
+    }
+    if (vote.identityVerificationPolicy.required) {
+      // The link identifies the authentication target; it grants no voting authority.
+      return ParticipationAuthenticationRequiredResult.of({
+        voteId: vote.id,
+        electorId: elector.id,
+      });
     }
 
     if (vote.status === VoteStatus.Closed) {
@@ -100,13 +116,6 @@ export class ExchangeParticipationAccessHandler {
         })
       ).result;
     }
-    if (
-      vote.status !== VoteStatus.Finalized &&
-      vote.status !== VoteStatus.Open
-    ) {
-      throw new ParticipationAccessUnavailableError();
-    }
-
     if (invitation.claimedSessionId) {
       const currentSession = command.currentSessionToken
         ? await this.access.findSessionByTokenDigest(

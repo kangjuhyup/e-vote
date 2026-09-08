@@ -133,6 +133,22 @@ export class ParticipationAccessPermittedActionsResponse {
   @ApiProperty() readonly readResults!: boolean;
 }
 
+export class ParticipationAuthenticationRequiredResponse {
+  @ApiProperty({ enum: [true] }) readonly authenticationRequired = true;
+  @ApiProperty({ format: 'uuid' }) readonly voteId!: string;
+  @ApiProperty({ format: 'uuid' }) readonly electorId!: string;
+
+  static of(params: {
+    readonly voteId: string;
+    readonly electorId: string;
+  }): ParticipationAuthenticationRequiredResponse {
+    return Object.assign(new ParticipationAuthenticationRequiredResponse(), {
+      voteId: params.voteId,
+      electorId: params.electorId,
+    });
+  }
+}
+
 export class ParticipationAccessResponse {
   @ApiProperty({ enum: ['PARTICIPATE', 'RESULT_READ'] })
   readonly scope: 'PARTICIPATE' | 'RESULT_READ';

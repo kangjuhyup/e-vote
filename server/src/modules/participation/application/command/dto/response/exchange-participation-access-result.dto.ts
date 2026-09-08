@@ -1,5 +1,24 @@
 import type { ParticipantSessionScope } from '../../../../domain/access/elector-participant-session.aggregate';
 
+export class ParticipationAuthenticationRequiredResult {
+  readonly authenticationRequired = true;
+
+  private constructor(
+    readonly voteId: string,
+    readonly electorId: string,
+  ) {}
+
+  static of(params: {
+    readonly voteId: string;
+    readonly electorId: string;
+  }): ParticipationAuthenticationRequiredResult {
+    return new ParticipationAuthenticationRequiredResult(
+      params.voteId,
+      params.electorId,
+    );
+  }
+}
+
 export class ExchangeParticipationAccessResult {
   private constructor(
     readonly sessionToken: string,

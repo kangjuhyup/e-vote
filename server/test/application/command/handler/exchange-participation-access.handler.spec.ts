@@ -123,7 +123,7 @@ describe('ExchangeParticipationAccessHandler', () => {
       now,
     );
 
-    expect(result.scope).toBe('RESULT_READ');
+    expect(result).toMatchObject({ scope: 'RESULT_READ' });
     expect(access.saveInvitation).not.toHaveBeenCalled();
     expect(access.saveSession).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -201,10 +201,86 @@ describe('ExchangeParticipationAccessHandler', () => {
     },
   );
 
-  function createHandler(status: (typeof VoteStatus)[keyof typeof VoteStatus]) {
+  it.each([VoteStatus.Finalized, VoteStatus.Open, VoteStatus.Closed])(
+    'routes identity-required votes in %s to authentication without issuing a session',
+    async (status) => {
+      const result = await createHandler(status, true).execute(
+        ExchangeParticipationAccessCommand.of({ token: 'signed-reference' }),
+        now,
+      );
+      expect(result).toEqual({
+        authenticationRequired: true,
+        voteId: 'vote-1',
+        electorId: 'elector-1',
+      });
+      expect(tokens.issueSessionCredentials).not.toHaveBeenCalled();
+      expect(access.saveSession).not.toHaveBeenCalled();
+      expect(access.saveInvitation).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([VoteStatus.Draft, VoteStatus.Canceled])(
+    'rejects identity-required links while vote is %s',
+    async (status) => {
+      await expect(
+        createHandler(status, true).execute(
+          ExchangeParticipationAccessCommand.of({ token: 'signed-reference' }),
+          now,
+        ),
+      ).rejects.toThrow(ParticipationAccessUnavailableError);
+      expect(tokens.issueSessionCredentials).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects a rotated identity-required link before revealing the authentication target', async () => {
+    const rotated = invitation();
+    rotated.rotate({
+      tokenDigest: 'new-digest',
+      signingKeyId: 'current',
+      issuedByUserPrincipalId: 'creator-1',
+      now,
+    });
+    access.findInvitationByIdForUpdate.mockResolvedValueOnce(rotated);
+    await expect(
+      createHandler(VoteStatus.Open, true).execute(
+        ExchangeParticipationAccessCommand.of({ token: 'signed-reference' }),
+        now,
+      ),
+    ).rejects.toThrow('participation access is invalid');
+    expect(tokens.issueSessionCredentials).not.toHaveBeenCalled();
+  });
+
+  it('rejects revoked identity-required links', async () => {
+    const revoked = invitation();
+    revoked.revoke(now);
+    access.findInvitationByIdForUpdate.mockResolvedValueOnce(revoked);
+    await expect(
+      createHandler(VoteStatus.Open, true).execute(
+        ExchangeParticipationAccessCommand.of({ token: 'signed-reference' }),
+        now,
+      ),
+    ).rejects.toThrow('participation access is invalid');
+    expect(tokens.issueSessionCredentials).not.toHaveBeenCalled();
+  });
+
+  it('rejects identity-required links for a blocked elector', async () => {
+    await expect(
+      createHandler(VoteStatus.Open, true, ElectorStatus.Blocked).execute(
+        ExchangeParticipationAccessCommand.of({ token: 'signed-reference' }),
+        now,
+      ),
+    ).rejects.toThrow(ParticipationAccessUnavailableError);
+    expect(tokens.issueSessionCredentials).not.toHaveBeenCalled();
+  });
+
+  function createHandler(
+    status: (typeof VoteStatus)[keyof typeof VoteStatus],
+    identityRequired = false,
+    electorStatus: ElectorStatus = ElectorStatus.Eligible,
+  ) {
     const votes = {
       nextId: jest.fn(),
-      findById: jest.fn().mockResolvedValue(vote(status)),
+      findById: jest.fn().mockResolvedValue(vote(status, identityRequired)),
       save: jest.fn(),
     } satisfies jest.Mocked<VoteRepositoryPort>;
     const electors = {
@@ -215,7 +291,7 @@ describe('ExchangeParticipationAccessHandler', () => {
           voteId: 'vote-1',
           identifier: 'elector-code',
           voteWeight: 1,
-          status: ElectorStatus.Eligible,
+          status: electorStatus,
           identityVerified: false,
         }),
       ),
@@ -230,7 +306,10 @@ describe('ExchangeParticipationAccessHandler', () => {
     );
   }
 
-  function vote(status: (typeof VoteStatus)[keyof typeof VoteStatus]) {
+  function vote(
+    status: (typeof VoteStatus)[keyof typeof VoteStatus],
+    identityRequired = false,
+  ) {
     return VoteAggregate.reconstitute({
       id: 'vote-1',
       createdByUserPrincipalId: 'creator-1',
@@ -243,9 +322,11 @@ describe('ExchangeParticipationAccessHandler', () => {
         resultStorageMode: ResultStorageMode.Database,
         voteWeightMode: VoteWeightMode.Equal,
       }),
-      identityVerificationPolicy: IdentityVerificationPolicy.of({
-        required: false,
-      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of(
+        identityRequired
+          ? { required: true, provider: 'PASS', method: 'MOBILE' }
+          : { required: false },
+      ),
       startedAt: new Date('2026-09-06T00:00:00.000Z'),
       endedAt: new Date('2026-09-07T00:00:00.000Z'),
       status,

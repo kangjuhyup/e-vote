@@ -1,5 +1,15 @@
 export type ParticipationAccessScope = 'PARTICIPATE' | 'RESULT_READ';
 
+export interface ParticipationAuthenticationRequired {
+  authenticationRequired: true;
+  voteId: string;
+  electorId: string;
+}
+
+export type ParticipationAccessExchange =
+  | ParticipationAccessSession
+  | ParticipationAuthenticationRequired;
+
 export interface ParticipationAccessCandidate {
   candidateNo: number;
   description: string;

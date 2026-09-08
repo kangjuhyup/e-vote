@@ -22,6 +22,8 @@ import {
 } from '@nestjs/common';
 import {
   ApiCookieAuth,
+  ApiExtraModels,
+  getSchemaPath,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -47,6 +49,7 @@ import {
   CastParticipationAccessBody,
   ExchangeParticipationAccessBody,
   ParticipationAccessResponse,
+  ParticipationAuthenticationRequiredResponse,
   ParticipationAccessVoteDetailParam,
   ParticipationSignatureUploadBody,
   ConfirmParticipationSignatureUploadBody,
@@ -108,13 +111,28 @@ export class ParticipationAccessController {
 
   @Post('exchange')
   @HttpCode(200)
-  @ApiOperation({ summary: 'SMS 참여 링크를 브라우저 세션으로 교환' })
-  @ApiOkResponse({ type: ParticipationAccessResponse })
+  @ApiOperation({
+    summary: 'SMS 참여 링크의 세션 또는 본인인증 진입 정보 확인',
+  })
+  @ApiExtraModels(
+    ParticipationAccessResponse,
+    ParticipationAuthenticationRequiredResponse,
+  )
+  @ApiOkResponse({
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(ParticipationAccessResponse) },
+        { $ref: getSchemaPath(ParticipationAuthenticationRequiredResponse) },
+      ],
+    },
+  })
   async exchange(
     @Body() body: ExchangeParticipationAccessBody,
     @Req() request: Pick<Request, 'headers'> & Partial<Pick<Request, 'ip'>>,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<ParticipationAccessResponse> {
+  ): Promise<
+    ParticipationAccessResponse | ParticipationAuthenticationRequiredResponse
+  > {
     this.assertOrigin(request.headers.origin);
     this.preventCaching(response);
     try {
@@ -131,6 +149,9 @@ export class ParticipationAccessController {
           ),
         }),
       );
+      if ('authenticationRequired' in result) {
+        return ParticipationAuthenticationRequiredResponse.of(result);
+      }
       response.cookie(SESSION_COOKIE, result.sessionToken, {
         httpOnly: true,
         secure: true,

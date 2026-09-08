@@ -3,6 +3,7 @@ import { isApiMockMode } from '@/shared/config/api-mode';
 import { toVoteApiError, VoteApiError } from '@/shared/api/vote-api-error';
 
 import type {
+  ParticipationAccessExchange,
   ParticipationAccessSession,
   ParticipationResult,
 } from '../model/participation-access.types';
@@ -179,12 +180,20 @@ export function createParticipationAccessApiClient(options: ClientOptions = {}) 
   const apiBaseUrl = () => configuredBaseUrl ?? resolveBaseUrl();
 
   return {
-    async exchange(token: string) {
+    async exchange(token: string): Promise<ParticipationAccessExchange> {
       if (mode === 'mock') return structuredClone(mockSession);
-      return sanitizeSession(await request<ParticipationAccessSession>(fetcher, apiBaseUrl(), '/participation-access/exchange', {
+      const response = await request<ParticipationAccessExchange>(fetcher, apiBaseUrl(), '/participation-access/exchange', {
         body: JSON.stringify({ token }),
         method: 'POST',
-      }));
+      });
+      if ('authenticationRequired' in response) {
+        return {
+          authenticationRequired: true,
+          voteId: response.voteId,
+          electorId: response.electorId,
+        };
+      }
+      return sanitizeSession(response);
     },
     async getAccess() {
       if (mode === 'mock') return structuredClone(mockSession);
