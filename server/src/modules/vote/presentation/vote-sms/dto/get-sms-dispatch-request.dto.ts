@@ -23,3 +23,10 @@ export class GetSmsDispatchParam {
   @ApiProperty({ format: 'uuid' })
   readonly smsDispatchId!: string;
 }
+
+export class GetSmsDispatchQuery {
+  @ApiProperty({ required: false, minimum: 1, default: 1 })
+  readonly page?: string;
+  @ApiProperty({ required: false, minimum: 1, maximum: 100, default: 20 })
+  readonly pageSize?: string;
+}

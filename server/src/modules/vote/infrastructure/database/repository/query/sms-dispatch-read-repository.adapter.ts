@@ -12,8 +12,6 @@ import type { SmsMessagePurpose } from '../../../../../../shared/domain/voting/t
 import {
   JOINED_RELATION_LOAD_OPTIONS,
   getDatabaseEntities,
-  loadedItems,
-  type LoadedCollectionLike,
 } from '../../../../../../platform/database/repository/database-repository.util';
 
 type SmsDeliveryPersistence = {
@@ -34,7 +32,10 @@ type SmsDispatchPersistence = {
   readonly recipientCount: number;
   readonly successCount: number;
   readonly failureCount: number;
-  readonly deliveries: LoadedCollectionLike<SmsDeliveryPersistence>;
+};
+
+type SmsDeliveryWithDispatchPersistence = SmsDeliveryPersistence & {
+  readonly dispatch: { readonly id: string };
 };
 
 @Injectable()
@@ -73,34 +74,48 @@ export class SmsDispatchReadRepositoryAdapter implements SmsDispatchReadReposito
   async findDetail(request: {
     readonly voteId: string;
     readonly smsDispatchId: string;
+    readonly page: number;
+    readonly pageSize: number;
   }): Promise<SmsDispatchView | undefined> {
-    const { SmsDispatchEntity } = await getDatabaseEntities();
+    const { SmsDeliveryEntity, SmsDispatchEntity } =
+      await getDatabaseEntities();
     const entity = (await this.em.findOne(
       SmsDispatchEntity as any,
       { id: request.smsDispatchId, vote: { id: request.voteId } },
       {
-        populate: ['vote', 'fieldVotingSession', 'deliveries'],
+        populate: ['vote', 'fieldVotingSession'],
         ...JOINED_RELATION_LOAD_OPTIONS,
       } as any,
     )) as unknown as SmsDispatchPersistence | null;
 
     if (!entity) return undefined;
 
+    const [deliveries, totalItems] = (await this.em.findAndCount(
+      SmsDeliveryEntity as any,
+      { dispatch: { id: request.smsDispatchId } },
+      {
+        limit: request.pageSize,
+        offset: (request.page - 1) * request.pageSize,
+        orderBy: { recipientIdentifier: 'asc', id: 'asc' },
+        ...JOINED_RELATION_LOAD_OPTIONS,
+      } as any,
+    )) as unknown as [SmsDeliveryWithDispatchPersistence[], number];
+
     return SmsDispatchView.of({
       ...this.toSummary(entity),
-      deliveries: loadedItems(entity.deliveries)
-        .map((delivery) =>
-          SmsDeliveryView.of({
-            electorId: delivery.electorId,
-            recipientName: delivery.recipientName,
-            recipientIdentifier: delivery.recipientIdentifier,
-            status: delivery.status,
-            failureReason: delivery.failureReason ?? undefined,
-          }),
-        )
-        .sort((a, b) =>
-          a.recipientIdentifier.localeCompare(b.recipientIdentifier),
-        ),
+      deliveries: deliveries.map((delivery) =>
+        SmsDeliveryView.of({
+          electorId: delivery.electorId,
+          recipientName: delivery.recipientName,
+          recipientIdentifier: delivery.recipientIdentifier,
+          status: delivery.status,
+          failureReason: delivery.failureReason ?? undefined,
+        }),
+      ),
+      page: request.page,
+      pageSize: request.pageSize,
+      totalItems,
+      totalPages: Math.ceil(totalItems / request.pageSize),
     });
   }
 

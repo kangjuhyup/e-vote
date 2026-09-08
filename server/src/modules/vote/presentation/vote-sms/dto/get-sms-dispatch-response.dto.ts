@@ -94,21 +94,37 @@ export class GetSmsDeliveryResponse {
 export class GetSmsDispatchResponse extends GetSmsDispatchSummaryResponse {
   @ApiProperty({ type: () => [GetSmsDeliveryResponse] })
   readonly deliveries: readonly GetSmsDeliveryResponse[];
+  @ApiProperty() readonly page: number;
+  @ApiProperty() readonly pageSize: number;
+  @ApiProperty() readonly totalItems: number;
+  @ApiProperty() readonly totalPages: number;
 
   private constructor(
     source: SmsDispatchSummarySource & {
       readonly deliveries: readonly SmsDeliverySource[];
+      readonly page: number;
+      readonly pageSize: number;
+      readonly totalItems: number;
+      readonly totalPages: number;
     },
   ) {
     super(source);
     this.deliveries = source.deliveries.map((delivery) =>
       GetSmsDeliveryResponse.of(delivery),
     );
+    this.page = source.page;
+    this.pageSize = source.pageSize;
+    this.totalItems = source.totalItems;
+    this.totalPages = source.totalPages;
   }
 
   static of(
     source: SmsDispatchSummarySource & {
       readonly deliveries: readonly SmsDeliverySource[];
+      readonly page: number;
+      readonly pageSize: number;
+      readonly totalItems: number;
+      readonly totalPages: number;
     },
   ): GetSmsDispatchResponse {
     return new GetSmsDispatchResponse(source);

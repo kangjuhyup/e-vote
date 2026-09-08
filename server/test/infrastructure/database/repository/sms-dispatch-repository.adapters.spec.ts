@@ -88,7 +88,8 @@ describe('SMS dispatch repository adapters', () => {
     };
     const findAndCount = jest
       .fn<Promise<[unknown[], number]>, [unknown, unknown, unknown?]>()
-      .mockResolvedValue([[entity], 1]);
+      .mockResolvedValueOnce([[entity], 1])
+      .mockResolvedValueOnce([[entity.deliveries[1], entity.deliveries[0]], 2]);
     const findOne = jest
       .fn<Promise<unknown>, [unknown, unknown, unknown?]>()
       .mockResolvedValue(entity);
@@ -120,6 +121,8 @@ describe('SMS dispatch repository adapters', () => {
     const detail = await adapter.findDetail({
       voteId: 'vote-1',
       smsDispatchId: 'dispatch-1',
+      page: 1,
+      pageSize: 20,
     });
     expect(findOne.mock.calls[0][1]).toEqual({
       id: 'dispatch-1',
@@ -136,5 +139,13 @@ describe('SMS dispatch repository adapters', () => {
         failureReason: 'provider rejected the request',
       }),
     ]);
+    expect(findAndCount.mock.calls[1][1]).toEqual({
+      dispatch: { id: 'dispatch-1' },
+    });
+    expect(findAndCount.mock.calls[1][2]).toMatchObject({
+      limit: 20,
+      offset: 0,
+      orderBy: { recipientIdentifier: 'asc', id: 'asc' },
+    });
   });
 });

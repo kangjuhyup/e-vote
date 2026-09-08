@@ -48,6 +48,8 @@ describe('SMS dispatch query handlers', () => {
         GetSmsDispatchQuery.of({
           voteId: 'vote-1',
           smsDispatchId: 'dispatch-1',
+          page: 2,
+          pageSize: 50,
         }),
       ),
     ).resolves.toBe(detail);
@@ -80,5 +82,9 @@ function createDetail(): SmsDispatchView {
     successCount: 0,
     failureCount: 0,
     deliveries: [],
+    page: 1,
+    pageSize: 20,
+    totalItems: 0,
+    totalPages: 0,
   });
 }

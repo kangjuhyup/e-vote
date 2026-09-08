@@ -217,6 +217,10 @@ describe('SMS controllers', () => {
           failureReason: 'invalid destination',
         },
       ],
+      page: 1,
+      pageSize: 20,
+      totalItems: 1,
+      totalPages: 1,
     });
 
     const page = await readController.getSmsDispatchPage(
@@ -236,10 +240,14 @@ describe('SMS controllers', () => {
       totalItems: 1,
     });
 
-    const detail = await readController.getSmsDispatch(TEST_USER_PRINCIPAL, {
-      voteId: 'vote-1',
-      smsDispatchId: 'dispatch-1',
-    });
+    const detail = await readController.getSmsDispatch(
+      TEST_USER_PRINCIPAL,
+      {
+        voteId: 'vote-1',
+        smsDispatchId: 'dispatch-1',
+      },
+      {},
+    );
     expect(detail.deliveries[0]).toEqual({
       electorId: 'elector-1',
       recipientName: '홍길동',
@@ -257,10 +265,14 @@ describe('SMS controllers', () => {
   it('maps a missing or cross-vote dispatch to HTTP 404', async () => {
     getExecute.mockRejectedValue(new SmsDispatchNotFoundError());
     await expect(
-      readController.getSmsDispatch(TEST_USER_PRINCIPAL, {
-        voteId: 'another-vote',
-        smsDispatchId: 'dispatch-1',
-      }),
+      readController.getSmsDispatch(
+        TEST_USER_PRINCIPAL,
+        {
+          voteId: 'another-vote',
+          smsDispatchId: 'dispatch-1',
+        },
+        {},
+      ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

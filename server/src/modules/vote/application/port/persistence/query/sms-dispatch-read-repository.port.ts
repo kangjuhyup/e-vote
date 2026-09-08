@@ -16,5 +16,7 @@ export interface SmsDispatchReadRepositoryPort {
   findDetail(request: {
     readonly voteId: string;
     readonly smsDispatchId: string;
+    readonly page: number;
+    readonly pageSize: number;
   }): Promise<SmsDispatchView | undefined>;
 }

@@ -78,6 +78,10 @@ export class SmsDispatchView extends SmsDispatchSummaryView {
   private constructor(
     summary: SmsDispatchSummaryViewProps,
     readonly deliveries: readonly SmsDeliveryView[],
+    readonly page: number,
+    readonly pageSize: number,
+    readonly totalItems: number,
+    readonly totalPages: number,
   ) {
     super(
       summary.id,
@@ -94,9 +98,20 @@ export class SmsDispatchView extends SmsDispatchSummaryView {
   static of(
     params: SmsDispatchSummaryViewProps & {
       readonly deliveries: readonly SmsDeliveryView[];
+      readonly page: number;
+      readonly pageSize: number;
+      readonly totalItems: number;
+      readonly totalPages: number;
     },
   ): SmsDispatchView {
-    return new SmsDispatchView(params, params.deliveries);
+    return new SmsDispatchView(
+      params,
+      params.deliveries,
+      params.page,
+      params.pageSize,
+      params.totalItems,
+      params.totalPages,
+    );
   }
 }
 

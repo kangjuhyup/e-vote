@@ -14,7 +14,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { GetSmsDispatchPageQuery as ApplicationPageQuery } from '../../application/query/dto/request/get-sms-dispatch-page.query';
-import { GetSmsDispatchQuery } from '../../application/query/dto/request/get-sms-dispatch.query';
+import { GetSmsDispatchQuery as ApplicationDetailQuery } from '../../application/query/dto/request/get-sms-dispatch.query';
 import { GetSmsDispatchPageHandler } from '../../application/query/handler/get-sms-dispatch-page.handler';
 import {
   GetSmsDispatchHandler,
@@ -24,6 +24,7 @@ import {
   GetSmsDispatchPageParam,
   GetSmsDispatchPageQuery,
   GetSmsDispatchParam,
+  GetSmsDispatchQuery,
 } from './dto/get-sms-dispatch-request.dto';
 import {
   GetSmsDispatchPageResponse,
@@ -63,12 +64,15 @@ export class VoteSmsReadController {
   async getSmsDispatch(
     @User() user: UserPrincipal,
     @Param() params: GetSmsDispatchParam,
+    @Query() query: GetSmsDispatchQuery,
   ): Promise<GetSmsDispatchResponse> {
     try {
       const result = await this.getHandler.execute(
-        GetSmsDispatchQuery.of({
+        ApplicationDetailQuery.of({
           voteId: params.voteId,
           smsDispatchId: params.smsDispatchId,
+          page: Number(query.page),
+          pageSize: Number(query.pageSize),
         }),
       );
       return GetSmsDispatchResponse.of(result);
