@@ -17,9 +17,6 @@ describe('organization application UI', () => {
     fireEvent.change(screen.getByLabelText('조직명'), {
       target: { value: '동부센트레빌아파트' },
     });
-    fireEvent.change(screen.getByLabelText('조직관리번호'), {
-      target: { value: 'apt-2026-001' },
-    });
     fireEvent.change(screen.getByLabelText('담당자 이름'), {
       target: { value: '김관리' },
     });
@@ -29,11 +26,12 @@ describe('organization application UI', () => {
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationName: '동부센트레빌아파트',
-        organizationManagementNumber: 'apt-2026-001',
         organizationType: 'APARTMENT',
         contactName: '김관리',
       }),
     );
+    expect(screen.queryByLabelText('조직관리번호')).toBeNull();
+    expect(screen.getByText(/승인 시 자동으로 발급/)).toBeTruthy();
   });
 
   it('requires a fresh login after approval', () => {

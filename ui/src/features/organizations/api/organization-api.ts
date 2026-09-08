@@ -35,7 +35,7 @@ async function request<T>(
   init: RequestInit = {},
 ) {
   if (!baseUrl) {
-    throw new Error('NEXT_PUBLIC_VOTE_API_BASE_URL is required in live mode');
+    throw new Error('조직 서비스에 연결할 수 없습니다.');
   }
 
   const response = await fetcher(`${baseUrl}${path}`, {
@@ -106,9 +106,11 @@ export function createOrganizationApiClient(
 
   async function createApplication(input: CreateOrganizationApplicationInput) {
     if (mode === 'mock') {
+      const id = `organization-application-${adminApplications.length + 1}`;
       const application: OrganizationApplication = {
         ...input,
-        id: `organization-application-${adminApplications.length + 1}`,
+        id,
+        organizationManagementNumber: `org-${id}`,
         status: 'PENDING',
         submittedAt: now(),
       };

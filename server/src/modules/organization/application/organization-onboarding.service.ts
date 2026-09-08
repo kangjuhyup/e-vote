@@ -23,7 +23,6 @@ import {
 
 export interface SubmitOrganizationApplicationInput {
   organizationName: string;
-  organizationManagementNumber: string;
   organizationType: OrganizationType;
   contactName: string;
   contactPhone?: string;

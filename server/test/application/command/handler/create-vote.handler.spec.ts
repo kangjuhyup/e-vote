@@ -13,8 +13,51 @@ import {
 import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import { UserPrincipal } from '../../../../src/shared/application/security/user-principal';
+import { ManagedResourceNotFoundError } from '../../../../src/shared/application/error/managed-resource.error';
 
 describe('CreateVoteHandler', () => {
+  it('rejects creation when the user has no managed organization', async () => {
+    const save = jest.fn();
+    const repository = {
+      nextId: jest.fn(),
+      findById: jest.fn(),
+      save,
+    } as VoteRepositoryPort;
+    const findCommissionById = jest.fn();
+    const commissionRepository = {
+      findById: findCommissionById,
+    } as unknown as ElectionCommissionRepositoryPort;
+    const handler = new CreateVoteHandler(repository, commissionRepository);
+
+    const command = CreateVoteCommand.of({
+      createdByUserPrincipalId: 'user-1',
+      tenantId: 'tenant-1',
+      organizationGroupId: 'organization-1',
+      organizationGroupCode: 'ORG-001',
+      commissionId: 'commission-1',
+      title: 'Board election',
+      votingChannels: [VotingChannel.Online],
+      defaultPolicy: {
+        privacyMode: PrivacyMode.Secret,
+        participationUnit: ParticipationUnit.Individual,
+        resultStorageMode: ResultStorageMode.Database,
+        voteWeightMode: VoteWeightMode.Equal,
+      },
+      identityVerificationPolicy: { required: false },
+      startedAt: new Date('2026-09-06T10:00:00.000Z'),
+      endedAt: new Date('2026-09-06T11:00:00.000Z'),
+    });
+
+    await expect(
+      handler.execute(
+        command,
+        UserPrincipal.of({ id: 'user-1', tenantId: 'tenant-1' }),
+      ),
+    ).rejects.toBeInstanceOf(ManagedResourceNotFoundError);
+    expect(findCommissionById).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it('creates a draft vote and saves it through the repository', async () => {
     const save = jest
       .fn<Promise<void>, [VoteAggregate]>()

@@ -354,7 +354,7 @@ function ElectoralRollStep({
         ) : null}
 
         <p className="text-sm text-muted-foreground">
-          선택한 명부의 최신 기존 스냅샷은 투표 생성 시 서버에서 연결됩니다.
+          투표를 생성하면 선택한 명부의 최신 인원이 연결됩니다.
         </p>
 
         <div className="flex flex-wrap justify-between gap-3">

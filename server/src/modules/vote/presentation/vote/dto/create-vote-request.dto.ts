@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsISO8601,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
@@ -101,11 +102,13 @@ class IdentityVerificationPolicyBody {
 
 export class CreateVoteBody {
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
   @ApiProperty({ description: '투표를 소유할 Auth 조직 그룹 ID' })
   readonly organizationGroupId!: string;
 
   @IsString()
+  @IsNotEmpty()
   @MaxLength(50)
   @ApiProperty({ description: '조직관리번호와 동일한 Auth 조직 그룹 code' })
   readonly organizationGroupCode!: string;

@@ -8,7 +8,6 @@ import { useState } from 'react';
 import { RetryErrorCard } from '@/components/feedback/retry-error-card';
 import { SkeletonCardGrid } from '@/components/feedback/skeleton-card-grid';
 import { PageShell } from '@/components/layout/page-shell';
-import { VoteNavigation } from '@/features/votes/ui/vote-navigation';
 import { isApiMockMode } from '@/shared/config/api-mode';
 
 import { organizationApi } from '../api/organization-api';
@@ -39,9 +38,6 @@ export function OrganizationOnboardingContainer({
   return (
     <PageShell
       account={account}
-      navigation={
-        <VoteNavigation current="organizations" isMockMode={isApiMockMode()} />
-      }
       eyebrow="조직"
       title="조직 신청 및 권한"
       description="조직 생성 신청 상태를 확인하고 승인 후 투표 관리 권한을 갱신합니다."

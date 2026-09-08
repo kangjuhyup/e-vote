@@ -20,7 +20,6 @@ export interface OrganizationApplication {
 
 export interface CreateOrganizationApplicationInput {
   organizationName: string;
-  organizationManagementNumber: string;
   organizationType: OrganizationType;
   contactName: string;
   contactPhone?: string;

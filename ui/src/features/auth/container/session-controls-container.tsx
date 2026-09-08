@@ -1,4 +1,5 @@
-import { LogOut, UserRound } from "lucide-react";
+import { Building2, LogOut, UserRound } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,12 @@ export function SessionControlsContainer({
         <UserRound className="size-4 shrink-0" aria-hidden="true" />
         <span className="max-w-40 truncate">{userName}</span>
       </span>
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/organization">
+          <Building2 aria-hidden="true" />
+          조직
+        </Link>
+      </Button>
       {isMockMode ? null : (
         <form
           action={async () => {

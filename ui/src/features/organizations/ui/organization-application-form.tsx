@@ -30,9 +30,6 @@ export function OrganizationApplicationForm({
     const contactPhone = String(form.get('contactPhone') ?? '').trim();
     onSubmit({
       organizationName: String(form.get('organizationName') ?? '').trim(),
-      organizationManagementNumber: String(
-        form.get('organizationManagementNumber') ?? '',
-      ).trim(),
       organizationType: String(
         form.get('organizationType'),
       ) as CreateOrganizationApplicationInput['organizationType'],
@@ -47,6 +44,7 @@ export function OrganizationApplicationForm({
         <CardTitle>조직 생성 신청</CardTitle>
         <CardDescription>
           운영자 승인 후 조직과 투표 관리자 권한이 설정됩니다.
+          조직관리번호는 승인 시 자동으로 발급됩니다.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -62,29 +60,6 @@ export function OrganizationApplicationForm({
               required
               maxLength={128}
             />
-          </div>
-          <div className="space-y-2">
-            <label
-              className="text-sm font-medium"
-              htmlFor="organization-management-number"
-            >
-              조직관리번호
-            </label>
-            <Input
-              id="organization-management-number"
-              name="organizationManagementNumber"
-              required
-              maxLength={50}
-              pattern="[A-Za-z0-9_.-]+"
-              aria-describedby="organization-management-number-description"
-            />
-            <p
-              id="organization-management-number-description"
-              className="text-xs text-muted-foreground"
-            >
-              Auth에서 조직을 식별하는 고유 번호입니다. 영문, 숫자, 점, 밑줄,
-              하이픈만 사용할 수 있습니다.
-            </p>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="organization-type">

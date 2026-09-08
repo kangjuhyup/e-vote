@@ -115,6 +115,13 @@ Use TanStack React Query for asynchronous server state: queries, mutations, cach
 
 Do not duplicate server state into Zustand.
 
+## User-Facing Copy
+
+- Describe the user's task, outcome, constraint, or next action.
+- Do not expose implementation details such as servers, APIs, Auth providers, database behavior, internal group structures, or credential boundaries in labels, descriptions, notices, and errors.
+- Translate technical failures into an actionable user outcome while keeping diagnostic detail in logs or operator tooling.
+- Mention a technical term only when the user must understand or act on that term to complete the task.
+
 Use Zustand and TanStack React Query from containers or app-level wiring, not from reusable components. Components receive current values and event callbacks as props.
 Do not use Zustand or TanStack React Query from feature UI files. Feature UI receives current values, filtered data, display labels, and callbacks from its container.
 

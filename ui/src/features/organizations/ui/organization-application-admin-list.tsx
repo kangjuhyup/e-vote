@@ -37,7 +37,7 @@ export function OrganizationApplicationAdminList(
       <CardHeader>
         <CardTitle>조직 생성 신청</CardTitle>
         <CardDescription>
-          승인은 Auth 조직 그룹과 관리자 권한 설정을 서버에서 시작합니다.
+          승인하면 조직이 생성되고 신청자에게 투표 관리 권한이 부여됩니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

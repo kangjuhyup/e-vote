@@ -39,18 +39,17 @@ export class OrganizationApplicationAggregate {
   private constructor(readonly props: OrganizationApplicationProps) {}
 
   static create(
-    props: Omit<OrganizationApplicationProps, 'status'>,
+    props: Omit<
+      OrganizationApplicationProps,
+      'organizationManagementNumber' | 'status'
+    >,
   ): OrganizationApplicationAggregate {
     const name = props.organizationName.trim();
-    const managementNumber = props.organizationManagementNumber.trim();
     if (!name) throw new TypeError('organization name must not be empty');
-    if (!/^[A-Za-z0-9_.-]+$/.test(managementNumber)) {
-      throw new TypeError('organization management number is invalid');
-    }
     return new OrganizationApplicationAggregate({
       ...props,
       organizationName: name,
-      organizationManagementNumber: managementNumber,
+      organizationManagementNumber: `org-${props.id}`,
       contactName: props.contactName.trim(),
       status: 'PENDING',
     });

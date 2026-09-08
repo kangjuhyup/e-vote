@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { subscribeToVoteApiAuthRequired } from "@/shared/auth/vote-api-auth-events";
 import { isApiMockMode } from "@/shared/config/api-mode";
 import { makeQueryClient } from "@/shared/config/query-client";
+import { OrganizationAccessContainer } from "@/features/organizations/container/organization-access-container";
 
 function SessionStatus({ children }: { children: string }) {
   return (
@@ -70,22 +71,27 @@ function LiveSessionBoundary({ children }: { children: React.ReactNode }) {
     return <SessionStatus>인증 정보를 갱신하는 중…</SessionStatus>;
   }
 
+  if (status === "authenticated") {
+    return <OrganizationAccessContainer>{children}</OrganizationAccessContainer>;
+  }
+
   return children;
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => makeQueryClient());
-  const content = (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
 
   if (isApiMockMode()) {
-    return content;
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
   }
 
   return (
-    <SessionProvider>
-      <LiveSessionBoundary>{content}</LiveSessionBoundary>
-    </SessionProvider>
+    <QueryClientProvider client={queryClient}>
+      <SessionProvider>
+        <LiveSessionBoundary>{children}</LiveSessionBoundary>
+      </SessionProvider>
+    </QueryClientProvider>
   );
 }

@@ -14,7 +14,6 @@ interface VoteNavigationProps {
     | "commissions"
     | "dashboard"
     | "electoral-rolls"
-    | "organizations"
     | "votes";
   isMockMode?: boolean;
 }
@@ -22,7 +21,6 @@ interface VoteNavigationProps {
 const navigationItems = [
   { href: "/", label: "대시보드", value: "dashboard", icon: LayoutDashboard },
   { href: "/votes", label: "투표 목록", value: "votes", icon: ListChecks },
-  { href: "/organization", label: "조직", value: "organizations", icon: Building2 },
   {
     href: "/electoral-rolls",
     label: "선거인명부",

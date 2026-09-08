@@ -19,6 +19,8 @@ import type { BillingOrder } from '@/features/billing/model/billing.types';
 import { voteOperationsApi } from '@/features/votes/api/vote-operations-api';
 import { voteAttachmentApi } from '@/features/votes/api/vote-attachment-api';
 import { electoralRollApi } from '@/features/votes/api/electoral-roll-api';
+import { organizationApi } from '@/features/organizations/api/organization-api';
+import { OrganizationAccessContainer } from '@/features/organizations/container/organization-access-container';
 
 import { VoteDashboardContainer } from '@/features/votes/container/vote-dashboard-container';
 import { CommissionManagementContainer } from '@/features/votes/container/commission-management-container';
@@ -123,6 +125,25 @@ describe('vote containers', () => {
     ).toBe('/votes/new');
     expect(await screen.findByText('현재 진행 중인 투표')).toBeTruthy();
     expect(await screen.findAllByText('2026 상반기 대표 선출')).toHaveLength(2);
+  });
+
+  it('sends a user without a managed organization to organization application', async () => {
+    vi.spyOn(organizationApi, 'fetchManagedOrganizations').mockResolvedValue([]);
+    navigation.pathname = '/votes/new';
+
+    renderWithQueryClient(
+      <OrganizationAccessContainer>
+        <p>투표 생성 화면</p>
+      </OrganizationAccessContainer>,
+    );
+
+    expect(
+      await screen.findByText('조직 신청 화면으로 이동하는 중…'),
+    ).toBeTruthy();
+    await waitFor(() => {
+      expect(navigation.replace).toHaveBeenCalledWith('/organization');
+    });
+    expect(screen.queryByText('투표 생성 화면')).toBeNull();
   });
 
   it('filters the vote list by status', async () => {

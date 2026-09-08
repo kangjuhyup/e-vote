@@ -4,7 +4,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  Matches,
   Max,
   MaxLength,
   Min,
@@ -31,10 +30,6 @@ interface OrganizationApplicationResponseSource {
 
 export class SubmitOrganizationApplicationBody {
   @IsString() @IsNotEmpty() @MaxLength(128) organizationName!: string;
-  @IsString()
-  @MaxLength(50)
-  @Matches(/^[A-Za-z0-9_.-]+$/)
-  organizationManagementNumber!: string;
   @IsIn(['APARTMENT', 'ASSOCIATION', 'COMPANY', 'OTHER'])
   organizationType!: OrganizationType;
   @IsString() @IsNotEmpty() @MaxLength(64) contactName!: string;

@@ -32,7 +32,6 @@ describe('organization api', () => {
 
     await client.createApplication({
       organizationName: '동부센트레빌아파트',
-      organizationManagementNumber: 'apt-2026-001',
       organizationType: 'APARTMENT',
       contactName: '김관리',
     });
@@ -40,6 +39,13 @@ describe('organization api', () => {
 
     expect(fetcher.mock.calls[0]?.[0]).toBe(
       '/api/vote-server/organization-applications',
+    );
+    expect(fetcher.mock.calls[0]?.[1]?.body).toBe(
+      JSON.stringify({
+        organizationName: '동부센트레빌아파트',
+        organizationType: 'APARTMENT',
+        contactName: '김관리',
+      }),
     );
     expect(fetcher.mock.calls[1]?.[0]).toBe(
       '/api/vote-server/admin/organization-applications/application%2F1/approve',
