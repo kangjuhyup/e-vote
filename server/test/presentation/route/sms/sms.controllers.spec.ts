@@ -33,9 +33,15 @@ describe('SMS controllers', () => {
     ReturnType<SendFieldVotingSessionSmsHandler['execute']>,
     [SendFieldVotingSessionSmsCommand]
   >();
-  const voteController = new VoteSmsController({
-    execute: sendVoteExecute,
-  } as unknown as SendVoteSmsHandler);
+  const getParticipationReminderTemplateExecute = jest.fn();
+  const voteController = new VoteSmsController(
+    {
+      execute: sendVoteExecute,
+    } as unknown as SendVoteSmsHandler,
+    {
+      execute: getParticipationReminderTemplateExecute,
+    },
+  );
   const fieldSessionController = new FieldVotingSessionSmsController({
     execute: sendFieldSessionExecute,
   } as unknown as SendFieldVotingSessionSmsHandler);
@@ -48,14 +54,33 @@ describe('SMS controllers', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  it('returns the server-owned participation reminder preview', () => {
+    getParticipationReminderTemplateExecute.mockReturnValue({
+      code: 'VOTE_PARTICIPATION_REMINDER',
+      content: '참여 안내',
+      buttonLabel: '투표 참여하기',
+    });
+
+    expect(
+      voteController.getParticipationReminderTemplate(TEST_USER_PRINCIPAL, {
+        voteId: 'vote-1',
+      }),
+    ).toEqual({
+      code: 'VOTE_PARTICIPATION_REMINDER',
+      content: '참여 안내',
+      buttonLabel: '투표 참여하기',
+    });
+    expect(getParticipationReminderTemplateExecute).toHaveBeenCalledWith(
+      expect.objectContaining({ voteId: 'vote-1' }),
+    );
+  });
+
   it.each([
     {
       invoke: () =>
-        voteController.sendParticipationReminder(
-          TEST_USER_PRINCIPAL,
-          { voteId: 'vote-1' },
-          { message: '참여해 주세요' },
-        ),
+        voteController.sendParticipationReminder(TEST_USER_PRINCIPAL, {
+          voteId: 'vote-1',
+        }),
       purpose: SmsMessagePurpose.VoteParticipationReminder,
     },
     {
@@ -158,11 +183,9 @@ describe('SMS controllers', () => {
     sendVoteExecute.mockRejectedValue(new VoteSmsAccessDeniedError());
 
     await expect(
-      voteController.sendParticipationReminder(
-        TEST_USER_PRINCIPAL,
-        { voteId: 'vote-1' },
-        { message: '참여 안내' },
-      ),
+      voteController.sendParticipationReminder(TEST_USER_PRINCIPAL, {
+        voteId: 'vote-1',
+      }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 

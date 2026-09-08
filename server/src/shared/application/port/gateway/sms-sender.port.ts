@@ -1,5 +1,7 @@
 import type { SmsDeliveryStatus } from '../../../domain/sms/type/sms-delivery-status.type';
 
+import { PARTICIPATION_REMINDER_TEMPLATE } from '../../sms/participation-reminder-template';
+
 export const SMS_SENDER_PORT = Symbol('SMS_SENDER_PORT');
 
 export interface SmsRecipientDeliveryResult {
@@ -25,7 +27,9 @@ export interface ParticipationReminderSmsRecipient {
   readonly participationUrl: string;
 }
 
-export interface ParticipationReminderSmsSendRequest extends VoteSmsSendRequest {
+export interface ParticipationReminderSmsSendRequest {
+  readonly voteId: string;
+  readonly templateCode: typeof PARTICIPATION_REMINDER_TEMPLATE.code;
   readonly recipients: readonly ParticipationReminderSmsRecipient[];
 }
 

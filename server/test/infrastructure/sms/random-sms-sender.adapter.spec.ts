@@ -28,7 +28,7 @@ describe('RandomSmsSenderAdapter', () => {
       recipientAccess,
     ).sendParticipationReminderToNonParticipants({
       voteId: 'vote-1',
-      message: '투표해 주세요',
+      templateCode: 'VOTE_PARTICIPATION_REMINDER',
       recipients: [
         {
           electorId: 'elector-1',

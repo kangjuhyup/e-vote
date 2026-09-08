@@ -75,7 +75,7 @@ describe('SMS command handlers', () => {
           testCase.purpose === SmsMessagePurpose.VoteParticipationReminder
             ? {
                 voteId: 'vote-1',
-                message: '안내 문자',
+                templateCode: 'VOTE_PARTICIPATION_REMINDER',
                 recipients: [
                   {
                     electorId: 'elector-1',
@@ -142,6 +142,45 @@ describe('SMS command handlers', () => {
     expectSmsSenderNotCalled(smsSender);
   });
 
+  it('ignores client-provided text for participation reminders', async () => {
+    const smsSender = createSmsSender();
+    const handler = new SendVoteSmsHandler(
+      createVoteAccess(createVote(VoteStatus.Open)),
+      createEntitlementAccess(),
+      createSmsDispatchRepository(),
+      createParticipationReminderLinkIssuer(),
+      smsSender,
+    );
+
+    await handler.execute(
+      SendVoteSmsCommand.of({
+        voteId: 'vote-1',
+        requestedByUserPrincipalId: 'creator-1',
+        purpose: SmsMessagePurpose.VoteParticipationReminder,
+        message: '클라이언트가 임의로 보낸 문구',
+      }),
+    );
+
+    expect(
+      smsSender.sendParticipationReminderToNonParticipants.mock.calls,
+    ).toEqual([
+      [
+        {
+          voteId: 'vote-1',
+          templateCode: 'VOTE_PARTICIPATION_REMINDER',
+          recipients: [
+            {
+              electorId: 'elector-1',
+              invitationGeneration: 1,
+              participationUrl:
+                'https://participate.test/#access_token=secret-token',
+            },
+          ],
+        },
+      ],
+    ]);
+  });
+
   it('rejects non-creators before rotating participation links', async () => {
     const links = createParticipationReminderLinkIssuer();
     const smsSender = createSmsSender();
@@ -159,7 +198,6 @@ describe('SMS command handlers', () => {
           voteId: 'vote-1',
           requestedByUserPrincipalId: 'another-user',
           purpose: SmsMessagePurpose.VoteParticipationReminder,
-          message: '참여 안내',
         }),
       ),
     ).rejects.toBeInstanceOf(VoteSmsAccessDeniedError);
@@ -189,7 +227,7 @@ describe('SMS command handlers', () => {
     expect(links.issueForNonParticipants.mock.calls).toHaveLength(0);
   });
 
-  it('rejects invitation reminders when identity verification is required', async () => {
+  it('sends invitation reminders when identity verification is required', async () => {
     const links = createParticipationReminderLinkIssuer();
     const smsSender = createSmsSender();
     const handler = new SendVoteSmsHandler(
@@ -208,14 +246,25 @@ describe('SMS command handlers', () => {
           voteId: 'vote-1',
           requestedByUserPrincipalId: 'creator-1',
           purpose: SmsMessagePurpose.VoteParticipationReminder,
-          message: '참여 안내',
         }),
       ),
-    ).rejects.toThrow(
-      'participation reminders require optional identity verification',
-    );
-    expect(links.issueForNonParticipants.mock.calls).toHaveLength(0);
-    expectSmsSenderNotCalled(smsSender);
+    ).resolves.toMatchObject({ recipientCount: 3 });
+    expect(links.issueForNonParticipants.mock.calls).toEqual([
+      [
+        {
+          voteId: 'vote-1',
+          issuedByUserPrincipalId: 'creator-1',
+        },
+      ],
+    ]);
+    const sendCalls =
+      smsSender.sendParticipationReminderToNonParticipants.mock.calls;
+    expect(sendCalls).toHaveLength(1);
+    expect(sendCalls[0][0]).toMatchObject({
+      voteId: 'vote-1',
+      templateCode: 'VOTE_PARTICIPATION_REMINDER',
+      recipients: [{ electorId: 'elector-1' }],
+    });
   });
 
   it('rejects missing votes, blank messages, and an absent SMS adapter', async () => {
@@ -442,6 +491,7 @@ function createParticipationReminderLinkIssuer(): jest.Mocked<ParticipationRemin
     issueForNonParticipants: jest.fn().mockResolvedValue([
       {
         electorId: 'elector-1',
+        invitationGeneration: 1,
         participationUrl: 'https://participate.test/#access_token=secret-token',
       },
     ]),

@@ -6,6 +6,7 @@ import {
   type SmsSendResult,
   type SmsSenderPort,
 } from '../../../../../shared/application/port/gateway/sms-sender.port';
+import { PARTICIPATION_REMINDER_TEMPLATE } from '../../../../../shared/application/sms/participation-reminder-template';
 import {
   SMS_DISPATCH_REPOSITORY_PORT,
   type SmsDispatchRepositoryPort,
@@ -69,14 +70,6 @@ export class SendVoteSmsHandler {
 
     VoteSmsPolicy.assertVoteMessageAllowed(vote, command.purpose);
     if (
-      command.purpose === SmsMessagePurpose.VoteParticipationReminder &&
-      vote.identityVerificationPolicy.required
-    ) {
-      throw new DomainError(
-        'participation reminders require optional identity verification',
-      );
-    }
-    if (
       command.purpose === SmsMessagePurpose.UpcomingVoteNotice &&
       !(await this.voteUsageEntitlement.hasPaidOrder(vote.id))
     ) {
@@ -106,8 +99,6 @@ export class SendVoteSmsHandler {
     command: SendVoteSmsCommand,
     smsSender: SmsSenderPort,
   ): Promise<SmsSendOutcome> {
-    const request = { voteId: command.voteId, message: command.message };
-
     switch (command.purpose) {
       case SmsMessagePurpose.VoteParticipationReminder: {
         const recipients =
@@ -117,7 +108,8 @@ export class SendVoteSmsHandler {
           });
         const result =
           await smsSender.sendParticipationReminderToNonParticipants({
-            ...request,
+            voteId: command.voteId,
+            templateCode: PARTICIPATION_REMINDER_TEMPLATE.code,
             recipients,
           });
         return {
@@ -131,9 +123,19 @@ export class SendVoteSmsHandler {
         };
       }
       case SmsMessagePurpose.VoteResultNotice:
-        return { result: await smsSender.sendResultNotice(request) };
+        return {
+          result: await smsSender.sendResultNotice({
+            voteId: command.voteId,
+            message: command.message!,
+          }),
+        };
       case SmsMessagePurpose.UpcomingVoteNotice:
-        return { result: await smsSender.sendUpcomingVoteNotice(request) };
+        return {
+          result: await smsSender.sendUpcomingVoteNotice({
+            voteId: command.voteId,
+            message: command.message!,
+          }),
+        };
     }
   }
 

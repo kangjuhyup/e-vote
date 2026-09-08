@@ -5,6 +5,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   HttpCode,
   Param,
   Post,
@@ -13,6 +14,7 @@ import {
   ApiAcceptedResponse,
   ApiBody,
   ApiForbiddenResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -28,16 +30,35 @@ import {
 import { VoteParam } from '../vote/dto/create-vote-request.dto';
 import { SendVoteSmsBody } from './dto/send-vote-sms-request.dto';
 import { SendVoteSmsResponse } from './dto/send-vote-sms-response.dto';
+import { GetParticipationReminderTemplateQuery } from '../../application/query/dto/request/get-participation-reminder-template.query';
+import { GetParticipationReminderTemplateHandler } from '../../application/query/handler/get-participation-reminder-template.handler';
+import { GetParticipationReminderTemplateResponse } from './dto/get-participation-reminder-template-response.dto';
 
 @ApiTags('vote-sms')
 @Controller('votes/:voteId/sms')
 export class VoteSmsController {
-  constructor(private readonly sendVoteSmsHandler: SendVoteSmsHandler) {}
+  constructor(
+    private readonly sendVoteSmsHandler: SendVoteSmsHandler,
+    private readonly getParticipationReminderTemplateHandler: GetParticipationReminderTemplateHandler,
+  ) {}
+
+  @Get('participation-reminder/template')
+  @ApiOperation({ summary: '투표 참여 독려 발송 템플릿 조회' })
+  @ApiOkResponse({ type: GetParticipationReminderTemplateResponse })
+  getParticipationReminderTemplate(
+    @User() user: UserPrincipal,
+    @Param() params: VoteParam,
+  ): GetParticipationReminderTemplateResponse {
+    return GetParticipationReminderTemplateResponse.of(
+      this.getParticipationReminderTemplateHandler.execute(
+        GetParticipationReminderTemplateQuery.of({ voteId: params.voteId }),
+      ),
+    );
+  }
 
   @Post('participation-reminder')
   @HttpCode(202)
   @ApiOperation({ summary: '미투표자 투표 참여 독려 문자 발송' })
-  @ApiBody({ type: SendVoteSmsBody })
   @ApiAcceptedResponse({ type: SendVoteSmsResponse })
   @ApiForbiddenResponse({
     description: '현재 사용자가 투표 생성자가 아닙니다.',
@@ -45,13 +66,11 @@ export class VoteSmsController {
   sendParticipationReminder(
     @User() user: UserPrincipal,
     @Param() params: VoteParam,
-    @Body() body: SendVoteSmsBody,
   ): Promise<SendVoteSmsResponse> {
     return this.send(
       user.id,
       params.voteId,
       SmsMessagePurpose.VoteParticipationReminder,
-      body.message,
     );
   }
 
@@ -95,7 +114,7 @@ export class VoteSmsController {
     requestedByUserPrincipalId: string,
     voteId: string,
     purpose: VoteSmsMessagePurpose,
-    message: string,
+    message?: string,
   ): Promise<SendVoteSmsResponse> {
     try {
       return SendVoteSmsResponse.of(

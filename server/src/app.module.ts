@@ -59,6 +59,7 @@ import { GetVotePageHandler } from './modules/vote/application/query/handler/get
 import { GetVoteHandler } from './modules/vote/application/query/handler/get-vote.handler';
 import { GetSmsDispatchPageHandler } from './modules/vote/application/query/handler/get-sms-dispatch-page.handler';
 import { GetSmsDispatchHandler } from './modules/vote/application/query/handler/get-sms-dispatch.handler';
+import { GetParticipationReminderTemplateHandler } from './modules/vote/application/query/handler/get-participation-reminder-template.handler';
 import { GetVoteResultHandler } from './modules/participation/application/query/handler/get-vote-result.handler';
 import { GetVoteTurnoutHandler } from './modules/participation/application/query/handler/get-vote-turnout.handler';
 import { AppController } from './app.controller';
@@ -311,6 +312,7 @@ const developmentParticipationLinkEnabled =
     GetVoteHandler,
     GetSmsDispatchPageHandler,
     GetSmsDispatchHandler,
+    GetParticipationReminderTemplateHandler,
     GetVotePageHandler,
     GetVoteDetailHandler,
     GetVoteDetailPageHandler,
