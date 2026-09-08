@@ -1,5 +1,17 @@
 type IntrospectionPayload = Readonly<Record<string, unknown>>;
 
+export interface OidcIntrospectedGroupRole {
+  readonly id: string;
+  readonly code: string;
+}
+
+export interface OidcIntrospectedGroup {
+  readonly id: string;
+  readonly code: string;
+  readonly parentId: string | null;
+  readonly roles: readonly OidcIntrospectedGroupRole[];
+}
+
 function requirePayload(value: unknown): IntrospectionPayload {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError('OIDC introspection response must be an object');
@@ -97,6 +109,62 @@ function getScopes(payload: IntrospectionPayload): readonly string[] {
   return getOptionalStringArray(payload, 'scp');
 }
 
+function requireGroupString(
+  value: Readonly<Record<string, unknown>>,
+  name: string,
+): string {
+  const item = value[name];
+  if (typeof item !== 'string' || item.trim().length === 0) {
+    throw new TypeError(`OIDC introspection groups.${name} must be a string`);
+  }
+  return item.trim();
+}
+
+function getGroups(
+  payload: IntrospectionPayload,
+): readonly OidcIntrospectedGroup[] {
+  const groups = payload.groups;
+  if (groups === undefined) return [];
+  if (!Array.isArray(groups)) {
+    throw new TypeError('OIDC introspection groups must be an array');
+  }
+
+  return groups.map((rawGroup) => {
+    if (!rawGroup || typeof rawGroup !== 'object' || Array.isArray(rawGroup)) {
+      throw new TypeError('OIDC introspection groups entry must be an object');
+    }
+    const group = rawGroup as Readonly<Record<string, unknown>>;
+    const parentId = group.parentId;
+    if (parentId !== null && typeof parentId !== 'string') {
+      throw new TypeError(
+        'OIDC introspection groups.parentId must be a string or null',
+      );
+    }
+    if (!Array.isArray(group.roles)) {
+      throw new TypeError('OIDC introspection groups.roles must be an array');
+    }
+    const roles = group.roles.map((rawRole) => {
+      if (!rawRole || typeof rawRole !== 'object' || Array.isArray(rawRole)) {
+        throw new TypeError(
+          'OIDC introspection groups.roles entry must be an object',
+        );
+      }
+      const role = rawRole as Readonly<Record<string, unknown>>;
+      return Object.freeze({
+        id: requireGroupString(role, 'id'),
+        code: requireGroupString(role, 'code'),
+      });
+    });
+
+    return Object.freeze({
+      id: requireGroupString(group, 'id'),
+      code: requireGroupString(group, 'code'),
+      parentId: parentId === null ? null : parentId.trim(),
+      roles: Object.freeze(roles),
+    });
+  });
+}
+
 export class OidcIntrospectTokenResult {
   private constructor(
     readonly active: boolean,
@@ -110,6 +178,7 @@ export class OidcIntrospectTokenResult {
     readonly username: string | undefined,
     readonly email: string | undefined,
     readonly roles: readonly string[],
+    readonly groups: readonly OidcIntrospectedGroup[],
     readonly scopes: readonly string[],
   ) {}
 
@@ -134,6 +203,7 @@ export class OidcIntrospectTokenResult {
           undefined,
           Object.freeze([]),
           Object.freeze([]),
+          Object.freeze([]),
         ),
       );
     }
@@ -151,6 +221,7 @@ export class OidcIntrospectTokenResult {
         getOptionalString(payload, 'preferred_username', 'username', 'name'),
         getOptionalString(payload, 'email'),
         Object.freeze([...getOptionalStringArray(payload, 'roles')]),
+        Object.freeze([...getGroups(payload)]),
         Object.freeze([...getScopes(payload)]),
       ),
     );

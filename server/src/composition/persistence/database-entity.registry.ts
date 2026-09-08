@@ -15,6 +15,7 @@ import { createSmsDispatchEntities } from '../../shared/infrastructure/database/
 import { createBillingEntities } from '../../modules/billing/infrastructure/database/entity/billing.entities';
 import { createIntegrationOutboxEntities } from '../../platform/outbox/infrastructure/database/entity/integration-outbox.entities';
 import { createParticipationAccessEntities } from '../../modules/participation/infrastructure/database/entity/participation-access.entities';
+import { createOrganizationEntities } from '../../modules/organization/infrastructure/database/entity/organization.entities';
 
 export interface DatabaseEntityRegistry extends DatabaseEntityClasses {
   readonly databaseEntities: EntityClass<AnyEntity>[];
@@ -45,6 +46,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   registerEntities(context, createBillingEntities(context));
   registerEntities(context, createIntegrationOutboxEntities(context));
   registerEntities(context, createParticipationAccessEntities(context));
+  registerEntities(context, createOrganizationEntities(context));
 
   const entities = context.entities as DatabaseEntityClasses;
   const databaseEntities = [
@@ -80,6 +82,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
     entities.ParticipationInvitationEntity,
     entities.ElectorParticipantSessionEntity,
     entities.ParticipationInvitationDeliveryEntity,
+    entities.OrganizationApplicationEntity,
   ];
 
   cachedRegistry = {

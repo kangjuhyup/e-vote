@@ -1,3 +1,15 @@
+export interface UserPrincipalGroupRole {
+  readonly id: string;
+  readonly code: string;
+}
+
+export interface UserPrincipalGroup {
+  readonly id: string;
+  readonly code: string;
+  readonly parentId?: string;
+  readonly roles: readonly UserPrincipalGroupRole[];
+}
+
 export class UserPrincipal {
   private constructor(
     readonly id: string,
@@ -6,6 +18,7 @@ export class UserPrincipal {
     readonly username: string | undefined,
     readonly email: string | undefined,
     readonly roles: readonly string[],
+    readonly groups: readonly UserPrincipalGroup[],
     readonly scopes: readonly string[],
   ) {}
 
@@ -16,6 +29,7 @@ export class UserPrincipal {
     username?: string;
     email?: string;
     roles?: readonly string[];
+    groups?: readonly UserPrincipalGroup[];
     scopes?: readonly string[];
   }): UserPrincipal {
     if (params.id.trim().length === 0) {
@@ -30,8 +44,37 @@ export class UserPrincipal {
         params.username,
         params.email,
         Object.freeze([...(params.roles ?? [])]),
+        Object.freeze(
+          (params.groups ?? []).map((group) =>
+            Object.freeze({
+              ...group,
+              roles: Object.freeze(
+                group.roles.map((role) => Object.freeze({ ...role })),
+              ),
+            }),
+          ),
+        ),
         Object.freeze([...(params.scopes ?? [])]),
       ),
     );
+  }
+
+  managesOrganization(input: {
+    organizationGroupId: string;
+    organizationGroupCode: string;
+  }): boolean {
+    const belongsToOrganization = this.groups.some(
+      (group) =>
+        group.id === input.organizationGroupId &&
+        group.code === input.organizationGroupCode &&
+        group.parentId === undefined,
+    );
+    const hasScopedManagerRole = this.groups.some(
+      (group) =>
+        group.parentId === input.organizationGroupId &&
+        group.code === `${input.organizationGroupCode}.vote-managers` &&
+        group.roles.some((role) => role.code === 'vote-manager'),
+    );
+    return belongsToOrganization && hasScopedManagerRole;
   }
 }

@@ -36,6 +36,12 @@ export class OidcAccessTokenVerifierAdapter implements AccessTokenVerifierPort {
       username: result.username,
       email: result.email,
       roles: result.roles,
+      groups: result.groups.map((group) => ({
+        id: group.id,
+        code: group.code,
+        ...(group.parentId ? { parentId: group.parentId } : {}),
+        roles: group.roles,
+      })),
       scopes: result.scopes,
     });
   }

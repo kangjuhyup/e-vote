@@ -28,6 +28,14 @@ describe('OidcAccessTokenVerifierAdapter', () => {
         preferred_username: 'kim',
         email: 'kim@example.com',
         roles: ['commission-admin'],
+        groups: [
+          {
+            id: 'group-manager-1',
+            code: 'vote-managers',
+            parentId: 'group-organization-1',
+            roles: [{ id: 'role-1', code: 'vote-manager' }],
+          },
+        ],
         scope: 'openid profile votes:write',
       }),
     );
@@ -43,6 +51,14 @@ describe('OidcAccessTokenVerifierAdapter', () => {
       username: 'kim',
       email: 'kim@example.com',
       roles: ['commission-admin'],
+      groups: [
+        {
+          id: 'group-manager-1',
+          code: 'vote-managers',
+          parentId: 'group-organization-1',
+          roles: [{ id: 'role-1', code: 'vote-manager' }],
+        },
+      ],
       scopes: ['openid', 'profile', 'votes:write'],
     });
     expect(Object.isFrozen(principal)).toBe(true);
@@ -68,6 +84,7 @@ describe('OidcAccessTokenVerifierAdapter', () => {
       tenantId: 'tenant-id-1',
       tenantCode: 'acme',
       username: 'lee',
+      groups: [],
       scopes: ['votes:read'],
     });
   });

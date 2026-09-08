@@ -26,7 +26,7 @@ describe('Auth.js OIDC configuration', () => {
     expect(provider.authorization?.params).toMatchObject({
       prompt: 'consent',
       resource: 'https://vote-api.example.com',
-      scope: 'openid profile email offline_access',
+      scope: 'openid profile email offline_access groups',
     });
     expect(provider.client?.token_endpoint_auth_method).toBe('none');
   });

@@ -33,6 +33,7 @@ export interface DatabaseEntityClasses {
   readonly ParticipationInvitationEntity: EntityClass<AnyEntity>;
   readonly ElectorParticipantSessionEntity: EntityClass<AnyEntity>;
   readonly ParticipationInvitationDeliveryEntity: EntityClass<AnyEntity>;
+  readonly OrganizationApplicationEntity: EntityClass<AnyEntity>;
 }
 
 export interface DatabaseEntityFactoryContext {

@@ -69,8 +69,14 @@ import { ParticipationAccessRepositoryAdapter } from '../../modules/participatio
 import { PARTICIPATION_ACCESS_REVOCATION_PORT } from '../../shared/application/port/capability/participation-access-revocation.port';
 import { PARTICIPATION_ACCESS_READ_PORT } from '../../modules/participation/application/port/persistence/query/participation-access-read.port';
 import { ParticipationAccessReadAdapter } from '../../modules/participation/infrastructure/database/repository/query/participation-access-read.adapter';
+import { ORGANIZATION_APPLICATION_REPOSITORY_PORT } from '../../modules/organization/application/port/persistence/organization-application-repository.port';
+import { OrganizationApplicationRepositoryAdapter } from '../../modules/organization/infrastructure/database/repository/organization-application-repository.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
+  {
+    provide: ORGANIZATION_APPLICATION_REPOSITORY_PORT,
+    useClass: OrganizationApplicationRepositoryAdapter,
+  },
   {
     provide: PARTICIPATION_ACCESS_READ_PORT,
     useClass: ParticipationAccessReadAdapter,
@@ -226,6 +232,7 @@ export const databaseRepositoryProviders: Provider[] = [
 ];
 
 export const databaseRepositoryPortTokens = [
+  ORGANIZATION_APPLICATION_REPOSITORY_PORT,
   PARTICIPATION_ACCESS_READ_PORT,
   PARTICIPATION_ACCESS_REPOSITORY_PORT,
   PARTICIPATION_ACCESS_REVOCATION_PORT,

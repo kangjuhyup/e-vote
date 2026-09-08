@@ -41,7 +41,7 @@ export function createDesiredClient(env = process.env) {
     grantTypes: ['authorization_code', 'refresh_token'],
     responseTypes: ['code'],
     tokenEndpointAuthMethod: 'none',
-    scope: 'openid profile email offline_access',
+    scope: 'openid profile email offline_access groups',
     postLogoutRedirectUris: [
       env.AUTH_CLIENT_POST_LOGOUT_URI || DEFAULT_POST_LOGOUT_URI,
     ],
@@ -80,11 +80,14 @@ export function createDesiredResourceServer(env = process.env) {
   };
 }
 
-export function createDesiredScope() {
+export function createDesiredScope(name = 'offline_access') {
   return {
-    name: 'offline_access',
-    displayName: 'Offline Access',
-    description: 'Allows the e-vote client to renew expired access tokens.',
+    name,
+    displayName: name === 'groups' ? 'Groups' : 'Offline Access',
+    description:
+      name === 'groups'
+        ? 'Includes direct group authorization context in access tokens and introspection.'
+        : 'Allows the e-vote client to renew expired access tokens.',
     claimKeys: [],
     enabled: true,
   };
@@ -159,7 +162,7 @@ async function requireOk(response, errorCode) {
   return response;
 }
 
-async function ensureOfflineAccessScope({ baseUrl, cookieHeader, fetchImpl }) {
+async function ensureScope({ baseUrl, cookieHeader, fetchImpl, name }) {
   const listResponse = await requireOk(
     await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/scopes?limit=100`, {
       headers: { cookie: cookieHeader },
@@ -168,7 +171,7 @@ async function ensureOfflineAccessScope({ baseUrl, cookieHeader, fetchImpl }) {
   );
   const result = await listResponse.json();
   const existing = result.items?.find(
-    (scope) => scope.name === 'offline_access' && scope.enabled === true,
+    (scope) => scope.name === name && scope.enabled === true,
   );
 
   if (existing) return 'existing';
@@ -180,7 +183,7 @@ async function ensureOfflineAccessScope({ baseUrl, cookieHeader, fetchImpl }) {
         'content-type': 'application/json',
         cookie: cookieHeader,
       },
-      body: JSON.stringify(createDesiredScope()),
+      body: JSON.stringify(createDesiredScope(name)),
     }),
     'AUTH_SCOPE_CREATE_FAILED',
   );
@@ -211,7 +214,13 @@ export async function bootstrapAuthClient({
   );
   const cookieHeader = extractCookieHeader(loginResponse);
 
-  await ensureOfflineAccessScope({ baseUrl, cookieHeader, fetchImpl });
+  await ensureScope({
+    baseUrl,
+    cookieHeader,
+    fetchImpl,
+    name: 'offline_access',
+  });
+  await ensureScope({ baseUrl, cookieHeader, fetchImpl, name: 'groups' });
 
   const listResponse = await requireOk(
     await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/clients?limit=100`, {

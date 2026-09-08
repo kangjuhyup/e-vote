@@ -177,6 +177,10 @@ import { DevelopmentParticipationLinkReadAdapter } from './modules/participation
 import { DEVELOPMENT_PARTICIPATION_LINK_READ_PORT } from './modules/participation/application/port/persistence/query/development-participation-link-read.port';
 import { PARTICIPATION_UI_URL } from './modules/participation/application/port/gateway/participation-invitation-sms-sender.port';
 import { PARTICIPATION_REMINDER_LINK_ISSUER_PORT } from './shared/application/port/capability/participation-reminder-link-issuer.port';
+import { OrganizationOnboardingController } from './modules/organization/presentation/organization-onboarding/organization-onboarding.controller';
+import { OrganizationOnboardingService } from './modules/organization/application/organization-onboarding.service';
+import { AUTH_ORGANIZATION_PROVISIONING_PORT } from './modules/organization/application/port/gateway/auth-organization-provisioning.port';
+import { AuthAdminOrganizationProvisioningAdapter } from './modules/organization/infrastructure/auth/auth-admin-organization-provisioning.adapter';
 
 const developmentParticipationLinkEnabled =
   isDevelopmentParticipationLinkEnabled(process.env.NODE_ENV);
@@ -221,6 +225,7 @@ const developmentParticipationLinkEnabled =
     BillingOrderCancellationController,
     ParticipationAccessController,
     ParticipationInvitationController,
+    OrganizationOnboardingController,
     ...(developmentParticipationLinkEnabled
       ? [
           DevelopmentParticipationLinkController,
@@ -235,6 +240,11 @@ const developmentParticipationLinkEnabled =
     UpdateElectionCommissionMemberHandler,
     ElectionCommissionManagementAccess,
     AppService,
+    OrganizationOnboardingService,
+    {
+      provide: AUTH_ORGANIZATION_PROVISIONING_PORT,
+      useClass: AuthAdminOrganizationProvisioningAdapter,
+    },
     {
       provide: APP_GUARD,
       useClass: AuthenticatedUserGuard,

@@ -32,16 +32,12 @@ export function getTenantOidcIssuer(
   environment: AuthEnvironment = process.env,
 ) {
   return buildTenantOidcIssuer({
-    issuerOrigin:
-      environment.AUTH_OIDC_ISSUER ?? DEFAULT_OIDC_ISSUER_ORIGIN,
-    tenantCode:
-      environment.AUTH_OIDC_TENANT_CODE ?? DEFAULT_OIDC_TENANT_CODE,
+    issuerOrigin: environment.AUTH_OIDC_ISSUER ?? DEFAULT_OIDC_ISSUER_ORIGIN,
+    tenantCode: environment.AUTH_OIDC_TENANT_CODE ?? DEFAULT_OIDC_TENANT_CODE,
   });
 }
 
-export function getVoteApiResource(
-  environment: AuthEnvironment = process.env,
-) {
+export function getVoteApiResource(environment: AuthEnvironment = process.env) {
   const resource =
     environment.AUTH_E_VOTE_RESOURCE?.trim() || DEFAULT_VOTE_API_RESOURCE;
 
@@ -67,13 +63,8 @@ export function createEVoteOidcProvider(
   environment: AuthEnvironment = process.env,
 ) {
   const clientSecret =
-    environment.AUTH_E_VOTE_SECRET ??
-    environment.AUTH_E_VOTE_CLIENT_SECRET;
-  const checks: Array<'pkce' | 'state' | 'nonce'> = [
-    'pkce',
-    'state',
-    'nonce',
-  ];
+    environment.AUTH_E_VOTE_SECRET ?? environment.AUTH_E_VOTE_CLIENT_SECRET;
+  const checks: Array<'pkce' | 'state' | 'nonce'> = ['pkce', 'state', 'nonce'];
 
   return {
     id: E_VOTE_PROVIDER_ID,
@@ -86,15 +77,13 @@ export function createEVoteOidcProvider(
     authorization: {
       params: {
         prompt: 'consent',
-        scope: 'openid profile email offline_access',
+        scope: 'openid profile email offline_access groups',
         resource: getVoteApiResource(environment),
       },
     },
     checks,
     client: {
-      token_endpoint_auth_method: clientSecret
-        ? 'client_secret_basic'
-        : 'none',
+      token_endpoint_auth_method: clientSecret ? 'client_secret_basic' : 'none',
     },
     profile(profile: EVoteOidcProfile) {
       return mapEVoteProfileToUser(profile);

@@ -34,10 +34,13 @@ function loginResponse() {
   );
 }
 
-function existingScopeResponse() {
+function existingScopesResponse() {
   return response({
-    items: [{ id: 'scope-1', ...createDesiredScope(), builtIn: false }],
-    total: 1,
+    items: [
+      { id: 'scope-1', ...createDesiredScope(), builtIn: false },
+      { id: 'scope-2', ...createDesiredScope('groups'), builtIn: false },
+    ],
+    total: 2,
     page: 1,
     limit: 100,
   });
@@ -66,17 +69,21 @@ test('creates the offline scope and both local OIDC clients', async () => {
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 7);
+  assert.equal(calls.length, 9);
   assert.deepEqual(JSON.parse(calls[2].options.body), createDesiredScope());
-  assert.deepEqual(JSON.parse(calls[4].options.body), createDesiredClient(env));
   assert.deepEqual(
-    JSON.parse(calls[5].options.body),
+    JSON.parse(calls[4].options.body),
+    createDesiredScope('groups'),
+  );
+  assert.deepEqual(JSON.parse(calls[6].options.body), createDesiredClient(env));
+  assert.deepEqual(
+    JSON.parse(calls[7].options.body),
     createDesiredResourceServer(env),
   );
-  assert.match(calls[4].options.headers.cookie, /admin_session=session-token/);
+  assert.match(calls[6].options.headers.cookie, /admin_session=session-token/);
   assert.equal(
     createDesiredClient(env).scope,
-    'openid profile email offline_access',
+    'openid profile email offline_access groups',
   );
   assert.deepEqual(createDesiredClient(env).allowedResources, [
     'https://vote-api.example.com',
@@ -130,7 +137,7 @@ test('is idempotent when the scope and clients already exist', async () => {
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
-    if (url.includes('/admin/scopes?')) return existingScopeResponse();
+    if (url.includes('/admin/scopes?')) return existingScopesResponse();
     if (url.includes('/admin/clients?')) {
       return response({
         items: [
@@ -153,7 +160,7 @@ test('is idempotent when the scope and clients already exist', async () => {
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'existing');
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
 });
 
 test('updates refresh scope and allowed resource on a legacy public client', async () => {
@@ -163,7 +170,7 @@ test('updates refresh scope and allowed resource on a legacy public client', asy
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
-    if (url.includes('/admin/scopes?')) return existingScopeResponse();
+    if (url.includes('/admin/scopes?')) return existingScopesResponse();
     if (url.includes('/admin/clients?')) {
       return response({
         items: [
@@ -195,10 +202,10 @@ test('updates refresh scope and allowed resource on a legacy public client', asy
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 5);
-  assert.equal(calls[3].options.method, 'PUT');
-  assert.deepEqual(JSON.parse(calls[3].options.body), {
-    scope: 'openid profile email offline_access',
+  assert.equal(calls.length, 6);
+  assert.equal(calls[4].options.method, 'PUT');
+  assert.deepEqual(JSON.parse(calls[4].options.body), {
+    scope: 'openid profile email offline_access groups',
     allowedResources: ['https://vote-api.example.com'],
   });
 });
@@ -208,7 +215,7 @@ test('fails closed when an existing client has incompatible settings', async () 
   const desiredResourceServer = createDesiredResourceServer(env);
   const fetchImpl = async (url) => {
     if (url.endsWith('/admin/session')) return loginResponse();
-    if (url.includes('/admin/scopes?')) return existingScopeResponse();
+    if (url.includes('/admin/scopes?')) return existingScopesResponse();
     return response({
       items: [
         {
