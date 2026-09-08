@@ -379,6 +379,7 @@ function fetchVoteApiResponse(
 ): Promise<Response> {
   const fetcher = input.fetcher;
   return fetcher(buildVoteApiUrl(input.baseUrl, path, query), {
+    cache: "no-store",
     headers: { Accept: "application/json" },
   });
 }

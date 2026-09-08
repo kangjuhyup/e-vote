@@ -133,6 +133,10 @@ describe("votes api", () => {
 
     await expect(client.fetchVoteList()).resolves.toEqual([]);
     expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith(
+      expect.stringContaining('/votes?page=1&pageSize=100'),
+      expect.objectContaining({ cache: 'no-store' }),
+    );
   });
 
   it("enables mock mode only for the explicit mock value", () => {

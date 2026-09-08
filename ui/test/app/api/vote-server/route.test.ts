@@ -44,6 +44,7 @@ describe('/api/vote-server authenticated proxy', () => {
     expect(new Headers(init.headers).get('authorization')).toBe(
       'Bearer oidc-access-token',
     );
+    expect(init.cache).toBe('no-store');
     expect(new Headers(init.headers).has('cookie')).toBe(false);
   });
 

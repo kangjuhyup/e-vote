@@ -91,6 +91,7 @@ async function proxyVoteApiRequest(
       method: request.method,
       headers,
       body: hasBody ? await request.arrayBuffer() : undefined,
+      cache: 'no-store',
       redirect: 'manual',
     });
   } catch {

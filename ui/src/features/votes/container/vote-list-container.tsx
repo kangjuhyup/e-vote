@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -30,6 +30,7 @@ interface VoteListContainerProps {
 }
 
 export function VoteListContainer({ account }: VoteListContainerProps) {
+  const queryClient = useQueryClient();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -89,6 +90,10 @@ export function VoteListContainer({ account }: VoteListContainerProps) {
     );
   }
 
+  async function handleRefresh() {
+    await queryClient.resetQueries({ queryKey: ["votes"] });
+  }
+
   return (
     <PageShell
       account={account}
@@ -109,7 +114,7 @@ export function VoteListContainer({ account }: VoteListContainerProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => votesQuery.refetch()}
+            onClick={() => void handleRefresh()}
             disabled={votesQuery.isFetching}
           >
             <RefreshCw

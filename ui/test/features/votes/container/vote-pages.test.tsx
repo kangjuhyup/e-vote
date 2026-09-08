@@ -139,6 +139,18 @@ describe('vote containers', () => {
     });
   });
 
+  it('clears vote query state before refreshing the list', async () => {
+    const resetQueries = vi.spyOn(QueryClient.prototype, 'resetQueries');
+    renderWithQueryClient(<VoteListContainer />);
+
+    expect(await screen.findByText('예산 승인 투표')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '새로고침' }));
+
+    await waitFor(() =>
+      expect(resetQueries).toHaveBeenCalledWith({ queryKey: ['votes'] }),
+    );
+  });
+
   it('hydrates vote list filters from URL search params', async () => {
     navigation.search = 'status=scheduled&q=%EC%98%88%EC%82%B0';
 
