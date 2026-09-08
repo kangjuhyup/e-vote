@@ -22,6 +22,7 @@ import { electoralRollApi } from '@/features/votes/api/electoral-roll-api';
 
 import { VoteDashboardContainer } from '@/features/votes/container/vote-dashboard-container';
 import { CommissionManagementContainer } from '@/features/votes/container/commission-management-container';
+import { CommissionSetupContainer } from '@/features/votes/container/commission-setup-container';
 import { ElectorManagementContainer } from '@/features/votes/container/elector-management-container';
 import { ElectoralRollManagementContainer } from '@/features/votes/container/electoral-roll-management-container';
 import { ElectoralRollSetupContainer } from '@/features/votes/container/electoral-roll-setup-container';
@@ -674,13 +675,19 @@ describe('vote containers', () => {
     ]);
   });
 
-  it('opens a commission before registering members and enters a newly created commission', async () => {
+  it('shows commissions in the same list-detail structure as electoral rolls', async () => {
     renderWithQueryClient(<CommissionManagementContainer />);
 
-    expect(await screen.findByText('위원회 목록')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '위원회 생성' })).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { name: '위원회 목록' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('table', { name: '위원회 목록' })).toBeTruthy();
+    expect(
+      screen
+        .getByRole('link', { name: '새 위원회 만들기' })
+        .getAttribute('href'),
+    ).toBe('/commissions/new');
     expect(screen.queryByRole('button', { name: '위원 등록' })).toBeNull();
-    expect(screen.getByText('1 / 1 페이지')).toBeTruthy();
 
     fireEvent.click(
       screen.getByRole('button', { name: '전자투표 운영위원회 열기' }),
@@ -690,19 +697,10 @@ describe('vote containers', () => {
     ).toBeTruthy();
     expect(screen.getByRole('button', { name: '위원 등록' })).toBeTruthy();
     expect(screen.getByText('김관리')).toBeTruthy();
+    expect(screen.getByText('등록 위원')).toBeTruthy();
+    expect(screen.getByText('2명')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: '위원회 목록' }));
-    fireEvent.change(screen.getByLabelText('위원회 이름'), {
-      target: { value: '신규 운영' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: '위원회 생성' }));
-
-    expect(await screen.findByText('신규 운영')).toBeTruthy();
-    expect(screen.getByText('신규 운영 위원회를 생성했습니다.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '위원 등록' })).toBeTruthy();
-    expect(screen.queryByLabelText('위원회')).toBeNull();
-
-    fireEvent.change(screen.getByLabelText('위원 이름'), {
+    fireEvent.change(screen.getByLabelText('새 위원 이름'), {
       target: { value: '박신규' },
     });
     const registerButton = screen.getByRole<HTMLButtonElement>('button', {
@@ -712,6 +710,30 @@ describe('vote containers', () => {
     fireEvent.click(registerButton);
     expect(await screen.findByText('박신규 위원을 등록했습니다.')).toBeTruthy();
     expect(await screen.findByText('박신규')).toBeTruthy();
+  });
+
+  it('creates a commission on the dedicated setup page and opens its detail', async () => {
+    const createCommission = vi
+      .spyOn(voteOperationsApi, 'createCommission')
+      .mockResolvedValue({
+        id: 'commission-new',
+        members: [],
+        name: '신규 운영',
+        status: 'ACTIVE',
+      });
+    renderWithQueryClient(<CommissionSetupContainer />);
+
+    fireEvent.change(screen.getByLabelText('위원회 이름'), {
+      target: { value: '  신규 운영  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '위원회 만들기' }));
+
+    await waitFor(() => {
+      expect(createCommission).toHaveBeenCalledWith('신규 운영');
+      expect(navigation.replace).toHaveBeenCalledWith(
+        '/commissions?commissionId=commission-new',
+      );
+    });
   });
 
   it('creates a vote by connecting an existing electoral roll', async () => {

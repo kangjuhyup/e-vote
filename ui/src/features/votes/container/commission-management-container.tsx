@@ -1,12 +1,16 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
 import { RetryErrorCard } from "@/components/feedback/retry-error-card";
 import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
 import { PageShell } from "@/components/layout/page-shell";
+import { Button } from "@/components/ui/button";
 import { voteOperationsApi } from "@/features/votes/api/vote-operations-api";
 import {
   commissionManagementQueryOptions,
@@ -32,12 +36,17 @@ type CommissionDeletionTarget =
 
 export function CommissionManagementContainer({
   account,
+  initialCommissionId = "",
 }: {
   account?: ReactNode;
+  initialCommissionId?: string;
 }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [page, setPage] = useState(1);
-  const [selectedCommissionId, setSelectedCommissionId] = useState("");
+  const [selectedCommissionId, setSelectedCommissionId] = useState(
+    initialCommissionId.trim(),
+  );
   const [message, setMessage] = useState<string>();
   const [deletionTarget, setDeletionTarget] =
     useState<CommissionDeletionTarget>();
@@ -47,17 +56,6 @@ export function CommissionManagementContainer({
   const commissionQuery = useQuery({
     ...commissionQueryOptions(selectedCommissionId),
     enabled: selectedCommissionId.length > 0,
-  });
-  const createMutation = useMutation({
-    mutationFn: voteOperationsApi.createCommission,
-    onSuccess: async (commission) => {
-      setPage(1);
-      setSelectedCommissionId(commission.id);
-      setMessage(`${commission.name} 위원회를 생성했습니다.`);
-      await queryClient.invalidateQueries({
-        queryKey: ["vote-operations", voteOperationsApi.mode, "commissions"],
-      });
-    },
   });
   const memberMutation = useMutation({
     mutationFn: voteOperationsApi.registerCommissionMember,
@@ -93,18 +91,17 @@ export function CommissionManagementContainer({
       setSelectedCommissionId("");
       setPage(1);
       setMessage("위원회를 삭제했습니다. 기존 투표 기록은 유지됩니다.");
+      router.replace("/commissions", { scroll: false });
       await invalidateCommissions(queryClient);
     },
   });
   const error =
-    createMutation.error ??
     memberMutation.error ??
     updateMemberMutation.error ??
     commissionQuery.error;
   const deletionError =
     deleteMemberMutation.error ?? deleteCommissionMutation.error;
   const isSubmitting =
-    createMutation.isPending ||
     memberMutation.isPending ||
     updateMemberMutation.isPending ||
     deleteMemberMutation.isPending ||
@@ -122,6 +119,14 @@ export function CommissionManagementContainer({
       eyebrow="조직 관리"
       title="선거관리위원회"
       description="투표 생성 전에 위원회와 관리자, 현장 관리자를 등록합니다."
+      actions={
+        <Button type="button" asChild>
+          <Link href="/commissions/new">
+            <Plus aria-hidden="true" />
+            새 위원회 만들기
+          </Link>
+        </Button>
+      }
     >
       {commissionsQuery.isLoading ||
       (selectedCommissionId.length > 0 && commissionQuery.isLoading) ? (
@@ -138,9 +143,7 @@ export function CommissionManagementContainer({
       ) : commissionsQuery.data ? (
         <CommissionManagement
           commission={commissionQuery.data ?? null}
-          commissions={commissionsQuery.data.items}
-          page={commissionsQuery.data.page}
-          totalPages={commissionsQuery.data.totalPages}
+          commissionPage={commissionsQuery.data}
           deletionTarget={deletionTarget}
           deleteErrorMessage={toCommissionManagementError(deletionError)}
           errorMessage={toCommissionManagementError(error)}
@@ -156,15 +159,16 @@ export function CommissionManagementContainer({
             setMessage(undefined);
             setDeletionTarget(undefined);
             setSelectedCommissionId(commissionId);
+            router.replace(
+              `/commissions?commissionId=${encodeURIComponent(commissionId)}`,
+              { scroll: false },
+            );
           }}
           onShowList={() => {
             setMessage(undefined);
             setDeletionTarget(undefined);
             setSelectedCommissionId("");
-          }}
-          onCreateCommission={(formData) => {
-            setMessage(undefined);
-            createMutation.mutate(String(formData.get("name") ?? ""));
+            router.replace("/commissions", { scroll: false });
           }}
           onRegisterMember={(formData) => {
             setMessage(undefined);

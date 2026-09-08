@@ -6,13 +6,19 @@ import { isApiMockMode } from "@/shared/config/api-mode";
 
 export const dynamic = "force-dynamic";
 
-export default async function CommissionsPage() {
+export default async function CommissionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ commissionId?: string }>;
+}) {
   const session = await getAppSession();
   if (!session?.user) return <SignInContainer />;
   const isMockMode = isApiMockMode();
+  const { commissionId } = await searchParams;
 
   return (
     <CommissionManagementContainer
+      initialCommissionId={commissionId}
       account={
         <SessionControlsContainer
           isMockMode={isMockMode}

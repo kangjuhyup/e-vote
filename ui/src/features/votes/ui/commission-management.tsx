@@ -14,8 +14,10 @@ import { Select } from "@/components/ui/select";
 import type {
   CommissionMemberRecord,
   CommissionRecord,
+  PageResult,
 } from "@/features/votes/model/vote-operations.types";
 
+import { CommissionList } from "./commission-list";
 import { RegistryDeletionDialog } from "./registry-deletion-dialog";
 
 type CommissionDeletionTarget =
@@ -24,7 +26,7 @@ type CommissionDeletionTarget =
 
 interface CommissionManagementProps {
   commission: CommissionRecord | null;
-  commissions: CommissionRecord[];
+  commissionPage: PageResult<CommissionRecord>;
   deletionTarget?: CommissionDeletionTarget;
   deleteErrorMessage?: string;
   errorMessage?: string;
@@ -33,7 +35,6 @@ interface CommissionManagementProps {
   message?: string;
   onCancelDelete: () => void;
   onConfirmDelete: () => void;
-  onCreateCommission: (data: FormData) => void;
   onPageChange: (page: number) => void;
   onRegisterMember: (data: FormData) => void;
   onRequestDeleteCommission: () => void;
@@ -41,14 +42,12 @@ interface CommissionManagementProps {
   onSelectCommission: (commissionId: string) => void;
   onShowList: () => void;
   onUpdateMember: (data: FormData) => void;
-  page: number;
   selectedCommissionId: string;
-  totalPages: number;
 }
 
 export function CommissionManagement({
   commission,
-  commissions,
+  commissionPage,
   deletionTarget,
   deleteErrorMessage,
   errorMessage,
@@ -57,7 +56,6 @@ export function CommissionManagement({
   message,
   onCancelDelete,
   onConfirmDelete,
-  onCreateCommission,
   onPageChange,
   onRegisterMember,
   onRequestDeleteCommission,
@@ -65,9 +63,7 @@ export function CommissionManagement({
   onSelectCommission,
   onShowList,
   onUpdateMember,
-  page,
   selectedCommissionId,
-  totalPages,
 }: CommissionManagementProps) {
   return (
     <div className="space-y-5">
@@ -90,13 +86,9 @@ export function CommissionManagement({
 
       {selectedCommissionId.length === 0 ? (
         <CommissionList
-          commissions={commissions}
-          isSubmitting={isSubmitting}
-          onCreateCommission={onCreateCommission}
+          page={commissionPage}
           onPageChange={onPageChange}
-          onSelectCommission={onSelectCommission}
-          page={page}
-          totalPages={totalPages}
+          onSelect={onSelectCommission}
         />
       ) : !commission ? (
         <>
@@ -126,88 +118,6 @@ export function CommissionManagement({
           onUpdateMember={onUpdateMember}
         />
       )}
-    </div>
-  );
-}
-
-function CommissionList({
-  commissions,
-  isSubmitting,
-  onCreateCommission,
-  onPageChange,
-  onSelectCommission,
-  page,
-  totalPages,
-}: {
-  commissions: CommissionRecord[];
-  isSubmitting: boolean;
-  onCreateCommission: (data: FormData) => void;
-  onPageChange: (page: number) => void;
-  onSelectCommission: (commissionId: string) => void;
-  page: number;
-  totalPages: number;
-}) {
-  return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
-      <section aria-labelledby="commission-list-title" className="space-y-3">
-        <h2 id="commission-list-title" className="text-lg font-semibold">
-          위원회 목록
-        </h2>
-        {commissions.length === 0 ? (
-          <Card className="rounded-lg">
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              조회 가능한 위원회가 없습니다.
-            </CardContent>
-          </Card>
-        ) : (
-          commissions.map((commission) => (
-            <Card key={commission.id} className="rounded-lg">
-              <CardHeader>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <CardTitle className="text-base">{commission.name}</CardTitle>
-                  <Badge variant="secondary">
-                    {commission.status === "ACTIVE" ? "활성" : "중지"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">
-                  등록 위원 {commission.members.length.toLocaleString()}명
-                </p>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  aria-label={`${commission.name} 열기`}
-                  onClick={() => onSelectCommission(commission.id)}
-                >
-                  열기
-                </Button>
-              </CardContent>
-            </Card>
-          ))
-        )}
-        <PageControls
-          page={page}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
-      </section>
-
-      <FormCard icon={<Building2 aria-hidden="true" />} title="위원회 생성">
-        <form
-          className="space-y-4"
-          onSubmit={formHandler(onCreateCommission, true)}
-        >
-          <Field label="위원회 이름" name="name" required />
-          <p className="text-sm leading-6 text-muted-foreground">
-            생성 후 해당 위원회 화면에서 위원을 등록합니다.
-          </p>
-          <Button className="w-full" type="submit" disabled={isSubmitting}>
-            위원회 생성
-          </Button>
-        </form>
-      </FormCard>
     </div>
   );
 }
@@ -249,9 +159,9 @@ function CommissionDetail({
       <Card className="rounded-lg">
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-3">
               <Building2
-                className="size-5 text-muted-foreground"
+                className="mt-0.5 size-5 text-muted-foreground"
                 aria-hidden="true"
               />
               <CardTitle>{commission.name}</CardTitle>
@@ -261,6 +171,14 @@ function CommissionDetail({
             </Badge>
           </div>
         </CardHeader>
+        <CardContent>
+          <dl className="grid gap-3 text-sm">
+            <Summary
+              label="등록 위원"
+              value={`${commission.members.length.toLocaleString()}명`}
+            />
+          </dl>
+        </CardContent>
       </Card>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
@@ -359,7 +277,12 @@ function CommissionDetail({
             className="space-y-4"
             onSubmit={formHandler(onRegisterMember, true)}
           >
-            <Field label="위원 이름" name="name" required />
+            <Field
+              label="위원 이름"
+              name="name"
+              aria-label="새 위원 이름"
+              required
+            />
             <label className="grid gap-2 text-sm font-medium">
               역할
               <Select name="role" defaultValue="FIELD_MANAGER">
@@ -423,47 +346,6 @@ function CommissionDetail({
   );
 }
 
-function PageControls({
-  onPageChange,
-  page,
-  totalPages,
-}: {
-  onPageChange: (page: number) => void;
-  page: number;
-  totalPages: number;
-}) {
-  const displayedTotalPages = Math.max(1, totalPages);
-
-  return (
-    <nav
-      aria-label="위원회 목록 페이지"
-      className="flex items-center justify-between gap-3"
-    >
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={page <= 1}
-        onClick={() => onPageChange(page - 1)}
-      >
-        이전
-      </Button>
-      <p className="text-sm tabular-nums text-muted-foreground">
-        {page} / {displayedTotalPages} 페이지
-      </p>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={totalPages === 0 || page >= totalPages}
-        onClick={() => onPageChange(page + 1)}
-      >
-        다음
-      </Button>
-    </nav>
-  );
-}
-
 function FormCard({
   children,
   icon,
@@ -483,6 +365,15 @@ function FormCard({
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
+  );
+}
+
+function Summary({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-muted px-3 py-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="mt-1 break-all font-medium">{value}</dd>
+    </div>
   );
 }
 
