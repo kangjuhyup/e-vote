@@ -18,6 +18,8 @@ import { MockPaymentOutboxWorker } from '../src/modules/billing/infrastructure/p
 import { ParticipationAccessController } from '../src/modules/participation/presentation/participation-access/participation-access.controller';
 import { ParticipationInvitationController } from '../src/modules/participation/presentation/participation-invitation/participation-invitation.controller';
 import { ParticipationInvitationSmsWorker } from '../src/modules/participation/infrastructure/sms/participation-invitation-sms.worker';
+import { DevelopmentParticipationLinkController } from '../src/modules/participation/presentation/development-participation-link/development-participation-link.controller';
+import { GetDevelopmentParticipationLinkHandler } from '../src/modules/participation/application/query/handler/get-development-participation-link.handler';
 
 describe('AppModule', () => {
   it('registers vote statistics query endpoints and handlers', () => {
@@ -100,8 +102,18 @@ describe('AppModule', () => {
       expect.arrayContaining([
         ParticipationAccessController,
         ParticipationInvitationController,
+        DevelopmentParticipationLinkController,
       ]),
     );
+  });
+
+  it('registers the development participation link handler in tests', () => {
+    const providers = Reflect.getMetadata(
+      MODULE_METADATA.PROVIDERS,
+      AppModule,
+    ) as unknown[];
+
+    expect(providers).toContain(GetDevelopmentParticipationLinkHandler);
   });
 
   it('does not override the database health port owned by DatabaseModule', () => {

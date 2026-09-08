@@ -161,10 +161,20 @@ import { PARTICIPATION_ACCESS_TOKEN_PORT } from './modules/participation/applica
 import {
   createParticipationAccessTokenAdapter,
   resolveParticipationAllowedOrigins,
+  resolveParticipationUiUrl,
   type ParticipationAccessEnvironment,
 } from './modules/participation/infrastructure/security/participation-access-token.config';
 import { PARTICIPATION_ACCESS_RATE_LIMIT_PORT } from './modules/participation/application/port/security/participation-access-rate-limit.port';
 import { RedisParticipationAccessRateLimitAdapter } from './modules/participation/infrastructure/security/redis-participation-access-rate-limit.adapter';
+import { DevelopmentParticipationLinkController } from './modules/participation/presentation/development-participation-link/development-participation-link.controller';
+import { isDevelopmentParticipationLinkEnabled } from './modules/participation/presentation/development-participation-link/development-participation-link.config';
+import { GetDevelopmentParticipationLinkHandler } from './modules/participation/application/query/handler/get-development-participation-link.handler';
+import { DevelopmentParticipationLinkReadAdapter } from './modules/participation/infrastructure/database/repository/query/development-participation-link-read.adapter';
+import { DEVELOPMENT_PARTICIPATION_LINK_READ_PORT } from './modules/participation/application/port/persistence/query/development-participation-link-read.port';
+import { PARTICIPATION_UI_URL } from './modules/participation/application/port/gateway/participation-invitation-sms-sender.port';
+
+const developmentParticipationLinkEnabled =
+  isDevelopmentParticipationLinkEnabled(process.env.NODE_ENV);
 
 @Module({
   imports: [
@@ -206,6 +216,9 @@ import { RedisParticipationAccessRateLimitAdapter } from './modules/participatio
     BillingOrderCancellationController,
     ParticipationAccessController,
     ParticipationInvitationController,
+    ...(developmentParticipationLinkEnabled
+      ? [DevelopmentParticipationLinkController]
+      : []),
   ],
   providers: [
     DeleteElectoralRollHandler,
@@ -318,6 +331,22 @@ import { RedisParticipationAccessRateLimitAdapter } from './modules/participatio
     GetParticipationResultWithAccessHandler,
     GetParticipationAccessHandler,
     RevokeParticipationAccessSessionHandler,
+    ...(developmentParticipationLinkEnabled
+      ? [
+          GetDevelopmentParticipationLinkHandler,
+          DevelopmentParticipationLinkReadAdapter,
+          {
+            provide: DEVELOPMENT_PARTICIPATION_LINK_READ_PORT,
+            useExisting: DevelopmentParticipationLinkReadAdapter,
+          },
+          {
+            provide: PARTICIPATION_UI_URL,
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) =>
+              resolveParticipationUiUrl(participationAccessEnvironment(config)),
+          },
+        ]
+      : []),
     RedisParticipationAccessRateLimitAdapter,
     {
       provide: PARTICIPATION_ACCESS_RATE_LIMIT_PORT,
