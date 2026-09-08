@@ -142,6 +142,7 @@ import {
 } from './modules/participation/presentation/participation-access/participation-access.controller';
 import { ParticipationInvitationController } from './modules/participation/presentation/participation-invitation/participation-invitation.controller';
 import { DispatchParticipationInvitationsHandler } from './modules/participation/application/command/handler/dispatch-participation-invitations.handler';
+import { IssueParticipationReminderLinksHandler } from './modules/participation/application/command/handler/issue-participation-reminder-links.handler';
 import { ExchangeParticipationAccessHandler } from './modules/participation/application/command/handler/exchange-participation-access.handler';
 import { ResolveParticipationAccessSessionHandler } from './modules/participation/application/query/handler/resolve-participation-access-session.handler';
 import { ParticipantSignatureUploadHandler } from './modules/participation/application/command/handler/participant-signature-upload.handler';
@@ -172,6 +173,7 @@ import { GetDevelopmentParticipationLinkHandler } from './modules/participation/
 import { DevelopmentParticipationLinkReadAdapter } from './modules/participation/infrastructure/database/repository/query/development-participation-link-read.adapter';
 import { DEVELOPMENT_PARTICIPATION_LINK_READ_PORT } from './modules/participation/application/port/persistence/query/development-participation-link-read.port';
 import { PARTICIPATION_UI_URL } from './modules/participation/application/port/gateway/participation-invitation-sms-sender.port';
+import { PARTICIPATION_REMINDER_LINK_ISSUER_PORT } from './shared/application/port/capability/participation-reminder-link-issuer.port';
 
 const developmentParticipationLinkEnabled =
   isDevelopmentParticipationLinkEnabled(process.env.NODE_ENV);
@@ -331,6 +333,11 @@ const developmentParticipationLinkEnabled =
     GetParticipationResultWithAccessHandler,
     GetParticipationAccessHandler,
     RevokeParticipationAccessSessionHandler,
+    IssueParticipationReminderLinksHandler,
+    {
+      provide: PARTICIPATION_REMINDER_LINK_ISSUER_PORT,
+      useExisting: IssueParticipationReminderLinksHandler,
+    },
     ...(developmentParticipationLinkEnabled
       ? [
           GetDevelopmentParticipationLinkHandler,
@@ -338,12 +345,6 @@ const developmentParticipationLinkEnabled =
           {
             provide: DEVELOPMENT_PARTICIPATION_LINK_READ_PORT,
             useExisting: DevelopmentParticipationLinkReadAdapter,
-          },
-          {
-            provide: PARTICIPATION_UI_URL,
-            inject: [ConfigService],
-            useFactory: (config: ConfigService) =>
-              resolveParticipationUiUrl(participationAccessEnvironment(config)),
           },
         ]
       : []),
@@ -392,6 +393,12 @@ const developmentParticipationLinkEnabled =
         createParticipationAccessTokenAdapter(
           participationAccessEnvironment(config),
         ),
+    },
+    {
+      provide: PARTICIPATION_UI_URL,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        resolveParticipationUiUrl(participationAccessEnvironment(config)),
     },
     {
       provide: PARTICIPATION_ALLOWED_ORIGINS,

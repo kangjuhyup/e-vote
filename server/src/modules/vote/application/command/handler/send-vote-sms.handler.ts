@@ -22,8 +22,19 @@ import {
 import { DomainError } from '../../../../../shared/domain/domain-error';
 import { SmsMessagePurpose } from '../../../../../shared/domain/voting/type/sms-message-purpose.type';
 import { VoteSmsPolicy } from '../../../../../shared/domain/voting/vote-sms.policy';
+import {
+  PARTICIPATION_REMINDER_LINK_ISSUER_PORT,
+  type ParticipationReminderLinkIssuerPort,
+} from '../../../../../shared/application/port/capability/participation-reminder-link-issuer.port';
 import { SendVoteSmsCommand } from '../dto/request/send-vote-sms.command';
 import { SendVoteSmsResult } from '../dto/response/send-vote-sms-result.dto';
+
+export class VoteSmsAccessDeniedError extends Error {
+  constructor() {
+    super('only the vote creator can send vote SMS messages');
+    this.name = 'VoteSmsAccessDeniedError';
+  }
+}
 
 @Injectable()
 export class SendVoteSmsHandler {
@@ -34,6 +45,8 @@ export class SendVoteSmsHandler {
     private readonly voteUsageEntitlement: VoteUsageEntitlementAccessPort,
     @Inject(SMS_DISPATCH_REPOSITORY_PORT)
     private readonly smsDispatchRepository: SmsDispatchRepositoryPort,
+    @Inject(PARTICIPATION_REMINDER_LINK_ISSUER_PORT)
+    private readonly participationReminderLinks: ParticipationReminderLinkIssuerPort,
     @Optional()
     @Inject(SMS_SENDER_PORT)
     private readonly smsSender?: SmsSenderPort,
@@ -42,8 +55,22 @@ export class SendVoteSmsHandler {
   async execute(command: SendVoteSmsCommand): Promise<SendVoteSmsResult> {
     const vote = await this.voteRepository.findById(command.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
+    if (
+      command.purpose === SmsMessagePurpose.VoteParticipationReminder &&
+      !vote.isCreatedBy(command.requestedByUserPrincipalId)
+    ) {
+      throw new VoteSmsAccessDeniedError();
+    }
 
     VoteSmsPolicy.assertVoteMessageAllowed(vote, command.purpose);
+    if (
+      command.purpose === SmsMessagePurpose.VoteParticipationReminder &&
+      vote.identityVerificationPolicy.required
+    ) {
+      throw new DomainError(
+        'participation reminders require optional identity verification',
+      );
+    }
     if (
       command.purpose === SmsMessagePurpose.UpcomingVoteNotice &&
       !(await this.voteUsageEntitlement.hasPaidOrder(vote.id))
@@ -70,12 +97,24 @@ export class SendVoteSmsHandler {
     });
   }
 
-  private send(command: SendVoteSmsCommand, smsSender: SmsSenderPort) {
+  private async send(
+    command: SendVoteSmsCommand,
+    smsSender: SmsSenderPort,
+  ): Promise<SmsSendResult> {
     const request = { voteId: command.voteId, message: command.message };
 
     switch (command.purpose) {
-      case SmsMessagePurpose.VoteParticipationReminder:
-        return smsSender.sendParticipationReminderToNonParticipants(request);
+      case SmsMessagePurpose.VoteParticipationReminder: {
+        const recipients =
+          await this.participationReminderLinks.issueForNonParticipants({
+            voteId: command.voteId,
+            issuedByUserPrincipalId: command.requestedByUserPrincipalId,
+          });
+        return smsSender.sendParticipationReminderToNonParticipants({
+          ...request,
+          recipients,
+        });
+      }
       case SmsMessagePurpose.VoteResultNotice:
         return smsSender.sendResultNotice(request);
       case SmsMessagePurpose.UpcomingVoteNotice:

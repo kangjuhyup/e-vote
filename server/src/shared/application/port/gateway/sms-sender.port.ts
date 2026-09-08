@@ -19,13 +19,22 @@ export interface VoteSmsSendRequest {
   readonly message: string;
 }
 
+export interface ParticipationReminderSmsRecipient {
+  readonly electorId: string;
+  readonly participationUrl: string;
+}
+
+export interface ParticipationReminderSmsSendRequest extends VoteSmsSendRequest {
+  readonly recipients: readonly ParticipationReminderSmsRecipient[];
+}
+
 export interface FieldVotingSessionSmsSendRequest extends VoteSmsSendRequest {
   readonly fieldVotingSessionId: string;
 }
 
 export interface SmsSenderPort {
   sendParticipationReminderToNonParticipants(
-    request: VoteSmsSendRequest,
+    request: ParticipationReminderSmsSendRequest,
   ): Promise<SmsSendResult>;
   sendResultNotice(request: VoteSmsSendRequest): Promise<SmsSendResult>;
   sendUpcomingVoteNotice(request: VoteSmsSendRequest): Promise<SmsSendResult>;

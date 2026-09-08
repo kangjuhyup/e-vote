@@ -1,11 +1,15 @@
 import { SendVoteSmsCommand } from '../../../../src/modules/vote/application/command/dto/request/send-vote-sms.command';
-import { SendVoteSmsHandler } from '../../../../src/modules/vote/application/command/handler/send-vote-sms.handler';
+import {
+  SendVoteSmsHandler,
+  VoteSmsAccessDeniedError,
+} from '../../../../src/modules/vote/application/command/handler/send-vote-sms.handler';
 import { SendFieldVotingSessionSmsCommand } from '../../../../src/modules/field-voting/application/command/dto/request/send-field-voting-session-sms.command';
 import { SendFieldVotingSessionSmsHandler } from '../../../../src/modules/field-voting/application/command/handler/send-field-voting-session-sms.handler';
 import type { SmsSenderPort } from '../../../../src/shared/application/port/gateway/sms-sender.port';
 import type { SmsDispatchRepositoryPort } from '../../../../src/shared/application/port/persistence/sms-dispatch-repository.port';
 import type { VoteAccessPort } from '../../../../src/shared/application/port/capability/vote-access.port';
 import type { VoteUsageEntitlementAccessPort } from '../../../../src/shared/application/port/capability/vote-billing.port';
+import type { ParticipationReminderLinkIssuerPort } from '../../../../src/shared/application/port/capability/participation-reminder-link-issuer.port';
 import type { FieldVotingSessionAccessPort } from '../../../../src/shared/application/port/capability/field-voting-access.port';
 import { SmsSenderNotConfiguredError } from '../../../../src/shared/application/error/sms-sender.error';
 import { ManagedResourceNotFoundError } from '../../../../src/shared/application/error/managed-resource.error';
@@ -53,19 +57,35 @@ describe('SMS command handlers', () => {
         createVoteAccess(createVote(testCase.status)),
         createEntitlementAccess(),
         smsDispatchRepository,
+        createParticipationReminderLinkIssuer(),
         smsSender,
       );
 
       const result = await handler.execute(
         SendVoteSmsCommand.of({
           voteId: 'vote-1',
+          requestedByUserPrincipalId: 'creator-1',
           purpose: testCase.purpose,
           message: '  안내 문자  ',
         }),
       );
 
       expect(smsSender[testCase.method].mock.calls).toEqual([
-        [{ voteId: 'vote-1', message: '안내 문자' }],
+        [
+          testCase.purpose === SmsMessagePurpose.VoteParticipationReminder
+            ? {
+                voteId: 'vote-1',
+                message: '안내 문자',
+                recipients: [
+                  {
+                    electorId: 'elector-1',
+                    participationUrl:
+                      'https://participate.test/#access_token=secret-token',
+                  },
+                ],
+              }
+            : { voteId: 'vote-1', message: '안내 문자' },
+        ],
       ]);
       expect(result).toMatchObject({
         purpose: testCase.purpose,
@@ -93,6 +113,7 @@ describe('SMS command handlers', () => {
       createVoteAccess(createVote(VoteStatus.Draft)),
       createEntitlementAccess(),
       createSmsDispatchRepository(),
+      createParticipationReminderLinkIssuer(),
       smsSender,
     );
 
@@ -100,11 +121,88 @@ describe('SMS command handlers', () => {
       handler.execute(
         SendVoteSmsCommand.of({
           voteId: 'vote-1',
+          requestedByUserPrincipalId: 'creator-1',
           purpose: SmsMessagePurpose.VoteParticipationReminder,
           message: '참여해 주세요',
         }),
       ),
     ).rejects.toBeInstanceOf(DomainError);
+    expectSmsSenderNotCalled(smsSender);
+  });
+
+  it('rejects non-creators before rotating participation links', async () => {
+    const links = createParticipationReminderLinkIssuer();
+    const smsSender = createSmsSender();
+    const handler = new SendVoteSmsHandler(
+      createVoteAccess(createVote(VoteStatus.Open)),
+      createEntitlementAccess(),
+      createSmsDispatchRepository(),
+      links,
+      smsSender,
+    );
+
+    await expect(
+      handler.execute(
+        SendVoteSmsCommand.of({
+          voteId: 'vote-1',
+          requestedByUserPrincipalId: 'another-user',
+          purpose: SmsMessagePurpose.VoteParticipationReminder,
+          message: '참여 안내',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(VoteSmsAccessDeniedError);
+    expect(links.issueForNonParticipants.mock.calls).toHaveLength(0);
+    expectSmsSenderNotCalled(smsSender);
+  });
+
+  it('does not issue invitation links or add ownership rules for other SMS purposes', async () => {
+    const links = createParticipationReminderLinkIssuer();
+    const handler = new SendVoteSmsHandler(
+      createVoteAccess(createVote(VoteStatus.Closed)),
+      createEntitlementAccess(),
+      createSmsDispatchRepository(),
+      links,
+      createSmsSender(),
+    );
+
+    await handler.execute(
+      SendVoteSmsCommand.of({
+        voteId: 'vote-1',
+        requestedByUserPrincipalId: 'another-user',
+        purpose: SmsMessagePurpose.VoteResultNotice,
+        message: '결과 안내',
+      }),
+    );
+
+    expect(links.issueForNonParticipants.mock.calls).toHaveLength(0);
+  });
+
+  it('rejects invitation reminders when identity verification is required', async () => {
+    const links = createParticipationReminderLinkIssuer();
+    const smsSender = createSmsSender();
+    const handler = new SendVoteSmsHandler(
+      createVoteAccess(
+        createVote(VoteStatus.Open, [VotingChannel.Online], true),
+      ),
+      createEntitlementAccess(),
+      createSmsDispatchRepository(),
+      links,
+      smsSender,
+    );
+
+    await expect(
+      handler.execute(
+        SendVoteSmsCommand.of({
+          voteId: 'vote-1',
+          requestedByUserPrincipalId: 'creator-1',
+          purpose: SmsMessagePurpose.VoteParticipationReminder,
+          message: '참여 안내',
+        }),
+      ),
+    ).rejects.toThrow(
+      'participation reminders require optional identity verification',
+    );
+    expect(links.issueForNonParticipants.mock.calls).toHaveLength(0);
     expectSmsSenderNotCalled(smsSender);
   });
 
@@ -114,10 +212,12 @@ describe('SMS command handlers', () => {
         createVoteAccess(undefined),
         createEntitlementAccess(),
         createSmsDispatchRepository(),
+        createParticipationReminderLinkIssuer(),
         createSmsSender(),
       ).execute(
         SendVoteSmsCommand.of({
           voteId: 'missing',
+          requestedByUserPrincipalId: 'creator-1',
           purpose: SmsMessagePurpose.UpcomingVoteNotice,
           message: '예정 안내',
         }),
@@ -126,6 +226,7 @@ describe('SMS command handlers', () => {
     expect(() =>
       SendVoteSmsCommand.of({
         voteId: 'vote-1',
+        requestedByUserPrincipalId: 'creator-1',
         purpose: SmsMessagePurpose.UpcomingVoteNotice,
         message: '   ',
       }),
@@ -135,9 +236,11 @@ describe('SMS command handlers', () => {
         createVoteAccess(createVote(VoteStatus.Finalized)),
         createEntitlementAccess(),
         createSmsDispatchRepository(),
+        createParticipationReminderLinkIssuer(),
       ).execute(
         SendVoteSmsCommand.of({
           voteId: 'vote-1',
+          requestedByUserPrincipalId: 'creator-1',
           purpose: SmsMessagePurpose.UpcomingVoteNotice,
           message: '예정 안내',
         }),
@@ -152,6 +255,7 @@ describe('SMS command handlers', () => {
       createVoteAccess(createVote(VoteStatus.Finalized)),
       entitlement,
       createSmsDispatchRepository(),
+      createParticipationReminderLinkIssuer(),
       smsSender,
     );
 
@@ -159,6 +263,7 @@ describe('SMS command handlers', () => {
       handler.execute(
         SendVoteSmsCommand.of({
           voteId: 'vote-1',
+          requestedByUserPrincipalId: 'creator-1',
           purpose: SmsMessagePurpose.UpcomingVoteNotice,
           message: '예정 안내',
         }),
@@ -319,6 +424,17 @@ function createEntitlementAccess(
   };
 }
 
+function createParticipationReminderLinkIssuer(): jest.Mocked<ParticipationReminderLinkIssuerPort> {
+  return {
+    issueForNonParticipants: jest.fn().mockResolvedValue([
+      {
+        electorId: 'elector-1',
+        participationUrl: 'https://participate.test/#access_token=secret-token',
+      },
+    ]),
+  };
+}
+
 function createFieldSessionAccess(
   session: FieldVotingSessionReference | undefined,
 ): FieldVotingSessionAccessPort {
@@ -328,6 +444,7 @@ function createFieldSessionAccess(
 function createVote(
   status: VoteStatus,
   votingChannels: readonly VotingChannel[] = [VotingChannel.Online],
+  identityVerificationRequired = false,
 ): VoteReference {
   return {
     id: 'vote-1',
@@ -339,9 +456,11 @@ function createVote(
       resultStorageMode: ResultStorageMode.Database,
       voteWeightMode: VoteWeightMode.Equal,
     }),
-    identityVerificationPolicy: { required: false },
+    identityVerificationPolicy: identityVerificationRequired
+      ? { required: true, provider: 'PASS', method: 'MOBILE' }
+      : { required: false },
     allowsVotingChannel: (channel) => votingChannels.includes(channel),
-    isCreatedBy: () => false,
+    isCreatedBy: (userPrincipalId) => userPrincipalId === 'creator-1',
     hasElectoralRollSnapshot: () => false,
     usesElectoralRollSnapshot: () => false,
     assertElectorsMutable: () => undefined,

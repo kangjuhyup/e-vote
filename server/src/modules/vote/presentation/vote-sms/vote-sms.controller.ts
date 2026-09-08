@@ -1,15 +1,26 @@
 import { UserPrincipal } from '../../../../shared/application/security/user-principal';
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { throwMappedSmsSenderError } from '../../../../shared/presentation/common/mapper/sms-sender-error.mapper';
-import { Body, Controller, HttpCode, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  HttpCode,
+  Param,
+  Post,
+} from '@nestjs/common';
 import {
   ApiAcceptedResponse,
   ApiBody,
+  ApiForbiddenResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { SendVoteSmsCommand } from '../../application/command/dto/request/send-vote-sms.command';
-import { SendVoteSmsHandler } from '../../application/command/handler/send-vote-sms.handler';
+import {
+  SendVoteSmsHandler,
+  VoteSmsAccessDeniedError,
+} from '../../application/command/handler/send-vote-sms.handler';
 import {
   SmsMessagePurpose,
   type VoteSmsMessagePurpose,
@@ -28,12 +39,16 @@ export class VoteSmsController {
   @ApiOperation({ summary: '미투표자 투표 참여 독려 문자 발송' })
   @ApiBody({ type: SendVoteSmsBody })
   @ApiAcceptedResponse({ type: SendVoteSmsResponse })
+  @ApiForbiddenResponse({
+    description: '현재 사용자가 투표 생성자가 아닙니다.',
+  })
   sendParticipationReminder(
     @User() user: UserPrincipal,
     @Param() params: VoteParam,
     @Body() body: SendVoteSmsBody,
   ): Promise<SendVoteSmsResponse> {
     return this.send(
+      user.id,
       params.voteId,
       SmsMessagePurpose.VoteParticipationReminder,
       body.message,
@@ -51,6 +66,7 @@ export class VoteSmsController {
     @Body() body: SendVoteSmsBody,
   ): Promise<SendVoteSmsResponse> {
     return this.send(
+      user.id,
       params.voteId,
       SmsMessagePurpose.VoteResultNotice,
       body.message,
@@ -68,6 +84,7 @@ export class VoteSmsController {
     @Body() body: SendVoteSmsBody,
   ): Promise<SendVoteSmsResponse> {
     return this.send(
+      user.id,
       params.voteId,
       SmsMessagePurpose.UpcomingVoteNotice,
       body.message,
@@ -75,6 +92,7 @@ export class VoteSmsController {
   }
 
   private async send(
+    requestedByUserPrincipalId: string,
     voteId: string,
     purpose: VoteSmsMessagePurpose,
     message: string,
@@ -82,10 +100,18 @@ export class VoteSmsController {
     try {
       return SendVoteSmsResponse.of(
         await this.sendVoteSmsHandler.execute(
-          SendVoteSmsCommand.of({ voteId, purpose, message }),
+          SendVoteSmsCommand.of({
+            voteId,
+            requestedByUserPrincipalId,
+            purpose,
+            message,
+          }),
         ),
       );
     } catch (error) {
+      if (error instanceof VoteSmsAccessDeniedError) {
+        throw new ForbiddenException(error.message);
+      }
       throwMappedSmsSenderError(error);
     }
   }

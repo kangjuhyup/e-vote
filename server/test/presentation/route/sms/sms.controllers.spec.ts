@@ -1,7 +1,14 @@
 import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
-import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { SendVoteSmsCommand } from '../../../../src/modules/vote/application/command/dto/request/send-vote-sms.command';
-import { SendVoteSmsHandler } from '../../../../src/modules/vote/application/command/handler/send-vote-sms.handler';
+import {
+  SendVoteSmsHandler,
+  VoteSmsAccessDeniedError,
+} from '../../../../src/modules/vote/application/command/handler/send-vote-sms.handler';
 import { VoteSmsController } from '../../../../src/modules/vote/presentation/vote-sms/vote-sms.controller';
 import { SendFieldVotingSessionSmsCommand } from '../../../../src/modules/field-voting/application/command/dto/request/send-field-voting-session-sms.command';
 import { SendFieldVotingSessionSmsHandler } from '../../../../src/modules/field-voting/application/command/handler/send-field-voting-session-sms.handler';
@@ -85,6 +92,7 @@ describe('SMS controllers', () => {
     expect(sendVoteExecute).toHaveBeenCalledWith(
       expect.objectContaining({
         voteId: 'vote-1',
+        requestedByUserPrincipalId: TEST_USER_PRINCIPAL.id,
         purpose: testCase.purpose,
       }),
     );
@@ -144,6 +152,18 @@ describe('SMS controllers', () => {
         { message: '예정 안내' },
       ),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('maps a non-owner SMS request to HTTP 403', async () => {
+    sendVoteExecute.mockRejectedValue(new VoteSmsAccessDeniedError());
+
+    await expect(
+      voteController.sendParticipationReminder(
+        TEST_USER_PRINCIPAL,
+        { voteId: 'vote-1' },
+        { message: '참여 안내' },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('maps summary and recipient detail query results', async () => {

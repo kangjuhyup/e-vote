@@ -6,6 +6,7 @@ import {
 } from '../../application/port/capability/sms-recipient-access.port';
 import type {
   FieldVotingSessionSmsSendRequest,
+  ParticipationReminderSmsSendRequest,
   SmsRecipientDeliveryResult,
   SmsSenderPort,
   SmsSendResult,
@@ -26,9 +27,19 @@ export class RandomSmsSenderAdapter implements SmsSenderPort {
   ) {}
 
   sendParticipationReminderToNonParticipants(
-    request: VoteSmsSendRequest,
+    request: ParticipationReminderSmsSendRequest,
   ): Promise<SmsSendResult> {
-    return this.send(request.voteId, (recipient) => !recipient.participated);
+    const participationUrls = new Map(
+      request.recipients.map((recipient) => [
+        recipient.electorId,
+        recipient.participationUrl,
+      ]),
+    );
+    return this.send(
+      request.voteId,
+      (recipient) =>
+        !recipient.participated && participationUrls.has(recipient.electorId),
+    );
   }
 
   sendResultNotice(request: VoteSmsSendRequest): Promise<SmsSendResult> {

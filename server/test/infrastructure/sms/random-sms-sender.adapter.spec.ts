@@ -20,6 +20,7 @@ describe('RandomSmsSenderAdapter', () => {
       createRecipient('elector-1'),
       createRecipient('elector-2', { participated: true }),
       createRecipient('elector-3', { status: ElectorStatus.Blocked }),
+      createRecipient('elector-without-link'),
     ]);
     jest.spyOn(Math, 'random').mockReturnValue(0.1);
 
@@ -28,6 +29,18 @@ describe('RandomSmsSenderAdapter', () => {
     ).sendParticipationReminderToNonParticipants({
       voteId: 'vote-1',
       message: '투표해 주세요',
+      recipients: [
+        {
+          electorId: 'elector-1',
+          participationUrl:
+            'https://vote.example.test/participate#access_token=one',
+        },
+        {
+          electorId: 'elector-2',
+          participationUrl:
+            'https://vote.example.test/participate#access_token=two',
+        },
+      ],
     });
 
     expect(result.deliveries).toEqual([
@@ -38,6 +51,7 @@ describe('RandomSmsSenderAdapter', () => {
         status: SmsDeliveryStatus.Success,
       },
     ]);
+    expect(JSON.stringify(result)).not.toContain('access_token');
   });
 
   it.each([
