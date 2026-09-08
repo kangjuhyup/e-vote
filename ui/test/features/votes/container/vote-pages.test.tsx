@@ -640,6 +640,18 @@ describe('vote containers', () => {
     expect(screen.getByRole('group', { name: '참여 단위' })).toBeTruthy();
     expect(screen.getByRole('group', { name: '가중치 방식' })).toBeTruthy();
     expect(screen.getByRole('group', { name: '결과 저장' })).toBeTruthy();
+    expect(
+      screen.getByRole('combobox', { name: '인증 제공자' }),
+    ).toHaveProperty('disabled', true);
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /본인인증 필수/ }),
+    );
+    expect(
+      screen.getByRole('combobox', { name: '인증 제공자' }),
+    ).toHaveProperty('value', 'PASS');
+    expect(
+      screen.getByRole('combobox', { name: '인증 방식' }),
+    ).toHaveProperty('value', 'MOBILE');
     expect(screen.queryByLabelText('선거인명부 ID')).toBeNull();
     expect(screen.queryByLabelText('투표 운영 위원회')).toBeNull();
     expect(screen.queryByRole('button', { name: '위원회 등록' })).toBeNull();

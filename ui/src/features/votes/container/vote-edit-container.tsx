@@ -34,6 +34,7 @@ import {
   isVoteSetupEditable,
 } from "@/features/votes/lib/vote-finalization";
 import { resolveVoteSchedule } from "@/features/votes/lib/vote-schedule";
+import { readIdentityVerificationPolicy } from "@/features/votes/lib/identity-verification-policy";
 
 import { VoteCommissionSetup } from "../ui/vote-commission-setup";
 import { AttachmentUploadSection } from "../ui/attachment-upload-section";
@@ -199,11 +200,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
         ) as ResultStorageMode,
         voteWeightMode: String(data.get("voteWeightMode")) as VoteWeightMode,
       },
-      identityVerificationPolicy: {
-        required: data.get("identityRequired") === "on",
-        provider: vote?.identityVerificationPolicy?.provider,
-        method: vote?.identityVerificationPolicy?.method,
-      },
+      identityVerificationPolicy: readIdentityVerificationPolicy(data),
     });
   }
 

@@ -1,8 +1,23 @@
-import type { VotingChannel } from '@/features/votes/model/vote-operations.types';
+'use client';
+
+import { useState } from 'react';
+
+import { Select } from '@/components/ui/select';
+import {
+  DEFAULT_IDENTITY_VERIFICATION_METHOD,
+  DEFAULT_IDENTITY_VERIFICATION_PROVIDER,
+} from '@/features/votes/lib/identity-verification-policy';
+import type {
+  IdentityVerificationMethod,
+  IdentityVerificationProvider,
+  VotingChannel,
+} from '@/features/votes/model/vote-operations.types';
 
 interface VoteAccessFieldsProps {
   className?: string;
   defaultIdentityRequired?: boolean;
+  defaultIdentityMethod?: string;
+  defaultIdentityProvider?: string;
   defaultVotingChannels?: VotingChannel[];
   disabled?: boolean;
 }
@@ -13,12 +28,41 @@ const channelOptions: Array<{ label: string; value: VotingChannel }> = [
   { label: '방문', value: 'VISIT' },
 ];
 
+const providerOptions: Array<{
+  label: string;
+  value: IdentityVerificationProvider;
+}> = [
+  { label: 'PASS', value: 'PASS' },
+  { label: '카카오 인증서', value: 'KAKAO_CERT' },
+  { label: '네이버 인증서', value: 'NAVER_CERT' },
+  { label: '토스 인증서', value: 'TOSS_CERT' },
+  { label: '문자 인증', value: 'SMS' },
+  { label: '기타', value: 'ETC' },
+];
+
+const methodOptions: Array<{
+  label: string;
+  value: IdentityVerificationMethod;
+}> = [
+  { label: '휴대전화', value: 'MOBILE' },
+  { label: '인증서', value: 'CERTIFICATE' },
+  { label: '문자', value: 'SMS' },
+  { label: '이메일', value: 'EMAIL' },
+  { label: '관리자 확인', value: 'ADMIN' },
+];
+
 export function VoteAccessFields({
   className,
+  defaultIdentityMethod = DEFAULT_IDENTITY_VERIFICATION_METHOD,
+  defaultIdentityProvider = DEFAULT_IDENTITY_VERIFICATION_PROVIDER,
   defaultIdentityRequired = false,
   defaultVotingChannels = ['ONLINE'],
   disabled = false,
 }: VoteAccessFieldsProps) {
+  const [identityRequired, setIdentityRequired] = useState(
+    defaultIdentityRequired,
+  );
+
   return (
     <div className={`grid gap-3 ${className ?? ''}`}>
       <fieldset
@@ -60,7 +104,8 @@ export function VoteAccessFields({
           <input
             type="checkbox"
             name="identityRequired"
-            defaultChecked={defaultIdentityRequired}
+            checked={identityRequired}
+            onChange={(event) => setIdentityRequired(event.currentTarget.checked)}
             className="mt-0.5 size-5 shrink-0 accent-[var(--primary)]"
           />
           <span className="min-w-0">
@@ -70,6 +115,38 @@ export function VoteAccessFields({
             </span>
           </span>
         </label>
+        <div className="mt-3 grid gap-3 border-t pt-3 sm:col-start-2 sm:grid-cols-2">
+          <label className="grid gap-2 text-sm font-medium">
+            인증 제공자
+            <Select
+              name="identityProvider"
+              defaultValue={defaultIdentityProvider}
+              disabled={disabled || !identityRequired}
+              required={identityRequired}
+            >
+              {providerOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            인증 방식
+            <Select
+              name="identityMethod"
+              defaultValue={defaultIdentityMethod}
+              disabled={disabled || !identityRequired}
+              required={identityRequired}
+            >
+              {methodOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </label>
+        </div>
       </fieldset>
     </div>
   );

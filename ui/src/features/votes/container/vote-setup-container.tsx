@@ -18,6 +18,7 @@ import { commissionManagementQueryOptions } from '@/features/votes/api/vote-oper
 import { isVoteApiMockMode } from '@/features/votes/api/votes-api';
 import { voteDetailQueryOptions } from '@/features/votes/api/votes-query-options';
 import { resolveVoteSchedule } from '@/features/votes/lib/vote-schedule';
+import { readIdentityVerificationPolicy } from '@/features/votes/lib/identity-verification-policy';
 import type {
   CreateVoteInput,
   CreateVoteResult,
@@ -218,9 +219,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
         ) as ResultStorageMode,
         voteWeightMode: String(data.get('voteWeightMode')) as VoteWeightMode,
       },
-      identityVerificationPolicy: {
-        required: data.get('identityRequired') === 'on',
-      },
+      identityVerificationPolicy: readIdentityVerificationPolicy(data),
     });
     setMessage('기본 정책을 저장했습니다.');
     setStep('ballot');

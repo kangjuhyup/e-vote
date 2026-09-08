@@ -71,6 +71,8 @@ export function VoteSettingsForm({
           />
           <VoteAccessFields
             className="sm:col-span-2"
+            defaultIdentityMethod={vote.identityVerificationPolicy?.method}
+            defaultIdentityProvider={vote.identityVerificationPolicy?.provider}
             defaultIdentityRequired={vote.identityVerificationPolicy?.required}
             defaultVotingChannels={votingChannels}
             disabled={disabled}

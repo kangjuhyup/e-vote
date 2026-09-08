@@ -19,6 +19,26 @@ export type PrivacyMode = 'SECRET' | 'PUBLIC';
 export type ParticipationUnit = 'INDIVIDUAL' | 'GROUP';
 export type ResultStorageMode = 'DATABASE' | 'BLOCKCHAIN';
 export type VoteWeightMode = 'EQUAL' | 'SHARE';
+export type IdentityVerificationProvider =
+  | 'PASS'
+  | 'KAKAO_CERT'
+  | 'NAVER_CERT'
+  | 'TOSS_CERT'
+  | 'SMS'
+  | 'ETC';
+export type IdentityVerificationMethod =
+  | 'MOBILE'
+  | 'CERTIFICATE'
+  | 'SMS'
+  | 'EMAIL'
+  | 'ADMIN';
+export type IdentityVerificationPolicy =
+  | { required: false; method?: never; provider?: never }
+  | {
+      required: true;
+      method: IdentityVerificationMethod;
+      provider: IdentityVerificationProvider;
+    };
 
 export interface VotePolicyRecord {
   privacyMode: PrivacyMode;
@@ -162,11 +182,7 @@ export interface CreateVoteInput {
   commissionId: string;
   defaultPolicy: VotePolicyRecord;
   endedAt: string;
-  identityVerificationPolicy: {
-    method?: string;
-    provider?: string;
-    required: boolean;
-  };
+  identityVerificationPolicy: IdentityVerificationPolicy;
   electoralRollId: string;
   startedAt: string;
   title: string;
