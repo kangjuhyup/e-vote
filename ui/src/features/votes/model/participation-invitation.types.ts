@@ -7,6 +7,11 @@ export interface ReissueParticipationInvitationInput {
   voteId: string;
 }
 
+export interface ParticipationInvitationDevelopmentLink {
+  electorId: string;
+  participationUrl: string;
+}
+
 export interface ParticipationInvitationDispatchResult {
   queuedCount: number;
   skippedCount: number;

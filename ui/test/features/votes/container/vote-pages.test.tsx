@@ -730,7 +730,7 @@ describe('vote containers', () => {
     }
   });
 
-  it('queues bulk invitations and reissues an elector link without exposing a raw link', async () => {
+  it('shows a development link and reissues an elector invitation', async () => {
     renderWithQueryClient(
       <ElectorManagementContainer voteId="active-general" />,
     );
@@ -749,12 +749,27 @@ describe('vote containers', () => {
       screen.getByRole('heading', { name: '참여 링크 재발급' }),
     ).toBeTruthy();
     expect(screen.getByText(/기존 참여 링크를 폐기/)).toBeTruthy();
+    const developmentLink = await screen.findByRole('textbox', {
+      name: '개발용 참여 링크',
+    });
+    expect(developmentLink).toHaveProperty(
+      'value',
+      expect.stringContaining('/participate#access_token='),
+    );
+    expect(screen.getByRole('link', { name: '링크 열기' })).toHaveProperty(
+      'href',
+      expect.stringContaining('/participate#access_token='),
+    );
 
     fireEvent.click(screen.getByRole('button', { name: '새 링크 문자 발송' }));
 
     expect(await screen.findByText(/이전 링크는 폐기/)).toBeTruthy();
-    expect(screen.getByRole('dialog').querySelector('input')).toBeNull();
-    expect(document.body.textContent).not.toContain('/participate?');
+    expect(
+      await screen.findByRole('textbox', { name: '개발용 참여 링크' }),
+    ).toHaveProperty(
+      'value',
+      expect.stringContaining('/participate#access_token='),
+    );
   });
 
   it('disables manual elector registration for electoral-roll-managed votes', async () => {

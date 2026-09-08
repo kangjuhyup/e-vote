@@ -30,4 +30,21 @@ describe('participation invitation API', () => {
       expect.objectContaining({ body: undefined, method: 'POST' }),
     );
   });
+
+  it('loads the development-only participation link without caching it', async () => {
+    const result = {
+      electorId: 'elector/id',
+      participationUrl: 'http://localhost:3001/participate#access_token=secret-reference',
+    };
+    const fetcher = vi.fn().mockResolvedValue(response(result));
+    const client = createParticipationInvitationApiClient({ baseUrl: '/api', fetcher, mode: 'live' });
+
+    await expect(
+      client.getDevelopmentLink({ voteId: 'vote/id', electorId: 'elector/id' }),
+    ).resolves.toEqual(result);
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/votes/vote%2Fid/electors/elector%2Fid/development-participation-link',
+      expect.objectContaining({ cache: 'no-store', method: 'GET' }),
+    );
+  });
 });

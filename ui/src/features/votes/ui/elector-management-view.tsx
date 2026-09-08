@@ -24,7 +24,10 @@ import type {
   ElectorRecord,
   PageResult,
 } from "@/features/votes/model/vote-operations.types";
-import type { ParticipationInvitationDispatchResult } from "@/features/votes/model/participation-invitation.types";
+import type {
+  ParticipationInvitationDevelopmentLink,
+  ParticipationInvitationDispatchResult,
+} from "@/features/votes/model/participation-invitation.types";
 
 import { ElectorDeletionDialog } from "./elector-deletion-dialog";
 import { ParticipationLinkDialog } from "./participation-link-dialog";
@@ -34,6 +37,8 @@ interface ElectorManagementViewProps {
   canDeleteElectors: boolean;
   deletingElector?: ElectorRecord;
   deletionError?: string;
+  developmentLink?: ParticipationInvitationDevelopmentLink;
+  developmentLinkError?: string;
   electoralRollSnapshotId?: string;
   isDeleting: boolean;
   isSubmitting: boolean;
@@ -42,6 +47,7 @@ interface ElectorManagementViewProps {
   invitationError?: string;
   isIssuingInvitation: boolean;
   isDispatchingInvitations: boolean;
+  isLoadingDevelopmentLink: boolean;
   dispatchError?: string;
   message?: string;
   onCancelDelete: () => void;
@@ -54,6 +60,7 @@ interface ElectorManagementViewProps {
   onPageChange: (page: number) => void;
   onRequestDelete: (elector: ElectorRecord) => void;
   page: PageResult<ElectorRecord>;
+  showDevelopmentLink: boolean;
 }
 
 export function ElectorManagementView({
@@ -61,6 +68,8 @@ export function ElectorManagementView({
   canDeleteElectors,
   deletingElector,
   deletionError,
+  developmentLink,
+  developmentLinkError,
   electoralRollSnapshotId,
   isDeleting,
   isSubmitting,
@@ -69,6 +78,7 @@ export function ElectorManagementView({
   invitationError,
   isIssuingInvitation,
   isDispatchingInvitations,
+  isLoadingDevelopmentLink,
   dispatchError,
   message,
   onCancelDelete,
@@ -81,6 +91,7 @@ export function ElectorManagementView({
   onPageChange,
   onRequestDelete,
   page,
+  showDevelopmentLink,
 }: ElectorManagementViewProps) {
   const isElectoralRollManaged = electoralRollSnapshotId !== undefined;
 
@@ -342,6 +353,10 @@ export function ElectorManagementView({
           elector={invitationElector}
           result={invitation}
           error={invitationError}
+          developmentLink={developmentLink}
+          developmentLinkError={developmentLinkError}
+          isLoadingDevelopmentLink={isLoadingDevelopmentLink}
+          showDevelopmentLink={showDevelopmentLink}
           isIssuing={isIssuingInvitation}
           onClose={onCloseInvitation}
           onIssue={onIssueInvitation}

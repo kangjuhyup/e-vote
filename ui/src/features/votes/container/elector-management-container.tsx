@@ -10,6 +10,7 @@ import { RetryErrorCard } from "@/components/feedback/retry-error-card";
 import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
+import { VoteApiError } from "@/shared/api/vote-api-error";
 import { voteOperationsApi } from "@/features/votes/api/vote-operations-api";
 import { participationInvitationApi } from "@/features/votes/api/participation-invitation-api";
 import { formatInvitationDispatchResult } from "@/features/votes/lib/participation-invitation";
@@ -18,7 +19,10 @@ import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
 import { voteDetailQueryOptions } from "@/features/votes/api/votes-query-options";
 import { isVoteSetupEditable } from "@/features/votes/lib/vote-finalization";
 
-import type { ParticipationInvitationDispatchResult } from "../model/participation-invitation.types";
+import type {
+  ParticipationInvitationDevelopmentLink,
+  ParticipationInvitationDispatchResult,
+} from "../model/participation-invitation.types";
 import type { ElectorRecord } from "../model/vote-operations.types";
 import { ElectorManagementView } from "../ui/elector-management-view";
 import { VoteNavigation } from "../ui/vote-navigation";
@@ -27,6 +31,9 @@ interface ElectorManagementContainerProps {
   account?: ReactNode;
   voteId: string;
 }
+
+const canShowDevelopmentParticipationLink =
+  process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test";
 
 export function ElectorManagementContainer({
   account,
@@ -37,6 +44,8 @@ export function ElectorManagementContainer({
   const [deletingElector, setDeletingElector] = useState<ElectorRecord>();
   const [invitationElector, setInvitationElector] = useState<ElectorRecord>();
   const [invitation, setInvitation] = useState<ParticipationInvitationDispatchResult>();
+  const [developmentLink, setDevelopmentLink] =
+    useState<ParticipationInvitationDevelopmentLink>();
   const queryClient = useQueryClient();
   const electorsQuery = useQuery(electorManagementQueryOptions(voteId, page));
   const voteQuery = useQuery(voteDetailQueryOptions(voteId));
@@ -60,9 +69,19 @@ export function ElectorManagementContainer({
       ]);
     },
   });
+  const developmentLinkMutation = useMutation({
+    mutationFn: participationInvitationApi.getDevelopmentLink,
+    onSuccess: setDevelopmentLink,
+  });
   const invitationMutation = useMutation({
     mutationFn: participationInvitationApi.reissue,
-    onSuccess: setInvitation,
+    onSuccess: (result, input) => {
+      setInvitation(result);
+      if (canShowDevelopmentParticipationLink) {
+        developmentLinkMutation.reset();
+        developmentLinkMutation.mutate(input);
+      }
+    },
   });
   const dispatchMutation = useMutation({
     mutationFn: participationInvitationApi.dispatch,
@@ -83,19 +102,28 @@ export function ElectorManagementContainer({
 
   function handleOpenInvitation(elector: ElectorRecord) {
     invitationMutation.reset();
+    developmentLinkMutation.reset();
     setInvitation(undefined);
+    setDevelopmentLink(undefined);
     setInvitationElector(elector);
+    if (canShowDevelopmentParticipationLink) {
+      developmentLinkMutation.mutate({ electorId: elector.id, voteId });
+    }
   }
 
   function handleCloseInvitation() {
-    if (invitationMutation.isPending) return;
+    if (invitationMutation.isPending || developmentLinkMutation.isPending) return;
     invitationMutation.reset();
+    developmentLinkMutation.reset();
     setInvitation(undefined);
+    setDevelopmentLink(undefined);
     setInvitationElector(undefined);
   }
 
   function handleIssueInvitation() {
     if (!invitationElector) return;
+    developmentLinkMutation.reset();
+    setDevelopmentLink(undefined);
     invitationMutation.mutate({
       electorId: invitationElector.id,
       voteId,
@@ -193,6 +221,17 @@ export function ElectorManagementContainer({
               ? invitationMutation.error.message
               : undefined
           }
+          developmentLink={developmentLink}
+          developmentLinkError={
+            developmentLinkMutation.error instanceof VoteApiError &&
+            developmentLinkMutation.error.status === 404
+              ? "아직 발급된 참여 링크가 없습니다. 새 링크를 발급해 주세요."
+              : developmentLinkMutation.error instanceof Error
+                ? developmentLinkMutation.error.message
+                : undefined
+          }
+          isLoadingDevelopmentLink={developmentLinkMutation.isPending}
+          showDevelopmentLink={canShowDevelopmentParticipationLink}
           isIssuingInvitation={invitationMutation.isPending}
           isDispatchingInvitations={dispatchMutation.isPending}
           isDeleting={deleteMutation.isPending}
