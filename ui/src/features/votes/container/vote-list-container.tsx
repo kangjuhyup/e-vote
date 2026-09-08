@@ -5,7 +5,7 @@ import { Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { RetryErrorCard } from "@/components/feedback/retry-error-card";
 import { SkeletonCardGrid } from "@/components/feedback/skeleton-card-grid";
@@ -31,6 +31,8 @@ interface VoteListContainerProps {
 
 export function VoteListContainer({ account }: VoteListContainerProps) {
   const queryClient = useQueryClient();
+  const refreshInFlight = useRef(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,7 +93,15 @@ export function VoteListContainer({ account }: VoteListContainerProps) {
   }
 
   async function handleRefresh() {
-    await queryClient.resetQueries({ queryKey: ["votes"] });
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
+    setIsRefreshing(true);
+    try {
+      await queryClient.resetQueries({ queryKey: ["votes"] });
+    } finally {
+      refreshInFlight.current = false;
+      setIsRefreshing(false);
+    }
   }
 
   return (
@@ -115,16 +125,20 @@ export function VoteListContainer({ account }: VoteListContainerProps) {
             type="button"
             variant="outline"
             onClick={() => void handleRefresh()}
-            disabled={votesQuery.isFetching}
+            disabled={isRefreshing || votesQuery.isFetching}
           >
             <RefreshCw
               className={
-                votesQuery.isFetching ? "motion-safe:animate-spin" : ""
+                isRefreshing || votesQuery.isFetching
+                  ? "motion-safe:animate-spin"
+                  : ""
               }
               aria-hidden="true"
             />
             <span aria-live="polite">
-              {votesQuery.isFetching ? "새로고침 중…" : "새로고침"}
+              {isRefreshing || votesQuery.isFetching
+                ? "새로고침 중…"
+                : "새로고침"}
             </span>
           </Button>
         </div>

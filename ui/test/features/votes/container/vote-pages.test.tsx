@@ -140,14 +140,33 @@ describe('vote containers', () => {
   });
 
   it('clears vote query state before refreshing the list', async () => {
-    const resetQueries = vi.spyOn(QueryClient.prototype, 'resetQueries');
+    let finishRefresh: (() => void) | undefined;
+    const resetQueries = vi
+      .spyOn(QueryClient.prototype, 'resetQueries')
+      .mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishRefresh = resolve;
+          }),
+      );
     renderWithQueryClient(<VoteListContainer />);
 
     expect(await screen.findByText('예산 승인 투표')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '새로고침' }));
 
+    expect(
+      screen.getByRole('button', { name: '새로고침 중…' }),
+    ).toHaveProperty('disabled', true);
+    fireEvent.click(screen.getByRole('button', { name: '새로고침 중…' }));
+    expect(resetQueries).toHaveBeenCalledTimes(1);
+    expect(resetQueries).toHaveBeenCalledWith({ queryKey: ['votes'] });
+
+    finishRefresh?.();
     await waitFor(() =>
-      expect(resetQueries).toHaveBeenCalledWith({ queryKey: ['votes'] }),
+      expect(screen.getByRole('button', { name: '새로고침' })).toHaveProperty(
+        'disabled',
+        false,
+      ),
     );
   });
 
