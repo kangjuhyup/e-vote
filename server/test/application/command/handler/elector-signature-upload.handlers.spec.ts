@@ -81,6 +81,12 @@ describe('elector signature upload handlers', () => {
     expect(result).toEqual({
       storageKey: 'signatures/opaque-key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: {
+        'Content-Type': 'image/png',
+        'x-amz-meta-purpose': 'elector-participation-signature',
+        'x-amz-meta-voteid': 'vote-1',
+        'x-amz-meta-electorid': 'elector-1',
+      },
       expiresAt: new Date('2026-09-06T03:05:00.000Z'),
     });
   });

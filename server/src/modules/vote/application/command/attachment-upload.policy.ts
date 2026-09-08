@@ -119,6 +119,21 @@ export function createAttachmentUploadMetadata(
   return metadata;
 }
 
+export function createAttachmentUploadHeaders(
+  mimeType: string,
+  metadata: Readonly<Record<string, string>>,
+): Record<string, string> {
+  return {
+    'Content-Type': mimeType,
+    ...Object.fromEntries(
+      Object.entries(metadata).map(([key, value]) => [
+        `x-amz-meta-${key.toLowerCase()}`,
+        value,
+      ]),
+    ),
+  };
+}
+
 export function attachmentUploadMetadataMatches(
   actual: Readonly<Record<string, string>> | undefined,
   target: AttachmentTarget,

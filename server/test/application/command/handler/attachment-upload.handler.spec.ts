@@ -61,6 +61,13 @@ describe('attachment upload handlers', () => {
     expect(result).toEqual({
       storageKey: 'attachments/generated-key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: {
+        'Content-Type': 'application/pdf',
+        'x-amz-meta-targettype': AttachmentTargetType.Vote,
+        'x-amz-meta-voteid': 'vote-1',
+        'x-amz-meta-attachmenttype': VoteAttachmentType.Notice,
+        'x-amz-meta-sortorder': '1',
+      },
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
     expect(storage.createPresignedPutObjectUrl.mock.calls[0][0]).toEqual({

@@ -22,6 +22,7 @@ export interface ElectorSignatureOperationPort {
   requestUpload(command: AuthorizedElectorSignatureUploadRequest): Promise<{
     readonly storageKey: string;
     readonly uploadUrl: string;
+    readonly uploadHeaders: Readonly<Record<string, string>>;
     readonly expiresAt: Date;
   }>;
   confirmUpload(

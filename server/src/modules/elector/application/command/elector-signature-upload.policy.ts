@@ -71,3 +71,30 @@ export function assertElectorSignatureStorageKey(storageKey: string): void {
     throw new EmptyElectorSignatureStorageKeyError();
   }
 }
+
+export function createElectorSignatureUploadMetadata(params: {
+  readonly voteId: string;
+  readonly electorId: string;
+  readonly purpose: string;
+}): Record<string, string> {
+  return {
+    purpose: params.purpose,
+    voteid: params.voteId,
+    electorid: params.electorId,
+  };
+}
+
+export function createElectorSignatureUploadHeaders(
+  mimeType: string,
+  metadata: Readonly<Record<string, string>>,
+): Record<string, string> {
+  return {
+    'Content-Type': normalizeElectorSignatureMimeType(mimeType),
+    ...Object.fromEntries(
+      Object.entries(metadata).map(([key, value]) => [
+        `x-amz-meta-${key.toLowerCase()}`,
+        value,
+      ]),
+    ),
+  };
+}

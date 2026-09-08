@@ -5,6 +5,7 @@ import { AttachmentTargetValidator } from '../attachment-target.validator';
 import {
   assertAttachmentType,
   assertAttachmentUploadMetadata,
+  createAttachmentUploadHeaders,
   createAttachmentUploadMetadata,
 } from '../attachment-upload.policy';
 import { RequestAttachmentUploadCommand } from '../dto/request/request-attachment-upload.command';
@@ -29,19 +30,21 @@ export class RequestAttachmentUploadHandler {
     );
     await this.attachmentTargetValidator.assertMutable(command.target);
 
+    const metadata = createAttachmentUploadMetadata(
+      command.target,
+      command.attachmentType,
+      command.sortOrder,
+    );
     const presignedUrl = await this.storage.createPresignedPutObjectUrl({
       contentType: command.mimeType,
       contentLength: command.sizeBytes,
-      metadata: createAttachmentUploadMetadata(
-        command.target,
-        command.attachmentType,
-        command.sortOrder,
-      ),
+      metadata,
     });
 
     return RequestAttachmentUploadResult.of({
       storageKey: presignedUrl.storageKey,
       uploadUrl: presignedUrl.url,
+      uploadHeaders: createAttachmentUploadHeaders(command.mimeType, metadata),
       expiresAt: presignedUrl.expiresAt,
     });
   }

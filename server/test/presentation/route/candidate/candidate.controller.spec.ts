@@ -194,6 +194,7 @@ describe('CandidateController', () => {
     requestAttachmentUploadExecute.mockResolvedValue({
       storageKey: 'attachments/candidate-key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: { 'Content-Type': 'image/png' },
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
 
@@ -216,6 +217,7 @@ describe('CandidateController', () => {
     expect(response).toEqual({
       storageKey: 'attachments/candidate-key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: { 'Content-Type': 'image/png' },
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
     expect(requestAttachmentUploadExecute.mock.calls[0][0]).toMatchObject({

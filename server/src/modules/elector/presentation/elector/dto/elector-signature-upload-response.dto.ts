@@ -7,12 +7,24 @@ export class RequestElectorSignatureUploadResponse {
   @ApiProperty({ description: '서명 이미지를 PUT할 presigned URL입니다.' })
   readonly uploadUrl: string;
 
+  @ApiProperty({
+    description: '서명 이미지 PUT 요청에 그대로 적용할 HTTP 헤더입니다.',
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    example: {
+      'Content-Type': 'image/png',
+      'x-amz-meta-purpose': 'elector-participation-signature',
+    },
+  })
+  readonly uploadHeaders: Readonly<Record<string, string>>;
+
   @ApiProperty({ description: '업로드 URL 만료 시각입니다.' })
   readonly expiresAt: Date;
 
   private constructor(params: RequestElectorSignatureUploadResponse) {
     this.storageKey = params.storageKey;
     this.uploadUrl = params.uploadUrl;
+    this.uploadHeaders = params.uploadHeaders;
     this.expiresAt = params.expiresAt;
   }
 

@@ -153,6 +153,59 @@ describe('participation access controllers', () => {
     );
   });
 
+  it('returns the required storage headers for participant signature upload', async () => {
+    const exchange = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<ExchangeParticipationAccessHandler>;
+    const resolve = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<ResolveParticipationAccessSessionHandler>;
+    const signatures = {
+      requestUpload: jest.fn().mockResolvedValue({
+        storageKey: 'signatures/opaque',
+        uploadUrl: 'https://storage.example/upload',
+        uploadHeaders: {
+          'Content-Type': 'image/png',
+          'x-amz-meta-purpose': 'elector-participation-signature',
+        },
+        expiresAt: new Date('2026-09-06T12:10:00.000Z'),
+      }),
+    } as unknown as jest.Mocked<ParticipantSignatureUploadHandler>;
+    const controller = new ParticipationAccessController(
+      exchange,
+      resolve,
+      ['http://localhost:3001'],
+      signatures,
+    );
+
+    await expect(
+      controller.requestSignatureUpload(
+        { originalName: 'signature.png', mimeType: 'image/png', sizeBytes: 64 },
+        {
+          headers: {
+            origin: 'http://localhost:3001',
+            cookie: 'vote_participant_session=session-token',
+          },
+        },
+        'csrf-token',
+        responseStub() as never,
+      ),
+    ).resolves.toMatchObject({
+      storageKey: 'signatures/opaque',
+      uploadHeaders: {
+        'Content-Type': 'image/png',
+        'x-amz-meta-purpose': 'elector-participation-signature',
+      },
+    });
+    expect(signatures.requestUpload).toHaveBeenCalledWith({
+      sessionToken: 'session-token',
+      csrfToken: 'csrf-token',
+      originalName: 'signature.png',
+      mimeType: 'image/png',
+      sizeBytes: 64,
+    });
+  });
+
   it('submits participation using only session, csrf, ballot, and candidate', async () => {
     const exchange = {
       execute: jest.fn(),

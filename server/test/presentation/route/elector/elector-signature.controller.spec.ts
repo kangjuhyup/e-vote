@@ -35,6 +35,10 @@ describe('ElectorSignatureController', () => {
     requestExecute.mockResolvedValue({
       storageKey: 'signatures/opaque',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: {
+        'Content-Type': 'image/png',
+        'x-amz-meta-purpose': 'elector-participation-signature',
+      },
       expiresAt: new Date('2026-09-06T03:05:00.000Z'),
     });
     confirmExecute.mockResolvedValue({
@@ -48,7 +52,13 @@ describe('ElectorSignatureController', () => {
         { voteId: 'vote-1', electorId: 'elector-1' },
         { originalName: 'signature.png', mimeType: 'image/png', sizeBytes: 64 },
       ),
-    ).resolves.toMatchObject({ storageKey: 'signatures/opaque' });
+    ).resolves.toMatchObject({
+      storageKey: 'signatures/opaque',
+      uploadHeaders: {
+        'Content-Type': 'image/png',
+        'x-amz-meta-purpose': 'elector-participation-signature',
+      },
+    });
     await expect(
       controller.confirmUpload(
         TEST_USER_PRINCIPAL,

@@ -191,6 +191,7 @@ describe('VoteDetailController', () => {
     requestAttachmentUploadExecute.mockResolvedValue({
       storageKey: 'attachments/detail-key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: { 'Content-Type': 'application/pdf' },
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
 
@@ -212,6 +213,7 @@ describe('VoteDetailController', () => {
     expect(response).toEqual({
       storageKey: 'attachments/detail-key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: { 'Content-Type': 'application/pdf' },
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
     expect(requestAttachmentUploadExecute.mock.calls[0][0]).toMatchObject({

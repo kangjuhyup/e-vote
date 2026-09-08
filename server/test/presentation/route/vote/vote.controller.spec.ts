@@ -295,6 +295,7 @@ describe('VoteController', () => {
     requestAttachmentUploadExecute.mockResolvedValue({
       storageKey: 'attachments/vote-key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: { 'Content-Type': 'application/pdf' },
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
 
@@ -313,6 +314,7 @@ describe('VoteController', () => {
     expect(response).toEqual({
       storageKey: 'attachments/vote-key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: { 'Content-Type': 'application/pdf' },
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     });
     expect(requestAttachmentUploadExecute).toHaveBeenCalledTimes(1);

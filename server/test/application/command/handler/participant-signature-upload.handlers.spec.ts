@@ -18,6 +18,10 @@ describe('ParticipantSignatureUploadHandler', () => {
     const requestUpload = jest.fn().mockResolvedValue({
       storageKey: 'key',
       uploadUrl: 'https://storage.example/upload',
+      uploadHeaders: {
+        'Content-Type': 'image/png',
+        'x-amz-meta-purpose': 'elector-participation-signature',
+      },
       expiresAt: new Date('2026-09-06T12:10:00.000Z'),
     });
     let capturedReauthorize: (() => Promise<void>) | undefined;

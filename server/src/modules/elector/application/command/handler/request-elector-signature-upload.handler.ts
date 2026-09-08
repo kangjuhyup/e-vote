@@ -10,6 +10,8 @@ import {
 } from '../../../../../shared/application/port/gateway/storage.port';
 import {
   assertElectorSignatureUploadMetadata,
+  createElectorSignatureUploadHeaders,
+  createElectorSignatureUploadMetadata,
   normalizeElectorSignatureMimeType,
 } from '../elector-signature-upload.policy';
 import { RequestElectorSignatureUploadCommand } from '../dto/request/request-elector-signature-upload.command';
@@ -56,19 +58,24 @@ export class RequestElectorSignatureUploadHandler {
   async executeAuthorized(
     command: AuthorizedElectorSignatureUploadRequest,
   ): Promise<RequestElectorSignatureUploadResult> {
+    const metadata = createElectorSignatureUploadMetadata({
+      purpose: ELECTOR_SIGNATURE_UPLOAD_PURPOSE,
+      voteId: command.voteId,
+      electorId: command.electorId,
+    });
     const presignedUrl = await this.storage.createPresignedPutObjectUrl({
       contentType: normalizeElectorSignatureMimeType(command.mimeType),
       contentLength: command.sizeBytes,
-      metadata: {
-        purpose: ELECTOR_SIGNATURE_UPLOAD_PURPOSE,
-        voteid: command.voteId,
-        electorid: command.electorId,
-      },
+      metadata,
     });
 
     return RequestElectorSignatureUploadResult.of({
       storageKey: presignedUrl.storageKey,
       uploadUrl: presignedUrl.url,
+      uploadHeaders: createElectorSignatureUploadHeaders(
+        command.mimeType,
+        metadata,
+      ),
       expiresAt: presignedUrl.expiresAt,
     });
   }

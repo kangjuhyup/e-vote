@@ -66,6 +66,16 @@ export class ConfirmParticipationSignatureUploadBody extends ParticipationSignat
 export class ParticipationSignatureUploadResponse {
   @ApiProperty() readonly storageKey!: string;
   @ApiProperty() readonly uploadUrl!: string;
+  @ApiProperty({
+    description: '서명 이미지 PUT 요청에 그대로 적용할 HTTP 헤더입니다.',
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    example: {
+      'Content-Type': 'image/png',
+      'x-amz-meta-purpose': 'elector-participation-signature',
+    },
+  })
+  readonly uploadHeaders!: Readonly<Record<string, string>>;
   @ApiProperty({ format: 'date-time' }) readonly expiresAt!: Date;
   static of(
     params: ParticipationSignatureUploadResponse,
