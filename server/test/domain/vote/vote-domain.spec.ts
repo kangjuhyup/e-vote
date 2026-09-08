@@ -228,6 +228,54 @@ describe('vote domain aggregates', () => {
     expect(vote.status).toBe(VoteStatus.Closed);
   });
 
+  it('finalizes only before the voting start boundary', () => {
+    const start = new Date('2026-09-06T10:00:00.000Z');
+    const createScheduledVote = (id: string) => {
+      const vote = VoteAggregate.create({
+        id,
+        createdByUserPrincipalId: 'user-1',
+        commissionId: 'commission-1',
+        title: 'Finalization boundary',
+        votingChannels: [VotingChannel.Online],
+        defaultPolicy: VotePolicy.of({
+          privacyMode: PrivacyMode.Secret,
+          participationUnit: ParticipationUnit.Individual,
+          resultStorageMode: ResultStorageMode.Database,
+          voteWeightMode: VoteWeightMode.Equal,
+        }),
+        identityVerificationPolicy: IdentityVerificationPolicy.of({
+          required: false,
+        }),
+        startedAt: start,
+        endedAt: new Date('2026-09-06T11:00:00.000Z'),
+      });
+      vote.lockForBilling('billing-order-1');
+      return vote;
+    };
+
+    const beforeStart = createScheduledVote('finalize-before-start');
+    beforeStart.finalizePaidBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date(start.getTime() - 1),
+    });
+    expect(beforeStart.status).toBe(VoteStatus.Finalized);
+
+    for (const [id, finalizedAt] of [
+      ['finalize-at-start', start],
+      ['finalize-after-start', new Date(start.getTime() + 1)],
+    ] as const) {
+      const vote = createScheduledVote(id);
+      expect(() =>
+        vote.finalizePaidBilling({
+          billingOrderId: 'billing-order-1',
+          finalizedAt,
+        }),
+      ).toThrow('vote cannot be finalized at or after its start time');
+      expect(vote.status).toBe(VoteStatus.Draft);
+      expect(vote.finalizedAt).toBeUndefined();
+    }
+  });
+
   it('rejects an inverted voting window', () => {
     expect(() =>
       VoteAggregate.create({

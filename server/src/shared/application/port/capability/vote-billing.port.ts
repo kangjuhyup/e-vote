@@ -1,4 +1,7 @@
 export const VOTE_SETUP_LIFECYCLE_PORT = Symbol('VOTE_SETUP_LIFECYCLE_PORT');
+export const VOTE_FINALIZATION_CLOCK = Symbol('VOTE_FINALIZATION_CLOCK');
+
+export type VoteFinalizationClock = () => Date;
 
 export interface VoteSetupLifecyclePort {
   lockVote(voteId: string): Promise<void>;

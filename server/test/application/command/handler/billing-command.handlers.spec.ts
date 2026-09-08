@@ -16,6 +16,7 @@ import { CancelVoteUsageBillingOrderCommand } from '../../../../src/modules/bill
 import { CancelVoteUsageBillingOrderHandler } from '../../../../src/modules/billing/application/command/handler/cancel-vote-usage-billing-order.handler';
 import { BillingOrderOutboxRecorder } from '../../../../src/modules/billing/application/event/billing-order-outbox.recorder';
 import type { IntegrationEventOutboxPort } from '../../../../src/shared/application/port/messaging/integration-event-outbox.port';
+import { VoteFinalizationWindowClosedError } from '../../../../src/shared/domain/voting/vote-finalization.error';
 
 describe('billing command handlers', () => {
   const now = new Date('2026-08-30T00:00:00.000Z');
@@ -95,6 +96,37 @@ describe('billing command handlers', () => {
       amount: 66_000,
     });
   });
+
+  it.each([
+    ['at', new Date('2026-08-30T00:00:00.000Z')],
+    ['after', new Date('2026-08-29T23:59:59.999Z')],
+  ])(
+    'rejects order creation %s the voting start boundary',
+    async (_label, startedAt) => {
+      const repository = repositoryStub();
+      const lifecycle = voteLifecycleStub();
+      const outbox = outboxStub();
+      const handler = new CreateVoteUsageBillingOrderHandler(
+        repository,
+        voteAccessStub({
+          createdByUserPrincipalId: 'user-1',
+          startedAt,
+        }),
+        electorCountStub(120),
+        blockchainStorageCountStub(0),
+        lifecycle,
+        new BillingOrderOutboxRecorder(outbox),
+        transactionManagerStub(),
+      );
+
+      await expect(handler.execute(createCommand())).rejects.toThrow(
+        'vote cannot be finalized at or after its start time',
+      );
+      expect(lifecycle.lockForBilling.mock.calls).toHaveLength(0);
+      expect(repository.save.mock.calls).toHaveLength(0);
+      expect(outbox.append.mock.calls).toHaveLength(0);
+    },
+  );
 
   it('returns the existing order to its owner even when the legacy vote creator is unknown', async () => {
     const existing = order();
@@ -192,6 +224,7 @@ describe('billing command handlers', () => {
       voteLifecycle,
       new BillingOrderOutboxRecorder(outbox),
       transactionManagerStub(),
+      () => now,
     ).execute(
       MarkBillingOrderPaidCommand.of({
         billingOrderId: existing.id,
@@ -219,6 +252,53 @@ describe('billing command handlers', () => {
           eventType: 'billing.order-paid.v1',
           aggregateVersion: 2,
         }),
+      ],
+    ]);
+  });
+
+  it('requests a refund without retrying when payment completes after voting starts', async () => {
+    const existing = order();
+    const repository = repositoryStub(existing);
+    const voteLifecycle = voteLifecycleStub();
+    const outbox = outboxStub();
+    const finalizedAt = new Date('2026-09-08T11:30:00.000Z');
+    voteLifecycle.finalizePaidBilling.mockRejectedValue(
+      new VoteFinalizationWindowClosedError(),
+    );
+
+    const result = await new MarkBillingOrderPaidHandler(
+      repository,
+      voteLifecycle,
+      new BillingOrderOutboxRecorder(outbox),
+      transactionManagerStub(),
+      () => finalizedAt,
+    ).execute(
+      MarkBillingOrderPaidCommand.of({
+        billingOrderId: existing.id,
+        paymentId: 'payment-1',
+        amount: 6_000,
+        currency: 'KRW',
+        paidAt: now,
+      }),
+    );
+
+    expect(voteLifecycle.finalizePaidBilling.mock.calls).toEqual([
+      [
+        {
+          voteId: 'vote-1',
+          billingOrderId: 'billing-order-1',
+          finalizedAt,
+        },
+      ],
+    ]);
+    expect(result.status).toBe('REFUND_PENDING');
+    expect(repository.save.mock.calls).toEqual([[existing]]);
+    expect(outbox.append.mock.calls).toEqual([
+      [
+        [
+          expect.objectContaining({ eventType: 'billing.order-paid.v1' }),
+          expect.objectContaining({ eventType: 'billing.refund-requested.v1' }),
+        ],
       ],
     ]);
   });
@@ -558,6 +638,7 @@ describe('billing command handlers', () => {
       readonly createdByUserPrincipalId?: string;
       readonly billingOrderId?: string;
       readonly identityVerificationRequired?: boolean;
+      readonly startedAt?: Date;
     } = {
       createdByUserPrincipalId: 'user-1',
     },
@@ -573,6 +654,13 @@ describe('billing command handlers', () => {
         },
         isCreatedBy: (userPrincipalId) =>
           options.createdByUserPrincipalId === userPrincipalId,
+        assertCanFinalizeAt: (finalizedAt: Date) => {
+          const startedAt =
+            options.startedAt ?? new Date('2026-08-31T00:00:00.000Z');
+          if (finalizedAt.getTime() >= startedAt.getTime()) {
+            throw new VoteFinalizationWindowClosedError();
+          }
+        },
       }),
     };
   }

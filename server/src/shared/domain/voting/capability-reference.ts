@@ -30,6 +30,7 @@ export interface VoteReference {
   readonly identityVerificationPolicy: { readonly required: boolean };
   allowsVotingChannel(channel: VotingChannel): boolean;
   isCreatedBy(userPrincipalId: string): boolean;
+  assertCanFinalizeAt(finalizedAt: Date): void;
   hasElectoralRollSnapshot(): boolean;
   usesElectoralRollSnapshot(snapshotId: string): boolean;
   assertElectorsMutable(action: 'created' | 'updated' | 'deleted'): void;

@@ -86,6 +86,29 @@ describe('BillingOrderController', () => {
       emptyElectorate.create(TEST_USER_PRINCIPAL, { voteId: 'vote-1' }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
+
+  it('maps a closed finalization window to HTTP 409 with the domain message', async () => {
+    const controller = new BillingOrderController(
+      rejectingHandler(
+        new DomainError('vote cannot be finalized at or after its start time'),
+      ) as unknown as CreateVoteUsageBillingOrderHandler,
+      handler() as unknown as GetBillingOrderHandler,
+    );
+
+    let caught: unknown;
+    try {
+      await controller.create(TEST_USER_PRINCIPAL, { voteId: 'vote-1' });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(ConflictException);
+    expect((caught as ConflictException).getResponse()).toEqual({
+      statusCode: 409,
+      message: 'vote cannot be finalized at or after its start time',
+      error: 'Conflict',
+    });
+  });
 });
 
 function handler(result?: unknown) {

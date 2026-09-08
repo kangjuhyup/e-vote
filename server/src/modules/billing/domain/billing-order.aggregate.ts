@@ -265,6 +265,48 @@ export class BillingOrderAggregate {
     );
   }
 
+  requestRefund(params: { reason: string; requestedAt: Date }): void {
+    const reason = params.reason.trim();
+    if (reason.length === 0) {
+      throw new DomainError('billing order refund reason is required');
+    }
+    if (reason.length > 500) {
+      throw new DomainError(
+        'billing order refund reason must not exceed 500 characters',
+      );
+    }
+    if (
+      this.status === BillingOrderStatus.RefundPending ||
+      this.status === BillingOrderStatus.Refunded
+    ) {
+      if (this.cancellationReason !== reason) {
+        throw new DomainError(
+          'billing order was already refunded for another reason',
+        );
+      }
+      return;
+    }
+    if (this.status !== BillingOrderStatus.Paid || !this.paidAt) {
+      throw new DomainError('only paid billing orders can request a refund');
+    }
+    if (params.requestedAt.getTime() < this.paidAt.getTime()) {
+      throw new DomainError('billing order cannot be refunded before payment');
+    }
+
+    this.status = BillingOrderStatus.RefundPending;
+    this.canceledAt = params.requestedAt;
+    this.cancellationReason = reason;
+    this.refundRequestedAt = params.requestedAt;
+    this.version += 1;
+    this.events.push(
+      BillingOrderRefundRequested.of({
+        aggregateId: this.id,
+        aggregateVersion: this.version,
+        occurredAt: params.requestedAt,
+      }),
+    );
+  }
+
   domainEvents(): readonly BillingOrderDomainEvent[] {
     return [...this.events];
   }

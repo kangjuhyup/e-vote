@@ -36,7 +36,7 @@ describe('vote management domain behavior', () => {
       billingOrderId: 'billing-order-1',
       finalizedAt: new Date(),
     });
-    vote.open(new Date());
+    vote.open(new Date('2099-01-01T00:00:00.000Z'));
     expect(() =>
       vote.updateSettings({
         title: 'No',
@@ -155,6 +155,8 @@ function createVote() {
     identityVerificationPolicy: IdentityVerificationPolicy.of({
       required: false,
     }),
+    startedAt: new Date('2099-01-01T00:00:00.000Z'),
+    endedAt: new Date('2099-01-02T00:00:00.000Z'),
     status: VoteStatus.Draft,
   });
 }

@@ -20,7 +20,10 @@ import {
 import { DatabaseModule } from './platform/database/database.module';
 import { NotConfiguredIntegrationEventPublisherAdapter } from './platform/outbox/infrastructure/messaging/not-configured-integration-event-publisher.adapter';
 import { IntegrationEventOutboxDispatcher } from './shared/application/messaging/integration-event-outbox.dispatcher';
-import { VOTE_SETUP_LIFECYCLE_PORT } from './shared/application/port/capability/vote-billing.port';
+import {
+  VOTE_FINALIZATION_CLOCK,
+  VOTE_SETUP_LIFECYCLE_PORT,
+} from './shared/application/port/capability/vote-billing.port';
 import { VOTE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-repository.port';
 import { VOTE_SCHEDULE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-schedule-repository.port';
 import { ProcessDueVoteSchedulesHandler } from './modules/vote/application/command/handler/process-due-vote-schedules.handler';
@@ -65,6 +68,10 @@ import { ParticipationInvitationRecipientAccessAdapter } from './modules/partici
     {
       provide: VOTE_SETUP_LIFECYCLE_PORT,
       useExisting: VOTE_REPOSITORY_PORT,
+    },
+    {
+      provide: VOTE_FINALIZATION_CLOCK,
+      useValue: () => new Date(),
     },
     {
       provide: VOTE_SCHEDULE_REPOSITORY_PORT,

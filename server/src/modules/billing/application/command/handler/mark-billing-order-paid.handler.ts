@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { BillingOrderNotFoundError } from '../../billing.error';
 import {
   BILLING_ORDER_REPOSITORY_PORT,
@@ -16,10 +16,16 @@ import {
   Transactional,
 } from '../../../../../shared/application/persistence/transaction/transactional.decorator';
 import {
+  VOTE_FINALIZATION_CLOCK,
   VOTE_SETUP_LIFECYCLE_PORT,
+  type VoteFinalizationClock,
   type VoteSetupLifecyclePort,
 } from '../../../../../shared/application/port/capability/vote-billing.port';
 import { BillingOrderStatus } from '../../../domain/type/billing-order-status.type';
+import { VoteFinalizationWindowClosedError } from '../../../../../shared/domain/voting/vote-finalization.error';
+
+const FINALIZATION_WINDOW_REFUND_REASON =
+  'vote finalization rejected because voting already started';
 
 @Injectable()
 export class MarkBillingOrderPaidHandler {
@@ -33,6 +39,9 @@ export class MarkBillingOrderPaidHandler {
     private readonly outboxRecorder: BillingOrderOutboxRecorder,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
+    @Optional()
+    @Inject(VOTE_FINALIZATION_CLOCK)
+    private readonly clock: VoteFinalizationClock = () => new Date(),
   ) {
     this[DATABASE_TRANSACTION_MANAGER_PROPERTY] = transactionManager;
   }
@@ -57,11 +66,20 @@ export class MarkBillingOrderPaidHandler {
       paidAt: command.paidAt,
     });
     if (transitionedToPaid) {
-      await this.voteSetupLifecycle.finalizePaidBilling({
-        voteId: order.voteId,
-        billingOrderId: order.id,
-        finalizedAt: order.paidAt!,
-      });
+      const finalizedAt = this.clock();
+      try {
+        await this.voteSetupLifecycle.finalizePaidBilling({
+          voteId: order.voteId,
+          billingOrderId: order.id,
+          finalizedAt,
+        });
+      } catch (error) {
+        if (!(error instanceof VoteFinalizationWindowClosedError)) throw error;
+        order.requestRefund({
+          reason: FINALIZATION_WINDOW_REFUND_REASON,
+          requestedAt: finalizedAt,
+        });
+      }
     }
     await this.repository.save(order);
     await this.outboxRecorder.record(order);

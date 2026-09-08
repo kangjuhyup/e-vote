@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import {
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiOkResponse,
@@ -35,6 +36,9 @@ export class BillingOrderController {
   @ApiCreatedResponse({ type: BillingOrderResponse })
   @ApiForbiddenResponse({
     description: '현재 사용자가 투표 생성자가 아닙니다.',
+  })
+  @ApiConflictResponse({
+    description: '현재 시각이 투표 시작 시각 이상이어서 확정할 수 없습니다.',
   })
   async create(
     @User() user: UserPrincipal,

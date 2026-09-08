@@ -49,7 +49,7 @@ describe('vote management command handlers', () => {
     vote.lockForBilling('billing-order-1');
     vote.finalizePaidBilling({
       billingOrderId: 'billing-order-1',
-      finalizedAt: new Date(),
+      finalizedAt: new Date(vote.startedAt.getTime() - 1),
     });
     await new ChangeVoteStatusHandler(
       repository,
@@ -60,7 +60,7 @@ describe('vote management command handlers', () => {
       ChangeVoteStatusCommand.of({
         voteId: vote.id,
         action: 'open',
-        changedAt: new Date(),
+        changedAt: vote.startedAt,
       }),
     );
     expect(vote).toMatchObject({ title: 'Updated', status: VoteStatus.Open });
@@ -72,7 +72,7 @@ describe('vote management command handlers', () => {
     vote.lockForBilling('billing-order-1');
     vote.finalizePaidBilling({
       billingOrderId: 'billing-order-1',
-      finalizedAt: new Date(),
+      finalizedAt: new Date(vote.startedAt.getTime() - 1),
     });
 
     await expect(

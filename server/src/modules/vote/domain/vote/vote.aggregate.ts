@@ -10,6 +10,7 @@ import { IdentityVerificationPolicy } from '../../../../shared/domain/voting/vo/
 import { VotePolicy } from '../../../../shared/domain/voting/vo/vote-policy.vo';
 import { VoteStatus } from '../../../../shared/domain/voting/type/vote-status.type';
 import { VotingChannel } from '../../../../shared/domain/voting/type/voting-channel.type';
+import { VoteFinalizationWindowClosedError } from '../../../../shared/domain/voting/vote-finalization.error';
 
 interface VoteStateParams {
   readonly id: string;
@@ -303,6 +304,12 @@ export class VoteAggregate {
     this.billingOrderId = normalizedBillingOrderId;
   }
 
+  assertCanFinalizeAt(finalizedAt: Date): void {
+    if (finalizedAt.getTime() >= this.startedAt.getTime()) {
+      throw new VoteFinalizationWindowClosedError();
+    }
+  }
+
   finalizePaidBilling(params: {
     billingOrderId: string;
     finalizedAt: Date;
@@ -324,6 +331,7 @@ export class VoteAggregate {
         'only a billing-locked draft vote can be finalized',
       );
     }
+    this.assertCanFinalizeAt(params.finalizedAt);
 
     this.status = VoteStatus.Finalized;
     this.finalizedAt = params.finalizedAt;

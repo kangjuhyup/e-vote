@@ -77,6 +77,7 @@ export class CreateVoteUsageBillingOrderHandler {
     if (!vote.isCreatedBy(command.orderedByUserPrincipalId)) {
       throw new VoteBillingAccessDeniedError();
     }
+    vote.assertCanFinalizeAt(command.issuedAt);
 
     const billingOrderId = this.billingOrderRepository.nextId();
     await this.voteSetupLifecycle.lockForBilling({
