@@ -329,6 +329,9 @@ describe('vote containers', () => {
       expect(
         screen.getByRole('button', { name: '명부 다시 연결 또는 교체' }),
       ).toHaveProperty('disabled', true);
+      expect(
+        screen.getByRole('button', { name: '후보자 안건 추가' }),
+      ).toHaveProperty('disabled', true);
       expect(screen.getByRole('button', { name: '투표 삭제' })).toHaveProperty(
         'disabled',
         true,
@@ -336,6 +339,113 @@ describe('vote containers', () => {
     } finally {
       vote.status = originalStatus;
     }
+  });
+
+  it('orders the edit sections and toggles each step independently', async () => {
+    renderWithQueryClient(<VoteEditContainer voteId="scheduled-budget" />);
+
+    const stepButtons = await screen.findAllByRole('button', {
+      name: /\d단계 .* (펼치기|접기)/,
+    });
+    expect(
+      stepButtons.map((button) => button.getAttribute('aria-label')),
+    ).toEqual([
+      '1단계 기본 정책 접기',
+      '2단계 안건과 후보 펼치기',
+      '3단계 선거인명부 펼치기',
+      '4단계 운영 위원회 펼치기',
+      '5단계 첨부파일 펼치기',
+      '6단계 검토 펼치기',
+    ]);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '1단계 기본 정책 접기' }),
+    );
+    expect(
+      screen
+        .getByRole('button', { name: '1단계 기본 정책 펼치기' })
+        .getAttribute('aria-expanded'),
+    ).toBe('false');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '2단계 안건과 후보 펼치기' }),
+    );
+    expect(
+      screen
+        .getByRole('button', { name: '2단계 안건과 후보 접기' })
+        .getAttribute('aria-expanded'),
+    ).toBe('true');
+    expect(document.getElementById('vote-edit-step-basics')?.className).toBe(
+      'hidden',
+    );
+    expect(
+      document.getElementById('vote-edit-step-ballot')?.className,
+    ).not.toBe('hidden');
+  });
+
+  it('adds an agenda and candidates from the vote edit page', async () => {
+    const createSubVote = vi.spyOn(voteOperationsApi, 'createSubVote');
+    const createCandidate = vi.spyOn(voteOperationsApi, 'createCandidate');
+
+    renderWithQueryClient(<VoteEditContainer voteId="scheduled-budget" />);
+
+    expect(
+      await screen.findByRole('heading', { name: '안건과 후보' }),
+    ).toBeTruthy();
+    expect(screen.getByText('등록된 안건 1개')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText(/선출할 직책 또는 안건/), {
+      target: { value: '감사 선출' },
+    });
+    fireEvent.change(screen.getByLabelText('후보 1'), {
+      target: { value: '김후보' },
+    });
+    fireEvent.change(screen.getByLabelText('후보 2'), {
+      target: { value: '이후보' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '후보자 안건 추가' }));
+
+    expect(await screen.findByText('안건을 추가했습니다.')).toBeTruthy();
+    expect(createSubVote).toHaveBeenCalledWith({
+      sortOrder: 1,
+      title: '감사 선출',
+      type: 'CANDIDATE',
+      voteId: 'scheduled-budget',
+    });
+    expect(createCandidate).toHaveBeenCalledTimes(2);
+    expect(createCandidate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidateNo: 1,
+        name: '김후보',
+        voteId: 'scheduled-budget',
+      }),
+    );
+    expect(createCandidate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidateNo: 2,
+        name: '이후보',
+        voteId: 'scheduled-budget',
+      }),
+    );
+    expect(await screen.findByText('등록된 안건 2개')).toBeTruthy();
+    expect(screen.getByText('감사 선출')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('radio', { name: /찬성·반대/ }));
+    fireEvent.change(screen.getByLabelText(/표결할 내용/), {
+      target: { value: '정관 개정 승인' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '찬반 안건 추가' }));
+
+    await waitFor(() => expect(createSubVote).toHaveBeenCalledTimes(2));
+    expect(createSubVote).toHaveBeenLastCalledWith({
+      sortOrder: 2,
+      title: '정관 개정 승인',
+      type: 'YES_NO',
+      voteId: 'scheduled-budget',
+    });
+    expect(createCandidate).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('등록된 안건 3개')).toBeTruthy();
+    expect(screen.getByText('정관 개정 승인')).toBeTruthy();
   });
 
   it('registers vote attachments from the vote edit page', async () => {

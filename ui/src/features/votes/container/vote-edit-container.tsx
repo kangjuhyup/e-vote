@@ -38,7 +38,16 @@ import { readIdentityVerificationPolicy } from "@/features/votes/lib/identity-ve
 
 import { VoteCommissionSetup } from "../ui/vote-commission-setup";
 import { AttachmentUploadSection } from "../ui/attachment-upload-section";
+import {
+  VoteAgendaSetup,
+  type VoteAgendaInput,
+} from "../ui/vote-agenda-setup";
 import { VoteDeletionSection } from "../ui/vote-deletion-section";
+import {
+  VoteEditStep,
+  VoteEditStepSequence,
+  type VoteEditStepKey,
+} from "../ui/vote-edit-step-sequence";
 import { VoteElectoralRollSetup } from "../ui/vote-electoral-roll-setup";
 import { VoteNavigation } from "../ui/vote-navigation";
 import { VoteSettingsForm } from "../ui/vote-settings-form";
@@ -56,6 +65,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
   const [billingOrderId, setBillingOrderId] = useState<string>();
   const [billingConfirmed, setBillingConfirmed] = useState(false);
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [openSteps, setOpenSteps] = useState<VoteEditStepKey[]>(["basics"]);
   const [selectedElectoralRollId, setSelectedElectoralRollId] = useState("");
   const voteQuery = useQuery(voteDetailQueryOptions(voteId));
   const vote = voteQuery.data;
@@ -109,6 +119,46 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
       ]);
     },
   });
+  const createAgendaMutation = useMutation({
+    mutationFn: async (input: VoteAgendaInput) => {
+      if (!vote) {
+        throw new Error("투표를 찾을 수 없습니다.");
+      }
+
+      const nextSortOrder =
+        vote.subVotes.reduce(
+          (highestOrder, subVote) => Math.max(highestOrder, subVote.order),
+          -1,
+        ) + 1;
+      const subVote = await voteOperationsApi.createSubVote({
+        sortOrder: nextSortOrder,
+        title: input.title,
+        type: input.type,
+        voteId,
+      });
+
+      if (input.type === "CANDIDATE") {
+        await Promise.all(
+          input.candidateNames.map((name, index) =>
+            voteOperationsApi.createCandidate({
+              candidateNo: index + 1,
+              name,
+              voteDetailId: subVote.id,
+              voteId,
+            }),
+          ),
+        );
+      }
+
+      return subVote;
+    },
+    onSuccess: async () => {
+      setMessage("안건을 추가했습니다.");
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["votes"] });
+    },
+  });
   const createBillingMutation = useMutation({
     mutationFn: billingApi.createVoteUsageOrder,
     onSuccess: async (order) => {
@@ -148,7 +198,10 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
     },
   });
   const error =
-    electoralRollMutation.error ?? updateMutation.error ?? memberMutation.error;
+    createAgendaMutation.error ??
+    electoralRollMutation.error ??
+    updateMutation.error ??
+    memberMutation.error;
   const isDraftStatus =
     vote?.status === "draft" || vote?.status === "scheduled";
   const displayStatus = vote
@@ -202,6 +255,14 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
       },
       identityVerificationPolicy: readIdentityVerificationPolicy(data),
     });
+  }
+
+  function toggleStep(step: VoteEditStepKey) {
+    setOpenSteps((currentSteps) =>
+      currentSteps.includes(step)
+        ? currentSteps.filter((currentStep) => currentStep !== step)
+        : [...currentSteps, step],
+    );
   }
 
   return (
@@ -270,46 +331,104 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
                   : "초안 상태의 투표만 기본 설정을 수정할 수 있습니다. 위원 등록은 계속할 수 있습니다."}
             </p>
           ) : null}
-          <VoteCommissionSetup
-            allowCreate={false}
-            commissions={commissionsQuery.data?.items ?? []}
-            isSubmitting={memberMutation.isPending}
-            selectedCommissionId={vote.commissionId}
-            onRegisterMember={(data) => {
-              setMessage(undefined);
-              memberMutation.mutate({
-                commissionId: String(data.get("commissionId") ?? ""),
-                name: String(data.get("name") ?? ""),
-                role: String(data.get("role")) as "ADMIN" | "FIELD_MANAGER",
-              });
-            }}
-          />
-          <VoteSettingsForm
-            vote={vote}
-            disabled={!isEditable}
-            isSubmitting={updateMutation.isPending}
-            onSubmit={handleUpdate}
-          />
-          <VoteElectoralRollSetup
-            currentSnapshotId={vote.electoralRollSnapshotId}
-            disabled={!isEditable}
-            electoralRolls={electoralRollsQuery.data?.items ?? []}
-            isSubmitting={electoralRollMutation.isPending}
-            selectedElectoralRollId={selectedElectoralRollId}
-            onElectoralRollChange={setSelectedElectoralRollId}
-            onSubmit={(electoralRollId) => {
-              setMessage(undefined);
-              setErrorMessage(undefined);
-              setBillingConfirmed(false);
-              electoralRollMutation.mutate({
-                electoralRollId,
-                identityVerificationRequired:
-                  vote.identityVerificationPolicy?.required === true,
-                voteId,
-              });
-            }}
-          />
-          <AttachmentUploadSection
+          <VoteEditStepSequence>
+            <VoteEditStep
+              step={1}
+              stepKey="basics"
+              title="기본 정책"
+              description="제목, 투표 기간, 공개 범위와 참여 방식을 설정합니다."
+              isOpen={openSteps.includes("basics")}
+              onToggle={() => toggleStep("basics")}
+            >
+              <VoteSettingsForm
+                vote={vote}
+                disabled={!isEditable}
+                isSubmitting={updateMutation.isPending}
+                onSubmit={handleUpdate}
+              />
+            </VoteEditStep>
+            <VoteEditStep
+              step={2}
+              stepKey="ballot"
+              title="안건과 후보"
+              description="투표 안건과 후보자를 확인하거나 추가합니다."
+              isOpen={openSteps.includes("ballot")}
+              onToggle={() => toggleStep("ballot")}
+            >
+              <VoteAgendaSetup
+                agendas={vote.subVotes}
+                disabled={!isEditable}
+                isSubmitting={createAgendaMutation.isPending}
+                onSubmit={async (input) => {
+                  setMessage(undefined);
+                  setErrorMessage(undefined);
+                  await createAgendaMutation.mutateAsync(input);
+                }}
+              />
+            </VoteEditStep>
+            <VoteEditStep
+              step={3}
+              stepKey="electors"
+              title="선거인명부"
+              description="이 투표에 참여할 선거인명부를 연결하거나 교체합니다."
+              isOpen={openSteps.includes("electors")}
+              onToggle={() => toggleStep("electors")}
+            >
+              <VoteElectoralRollSetup
+                currentSnapshotId={vote.electoralRollSnapshotId}
+                disabled={!isEditable}
+                electoralRolls={electoralRollsQuery.data?.items ?? []}
+                isSubmitting={electoralRollMutation.isPending}
+                selectedElectoralRollId={selectedElectoralRollId}
+                onElectoralRollChange={setSelectedElectoralRollId}
+                onSubmit={(electoralRollId) => {
+                  setMessage(undefined);
+                  setErrorMessage(undefined);
+                  setBillingConfirmed(false);
+                  electoralRollMutation.mutate({
+                    electoralRollId,
+                    identityVerificationRequired:
+                      vote.identityVerificationPolicy?.required === true,
+                    voteId,
+                  });
+                }}
+              />
+            </VoteEditStep>
+            <VoteEditStep
+              step={4}
+              stepKey="commission"
+              title="운영 위원회"
+              description="배정된 선거관리위원회와 운영 위원을 확인합니다."
+              isOpen={openSteps.includes("commission")}
+              onToggle={() => toggleStep("commission")}
+            >
+              <VoteCommissionSetup
+                allowCreate={false}
+                commissions={commissionsQuery.data?.items ?? []}
+                isSubmitting={memberMutation.isPending}
+                selectedCommissionId={vote.commissionId}
+                onRegisterMember={(data) => {
+                  setMessage(undefined);
+                  memberMutation.mutate({
+                    commissionId: String(data.get("commissionId") ?? ""),
+                    name: String(data.get("name") ?? ""),
+                    role: String(data.get("role")) as
+                      | "ADMIN"
+                      | "FIELD_MANAGER",
+                  });
+                }}
+              />
+            </VoteEditStep>
+            <VoteEditStep
+              step={5}
+              stepKey="attachments"
+              title="첨부파일"
+              description="투표, 안건과 후보자 자료를 등록하거나 관리합니다."
+              isOpen={openSteps.includes("attachments")}
+              onToggle={() => toggleStep("attachments")}
+            >
+              <div className="space-y-4">
+                <AttachmentUploadSection
             attachments={vote.attachments ?? []}
             title="투표 첨부파일"
             description="공고문, 안내 자료와 기타 문서를 등록합니다. 파일은 20MB까지 등록할 수 있습니다."
@@ -478,38 +597,57 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
                 ))}
             </section>
           ) : null}
-          {isDraftStatus || effectiveBillingOrderId || billingOrder ? (
-            effectiveBillingOrderId && !billingOrder ? (
-              billingOrderQuery.isError ? (
-                <RetryErrorCard
-                  title="결제 주문을 불러오지 못했습니다."
-                  description="투표 설정은 계속 잠겨 있습니다. 잠시 후 다시 시도하세요."
-                  onRetry={() => billingOrderQuery.refetch()}
-                />
+              </div>
+            </VoteEditStep>
+            <VoteEditStep
+              step={6}
+              stepKey="review"
+              title="검토"
+              description="필수 설정을 확인하고 이용료 결제를 요청합니다."
+              isOpen={openSteps.includes("review")}
+              onToggle={() => toggleStep("review")}
+            >
+              {isDraftStatus || effectiveBillingOrderId || billingOrder ? (
+                effectiveBillingOrderId && !billingOrder ? (
+                  billingOrderQuery.isError ? (
+                    <RetryErrorCard
+                      title="결제 주문을 불러오지 못했습니다."
+                      description="투표 설정은 계속 잠겨 있습니다. 잠시 후 다시 시도하세요."
+                      onRetry={() => billingOrderQuery.refetch()}
+                    />
+                  ) : (
+                    <SkeletonCardGrid
+                      count={1}
+                      label="결제 주문을 불러오는 중…"
+                    />
+                  )
+                ) : (
+                  <BillingOrderConfirmation
+                    blockingReasons={finalizationIssues}
+                    errorMessage={
+                      createBillingMutation.error instanceof Error
+                        ? createBillingMutation.error.message
+                        : undefined
+                    }
+                    hasCommission={Boolean(vote.commissionId)}
+                    isConfirmed={billingConfirmed}
+                    isSubmitting={createBillingMutation.isPending}
+                    onConfirmChange={setBillingConfirmed}
+                    onCreateOrder={() => {
+                      setMessage(undefined);
+                      setErrorMessage(undefined);
+                      createBillingMutation.mutate(vote.id);
+                    }}
+                    order={billingOrder}
+                  />
+                )
               ) : (
-                <SkeletonCardGrid count={1} label="결제 주문을 불러오는 중…" />
-              )
-            ) : (
-              <BillingOrderConfirmation
-                blockingReasons={finalizationIssues}
-                errorMessage={
-                  createBillingMutation.error instanceof Error
-                    ? createBillingMutation.error.message
-                    : undefined
-                }
-                hasCommission={Boolean(vote.commissionId)}
-                isConfirmed={billingConfirmed}
-                isSubmitting={createBillingMutation.isPending}
-                onConfirmChange={setBillingConfirmed}
-                onCreateOrder={() => {
-                  setMessage(undefined);
-                  setErrorMessage(undefined);
-                  createBillingMutation.mutate(vote.id);
-                }}
-                order={billingOrder}
-              />
-            )
-          ) : null}
+                <p className="rounded-lg border px-4 py-5 text-sm text-muted-foreground">
+                  현재 상태에서는 결제 검토가 필요하지 않습니다.
+                </p>
+              )}
+            </VoteEditStep>
+          </VoteEditStepSequence>
           <VoteDeletionSection
             confirmed={deleteConfirmed}
             disabled={!isEditable}
