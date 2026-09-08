@@ -1,8 +1,5 @@
-export interface DispatchParticipationInvitationsInput {
-  electorIds?: string[];
-  voteId: string;
-}
-export interface ReissueParticipationInvitationInput {
+export interface DevelopmentParticipationLinkInput {
+  dispatchId: string;
   electorId: string;
   voteId: string;
 }
@@ -10,10 +7,4 @@ export interface ReissueParticipationInvitationInput {
 export interface ParticipationInvitationDevelopmentLink {
   electorId: string;
   participationUrl: string;
-}
-
-export interface ParticipationInvitationDispatchResult {
-  queuedCount: number;
-  skippedCount: number;
-  totalCount: number;
 }

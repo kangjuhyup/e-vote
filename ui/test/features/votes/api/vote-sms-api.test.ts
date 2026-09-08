@@ -14,6 +14,29 @@ function jsonResponse(data: unknown, status = 200) {
 }
 
 describe("vote sms api", () => {
+  it("loads the server-owned participation reminder preview", async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        buttonLabel: "투표 참여하기",
+        code: "VOTE_PARTICIPATION_REMINDER",
+        content: "참여 안내",
+      }),
+    );
+    const client = createVoteSmsApiClient({
+      baseUrl: "https://api.example.com",
+      fetcher,
+      mode: "live",
+    });
+
+    await expect(
+      client.fetchParticipationReminderTemplate("vote/1"),
+    ).resolves.toMatchObject({ content: "참여 안내" });
+    expect(fetcher).toHaveBeenCalledWith(
+      "https://api.example.com/votes/vote%2F1/sms/participation-reminder/template",
+      expect.any(Object),
+    );
+  });
+
   it.each([
     ["UPCOMING_VOTE_NOTICE", "upcoming-notice"],
     ["VOTE_PARTICIPATION_REMINDER", "participation-reminder"],
@@ -37,18 +60,20 @@ describe("vote sms api", () => {
     });
 
     await expect(
-      client.sendVoteSms({
-        message: "투표 안내입니다.",
-        purpose,
-        voteId: "vote/1",
-      }),
+      client.sendVoteSms(
+        purpose === "VOTE_PARTICIPATION_REMINDER"
+          ? { purpose, voteId: "vote/1" }
+          : { message: "투표 안내입니다.", purpose, voteId: "vote/1" },
+      ),
     ).resolves.toEqual(expect.objectContaining({ id: "dispatch-1", purpose }));
     expect(fetcher).toHaveBeenCalledWith(
       `https://api.example.com/votes/vote%2F1/sms/${path}`,
-      expect.objectContaining({
-        body: JSON.stringify({ message: "투표 안내입니다." }),
-        method: "POST",
-      }),
+      purpose === "VOTE_PARTICIPATION_REMINDER"
+        ? expect.not.objectContaining({ body: expect.anything() })
+        : expect.objectContaining({
+            body: JSON.stringify({ message: "투표 안내입니다." }),
+            method: "POST",
+          }),
     );
   });
 
@@ -88,7 +113,7 @@ describe("vote sms api", () => {
 
   it("loads dispatch pages and recipient-level details", async () => {
     const fetcher = vi.fn(async (input: string) => {
-      if (input.endsWith("/dispatch-1")) {
+      if (input.includes("/dispatch-1?")) {
         return jsonResponse({
           deliveries: [
             {
@@ -102,8 +127,12 @@ describe("vote sms api", () => {
           id: "dispatch-1",
           purpose: "UPCOMING_VOTE_NOTICE",
           recipientCount: 1,
+          page: 1,
+          pageSize: 50,
           sentAt: "2026-08-31T00:00:00.000Z",
           successCount: 1,
+          totalItems: 1,
+          totalPages: 1,
           voteId: "vote-1",
         });
       }
@@ -135,7 +164,7 @@ describe("vote sms api", () => {
     );
     expect(fetcher).toHaveBeenNthCalledWith(
       2,
-      "https://api.example.com/votes/vote-1/sms/dispatches/dispatch-1",
+      "https://api.example.com/votes/vote-1/sms/dispatches/dispatch-1?page=1&pageSize=50",
       expect.any(Object),
     );
   });
@@ -147,13 +176,12 @@ describe("vote sms api", () => {
     });
 
     const sent = await client.sendVoteSms({
-      message: "저장되면 안 되는 본문",
       purpose: "VOTE_PARTICIPATION_REMINDER",
       voteId: "vote-1",
     });
     const detail = await client.fetchDispatch("vote-1", sent.id);
 
-    expect(JSON.stringify(detail)).not.toContain("저장되면 안 되는 본문");
+    expect(JSON.stringify(detail)).not.toContain("message");
     await expect(client.fetchDispatchPage("vote-1")).resolves.toMatchObject({
       totalItems: 1,
     });

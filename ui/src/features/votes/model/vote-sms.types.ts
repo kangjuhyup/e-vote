@@ -9,6 +9,12 @@ export type VoteSmsPurpose =
 export type SmsPurpose = VoteSmsPurpose | "FIELD_VOTING_SESSION_NOTICE";
 export type SmsDeliveryStatus = "SUCCESS" | "FAILURE";
 
+export interface ParticipationReminderTemplate {
+  buttonLabel: string;
+  code: string;
+  content: string;
+}
+
 export interface SmsDispatchSummary {
   failureCount: number;
   fieldVotingSessionId?: string;
@@ -30,13 +36,22 @@ export interface SmsDelivery {
 
 export interface SmsDispatchDetail extends SmsDispatchSummary {
   deliveries: SmsDelivery[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
 }
 
-export interface SendVoteSmsInput {
-  message: string;
-  purpose: VoteSmsPurpose;
-  voteId: string;
-}
+export type SendVoteSmsInput =
+  | {
+      purpose: "VOTE_PARTICIPATION_REMINDER";
+      voteId: string;
+    }
+  | {
+      message: string;
+      purpose: Exclude<VoteSmsPurpose, "VOTE_PARTICIPATION_REMINDER">;
+      voteId: string;
+    };
 
 export interface SendFieldSessionSmsInput {
   fieldVotingSessionId: string;

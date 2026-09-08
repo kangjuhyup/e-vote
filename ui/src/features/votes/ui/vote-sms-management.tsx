@@ -1,4 +1,5 @@
-import { CheckCircle2, MessageSquareText, Send, XCircle } from "lucide-react";
+import { MessageSquareText, Send } from "lucide-react";
+import Link from "next/link";
 import type { FormEvent } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import type {
-  SmsDispatchDetail,
   SmsDispatchSummary,
+  ParticipationReminderTemplate,
   SmsPurpose,
   VoteSmsPurpose,
 } from "@/features/votes/model/vote-sms.types";
@@ -32,47 +33,45 @@ const sendLabels: Record<VoteSmsPurpose, string> = {
 };
 
 interface VoteSmsManagementProps {
-  detailError?: string;
   dispatches: SmsDispatchSummary[];
   draft: string;
   historyError?: string;
-  isDetailLoading: boolean;
   isHistoryLoading: boolean;
   isSending: boolean;
+  isTemplateLoading: boolean;
   message?: string;
   onDraftChange: (value: string) => void;
   onPageChange: (page: number) => void;
-  onRetryDetail: () => void;
   onRetryHistory: () => void;
-  onSelectDispatch: (id: string) => void;
+  onRetryTemplate: () => void;
   onSend: (purpose: VoteSmsPurpose) => void;
   page: number;
   purpose?: VoteSmsPurpose;
-  selectedDispatch?: SmsDispatchDetail;
-  selectedDispatchId?: string;
+  participationReminderTemplate?: ParticipationReminderTemplate;
+  templateError?: string;
   totalPages: number;
+  voteId: string;
 }
 
 export function VoteSmsManagement({
-  detailError,
   dispatches,
   draft,
   historyError,
-  isDetailLoading,
   isHistoryLoading,
   isSending,
+  isTemplateLoading,
   message,
   onDraftChange,
   onPageChange,
-  onRetryDetail,
   onRetryHistory,
-  onSelectDispatch,
+  onRetryTemplate,
   onSend,
   page,
   purpose,
-  selectedDispatch,
-  selectedDispatchId,
+  participationReminderTemplate,
+  templateError,
   totalPages,
+  voteId,
 }: VoteSmsManagementProps) {
   return (
     <section aria-labelledby="vote-sms-title" className="space-y-4">
@@ -107,19 +106,38 @@ export function VoteSmsManagement({
                   <span className="text-sm font-medium">발송 목적</span>
                   <Badge variant="outline">{purposeLabels[purpose]}</Badge>
                 </div>
-                <label className="grid gap-2 text-sm font-medium">
-                  문자 내용
-                  <Textarea
-                    value={draft}
-                    onChange={(event) => onDraftChange(event.target.value)}
-                    placeholder="수신자에게 전달할 안내 내용을 입력하세요."
-                    required
-                  />
-                </label>
+                {purpose === "VOTE_PARTICIPATION_REMINDER" ? (
+                  isTemplateLoading ? (
+                    <p className="rounded-md border bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">발송 내용을 불러오는 중…</p>
+                  ) : templateError ? (
+                    <InlineError message={templateError} onRetry={onRetryTemplate} />
+                  ) : participationReminderTemplate ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">발송 내용 미리보기</p>
+                      <div className="rounded-xl bg-[#f7e600] p-4 text-sm text-[#191919] shadow-sm">
+                        <p className="whitespace-pre-line leading-6">{participationReminderTemplate.content}</p>
+                        <div className="mt-4 rounded-md bg-white/80 px-3 py-2 text-center font-medium">
+                          {participationReminderTemplate.buttonLabel}
+                        </div>
+                      </div>
+                      <p className="text-xs leading-5 text-muted-foreground">버튼에는 수신자별 개인 참여 링크가 연결됩니다.</p>
+                    </div>
+                  ) : null
+                ) : (
+                  <label className="grid gap-2 text-sm font-medium">
+                    문자 내용
+                    <Textarea
+                      value={draft}
+                      onChange={(event) => onDraftChange(event.target.value)}
+                      placeholder="수신자에게 전달할 안내 내용을 입력하세요."
+                      required
+                    />
+                  </label>
+                )}
                 <p className="text-xs leading-5 text-muted-foreground">
-                  버튼을 누르면 대상 선거인에게 즉시 발송됩니다. {purpose === "VOTE_PARTICIPATION_REMINDER" ? "각 미참여자에게 개인별 보안 참여 링크가 자동으로 추가됩니다. " : null}본문과 전화번호, 참여 링크는 발송 이력에 저장되지 않습니다.
+                  버튼을 누르면 대상 선거인에게 즉시 발송됩니다. 본문과 전화번호, 참여 링크는 발송 이력에 저장되지 않습니다.
                 </p>
-                <Button type="submit" className="w-full" disabled={isSending || draft.trim().length === 0}>
+                <Button type="submit" className="w-full" disabled={isSending || isTemplateLoading || Boolean(templateError) || (purpose === "VOTE_PARTICIPATION_REMINDER" ? !participationReminderTemplate : draft.trim().length === 0)}>
                   <Send aria-hidden="true" />
                   {isSending ? "발송 중…" : sendLabels[purpose]}
                 </Button>
@@ -138,19 +156,10 @@ export function VoteSmsManagement({
             isLoading={isHistoryLoading}
             onPageChange={onPageChange}
             onRetry={onRetryHistory}
-            onSelect={onSelectDispatch}
             page={page}
-            selectedId={selectedDispatchId}
             totalPages={totalPages}
+            voteId={voteId}
           />
-          {selectedDispatchId ? (
-            <DispatchDetail
-              dispatch={selectedDispatch}
-              error={detailError}
-              isLoading={isDetailLoading}
-              onRetry={onRetryDetail}
-            />
-          ) : null}
         </div>
       </div>
     </section>
@@ -163,20 +172,18 @@ function DispatchHistory({
   isLoading,
   onPageChange,
   onRetry,
-  onSelect,
   page,
-  selectedId,
   totalPages,
+  voteId,
 }: {
   dispatches: SmsDispatchSummary[];
   error?: string;
   isLoading: boolean;
   onPageChange: (page: number) => void;
   onRetry: () => void;
-  onSelect: (id: string) => void;
   page: number;
-  selectedId?: string;
   totalPages: number;
+  voteId: string;
 }) {
   return (
     <Card className="min-w-0 rounded-lg">
@@ -205,15 +212,17 @@ function DispatchHistory({
               </thead>
               <tbody className="divide-y">
                 {dispatches.map((dispatch) => (
-                  <tr key={dispatch.id} className={selectedId === dispatch.id ? "bg-accent/50" : undefined}>
+                  <tr key={dispatch.id}>
                     <td className="whitespace-nowrap px-3 py-3">{formatKoreanDateTime(dispatch.sentAt)}</td>
                     <td className="px-3 py-3">{purposeLabels[dispatch.purpose]}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{dispatch.recipientCount}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-emerald-700">{dispatch.successCount}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-destructive">{dispatch.failureCount}</td>
                     <td className="px-3 py-3 text-right">
-                      <Button type="button" size="sm" variant="outline" onClick={() => onSelect(dispatch.id)} aria-label={`${formatKoreanDateTime(dispatch.sentAt)} 발송 상세 보기`}>
-                        보기
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={`/votes/${voteId}/sms-dispatches/${dispatch.id}`} aria-label={`${formatKoreanDateTime(dispatch.sentAt)} 발송 상세 보기`}>
+                          보기
+                        </Link>
                       </Button>
                     </td>
                   </tr>
@@ -223,65 +232,6 @@ function DispatchHistory({
           </div>
         )}
         <PageControls page={page} totalPages={totalPages} onPageChange={onPageChange} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function DispatchDetail({
-  dispatch,
-  error,
-  isLoading,
-  onRetry,
-}: {
-  dispatch?: SmsDispatchDetail;
-  error?: string;
-  isLoading: boolean;
-  onRetry: () => void;
-}) {
-  return (
-    <Card className="min-w-0 rounded-lg">
-      <CardHeader>
-        <CardTitle className="text-base">수신자별 발송 결과</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">상세 결과를 불러오는 중…</p>
-        ) : error ? (
-          <InlineError message={error} onRetry={onRetry} />
-        ) : dispatch ? (
-          <div className="overflow-x-auto rounded-md border">
-            <table aria-label="수신자별 문자 발송 결과" className="w-full min-w-[620px] text-left text-sm">
-              <thead className="border-b bg-muted/60 text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 font-medium">수신자</th>
-                  <th className="px-3 py-2 font-medium">식별자</th>
-                  <th className="px-3 py-2 font-medium">상태</th>
-                  <th className="px-3 py-2 font-medium">실패 사유</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {dispatch.deliveries.map((delivery) => (
-                  <tr key={delivery.electorId}>
-                    <td className="px-3 py-3 font-medium">{delivery.recipientName}</td>
-                    <td className="px-3 py-3">{delivery.recipientIdentifier}</td>
-                    <td className="px-3 py-3">
-                      <span className="inline-flex items-center gap-1.5">
-                        {delivery.status === "SUCCESS" ? (
-                          <CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" />
-                        ) : (
-                          <XCircle className="size-4 text-destructive" aria-hidden="true" />
-                        )}
-                        {delivery.status === "SUCCESS" ? "성공" : "실패"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground">{delivery.failureReason ?? "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
       </CardContent>
     </Card>
   );

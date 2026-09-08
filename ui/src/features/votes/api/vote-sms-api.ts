@@ -4,6 +4,7 @@ import { voteApiFetch } from "@/shared/auth/vote-api-fetch";
 import type {
   SendFieldSessionSmsInput,
   SendVoteSmsInput,
+  ParticipationReminderTemplate,
   SmsDelivery,
   SmsDispatchDetail,
   SmsDispatchPage,
@@ -153,8 +154,12 @@ export function createVoteSmsApiClient(
       failureCount: deliveries.filter((item) => item.status === "FAILURE").length,
       id: `sms-dispatch-${sequence}`,
       recipientCount: deliveries.length,
+      page: 1,
+      pageSize: deliveries.length,
       sentAt: now(),
       successCount: deliveries.filter((item) => item.status === "SUCCESS").length,
+      totalItems: deliveries.length,
+      totalPages: deliveries.length > 0 ? 1 : 0,
     };
     mockDispatches.unshift(dispatch);
     return dispatch;
@@ -172,8 +177,29 @@ export function createVoteSmsApiClient(
         fetcher,
         baseUrl,
         `/votes/${encode(input.voteId)}/sms/${purposePaths[input.purpose]}`,
-        { method: "POST", body: JSON.stringify({ message: input.message }) },
+        input.purpose === "VOTE_PARTICIPATION_REMINDER"
+          ? { method: "POST" }
+          : { method: "POST", body: JSON.stringify({ message: input.message }) },
       ),
+    );
+  }
+
+  async function fetchParticipationReminderTemplate(
+    voteId: string,
+  ): Promise<ParticipationReminderTemplate> {
+    if (mode === "mock") {
+      return {
+        buttonLabel: "투표 참여하기",
+        code: "VOTE_PARTICIPATION_REMINDER",
+        content:
+          "[전자투표]\n아직 투표에 참여하지 않으셨습니다.\n아래 버튼을 눌러 투표에 참여해 주세요.",
+      };
+    }
+
+    return request<ParticipationReminderTemplate>(
+      fetcher,
+      baseUrl,
+      `/votes/${encode(voteId)}/sms/participation-reminder/template`,
     );
   }
 
@@ -220,7 +246,12 @@ export function createVoteSmsApiClient(
     );
   }
 
-  async function fetchDispatch(voteId: string, dispatchId: string) {
+  async function fetchDispatch(
+    voteId: string,
+    dispatchId: string,
+    page = 1,
+    pageSize = 50,
+  ) {
     if (mode === "mock") {
       const dispatch = mockDispatches.find(
         (item) => item.voteId === voteId && item.id === dispatchId,
@@ -228,19 +259,23 @@ export function createVoteSmsApiClient(
       if (!dispatch) {
         throw new Error("문자 발송 이력을 찾을 수 없습니다.");
       }
-      return dispatch;
+      const deliveryPage = paginate(dispatch.deliveries, page, pageSize);
+      return { ...dispatch, deliveries: deliveryPage.items, ...deliveryPage };
     }
 
     return request<SmsDispatchDetail>(
       fetcher,
       baseUrl,
       `/votes/${encode(voteId)}/sms/dispatches/${encode(dispatchId)}`,
+      {},
+      new URLSearchParams({ page: String(page), pageSize: String(pageSize) }),
     );
   }
 
   return {
     fetchDispatch,
     fetchDispatchPage,
+    fetchParticipationReminderTemplate,
     mode,
     sendFieldSessionSms,
     sendVoteSms,

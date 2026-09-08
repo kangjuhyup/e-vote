@@ -6,6 +6,13 @@ import { voteSmsApi } from "./vote-sms-api";
 
 const apiMode = resolveApiMode();
 
+export function participationReminderTemplateQueryOptions(voteId: string) {
+  return queryOptions({
+    queryKey: ["vote-sms", apiMode, voteId, "participation-reminder-template"],
+    queryFn: () => voteSmsApi.fetchParticipationReminderTemplate(voteId),
+  });
+}
+
 export function voteSmsDispatchPageQueryOptions(
   voteId: string,
   page: number,
@@ -21,9 +28,12 @@ export function voteSmsDispatchPageQueryOptions(
 export function voteSmsDispatchQueryOptions(
   voteId: string,
   dispatchId: string,
+  page: number,
+  pageSize = 50,
 ) {
   return queryOptions({
-    queryKey: ["vote-sms", apiMode, voteId, "dispatches", dispatchId],
-    queryFn: () => voteSmsApi.fetchDispatch(voteId, dispatchId),
+    queryKey: ["vote-sms", apiMode, voteId, "dispatches", dispatchId, page, pageSize],
+    queryFn: () => voteSmsApi.fetchDispatch(voteId, dispatchId, page, pageSize),
+    placeholderData: keepPreviousData,
   });
 }

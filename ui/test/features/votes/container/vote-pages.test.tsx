@@ -730,48 +730,6 @@ describe('vote containers', () => {
     }
   });
 
-  it('shows a development link and reissues an elector invitation', async () => {
-    renderWithQueryClient(
-      <ElectorManagementContainer voteId="active-general" />,
-    );
-
-    fireEvent.click(await screen.findByRole('button', {
-      name: '전체 문자 발송 예약',
-    }));
-    expect(await screen.findByText(/발송 대기열에 등록했습니다/)).toBeTruthy();
-
-    const linkButtons = screen.getAllByRole('button', {
-      name: '현재 링크 보기',
-    });
-    fireEvent.click(linkButtons[0]);
-
-    expect(
-      screen.getByRole('heading', { name: '선거인 참여 링크' }),
-    ).toBeTruthy();
-    expect(screen.getByText(/기존 참여 링크를 폐기/)).toBeTruthy();
-    const developmentLink = await screen.findByRole('textbox', {
-      name: '개발용 참여 링크',
-    });
-    expect(developmentLink).toHaveProperty(
-      'value',
-      expect.stringContaining('/participate#access_token='),
-    );
-    expect(screen.getByRole('link', { name: '링크 열기' })).toHaveProperty(
-      'href',
-      expect.stringContaining('/participate#access_token='),
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '새 링크 문자 발송' }));
-
-    expect(await screen.findByText(/이전 링크는 폐기/)).toBeTruthy();
-    expect(
-      await screen.findByRole('textbox', { name: '개발용 참여 링크' }),
-    ).toHaveProperty(
-      'value',
-      expect.stringContaining('/participate#access_token='),
-    );
-  });
-
   it('disables manual elector registration for electoral-roll-managed votes', async () => {
     renderWithQueryClient(
       <ElectorManagementContainer voteId="scheduled-budget" />,
@@ -1370,9 +1328,12 @@ describe('vote containers', () => {
       await screen.findByRole('heading', { name: '문자 안내' }),
     ).toBeTruthy();
     expect(screen.getByText('참여 독려')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('문자 내용'), {
-      target: { value: '아직 참여하지 않은 선거인께 안내드립니다.' },
-    });
+    expect(screen.queryByLabelText('문자 내용')).toBeNull();
+    expect(await screen.findByText('발송 내용 미리보기')).toBeTruthy();
+    expect(
+      screen.getByText(/아직 투표에 참여하지 않으셨습니다/),
+    ).toBeTruthy();
+    expect(screen.getByText('투표 참여하기')).toBeTruthy();
     fireEvent.click(
       screen.getByRole('button', { name: '참여 독려 문자 발송' }),
     );
@@ -1380,14 +1341,15 @@ describe('vote containers', () => {
     expect(
       await screen.findByText(/총 2명에게 문자를 발송했습니다/),
     ).toBeTruthy();
-    expect(screen.getByLabelText('문자 내용')).toHaveProperty('value', '');
     expect(
       await screen.findByRole('table', { name: '문자 발송 이력' }),
     ).toBeTruthy();
     expect(
-      await screen.findByRole('table', { name: '수신자별 문자 발송 결과' }),
-    ).toBeTruthy();
-    expect(screen.getByText('SIMULATED_RANDOM_FAILURE')).toBeTruthy();
+      (await screen.findAllByRole('link', { name: /발송 상세 보기/ }))[0],
+    ).toHaveProperty(
+      'href',
+      expect.stringContaining('/sms-dispatches/'),
+    );
     expect(screen.queryByText('010-****-1201')).toBeNull();
     expect(
       screen.queryByText('아직 참여하지 않은 선거인께 안내드립니다.'),
