@@ -33,3 +33,9 @@ export class DevelopmentParticipationLinkResponse {
     return new DevelopmentParticipationLinkResponse(params);
   }
 }
+
+export class DevelopmentParticipationDispatchLinkParam extends DevelopmentParticipationLinkParam {
+  @IsUUID()
+  @ApiProperty({ format: 'uuid' })
+  readonly smsDispatchId!: string;
+}

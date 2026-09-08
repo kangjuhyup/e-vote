@@ -67,6 +67,10 @@ export function createSmsDispatchEntities(
       recipientIdentifier: p.string().fieldName('recipient_identifier'),
       status: p.string().$type<SmsDeliveryStatus>(),
       failureReason: p.text().fieldName('failure_reason').nullable(),
+      participationInvitationGeneration: p
+        .integer()
+        .fieldName('participation_invitation_generation')
+        .nullable(),
       createdAt: p.datetime().fieldName('created_at'),
     },
   });

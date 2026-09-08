@@ -79,6 +79,7 @@ describe('SMS command handlers', () => {
                 recipients: [
                   {
                     electorId: 'elector-1',
+                    invitationGeneration: 1,
                     participationUrl:
                       'https://participate.test/#access_token=secret-token',
                   },
@@ -104,6 +105,17 @@ describe('SMS command handlers', () => {
           }),
         ],
       ]);
+      const savedDispatch = smsDispatchRepository.save.mock.calls[0]?.[0];
+      if (testCase.purpose === SmsMessagePurpose.VoteParticipationReminder) {
+        expect(
+          savedDispatch?.deliveries[0]?.participationInvitationGeneration,
+        ).toBe(1);
+        expect(JSON.stringify(savedDispatch)).not.toContain('access_token');
+      } else {
+        expect(
+          savedDispatch?.deliveries[0]?.participationInvitationGeneration,
+        ).toBeUndefined();
+      }
     },
   );
 
@@ -371,6 +383,7 @@ function createSmsSender(): jest.Mocked<SmsSenderPort> {
     deliveries: [
       {
         electorId: 'elector-1',
+        invitationGeneration: 1,
         recipientName: '선거인 1',
         recipientIdentifier: 'member-1',
         status: SmsDeliveryStatus.Success,

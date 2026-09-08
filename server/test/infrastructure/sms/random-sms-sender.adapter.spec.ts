@@ -32,11 +32,13 @@ describe('RandomSmsSenderAdapter', () => {
       recipients: [
         {
           electorId: 'elector-1',
+          invitationGeneration: 1,
           participationUrl:
             'https://vote.example.test/participate#access_token=one',
         },
         {
           electorId: 'elector-2',
+          invitationGeneration: 1,
           participationUrl:
             'https://vote.example.test/participate#access_token=two',
         },

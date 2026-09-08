@@ -60,4 +60,87 @@ describe('DevelopmentParticipationLinkReadAdapter', () => {
       }),
     ).resolves.toBeUndefined();
   });
+
+  it('binds a reminder delivery generation to the current invitation without reading personal data', async () => {
+    let executedSql = '';
+    const execute = jest.fn((sql: string) => {
+      executedSql = sql;
+      return Promise.resolve([
+        {
+          invitation_generation: 4,
+          invitation_id: 'invitation-1',
+          vote_id: 'vote-1',
+          elector_id: 'elector-1',
+          token_digest: 'stored-digest',
+          signing_key_id: 'current',
+          current_generation: 4,
+          revoked_at: null,
+        },
+      ]);
+    });
+    const em = {
+      getConnection: () => ({ execute }),
+      getTransactionContext: () => undefined,
+    } as unknown as EntityManager;
+
+    await expect(
+      new DevelopmentParticipationLinkReadAdapter(em).findDispatchInvitation({
+        voteId: 'vote-1',
+        smsDispatchId: 'dispatch-1',
+        electorId: 'elector-1',
+      }),
+    ).resolves.toEqual({
+      invitationGeneration: 4,
+      currentInvitation: {
+        id: 'invitation-1',
+        voteId: 'vote-1',
+        electorId: 'elector-1',
+        tokenDigest: 'stored-digest',
+        signingKeyId: 'current',
+        generation: 4,
+      },
+    });
+    expect(executedSql).toContain("d.purpose = 'VOTE_PARTICIPATION_REMINDER'");
+    expect(executedSql).toContain('participation_invitation_generation');
+    expect(executedSql).not.toContain('phone_number');
+    expect(execute).toHaveBeenCalledWith(
+      expect.any(String),
+      ['dispatch-1', 'vote-1', 'elector-1'],
+      'all',
+      undefined,
+    );
+  });
+
+  it('preserves a legacy reminder delivery as stale when no generation was recorded', async () => {
+    const em = {
+      getConnection: () => ({
+        execute: jest.fn().mockResolvedValue([
+          {
+            invitation_generation: null,
+            invitation_id: 'invitation-1',
+            vote_id: 'vote-1',
+            elector_id: 'elector-1',
+            token_digest: 'stored-digest',
+            signing_key_id: 'current',
+            current_generation: 4,
+            revoked_at: null,
+          },
+        ]),
+      }),
+      getTransactionContext: () => undefined,
+    } as unknown as EntityManager;
+
+    const result = await new DevelopmentParticipationLinkReadAdapter(
+      em,
+    ).findDispatchInvitation({
+      voteId: 'vote-1',
+      smsDispatchId: 'dispatch-legacy',
+      electorId: 'elector-1',
+    });
+    expect(result?.invitationGeneration).toBeUndefined();
+    expect(result?.currentInvitation).toMatchObject({
+      id: 'invitation-1',
+      generation: 4,
+    });
+  });
 });

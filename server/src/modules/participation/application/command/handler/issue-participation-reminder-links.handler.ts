@@ -101,6 +101,7 @@ export class IssueParticipationReminderLinksHandler implements ParticipationRemi
       invitations.push(invitation);
       links.push({
         electorId,
+        invitationGeneration: generation,
         participationUrl: `${linkBase}#access_token=${issued.token}`,
       });
     }

@@ -16,10 +16,12 @@ export type SmsDeliveryProps = {
   readonly recipientIdentifier: string;
   readonly status: SmsDeliveryStatusType;
   readonly failureReason?: string;
+  readonly participationInvitationGeneration?: number;
 };
 
 export class SmsDelivery {
   readonly failureReason?: string;
+  readonly participationInvitationGeneration?: number;
 
   private constructor(
     readonly id: string,
@@ -28,8 +30,13 @@ export class SmsDelivery {
     readonly recipientIdentifier: string,
     readonly status: SmsDeliveryStatusType,
     failureReason: string | undefined,
+    participationInvitationGeneration: number | undefined,
   ) {
     if (failureReason !== undefined) this.failureReason = failureReason;
+    if (participationInvitationGeneration !== undefined) {
+      this.participationInvitationGeneration =
+        participationInvitationGeneration;
+    }
   }
 
   static create(params: SmsDeliveryProps): SmsDelivery {
@@ -49,6 +56,15 @@ export class SmsDelivery {
     if (params.status === SmsDeliveryStatus.Failure && !failureReason) {
       throw new DomainError('failed SMS delivery must have a reason');
     }
+    if (
+      params.participationInvitationGeneration !== undefined &&
+      (!Number.isSafeInteger(params.participationInvitationGeneration) ||
+        params.participationInvitationGeneration < 1)
+    ) {
+      throw new DomainError(
+        'participation invitation generation must be a positive integer',
+      );
+    }
 
     return new SmsDelivery(
       createId(params.id),
@@ -57,6 +73,7 @@ export class SmsDelivery {
       recipientIdentifier,
       params.status,
       failureReason,
+      params.participationInvitationGeneration,
     );
   }
 }

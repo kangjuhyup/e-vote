@@ -20,6 +20,8 @@ import { ParticipationInvitationController } from '../src/modules/participation/
 import { ParticipationInvitationSmsWorker } from '../src/modules/participation/infrastructure/sms/participation-invitation-sms.worker';
 import { DevelopmentParticipationLinkController } from '../src/modules/participation/presentation/development-participation-link/development-participation-link.controller';
 import { GetDevelopmentParticipationLinkHandler } from '../src/modules/participation/application/query/handler/get-development-participation-link.handler';
+import { DevelopmentParticipationDispatchLinkController } from '../src/modules/participation/presentation/development-participation-link/development-participation-dispatch-link.controller';
+import { GetDevelopmentParticipationDispatchLinkHandler } from '../src/modules/participation/application/query/handler/get-development-participation-dispatch-link.handler';
 
 describe('AppModule', () => {
   it('registers vote statistics query endpoints and handlers', () => {
@@ -103,6 +105,7 @@ describe('AppModule', () => {
         ParticipationAccessController,
         ParticipationInvitationController,
         DevelopmentParticipationLinkController,
+        DevelopmentParticipationDispatchLinkController,
       ]),
     );
   });
@@ -114,6 +117,7 @@ describe('AppModule', () => {
     ) as unknown[];
 
     expect(providers).toContain(GetDevelopmentParticipationLinkHandler);
+    expect(providers).toContain(GetDevelopmentParticipationDispatchLinkHandler);
   });
 
   it('does not override the database health port owned by DatabaseModule', () => {

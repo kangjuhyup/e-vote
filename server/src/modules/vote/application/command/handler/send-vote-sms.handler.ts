@@ -36,6 +36,11 @@ export class VoteSmsAccessDeniedError extends Error {
   }
 }
 
+type SmsSendOutcome = {
+  readonly result: SmsSendResult;
+  readonly participationInvitationGenerations?: ReadonlyMap<string, number>;
+};
+
 @Injectable()
 export class SendVoteSmsHandler {
   constructor(
@@ -82,8 +87,8 @@ export class SendVoteSmsHandler {
 
     if (!this.smsSender) throw new SmsSenderNotConfiguredError();
 
-    const result = await this.send(command, this.smsSender);
-    const dispatch = this.createDispatch(command, result);
+    const outcome = await this.send(command, this.smsSender);
+    const dispatch = this.createDispatch(command, outcome);
     await this.smsDispatchRepository.save(dispatch);
 
     return SendVoteSmsResult.of({
@@ -100,7 +105,7 @@ export class SendVoteSmsHandler {
   private async send(
     command: SendVoteSmsCommand,
     smsSender: SmsSenderPort,
-  ): Promise<SmsSendResult> {
+  ): Promise<SmsSendOutcome> {
     const request = { voteId: command.voteId, message: command.message };
 
     switch (command.purpose) {
@@ -110,30 +115,42 @@ export class SendVoteSmsHandler {
             voteId: command.voteId,
             issuedByUserPrincipalId: command.requestedByUserPrincipalId,
           });
-        return smsSender.sendParticipationReminderToNonParticipants({
-          ...request,
-          recipients,
-        });
+        const result =
+          await smsSender.sendParticipationReminderToNonParticipants({
+            ...request,
+            recipients,
+          });
+        return {
+          result,
+          participationInvitationGenerations: new Map(
+            recipients.map((recipient) => [
+              recipient.electorId,
+              recipient.invitationGeneration,
+            ]),
+          ),
+        };
       }
       case SmsMessagePurpose.VoteResultNotice:
-        return smsSender.sendResultNotice(request);
+        return { result: await smsSender.sendResultNotice(request) };
       case SmsMessagePurpose.UpcomingVoteNotice:
-        return smsSender.sendUpcomingVoteNotice(request);
+        return { result: await smsSender.sendUpcomingVoteNotice(request) };
     }
   }
 
   private createDispatch(
     command: SendVoteSmsCommand,
-    result: SmsSendResult,
+    outcome: SmsSendOutcome,
   ): SmsDispatchAggregate {
     return SmsDispatchAggregate.create({
       id: this.smsDispatchRepository.nextId(),
       voteId: command.voteId,
       purpose: command.purpose,
       sentAt: new Date(),
-      deliveries: result.deliveries.map((delivery) => ({
+      deliveries: outcome.result.deliveries.map((delivery) => ({
         id: this.smsDispatchRepository.nextId(),
         ...delivery,
+        participationInvitationGeneration:
+          outcome.participationInvitationGenerations?.get(delivery.electorId),
       })),
     });
   }

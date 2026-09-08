@@ -4,6 +4,7 @@ export const PARTICIPATION_REMINDER_LINK_ISSUER_PORT = Symbol(
 
 export interface ParticipationReminderLinkReference {
   readonly electorId: string;
+  readonly invitationGeneration: number;
   readonly participationUrl: string;
 }
 

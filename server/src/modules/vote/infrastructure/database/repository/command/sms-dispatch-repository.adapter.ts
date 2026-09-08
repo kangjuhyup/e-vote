@@ -58,6 +58,8 @@ export class SmsDispatchRepositoryAdapter implements SmsDispatchRepositoryPort {
             recipientIdentifier: delivery.recipientIdentifier,
             status: delivery.status,
             failureReason: delivery.failureReason ?? null,
+            participationInvitationGeneration:
+              delivery.participationInvitationGeneration ?? null,
             createdAt: dispatch.sentAt,
           } as any,
         ),

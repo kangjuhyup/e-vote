@@ -25,3 +25,17 @@ export class DevelopmentParticipationLinkMismatchError extends Error {
     this.name = 'DevelopmentParticipationLinkMismatchError';
   }
 }
+
+export class DevelopmentParticipationDispatchLinkNotFoundError extends Error {
+  constructor() {
+    super('participation reminder delivery was not found');
+    this.name = 'DevelopmentParticipationDispatchLinkNotFoundError';
+  }
+}
+
+export class DevelopmentParticipationDispatchLinkStaleError extends Error {
+  constructor() {
+    super('participation link for this reminder delivery is no longer current');
+    this.name = 'DevelopmentParticipationDispatchLinkStaleError';
+  }
+}

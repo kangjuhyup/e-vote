@@ -20,7 +20,7 @@ describe('SMS dispatch repository adapters', () => {
     const dispatch = SmsDispatchAggregate.create({
       id: 'dispatch-1',
       voteId: 'vote-1',
-      purpose: SmsMessagePurpose.UpcomingVoteNotice,
+      purpose: SmsMessagePurpose.VoteParticipationReminder,
       sentAt: new Date('2026-08-30T01:00:00.000Z'),
       deliveries: [
         {
@@ -30,6 +30,7 @@ describe('SMS dispatch repository adapters', () => {
           recipientIdentifier: 'member-1',
           status: SmsDeliveryStatus.Failure,
           failureReason: 'invalid destination',
+          participationInvitationGeneration: 3,
         },
       ],
     });
@@ -50,6 +51,7 @@ describe('SMS dispatch repository adapters', () => {
       recipientIdentifier: 'member-1',
       status: SmsDeliveryStatus.Failure,
       failureReason: 'invalid destination',
+      participationInvitationGeneration: 3,
     });
     expect(created.every((data) => !('phoneNumber' in data))).toBe(true);
     expect(em.flush).toHaveBeenCalledTimes(1);

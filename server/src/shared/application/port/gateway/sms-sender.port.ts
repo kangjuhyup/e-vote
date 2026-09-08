@@ -21,6 +21,7 @@ export interface VoteSmsSendRequest {
 
 export interface ParticipationReminderSmsRecipient {
   readonly electorId: string;
+  readonly invitationGeneration: number;
   readonly participationUrl: string;
 }
 

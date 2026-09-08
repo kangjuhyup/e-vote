@@ -122,11 +122,13 @@ describe('IssueParticipationReminderLinksHandler', () => {
     expect(links).toEqual([
       {
         electorId: 'elector-existing',
+        invitationGeneration: 3,
         participationUrl:
           'https://vote.example.test/participate#access_token=token-invitation-existing-3',
       },
       {
         electorId: 'elector-new',
+        invitationGeneration: 1,
         participationUrl:
           'https://vote.example.test/participate#access_token=token-invitation-new-1',
       },

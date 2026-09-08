@@ -16,4 +16,15 @@ export interface DevelopmentParticipationLinkReadPort {
     readonly voteId: string;
     readonly electorId: string;
   }): Promise<DevelopmentParticipationInvitationReference | undefined>;
+  findDispatchInvitation(params: {
+    readonly voteId: string;
+    readonly smsDispatchId: string;
+    readonly electorId: string;
+  }): Promise<
+    | {
+        readonly invitationGeneration?: number;
+        readonly currentInvitation?: DevelopmentParticipationInvitationReference;
+      }
+    | undefined
+  >;
 }

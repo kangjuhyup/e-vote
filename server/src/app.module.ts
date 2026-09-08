@@ -168,8 +168,10 @@ import {
 import { PARTICIPATION_ACCESS_RATE_LIMIT_PORT } from './modules/participation/application/port/security/participation-access-rate-limit.port';
 import { RedisParticipationAccessRateLimitAdapter } from './modules/participation/infrastructure/security/redis-participation-access-rate-limit.adapter';
 import { DevelopmentParticipationLinkController } from './modules/participation/presentation/development-participation-link/development-participation-link.controller';
+import { DevelopmentParticipationDispatchLinkController } from './modules/participation/presentation/development-participation-link/development-participation-dispatch-link.controller';
 import { isDevelopmentParticipationLinkEnabled } from './modules/participation/presentation/development-participation-link/development-participation-link.config';
 import { GetDevelopmentParticipationLinkHandler } from './modules/participation/application/query/handler/get-development-participation-link.handler';
+import { GetDevelopmentParticipationDispatchLinkHandler } from './modules/participation/application/query/handler/get-development-participation-dispatch-link.handler';
 import { DevelopmentParticipationLinkReadAdapter } from './modules/participation/infrastructure/database/repository/query/development-participation-link-read.adapter';
 import { DEVELOPMENT_PARTICIPATION_LINK_READ_PORT } from './modules/participation/application/port/persistence/query/development-participation-link-read.port';
 import { PARTICIPATION_UI_URL } from './modules/participation/application/port/gateway/participation-invitation-sms-sender.port';
@@ -222,7 +224,10 @@ const developmentParticipationLinkEnabled =
     ParticipationAccessController,
     ParticipationInvitationController,
     ...(developmentParticipationLinkEnabled
-      ? [DevelopmentParticipationLinkController]
+      ? [
+          DevelopmentParticipationLinkController,
+          DevelopmentParticipationDispatchLinkController,
+        ]
       : []),
   ],
   providers: [
@@ -344,6 +349,7 @@ const developmentParticipationLinkEnabled =
     ...(developmentParticipationLinkEnabled
       ? [
           GetDevelopmentParticipationLinkHandler,
+          GetDevelopmentParticipationDispatchLinkHandler,
           DevelopmentParticipationLinkReadAdapter,
           {
             provide: DEVELOPMENT_PARTICIPATION_LINK_READ_PORT,
