@@ -94,24 +94,6 @@ export class VoteDetailController {
     );
   }
 
-  @Post(':voteDetailId/open')
-  @HttpCode(200)
-  async openVoteDetail(
-    @User() user: UserPrincipal,
-    @Param() params: ManageVoteDetailParam,
-    @Body() body: ChangeVoteDetailStatusBody,
-  ) {
-    return ManageVoteDetailResponse.of(
-      await this.changeVoteDetailStatusHandler!.execute(
-        ChangeVoteDetailStatusCommand.of({
-          ...params,
-          action: 'open',
-          changedAt: new Date(body.changedAt),
-        }),
-      ),
-    );
-  }
-
   @Post(':voteDetailId/close')
   @HttpCode(200)
   async closeVoteDetail(

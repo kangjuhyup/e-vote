@@ -55,10 +55,7 @@ export class ChangeVoteDetailStatusHandler {
     if (!detail) throw new ManagedResourceNotFoundError('vote detail');
     if (!detail.belongsToVote(vote.id))
       throw new ManagedResourceScopeMismatchError();
-    if (command.action === 'open') {
-      vote.assertVoteDetailOpeningAllowed();
-      detail.open(command.changedAt);
-    } else if (command.action === 'close') {
+    if (command.action === 'close') {
       detail.close(command.changedAt);
     } else {
       vote.assertChildResourcesMutable('canceled');

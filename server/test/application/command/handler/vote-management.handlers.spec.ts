@@ -20,15 +20,12 @@ import { IdentityVerificationPolicy } from '../../../../src/shared/domain/voting
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
 import { VoteDetailAggregate } from '../../../../src/modules/vote/domain/vote/vote-detail.aggregate';
 import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
-import type {
-  VoteSetupLifecyclePort,
-  VoteUsageEntitlementAccessPort,
-} from '../../../../src/shared/application/port/capability/vote-billing.port';
+import type { VoteSetupLifecyclePort } from '../../../../src/shared/application/port/capability/vote-billing.port';
 import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 import type { ParticipationAccessRevocationPort } from '../../../../src/shared/application/port/capability/participation-access-revocation.port';
 
 describe('vote management command handlers', () => {
-  it('updates and opens a vote through the authoritative repository', async () => {
+  it('updates a vote through the authoritative repository', async () => {
     const vote = createVote();
     const save = jest.fn();
     const repository = voteRepository(vote, save);
@@ -46,25 +43,8 @@ describe('vote management command handlers', () => {
         identityVerificationPolicy: { required: false },
       }),
     );
-    vote.lockForBilling('billing-order-1');
-    vote.finalizePaidBilling({
-      billingOrderId: 'billing-order-1',
-      finalizedAt: new Date(vote.startedAt.getTime() - 1),
-    });
-    await new ChangeVoteStatusHandler(
-      repository,
-      entitlementStub(true),
-      voteLifecycle,
-      transactionManagerStub(),
-    ).execute(
-      ChangeVoteStatusCommand.of({
-        voteId: vote.id,
-        action: 'open',
-        changedAt: vote.startedAt,
-      }),
-    );
-    expect(vote).toMatchObject({ title: 'Updated', status: VoteStatus.Open });
-    expect(save).toHaveBeenCalledTimes(2);
+    expect(vote).toMatchObject({ title: 'Updated', status: VoteStatus.Draft });
+    expect(save).toHaveBeenCalledTimes(1);
   });
 
   it('rejects vote setting changes after the vote has opened', async () => {
@@ -95,30 +75,6 @@ describe('vote management command handlers', () => {
     expect(save).not.toHaveBeenCalled();
   });
 
-  it('rejects opening without a paid billing entitlement', async () => {
-    const vote = createVote();
-    vote.lockForBilling('billing-order-1');
-    vote.finalizePaidBilling({
-      billingOrderId: 'billing-order-1',
-      finalizedAt: new Date(vote.startedAt.getTime() - 1),
-    });
-
-    await expect(
-      new ChangeVoteStatusHandler(
-        voteRepository(vote),
-        entitlementStub(false),
-        voteLifecycleStub(),
-        transactionManagerStub(),
-      ).execute(
-        ChangeVoteStatusCommand.of({
-          voteId: vote.id,
-          action: 'open',
-          changedAt: new Date(),
-        }),
-      ),
-    ).rejects.toThrow('paid billing order is required');
-  });
-
   it('revokes capability invitations and sessions when a vote is canceled', async () => {
     const vote = createVote();
     const revokeAccessForVote = jest.fn().mockResolvedValue(undefined);
@@ -130,7 +86,6 @@ describe('vote management command handlers', () => {
 
     await new ChangeVoteStatusHandler(
       voteRepository(vote),
-      entitlementStub(true),
       voteLifecycleStub(),
       transactionManagerStub(),
       revocation,
@@ -169,6 +124,7 @@ describe('vote management command handlers', () => {
     const details: VoteDetailRepositoryPort = {
       nextId: jest.fn(),
       findById: jest.fn().mockResolvedValue(detail),
+      findByVoteIds: jest.fn().mockResolvedValue([detail]),
       save: jest.fn(),
     };
 
@@ -222,13 +178,6 @@ function voteRepository(
     nextId: jest.fn(),
     findById: jest.fn().mockResolvedValue(vote),
     save,
-  };
-}
-
-function entitlementStub(paid: boolean): VoteUsageEntitlementAccessPort {
-  return {
-    hasPaidOrder: jest.fn().mockResolvedValue(paid),
-    findPaidVoteIds: jest.fn().mockResolvedValue(new Set()),
   };
 }
 

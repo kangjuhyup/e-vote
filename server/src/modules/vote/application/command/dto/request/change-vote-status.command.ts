@@ -1,4 +1,4 @@
-type VoteStatusAction = 'cancel' | 'close' | 'open';
+type VoteStatusAction = 'cancel' | 'close';
 
 export class ChangeVoteStatusCommand {
   private constructor(

@@ -9,10 +9,7 @@ import { ManagedResourceNotFoundError } from '../../../../../shared/application/
 import {
   VOTE_SETUP_LIFECYCLE_PORT,
   type VoteSetupLifecyclePort,
-  VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
-  type VoteUsageEntitlementAccessPort,
 } from '../../../../../shared/application/port/capability/vote-billing.port';
-import { DomainError } from '../../../../../shared/domain/domain-error';
 import {
   DATABASE_TRANSACTION_MANAGER_PROPERTY,
   Transactional,
@@ -33,8 +30,6 @@ export class ChangeVoteStatusHandler {
   constructor(
     @Inject(VOTE_REPOSITORY_PORT)
     private readonly repository: VoteRepositoryPort,
-    @Inject(VOTE_USAGE_ENTITLEMENT_ACCESS_PORT)
-    private readonly entitlementAccess: VoteUsageEntitlementAccessPort,
     @Inject(VOTE_SETUP_LIFECYCLE_PORT)
     private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
     @Inject(DATABASE_TRANSACTION_MANAGER)
@@ -51,15 +46,9 @@ export class ChangeVoteStatusHandler {
     await this.voteSetupLifecycle.lockVote(command.voteId);
     const vote = await this.repository.findById(command.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
-    if (command.action === 'open') {
-      if (!(await this.entitlementAccess.hasPaidOrder(vote.id))) {
-        throw new DomainError(
-          'a paid billing order is required to open a vote',
-        );
-      }
-      vote.open(command.changedAt);
-    } else if (command.action === 'close') vote.close(command.changedAt);
-    else {
+    if (command.action === 'close') {
+      vote.close(command.changedAt);
+    } else {
       vote.cancel(command.changedAt);
       await this.participationAccess?.revokeAccessForVote(
         vote.id,
