@@ -19,6 +19,7 @@ describe('CreateVoteDetailHandler', () => {
     const repository: VoteDetailRepositoryPort = {
       nextId: jest.fn().mockReturnValue('vote-detail-1'),
       findById: jest.fn().mockResolvedValue(undefined),
+      findByVoteIds: jest.fn().mockResolvedValue([]),
       save,
     };
     const handler = new CreateVoteDetailHandler(
@@ -59,6 +60,7 @@ describe('CreateVoteDetailHandler', () => {
     const details: VoteDetailRepositoryPort = {
       nextId: jest.fn().mockReturnValue('vote-detail-1'),
       findById: jest.fn(),
+      findByVoteIds: jest.fn().mockResolvedValue([]),
       save,
     };
     const handler = new CreateVoteDetailHandler(

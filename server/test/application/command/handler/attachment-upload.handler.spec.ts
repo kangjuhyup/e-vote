@@ -440,6 +440,7 @@ function createTargetValidator(records: {
   const voteDetailRepository: VoteDetailRepositoryPort = {
     nextId: () => 'vote-detail-id',
     findById: jest.fn().mockResolvedValue(voteDetailRecord),
+    findByVoteIds: jest.fn().mockResolvedValue([]),
     save: jest.fn(),
   };
   const candidateRepository: CandidateRepositoryPort = {

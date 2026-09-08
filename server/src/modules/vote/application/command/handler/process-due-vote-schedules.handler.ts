@@ -17,6 +17,11 @@ import {
 } from '../../../../../shared/application/persistence/transaction/transactional.decorator';
 import { ProcessDueVoteSchedulesCommand } from '../dto/request/process-due-vote-schedules.command';
 import { ProcessDueVoteSchedulesResult } from '../dto/response/process-due-vote-schedules-result.dto';
+import {
+  VOTE_DETAIL_REPOSITORY_PORT,
+  type VoteDetailRepositoryPort,
+} from '../../port/persistence/command/vote-detail-repository.port';
+import { VoteDetailStatus } from '../../../../../shared/domain/voting/type/vote-status.type';
 
 @Injectable()
 export class ProcessDueVoteSchedulesHandler {
@@ -25,6 +30,8 @@ export class ProcessDueVoteSchedulesHandler {
   constructor(
     @Inject(VOTE_SCHEDULE_REPOSITORY_PORT)
     private readonly schedules: VoteScheduleRepositoryPort,
+    @Inject(VOTE_DETAIL_REPOSITORY_PORT)
+    private readonly voteDetails: VoteDetailRepositoryPort,
     @Inject(VOTE_USAGE_ENTITLEMENT_ACCESS_PORT)
     private readonly entitlements: VoteUsageEntitlementAccessPort,
     @Inject(DATABASE_TRANSACTION_MANAGER)
@@ -53,6 +60,10 @@ export class ProcessDueVoteSchedulesHandler {
       await this.schedules.save(vote);
       openedCount += 1;
     }
+    await this.openVoteDetails(
+      opening.filter((vote) => vote.status === 'OPEN').map((vote) => vote.id),
+      command.now,
+    );
 
     const closing = await this.schedules.findDueForClosing(
       command.now,
@@ -64,7 +75,35 @@ export class ProcessDueVoteSchedulesHandler {
       await this.schedules.save(vote);
       closedCount += 1;
     }
+    await this.closeVoteDetails(
+      closing.filter((vote) => vote.status === 'CLOSED').map((vote) => vote.id),
+      command.now,
+    );
 
     return ProcessDueVoteSchedulesResult.of({ openedCount, closedCount });
+  }
+
+  private async openVoteDetails(
+    voteIds: readonly string[],
+    openedAt: Date,
+  ): Promise<void> {
+    const details = await this.voteDetails.findByVoteIds(voteIds);
+    for (const detail of details) {
+      if (detail.status !== VoteDetailStatus.Draft) continue;
+      detail.open(openedAt);
+      await this.voteDetails.save(detail);
+    }
+  }
+
+  private async closeVoteDetails(
+    voteIds: readonly string[],
+    closedAt: Date,
+  ): Promise<void> {
+    const details = await this.voteDetails.findByVoteIds(voteIds);
+    for (const detail of details) {
+      if (detail.status !== VoteDetailStatus.Open) continue;
+      detail.close(closedAt);
+      await this.voteDetails.save(detail);
+    }
   }
 }

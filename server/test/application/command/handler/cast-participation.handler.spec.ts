@@ -293,6 +293,7 @@ function createHandlerFixture(options: HandlerFixtureOptions = {}) {
     findById: jest
       .fn()
       .mockResolvedValue(createVoteDetailFixture(options.voteDetailStatus)),
+    findByVoteIds: jest.fn().mockResolvedValue([]),
     save: jest.fn().mockResolvedValue(undefined),
   };
   const electorRepository: ElectorRepositoryPort = {

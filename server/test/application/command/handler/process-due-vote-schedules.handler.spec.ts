@@ -2,6 +2,8 @@ import { ProcessDueVoteSchedulesCommand } from '../../../../src/modules/vote/app
 import { ProcessDueVoteSchedulesHandler } from '../../../../src/modules/vote/application/command/handler/process-due-vote-schedules.handler';
 import type { VoteScheduleRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-schedule-repository.port';
 import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
+import { VoteDetailAggregate } from '../../../../src/modules/vote/domain/vote/vote-detail.aggregate';
+import type { VoteDetailRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-detail-repository.port';
 import type { VoteUsageEntitlementAccessPort } from '../../../../src/shared/application/port/capability/vote-billing.port';
 import type { DatabaseTransactionManager } from '../../../../src/shared/application/port/persistence/transaction/database-transaction-manager.port';
 import {
@@ -24,7 +26,11 @@ describe('ProcessDueVoteSchedulesHandler', () => {
       new Date('2026-09-06T09:00:00.000Z'),
     );
     closing.open(new Date('2026-09-06T09:00:00.000Z'));
+    const paidDetail = voteDetail('paid-detail', paid.id);
+    const closingDetail = voteDetail('closing-detail', closing.id);
+    closingDetail.open(new Date('2026-09-06T09:00:00.000Z'));
     const repository = repositoryStub([paid, unpaid], [closing]);
+    const details = voteDetailRepositoryStub([paidDetail, closingDetail]);
     const entitlement: jest.Mocked<VoteUsageEntitlementAccessPort> = {
       hasPaidOrder: jest.fn(),
       findPaidVoteIds: jest.fn().mockResolvedValue(new Set([paid.id])),
@@ -35,6 +41,7 @@ describe('ProcessDueVoteSchedulesHandler', () => {
 
     const result = await new ProcessDueVoteSchedulesHandler(
       repository,
+      details,
       entitlement,
       transactionManager,
     ).execute(ProcessDueVoteSchedulesCommand.of({ now, batchSize: 20 }));
@@ -43,6 +50,12 @@ describe('ProcessDueVoteSchedulesHandler', () => {
     expect(paid.status).toBe('OPEN');
     expect(unpaid.status).toBe('FINALIZED');
     expect(closing.status).toBe('CLOSED');
+    expect(paidDetail.status).toBe('OPEN');
+    expect(closingDetail.status).toBe('CLOSED');
+    expect(details.save.mock.calls.map(([detail]) => detail.id)).toEqual([
+      paidDetail.id,
+      closingDetail.id,
+    ]);
     expect(repository.save.mock.calls.map(([vote]) => vote.id)).toEqual([
       paid.id,
       closing.id,
@@ -62,6 +75,7 @@ describe('ProcessDueVoteSchedulesHandler', () => {
 
     const result = await new ProcessDueVoteSchedulesHandler(
       repository,
+      voteDetailRepositoryStub(),
       entitlement,
       { runInTransaction: jest.fn(async (work) => work()) },
     ).execute(
@@ -101,6 +115,33 @@ function finalizedVote(id: string, startedAt: Date): VoteAggregate {
     finalizedAt: new Date('2026-09-06T08:00:00.000Z'),
   });
   return vote;
+}
+
+function voteDetail(id: string, voteId: string): VoteDetailAggregate {
+  return VoteDetailAggregate.create({
+    id,
+    voteId,
+    title: id,
+    type: 'CANDIDATE',
+    sortOrder: 0,
+  });
+}
+
+function voteDetailRepositoryStub(
+  details: VoteDetailAggregate[] = [],
+): jest.Mocked<VoteDetailRepositoryPort> {
+  return {
+    nextId: jest.fn(),
+    findById: jest.fn(),
+    findByVoteIds: jest
+      .fn()
+      .mockImplementation((voteIds: readonly string[]) =>
+        Promise.resolve(
+          details.filter((detail) => voteIds.includes(detail.voteId)),
+        ),
+      ),
+    save: jest.fn().mockResolvedValue(undefined),
+  };
 }
 
 function repositoryStub(

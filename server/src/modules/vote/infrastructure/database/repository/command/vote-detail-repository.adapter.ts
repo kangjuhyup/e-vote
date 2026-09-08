@@ -40,6 +40,24 @@ export class VoteDetailRepositoryAdapter implements VoteDetailRepositoryPort {
     return entity ? VoteDetailMapper.toDomain(entity) : undefined;
   }
 
+  async findByVoteIds(
+    voteIds: readonly string[],
+  ): Promise<VoteDetailAggregate[]> {
+    if (voteIds.length === 0) return [];
+
+    const { VoteDetailEntity } = await getDatabaseEntities();
+    const entities = (await this.em.find(
+      VoteDetailEntity as any,
+      { vote: { id: { $in: voteIds } } } as any,
+      {
+        populate: VOTE_DETAIL_RELATIONS,
+        ...JOINED_RELATION_LOAD_OPTIONS,
+      },
+    )) as unknown as VoteDetailPersistence[];
+
+    return entities.map(VoteDetailMapper.toDomain);
+  }
+
   async save(voteDetail: VoteDetailAggregate): Promise<void> {
     const { VoteEntity, VoteDetailEntity } = await getDatabaseEntities();
     const now = new Date();

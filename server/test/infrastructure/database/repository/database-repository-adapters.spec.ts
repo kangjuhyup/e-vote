@@ -166,6 +166,15 @@ describe('database repository adapters', () => {
       strategy: LoadStrategy.JOINED,
     });
 
+    await new VoteDetailRepositoryAdapter(em as any).findByVoteIds(['vote-1']);
+    expect(em.find.mock.calls[0][1]).toEqual({
+      vote: { id: { $in: ['vote-1'] } },
+    });
+    expect(em.find.mock.calls[0][2]).toMatchObject({
+      populate: ['vote'],
+      strategy: LoadStrategy.JOINED,
+    });
+
     await new CandidateRepositoryAdapter(em as any).findById('candidate-1');
     expect(em.findOne.mock.calls[2][2]).toMatchObject({
       populate: ['voteDetail'],
@@ -201,7 +210,7 @@ describe('database repository adapters', () => {
       'commission-1',
       ['member-1'],
     );
-    expect(em.find.mock.calls[0][2]).toMatchObject({
+    expect(em.find.mock.calls[1][2]).toMatchObject({
       populate: ['commission'],
       strategy: LoadStrategy.JOINED,
     });
@@ -209,7 +218,7 @@ describe('database repository adapters', () => {
     await new ParticipationRepositoryAdapter(em as any).findCastByVoteDetailId(
       'detail-1',
     );
-    expect(em.find.mock.calls[1][2]).toMatchObject({
+    expect(em.find.mock.calls[2][2]).toMatchObject({
       populate: ['voteDetail', 'elector', 'candidate', 'fieldVotingSession'],
       strategy: LoadStrategy.JOINED,
     });
