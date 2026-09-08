@@ -58,12 +58,24 @@ export function SubVoteOperationsContainer({ account, voteDetailId, voteId }: Su
       description="안건 투표율과 결과, 등록된 첨부파일을 확인합니다."
       actions={
         <>
-          <Button type="button" variant="outline" asChild>
-            <Link href={`/votes/${voteId}/edit`}>
+          {attachmentsDisabled ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled
+              title="진행 중이거나 잠긴 투표의 첨부파일은 수정할 수 없습니다."
+            >
               <Pencil aria-hidden="true" />
               첨부파일 수정
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" asChild>
+              <Link href={`/votes/${voteId}/edit`}>
+                <Pencil aria-hidden="true" />
+                첨부파일 수정
+              </Link>
+            </Button>
+          )}
           <Button type="button" variant="outline" asChild>
             <Link href={`/votes/${voteId}`}>
               <ArrowLeft aria-hidden="true" />

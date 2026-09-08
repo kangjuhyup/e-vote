@@ -629,6 +629,34 @@ describe('vote containers', () => {
     ).toBeNull();
   });
 
+  it('keeps active vote attachments download-only on direct edit entry', async () => {
+    const vote = voteFixtureDetails.find((item) => item.id === 'active-general');
+    if (!vote) throw new Error('active-general fixture is required');
+    vote.attachments = [
+      {
+        createdAt: '2026-09-06T12:00:00.000Z',
+        fileId: 'file-active-read-only',
+        id: 'attachment-active-read-only',
+        mimeType: 'application/pdf',
+        originalName: '진행중 공고문.pdf',
+        sizeBytes: 1024,
+        sortOrder: 0,
+        type: 'NOTICE',
+      },
+    ];
+
+    renderWithQueryClient(<VoteEditContainer voteId={vote.id} />);
+
+    expect(await screen.findByText('진행중 공고문.pdf')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: '진행중 공고문.pdf 다운로드' }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '첨부 등록' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: '진행중 공고문.pdf 삭제' }),
+    ).toBeNull();
+  });
+
   it('requires confirmation and deletes a draft vote from the edit page', async () => {
     navigation.pathname = '/votes/scheduled-budget/edit';
     const vote = voteFixtureDetails.find(
@@ -671,6 +699,9 @@ describe('vote containers', () => {
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '첨부 등록' })).toBeNull();
     expect(screen.queryByLabelText('파일')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: '첨부파일 수정' }),
+    ).toHaveProperty('disabled', true);
   });
 
   it('renders elector management with the registration form', async () => {

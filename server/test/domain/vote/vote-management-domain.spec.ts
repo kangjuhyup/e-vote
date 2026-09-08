@@ -49,6 +49,36 @@ describe('vote management domain behavior', () => {
     ).toThrow(DomainError);
   });
 
+  it('rejects every vote content mutation after the vote opens', () => {
+    const vote = createVote();
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date(vote.startedAt.getTime() - 1),
+    });
+    vote.open(vote.startedAt);
+
+    expect(() =>
+      vote.updateSettings({
+        title: 'Changed while open',
+        votingChannels: [VotingChannel.Online],
+        defaultPolicy: policy(),
+        identityVerificationPolicy: IdentityVerificationPolicy.of({
+          required: false,
+        }),
+      }),
+    ).toThrow('only draft votes can be updated');
+    expect(() => vote.attachElectoralRollSnapshot('snapshot-1')).toThrow(
+      'only draft votes can be attach an electoral roll snapshot',
+    );
+    expect(() => vote.assertChildResourcesMutable('created')).toThrow(
+      'billing-locked vote resources cannot be created',
+    );
+    expect(() => vote.assertElectorsMutable('updated')).toThrow(
+      'billing-locked vote electors cannot be changed',
+    );
+  });
+
   it('locks setup while payment is pending and releases it after cancellation', () => {
     const vote = createVote();
     expect(() => vote.assertElectorsMutable('updated')).not.toThrow();

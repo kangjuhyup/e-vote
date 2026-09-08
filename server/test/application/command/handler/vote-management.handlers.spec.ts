@@ -67,6 +67,34 @@ describe('vote management command handlers', () => {
     expect(save).toHaveBeenCalledTimes(2);
   });
 
+  it('rejects vote setting changes after the vote has opened', async () => {
+    const vote = createVote();
+    vote.lockForBilling('billing-order-1');
+    vote.finalizePaidBilling({
+      billingOrderId: 'billing-order-1',
+      finalizedAt: new Date(vote.startedAt.getTime() - 1),
+    });
+    vote.open(vote.startedAt);
+    const save = jest.fn();
+
+    await expect(
+      new UpdateVoteHandler(
+        voteRepository(vote, save),
+        voteLifecycleStub(),
+        transactionManagerStub(),
+      ).execute(
+        UpdateVoteCommand.of({
+          voteId: vote.id,
+          title: 'Changed while open',
+          votingChannels: [VotingChannel.Online],
+          defaultPolicy: policyProps(),
+          identityVerificationPolicy: { required: false },
+        }),
+      ),
+    ).rejects.toThrow('only draft votes can be updated');
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it('rejects opening without a paid billing entitlement', async () => {
     const vote = createVote();
     vote.lockForBilling('billing-order-1');

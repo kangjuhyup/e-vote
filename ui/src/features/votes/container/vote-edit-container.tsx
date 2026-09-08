@@ -448,6 +448,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
             title="투표 첨부파일"
             description="공고문, 안내 자료와 기타 문서를 등록합니다. 파일은 20MB까지 등록할 수 있습니다."
             disabled={!isEditable}
+            readOnly={!isEditable}
             typeOptions={[
               { label: "공고문", value: "NOTICE" },
               { label: "안내 자료", value: "GUIDE" },
@@ -505,6 +506,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
                       title={`${subVote.title} 안건 첨부파일`}
                       description="안건 공고문, 안내 자료와 기타 문서를 관리합니다."
                       disabled={!isEditable}
+                      readOnly={!isEditable}
                       typeOptions={[
                         { label: "공고문", value: "NOTICE" },
                         { label: "안내 자료", value: "GUIDE" },
@@ -551,6 +553,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
                         title={`${subVote.title} · ${candidate.name} 첨부파일`}
                         description="후보자 프로필 이미지, 공약집, 포스터와 기타 자료를 관리합니다."
                         disabled={!isEditable}
+                        readOnly={!isEditable}
                         typeOptions={[
                           { label: "프로필 이미지", value: "PROFILE_IMAGE" },
                           { label: "공약집", value: "PLEDGE" },
