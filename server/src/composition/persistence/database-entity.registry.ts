@@ -16,6 +16,7 @@ import { createBillingEntities } from '../../modules/billing/infrastructure/data
 import { createIntegrationOutboxEntities } from '../../platform/outbox/infrastructure/database/entity/integration-outbox.entities';
 import { createParticipationAccessEntities } from '../../modules/participation/infrastructure/database/entity/participation-access.entities';
 import { createOrganizationEntities } from '../../modules/organization/infrastructure/database/entity/organization.entities';
+import { createUserProfileEntities } from '../../modules/user-profile/infrastructure/database/entity/user-profile.entities';
 
 export interface DatabaseEntityRegistry extends DatabaseEntityClasses {
   readonly databaseEntities: EntityClass<AnyEntity>[];
@@ -47,6 +48,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
   registerEntities(context, createIntegrationOutboxEntities(context));
   registerEntities(context, createParticipationAccessEntities(context));
   registerEntities(context, createOrganizationEntities(context));
+  registerEntities(context, createUserProfileEntities(context));
 
   const entities = context.entities as DatabaseEntityClasses;
   const databaseEntities = [
@@ -83,6 +85,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
     entities.ElectorParticipantSessionEntity,
     entities.ParticipationInvitationDeliveryEntity,
     entities.OrganizationApplicationEntity,
+    entities.UserProfileEntity,
   ];
 
   cachedRegistry = {

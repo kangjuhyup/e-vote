@@ -34,6 +34,7 @@ export interface DatabaseEntityClasses {
   readonly ElectorParticipantSessionEntity: EntityClass<AnyEntity>;
   readonly ParticipationInvitationDeliveryEntity: EntityClass<AnyEntity>;
   readonly OrganizationApplicationEntity: EntityClass<AnyEntity>;
+  readonly UserProfileEntity: EntityClass<AnyEntity>;
 }
 
 export interface DatabaseEntityFactoryContext {

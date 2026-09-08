@@ -3,12 +3,14 @@ export interface SignUpDraft {
   email: string;
   password: string;
   phone: string;
+  name: string;
   username: string;
 }
 
 export interface SignUpInput {
-  email?: string;
+  email: string;
+  name: string;
   password: string;
-  phone?: string;
+  phone: string;
   username: string;
 }

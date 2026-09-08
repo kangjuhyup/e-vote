@@ -30,6 +30,7 @@ describe('database entities registry', () => {
       'ParticipationInvitationEntity',
       'SmsDeliveryEntity',
       'SmsDispatchEntity',
+      'UserProfileEntity',
       'VoteAttachmentEntity',
       'VoteContentChangeHistoryEntity',
       'VoteDetailAttachmentEntity',

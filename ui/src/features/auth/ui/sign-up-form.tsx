@@ -1,9 +1,9 @@
-import Link from "next/link";
-import { LoaderCircle, ShieldCheck, UserPlus } from "lucide-react";
-import type { FormEvent } from "react";
+import Link from 'next/link';
+import { LoaderCircle, ShieldCheck, UserPlus } from 'lucide-react';
+import type { FormEvent } from 'react';
 
-import { TextField } from "@/components/forms/text-field";
-import { Button } from "@/components/ui/button";
+import { TextField } from '@/components/forms/text-field';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -11,8 +11,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import type { SignUpDraft } from "@/features/auth/model/auth.types";
+} from '@/components/ui/card';
+import type { SignUpDraft } from '@/features/auth/model/auth.types';
 
 interface SignUpFormProps {
   draft: SignUpDraft;
@@ -64,7 +64,7 @@ export function SignUpForm({
               required
               value={draft.username}
               onChange={(event) =>
-                onFieldChange("username", event.currentTarget.value)
+                onFieldChange('username', event.currentTarget.value)
               }
               hint="영문, 숫자, _, ., -를 사용해 3~64자로 입력하세요."
             />
@@ -81,7 +81,7 @@ export function SignUpForm({
                 required
                 value={draft.password}
                 onChange={(event) =>
-                  onFieldChange("password", event.currentTarget.value)
+                  onFieldChange('password', event.currentTarget.value)
                 }
                 hint="8자 이상 입력하세요."
               />
@@ -96,37 +96,52 @@ export function SignUpForm({
                 required
                 value={draft.confirmPassword}
                 onChange={(event) =>
-                  onFieldChange("confirmPassword", event.currentTarget.value)
+                  onFieldChange('confirmPassword', event.currentTarget.value)
                 }
               />
             </div>
 
             <TextField
+              id="name"
+              label="이름"
+              name="name"
+              autoComplete="name"
+              maxLength={64}
+              required
+              value={draft.name}
+              onChange={(event) =>
+                onFieldChange('name', event.currentTarget.value)
+              }
+            />
+
+            <TextField
               id="email"
-              label="이메일 (선택)"
+              label="이메일"
               name="email"
               type="email"
               autoComplete="email"
               maxLength={254}
+              required
               placeholder="name@example.com"
               value={draft.email}
               onChange={(event) =>
-                onFieldChange("email", event.currentTarget.value)
+                onFieldChange('email', event.currentTarget.value)
               }
             />
 
             <TextField
               id="phone"
-              label="휴대전화 번호 (선택)"
+              label="휴대전화 번호"
               name="phone"
               type="tel"
               autoComplete="tel"
               inputMode="tel"
               pattern="\+?[0-9]{7,15}"
+              required
               placeholder="+821012345678"
               value={draft.phone}
               onChange={(event) =>
-                onFieldChange("phone", event.currentTarget.value)
+                onFieldChange('phone', event.currentTarget.value)
               }
               hint="국가번호를 포함한 숫자 7~15자리 형식으로 입력하세요."
             />
@@ -146,7 +161,7 @@ export function SignUpForm({
               ) : (
                 <ShieldCheck aria-hidden="true" />
               )}
-              {isPending ? "계정을 만들고 있습니다" : "안전하게 회원가입"}
+              {isPending ? '계정을 만들고 있습니다' : '안전하게 회원가입'}
             </Button>
           </form>
         </CardContent>

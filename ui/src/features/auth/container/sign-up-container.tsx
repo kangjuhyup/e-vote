@@ -1,34 +1,33 @@
-"use client";
+'use client';
 
-import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 
-import { registerAccount } from "@/features/auth/api/registration-api";
+import { registerAccount } from '@/features/auth/api/registration-api';
 import type {
   SignUpDraft,
   SignUpInput,
-} from "@/features/auth/model/auth.types";
+} from '@/features/auth/model/auth.types';
 
-import { SignUpForm } from "../ui/sign-up-form";
-import { SignUpSuccess } from "../ui/sign-up-success";
+import { SignUpForm } from '../ui/sign-up-form';
+import { SignUpSuccess } from '../ui/sign-up-success';
 
 const initialDraft: SignUpDraft = {
-  confirmPassword: "",
-  email: "",
-  password: "",
-  phone: "",
-  username: "",
+  confirmPassword: '',
+  email: '',
+  name: '',
+  password: '',
+  phone: '',
+  username: '',
 };
 
 function toSignUpInput(draft: SignUpDraft): SignUpInput {
-  const email = draft.email.trim();
-  const phone = draft.phone.trim();
-
   return {
+    email: draft.email.trim(),
+    name: draft.name.trim(),
+    phone: draft.phone.trim(),
     username: draft.username.trim(),
     password: draft.password,
-    ...(email ? { email } : {}),
-    ...(phone ? { phone } : {}),
   };
 }
 
@@ -48,8 +47,12 @@ export function SignUpContainer() {
   };
 
   const handleSubmit = () => {
+    if (!draft.name.trim() || !draft.email.trim() || !draft.phone.trim()) {
+      setValidationError('이름, 이메일, 휴대전화 번호를 모두 입력해 주세요.');
+      return;
+    }
     if (draft.password !== draft.confirmPassword) {
-      setValidationError("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+      setValidationError('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
       return;
     }
 
