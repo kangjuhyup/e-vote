@@ -31,6 +31,7 @@ import type {
 import {
   getVoteDisplayStatus,
   getVoteFinalizationIssues,
+  getVoteStartFinalizationIssue,
   isVoteSetupEditable,
 } from "@/features/votes/lib/vote-finalization";
 import { resolveVoteSchedule } from "@/features/votes/lib/vote-schedule";
@@ -263,6 +264,20 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
         ? currentSteps.filter((currentStep) => currentStep !== step)
         : [...currentSteps, step],
     );
+  }
+
+  function handleCreateBillingOrder() {
+    if (!vote) return;
+    const startTimeIssue = getVoteStartFinalizationIssue(vote.startsAt);
+    if (startTimeIssue) {
+      setBillingConfirmed(false);
+      setMessage(undefined);
+      setErrorMessage(startTimeIssue);
+      return;
+    }
+    setMessage(undefined);
+    setErrorMessage(undefined);
+    createBillingMutation.mutate(vote.id);
   }
 
   return (
@@ -633,11 +648,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
                     isConfirmed={billingConfirmed}
                     isSubmitting={createBillingMutation.isPending}
                     onConfirmChange={setBillingConfirmed}
-                    onCreateOrder={() => {
-                      setMessage(undefined);
-                      setErrorMessage(undefined);
-                      createBillingMutation.mutate(vote.id);
-                    }}
+                    onCreateOrder={handleCreateBillingOrder}
                     order={billingOrder}
                   />
                 )

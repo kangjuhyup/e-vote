@@ -212,4 +212,17 @@ describe("billing api", () => {
       "결제 주문을 생성한 사용자만 이 주문을 취소할 수 있습니다.",
     );
   });
+
+  it("explains that a scheduling or lifecycle conflict can block payment", async () => {
+    const fetcher = vi.fn(async () => jsonResponse({}, 409));
+    const client = createBillingApiClient({
+      baseUrl: "https://api.example.com",
+      fetcher,
+      mode: "live",
+    });
+
+    await expect(client.createVoteUsageOrder("vote-1")).rejects.toThrow(
+      "투표 시작 시각이 지났거나 현재 투표 또는 주문 상태에서는 요청을 처리할 수 없습니다.",
+    );
+  });
 });

@@ -8,6 +8,7 @@ vi.hoisted(() => {
 
 import {
   VOTE_LIFECYCLE_REFETCH_INTERVAL_MS,
+  getVoteDetailRefetchInterval,
   getVoteListRefetchInterval,
   voteDashboardQueryOptions,
   voteDetailQueryOptions,
@@ -104,5 +105,29 @@ describe("votes query options", () => {
       "mock",
       "list",
     ]);
+  });
+
+  it("polls a finalized detail through its scheduled opening transition", () => {
+    const finalizedVote = {
+      ...draftVote,
+      billingOrderStatus: "PAID" as const,
+      status: "finalized" as const,
+    };
+
+    expect(
+      getVoteDetailRefetchInterval(
+        finalizedVote,
+        Date.parse("2026-09-09T23:59:59.500Z"),
+      ),
+    ).toBe(1_000);
+    expect(
+      getVoteDetailRefetchInterval(
+        finalizedVote,
+        Date.parse(finalizedVote.startsAt),
+      ),
+    ).toBe(VOTE_LIFECYCLE_REFETCH_INTERVAL_MS);
+    expect(
+      getVoteDetailRefetchInterval({ ...finalizedVote, status: "active" }),
+    ).toBe(false);
   });
 });

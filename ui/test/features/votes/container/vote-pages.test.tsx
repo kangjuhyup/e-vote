@@ -1100,6 +1100,9 @@ describe('vote containers', () => {
   });
 
   it('manages the assigned commission while editing a vote', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(
+      Date.parse('2026-09-01T08:59:59.999Z'),
+    );
     renderWithQueryClient(<VoteEditContainer voteId="scheduled-budget" />);
 
     expect(await screen.findByText('투표 기본 설정')).toBeTruthy();
@@ -1149,6 +1152,33 @@ describe('vote containers', () => {
     expect(
       screen.getByRole('button', { name: '투표 설정 저장' }),
     ).toHaveProperty('disabled', true);
+  });
+
+  it('blocks a payment request when the scheduled start time has arrived', async () => {
+    const createVoteUsageOrder = vi.spyOn(
+      billingApi,
+      'createVoteUsageOrder',
+    );
+    vi.spyOn(Date, 'now').mockReturnValue(
+      Date.parse('2026-09-01T09:00:00.000Z'),
+    );
+
+    renderWithQueryClient(<VoteEditContainer voteId="scheduled-budget" />);
+
+    expect(
+      await screen.findByText(
+        '투표 시작 시각이 되었거나 이미 지나 확정할 수 없습니다. 시작 시각을 미래로 변경하세요.',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('checkbox', {
+        name: /결제가 완료되거나 주문 취소·환불이 끝날 때까지/,
+      }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: '이용료 결제 요청' }),
+    ).toHaveProperty('disabled', true);
+    expect(createVoteUsageOrder).not.toHaveBeenCalled();
   });
 
   it('validates and updates the explicit vote schedule', async () => {

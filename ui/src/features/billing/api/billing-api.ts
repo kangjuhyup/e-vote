@@ -61,7 +61,9 @@ async function request<T>(
       throw new Error("결제 주문 또는 연결된 투표를 찾을 수 없습니다.");
     }
     if (response.status === 409) {
-      throw new Error("현재 투표 또는 주문 상태에서는 요청을 처리할 수 없습니다.");
+      throw new Error(
+        "투표 시작 시각이 지났거나 현재 투표 또는 주문 상태에서는 요청을 처리할 수 없습니다.",
+      );
     }
     throw new Error(`결제 API 요청에 실패했습니다. (${response.status})`);
   }

@@ -4,6 +4,7 @@ import { voteFixtureDetails } from "@/features/votes/api/votes-fixtures";
 import {
   getVoteDisplayStatus,
   getVoteFinalizationIssues,
+  getVoteStartFinalizationIssue,
   isVoteSetupEditable,
 } from "@/features/votes/lib/vote-finalization";
 
@@ -13,21 +14,29 @@ describe("vote finalization", () => {
   )!;
 
   it("accepts a complete draft vote", () => {
-    expect(getVoteFinalizationIssues(completeVote)).toEqual([]);
+    expect(
+      getVoteFinalizationIssues(
+        completeVote,
+        Date.parse("2026-09-01T08:59:59.999Z"),
+      ),
+    ).toEqual([]);
   });
 
   it("reports every missing setup required before finalization", () => {
     expect(
-      getVoteFinalizationIssues({
-        ...completeVote,
-        commissionId: undefined,
-        defaultPolicy: undefined,
-        electoralRollSnapshotId: undefined,
-        electorCount: 0,
-        subVotes: [],
-        title: " ",
-        votingChannels: [],
-      }),
+      getVoteFinalizationIssues(
+        {
+          ...completeVote,
+          commissionId: undefined,
+          defaultPolicy: undefined,
+          electoralRollSnapshotId: undefined,
+          electorCount: 0,
+          subVotes: [],
+          title: " ",
+          votingChannels: [],
+        },
+        Date.parse("2026-09-01T08:59:59.999Z"),
+      ),
     ).toEqual([
       "투표 제목을 입력하세요.",
       "투표 정책을 저장하세요.",
@@ -37,6 +46,29 @@ describe("vote finalization", () => {
       "유효한 선거인이 1명 이상 필요합니다.",
       "안건을 하나 이상 등록하세요.",
     ]);
+  });
+
+  it("blocks finalization at and after the scheduled start time", () => {
+    const startsAt = "2026-09-08T11:30:00.000Z";
+
+    expect(
+      getVoteStartFinalizationIssue(
+        startsAt,
+        Date.parse("2026-09-08T11:29:59.999Z"),
+      ),
+    ).toBeUndefined();
+    expect(
+      getVoteStartFinalizationIssue(
+        startsAt,
+        Date.parse("2026-09-08T11:30:00.000Z"),
+      ),
+    ).toContain("이미 지나");
+    expect(
+      getVoteStartFinalizationIssue(
+        startsAt,
+        Date.parse("2026-09-08T11:30:00.001Z"),
+      ),
+    ).toContain("이미 지나");
   });
 
   it.each([

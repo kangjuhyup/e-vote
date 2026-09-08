@@ -11,6 +11,9 @@ export type VoteBillingLifecycleStatus =
 
 export type VoteDisplayStatus = VoteStatus | "payment-processing";
 
+export const VOTE_START_TIME_PASSED_MESSAGE =
+  "투표 시작 시각이 되었거나 이미 지나 확정할 수 없습니다. 시작 시각을 미래로 변경하세요.";
+
 export function getVoteDisplayStatus(
   voteStatus: VoteStatus,
   billingStatus?: VoteBillingLifecycleStatus,
@@ -38,8 +41,23 @@ export function isVoteSetupEditable(
   return voteStatus === "draft" || voteStatus === "scheduled";
 }
 
-export function getVoteFinalizationIssues(vote: VoteDetail) {
+export function getVoteStartFinalizationIssue(
+  startsAt: string,
+  now = Date.now(),
+) {
+  const startsAtTime = Date.parse(startsAt);
+  return Number.isFinite(startsAtTime) && startsAtTime <= now
+    ? VOTE_START_TIME_PASSED_MESSAGE
+    : undefined;
+}
+
+export function getVoteFinalizationIssues(vote: VoteDetail, now = Date.now()) {
   const issues: string[] = [];
+
+  const startTimeIssue = getVoteStartFinalizationIssue(vote.startsAt, now);
+  if (startTimeIssue) {
+    issues.push(startTimeIssue);
+  }
 
   if (vote.title.trim().length === 0) {
     issues.push("투표 제목을 입력하세요.");

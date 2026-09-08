@@ -18,6 +18,7 @@ import { commissionManagementQueryOptions } from '@/features/votes/api/vote-oper
 import { isVoteApiMockMode } from '@/features/votes/api/votes-api';
 import { voteDetailQueryOptions } from '@/features/votes/api/votes-query-options';
 import { resolveVoteSchedule } from '@/features/votes/lib/vote-schedule';
+import { getVoteStartFinalizationIssue } from '@/features/votes/lib/vote-finalization';
 import { readIdentityVerificationPolicy } from '@/features/votes/lib/identity-verification-policy';
 import type {
   CreateVoteInput,
@@ -90,6 +91,9 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
   const selectedElectoralRoll = electoralRollsQuery.data?.items.find(
     (roll) => roll.id === selectedElectoralRollId,
   );
+  const startTimeIssue = voteDraft
+    ? getVoteStartFinalizationIssue(voteDraft.startedAt)
+    : undefined;
 
   const createSetupMutation = useMutation({
     mutationFn: async () => {
@@ -371,6 +375,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
                   ? createBillingMutation.error.message
                   : undefined
               }
+              blockingReasons={startTimeIssue ? [startTimeIssue] : []}
               hasCommission={Boolean(
                 createdVote.commissionId ?? selectedCommissionId,
               )}
@@ -379,6 +384,14 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
               onConfirmChange={setBillingConfirmed}
               onCreateOrder={() => {
                 clearStatus();
+                const currentStartTimeIssue = voteDraft
+                  ? getVoteStartFinalizationIssue(voteDraft.startedAt)
+                  : undefined;
+                if (currentStartTimeIssue) {
+                  setBillingConfirmed(false);
+                  setErrorMessage(currentStartTimeIssue);
+                  return;
+                }
                 createBillingMutation.mutate(createdVote.id);
               }}
               order={billingOrder}
