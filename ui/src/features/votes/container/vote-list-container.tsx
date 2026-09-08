@@ -29,6 +29,14 @@ interface VoteListContainerProps {
   account?: ReactNode;
 }
 
+const MANUAL_REFRESH_LOCK_MS = 800;
+
+function waitForManualRefreshLock() {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, MANUAL_REFRESH_LOCK_MS);
+  });
+}
+
 export function VoteListContainer({ account }: VoteListContainerProps) {
   const queryClient = useQueryClient();
   const refreshInFlight = useRef(false);
@@ -97,7 +105,10 @@ export function VoteListContainer({ account }: VoteListContainerProps) {
     refreshInFlight.current = true;
     setIsRefreshing(true);
     try {
-      await queryClient.resetQueries({ queryKey: ["votes"] });
+      await Promise.all([
+        queryClient.resetQueries({ queryKey: ["votes"] }),
+        waitForManualRefreshLock(),
+      ]);
     } finally {
       refreshInFlight.current = false;
       setIsRefreshing(false);
@@ -125,20 +136,14 @@ export function VoteListContainer({ account }: VoteListContainerProps) {
             type="button"
             variant="outline"
             onClick={() => void handleRefresh()}
-            disabled={isRefreshing || votesQuery.isFetching}
+            disabled={isRefreshing}
           >
             <RefreshCw
-              className={
-                isRefreshing || votesQuery.isFetching
-                  ? "motion-safe:animate-spin"
-                  : ""
-              }
+              className={isRefreshing ? "motion-safe:animate-spin" : ""}
               aria-hidden="true"
             />
             <span aria-live="polite">
-              {isRefreshing || votesQuery.isFetching
-                ? "새로고침 중…"
-                : "새로고침"}
+              {isRefreshing ? "새로고침 중…" : "새로고침"}
             </span>
           </Button>
         </div>

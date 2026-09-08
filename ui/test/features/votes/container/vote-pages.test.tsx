@@ -162,11 +162,19 @@ describe('vote containers', () => {
     expect(resetQueries).toHaveBeenCalledWith({ queryKey: ['votes'] });
 
     finishRefresh?.();
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: '새로고침' })).toHaveProperty(
-        'disabled',
-        false,
-      ),
+    expect(
+      screen.getByRole('button', { name: '새로고침 중…' }),
+    ).toHaveProperty('disabled', true);
+    fireEvent.click(screen.getByRole('button', { name: '새로고침 중…' }));
+    expect(resetQueries).toHaveBeenCalledTimes(1);
+
+    await waitFor(
+      () =>
+        expect(screen.getByRole('button', { name: '새로고침' })).toHaveProperty(
+          'disabled',
+          false,
+        ),
+      { timeout: 1_500 },
     );
   });
 
