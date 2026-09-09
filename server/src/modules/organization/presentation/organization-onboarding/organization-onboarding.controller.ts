@@ -48,6 +48,11 @@ export class OrganizationOnboardingController {
     return { items: user.managedOrganizations() };
   }
 
+  @Get('organizations/memberships')
+  async getMemberships(@User() user: UserPrincipal) {
+    return { items: await this.service.getMemberships(user) };
+  }
+
   @Get('admin/organization-applications')
   async getPage(
     @User() user: UserPrincipal,

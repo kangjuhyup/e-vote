@@ -23,6 +23,10 @@ export interface OrganizationApplicationRepositoryPort {
     applicantId: string,
   ): Promise<OrganizationApplicationAggregate | undefined>;
   findById(id: string): Promise<OrganizationApplicationAggregate | undefined>;
+  findApprovedByOrganizationGroupId(
+    tenantId: string,
+    organizationGroupId: string,
+  ): Promise<OrganizationApplicationAggregate | undefined>;
   findPage(input: {
     tenantId: string;
     page: number;

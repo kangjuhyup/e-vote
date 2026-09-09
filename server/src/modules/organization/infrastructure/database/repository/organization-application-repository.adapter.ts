@@ -99,6 +99,19 @@ export class OrganizationApplicationRepositoryAdapter implements OrganizationApp
     return row ? this.toDomain(row) : undefined;
   }
 
+  async findApprovedByOrganizationGroupId(
+    tenantId: string,
+    organizationGroupId: string,
+  ) {
+    const { OrganizationApplicationEntity } = await getDatabaseEntities();
+    const row = (await this.em.findOne(OrganizationApplicationEntity as never, {
+      tenantId,
+      authOrganizationGroupId: organizationGroupId,
+      status: 'APPROVED',
+    })) as unknown as Persistence | null;
+    return row ? this.toDomain(row) : undefined;
+  }
+
   async findPage(input: {
     tenantId: string;
     page: number;

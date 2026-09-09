@@ -73,6 +73,37 @@ export class OrganizationOnboardingService {
     return application;
   }
 
+  async getMemberships(user: UserPrincipal) {
+    const { tenantId } = this.requireTenant(user);
+    const memberships: Array<{
+      id: string;
+      code: string;
+      name: string;
+      canManage: boolean;
+    }> = [];
+    for (const group of user.groups.filter(
+      (candidate) => candidate.parentId === undefined,
+    )) {
+      const organization =
+        await this.repository.findApprovedByOrganizationGroupId(
+          tenantId,
+          group.id,
+        );
+      if (organization?.props.authOrganizationGroupCode === group.code) {
+        memberships.push({
+          id: group.id,
+          code: group.code,
+          name: organization.props.organizationName,
+          canManage: user.managesOrganization({
+            organizationGroupId: group.id,
+            organizationGroupCode: group.code,
+          }),
+        });
+      }
+    }
+    return memberships;
+  }
+
   async getPage(
     user: UserPrincipal,
     input: {

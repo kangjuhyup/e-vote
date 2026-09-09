@@ -85,6 +85,7 @@ export async function createDatabaseEntityRegistry(): Promise<DatabaseEntityRegi
     entities.ElectorParticipantSessionEntity,
     entities.ParticipationInvitationDeliveryEntity,
     entities.OrganizationApplicationEntity,
+    entities.OrganizationInvitationEntity,
     entities.UserProfileEntity,
   ];
 

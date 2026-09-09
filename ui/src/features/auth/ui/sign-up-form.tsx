@@ -18,6 +18,7 @@ interface SignUpFormProps {
   draft: SignUpDraft;
   error?: string;
   isPending: boolean;
+  loginHref?: string;
   onFieldChange: (field: keyof SignUpDraft, value: string) => void;
   onSubmit: () => void;
 }
@@ -26,6 +27,7 @@ export function SignUpForm({
   draft,
   error,
   isPending,
+  loginHref = '/',
   onFieldChange,
   onSubmit,
 }: SignUpFormProps) {
@@ -169,7 +171,7 @@ export function SignUpForm({
         <CardFooter className="justify-center border-t text-sm text-muted-foreground">
           이미 계정이 있나요?
           <Button asChild variant="link" className="h-auto px-2 py-0">
-            <Link href="/">로그인</Link>
+            <Link href={loginHref}>로그인</Link>
           </Button>
         </CardFooter>
       </Card>

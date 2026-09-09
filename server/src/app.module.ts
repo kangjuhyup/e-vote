@@ -180,6 +180,8 @@ import { PARTICIPATION_UI_URL } from './modules/participation/application/port/g
 import { PARTICIPATION_REMINDER_LINK_ISSUER_PORT } from './shared/application/port/capability/participation-reminder-link-issuer.port';
 import { OrganizationOnboardingController } from './modules/organization/presentation/organization-onboarding/organization-onboarding.controller';
 import { OrganizationOnboardingService } from './modules/organization/application/organization-onboarding.service';
+import { OrganizationMembershipService } from './modules/organization/application/organization-membership.service';
+import { OrganizationMembershipController } from './modules/organization/presentation/organization-membership/organization-membership.controller';
 import { AUTH_ORGANIZATION_PROVISIONING_PORT } from './modules/organization/application/port/gateway/auth-organization-provisioning.port';
 import { AuthAdminOrganizationProvisioningAdapter } from './modules/organization/infrastructure/auth/auth-admin-organization-provisioning.adapter';
 import { UserProfileController } from './modules/user-profile/presentation/user-profile.controller';
@@ -229,6 +231,7 @@ const developmentParticipationLinkEnabled =
     ParticipationAccessController,
     ParticipationInvitationController,
     OrganizationOnboardingController,
+    OrganizationMembershipController,
     UserProfileController,
     ...(developmentParticipationLinkEnabled
       ? [
@@ -246,6 +249,7 @@ const developmentParticipationLinkEnabled =
     ElectionCommissionManagementAccess,
     AppService,
     OrganizationOnboardingService,
+    OrganizationMembershipService,
     {
       provide: AUTH_ORGANIZATION_PROVISIONING_PORT,
       useClass: AuthAdminOrganizationProvisioningAdapter,

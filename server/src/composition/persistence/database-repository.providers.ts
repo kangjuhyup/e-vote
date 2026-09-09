@@ -71,10 +71,16 @@ import { PARTICIPATION_ACCESS_READ_PORT } from '../../modules/participation/appl
 import { ParticipationAccessReadAdapter } from '../../modules/participation/infrastructure/database/repository/query/participation-access-read.adapter';
 import { ORGANIZATION_APPLICATION_REPOSITORY_PORT } from '../../modules/organization/application/port/persistence/organization-application-repository.port';
 import { OrganizationApplicationRepositoryAdapter } from '../../modules/organization/infrastructure/database/repository/organization-application-repository.adapter';
+import { ORGANIZATION_INVITATION_REPOSITORY_PORT } from '../../modules/organization/application/port/persistence/organization-invitation-repository.port';
+import { OrganizationInvitationRepositoryAdapter } from '../../modules/organization/infrastructure/database/repository/organization-invitation-repository.adapter';
 import { USER_PROFILE_REPOSITORY_PORT } from '../../modules/user-profile/application/port/user-profile-repository.port';
 import { UserProfileRepositoryAdapter } from '../../modules/user-profile/infrastructure/database/user-profile-repository.adapter';
 
 export const databaseRepositoryProviders: Provider[] = [
+  {
+    provide: ORGANIZATION_INVITATION_REPOSITORY_PORT,
+    useClass: OrganizationInvitationRepositoryAdapter,
+  },
   {
     provide: USER_PROFILE_REPOSITORY_PORT,
     useClass: UserProfileRepositoryAdapter,
@@ -238,6 +244,7 @@ export const databaseRepositoryProviders: Provider[] = [
 ];
 
 export const databaseRepositoryPortTokens = [
+  ORGANIZATION_INVITATION_REPOSITORY_PORT,
   USER_PROFILE_REPOSITORY_PORT,
   ORGANIZATION_APPLICATION_REPOSITORY_PORT,
   PARTICIPATION_ACCESS_READ_PORT,

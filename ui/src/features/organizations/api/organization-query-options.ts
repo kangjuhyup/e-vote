@@ -21,6 +21,30 @@ export function managedOrganizationsQueryOptions() {
   });
 }
 
+export function organizationMembershipsQueryOptions() {
+  return queryOptions({
+    queryKey: ['organizations', apiMode, 'memberships'],
+    queryFn: organizationApi.fetchMemberships,
+  });
+}
+
+export function organizationInvitationsQueryOptions(
+  organizationGroupId: string,
+) {
+  return queryOptions({
+    queryKey: ['organizations', apiMode, organizationGroupId, 'invitations'],
+    queryFn: () => organizationApi.fetchInvitations(organizationGroupId),
+    enabled: Boolean(organizationGroupId),
+  });
+}
+
+export function organizationInvitationQueryOptions(token: string) {
+  return queryOptions({
+    queryKey: ['organization-invitations', token],
+    queryFn: () => organizationApi.fetchInvitation(token),
+  });
+}
+
 export function organizationApplicationAdminQueryOptions(
   page: number,
   status?: OrganizationApplicationStatus,

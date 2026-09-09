@@ -26,6 +26,7 @@ describe('database entities registry', () => {
       'FileEntity',
       'IntegrationOutboxEntity',
       'OrganizationApplicationEntity',
+      'OrganizationInvitationEntity',
       'ParticipationInvitationDeliveryEntity',
       'ParticipationInvitationEntity',
       'SmsDeliveryEntity',

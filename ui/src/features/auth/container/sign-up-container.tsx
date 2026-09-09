@@ -31,7 +31,11 @@ function toSignUpInput(draft: SignUpDraft): SignUpInput {
   };
 }
 
-export function SignUpContainer() {
+export function SignUpContainer({
+  invitationToken,
+}: {
+  invitationToken?: string;
+}) {
   const [draft, setDraft] = useState(initialDraft);
   const [validationError, setValidationError] = useState<string>();
   const [registeredUsername, setRegisteredUsername] = useState<string>();
@@ -61,12 +65,26 @@ export function SignUpContainer() {
   };
 
   if (registeredUsername) {
-    return <SignUpSuccess username={registeredUsername} />;
+    return (
+      <SignUpSuccess
+        username={registeredUsername}
+        continueTo={
+          invitationToken
+            ? `/organization/invitations/${encodeURIComponent(invitationToken)}`
+            : '/'
+        }
+      />
+    );
   }
 
   return (
     <SignUpForm
       draft={draft}
+      loginHref={
+        invitationToken
+          ? `/organization/invitations/${encodeURIComponent(invitationToken)}`
+          : '/'
+      }
       error={
         validationError ??
         (registration.error instanceof Error

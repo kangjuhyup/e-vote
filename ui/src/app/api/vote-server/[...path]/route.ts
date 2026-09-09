@@ -72,7 +72,12 @@ async function proxyVoteApiRequest(
   context: VoteApiRouteContext,
 ): Promise<Response> {
   const accessToken = await resolveAccessToken(request);
-  if (!accessToken) {
+  const { path } = await context.params;
+  const isPublicInvitationLookup =
+    request.method === 'GET' &&
+    path.length === 2 &&
+    path[0] === 'organization-invitations';
+  if (!accessToken && !isPublicInvitationLookup) {
     return Response.json({ message: '로그인이 필요합니다.' }, { status: 401 });
   }
 
@@ -80,9 +85,7 @@ async function proxyVoteApiRequest(
   for (const header of FORWARDED_REQUEST_HEADER_BLOCKLIST) {
     headers.delete(header);
   }
-  headers.set('authorization', `Bearer ${accessToken}`);
-
-  const { path } = await context.params;
+  if (accessToken) headers.set('authorization', `Bearer ${accessToken}`);
   const hasBody = !['GET', 'HEAD'].includes(request.method);
 
   let upstreamResponse: Response;

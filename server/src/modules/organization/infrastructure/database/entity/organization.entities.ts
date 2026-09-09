@@ -69,5 +69,47 @@ export function createOrganizationEntities(
   });
   class OrganizationApplicationEntity extends schema.class {}
   schema.setClass(OrganizationApplicationEntity);
-  return { OrganizationApplicationEntity };
+  const invitationSchema = defineEntity({
+    name: 'OrganizationInvitationEntity',
+    tableName: 'organization_invitations',
+    uniques: [
+      {
+        name: 'organization_invitations_token_hash_unique',
+        properties: ['tokenHash'],
+      },
+    ],
+    properties: {
+      id: p.uuid().primary(),
+      tenantId: p.string().fieldName('tenant_id'),
+      tenantCode: p.string().fieldName('tenant_code'),
+      organizationGroupId: p.string().fieldName('organization_group_id'),
+      organizationGroupCode: p.string().fieldName('organization_group_code'),
+      organizationName: p.string().fieldName('organization_name'),
+      managerGroupId: p.string().fieldName('manager_group_id'),
+      managerGroupCode: p.string().fieldName('manager_group_code'),
+      contactType: p
+        .string()
+        .fieldName('contact_type')
+        .$type<'EMAIL' | 'PHONE'>(),
+      contactHash: p.string().fieldName('contact_hash'),
+      contactHint: p.string().fieldName('contact_hint'),
+      tokenHash: p.string().fieldName('token_hash'),
+      role: p.string().$type<'MEMBER' | 'MANAGER'>(),
+      status: p.string().$type<'PENDING' | 'ACCEPTED' | 'REVOKED'>(),
+      invitedByUserPrincipalId: p
+        .string()
+        .fieldName('invited_by_user_principal_id'),
+      invitedAt: p.datetime().fieldName('invited_at'),
+      expiresAt: p.datetime().fieldName('expires_at'),
+      acceptedByUserPrincipalId: p
+        .string()
+        .fieldName('accepted_by_user_principal_id')
+        .nullable(),
+      acceptedAt: p.datetime().fieldName('accepted_at').nullable(),
+      updatedAt: p.datetime().fieldName('updated_at'),
+    },
+  });
+  class OrganizationInvitationEntity extends invitationSchema.class {}
+  invitationSchema.setClass(OrganizationInvitationEntity);
+  return { OrganizationApplicationEntity, OrganizationInvitationEntity };
 }

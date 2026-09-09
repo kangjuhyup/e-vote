@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import type {
+  AuthOrganizationUser,
   AuthOrganizationProvisioningPort,
   AuthOrganizationProvisioningResult,
 } from '../../application/port/gateway/auth-organization-provisioning.port';
@@ -70,6 +71,67 @@ export class AuthAdminOrganizationProvisioningAdapter implements AuthOrganizatio
         parentId: organizationGroup.id,
       },
     };
+  }
+
+  async findUserByIdentifier(input: {
+    tenantCode: string;
+    identifier: string;
+  }): Promise<AuthOrganizationUser | undefined> {
+    const baseUrl = this.requireBaseUrl();
+    const cookie = await this.login(baseUrl);
+    const path = `/t/${encodeURIComponent(input.tenantCode)}/admin/users?search=${encodeURIComponent(input.identifier)}&page=1&limit=20`;
+    const response = await fetch(`${baseUrl}${path}`, {
+      headers: { cookie },
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!response.ok)
+      throw new Error(`AUTH_USER_LIST_FAILED_${response.status}`);
+    const body = (await response.json()) as {
+      items?: AuthOrganizationUser[];
+      data?: { items?: AuthOrganizationUser[] };
+    };
+    const normalized = normalizeIdentifier(input.identifier);
+    const matches = (body.items ?? body.data?.items ?? []).filter((user) =>
+      [user.username, user.email, user.phone]
+        .filter((value): value is string => Boolean(value))
+        .some((value) => normalizeIdentifier(value) === normalized),
+    );
+    return matches.length === 1 ? matches[0] : undefined;
+  }
+
+  async getUser(input: { tenantCode: string; userId: string }) {
+    const baseUrl = this.requireBaseUrl();
+    const cookie = await this.login(baseUrl);
+    const response = await fetch(
+      `${baseUrl}/t/${encodeURIComponent(input.tenantCode)}/admin/users/${encodeURIComponent(input.userId)}`,
+      { headers: { cookie }, signal: AbortSignal.timeout(5_000) },
+    );
+    if (response.status === 404) return undefined;
+    if (!response.ok)
+      throw new Error(`AUTH_USER_GET_FAILED_${response.status}`);
+    const body = (await response.json()) as
+      AuthOrganizationUser | { data: AuthOrganizationUser };
+    return 'data' in body ? body.data : body;
+  }
+
+  async addUserToOrganization(input: {
+    tenantCode: string;
+    userId: string;
+    organizationGroupId: string;
+    managerGroupId?: string;
+  }): Promise<void> {
+    const baseUrl = this.requireBaseUrl();
+    const cookie = await this.login(baseUrl);
+    const tenantPath = `/t/${encodeURIComponent(input.tenantCode)}/admin`;
+    const groupIds = [input.organizationGroupId, input.managerGroupId].filter(
+      (id): id is string => Boolean(id),
+    );
+    for (const groupId of groupIds) {
+      await this.requireOkOrNoOp(
+        `${baseUrl}${tenantPath}/users/${encodeURIComponent(input.userId)}/groups/${encodeURIComponent(groupId)}`,
+        { method: 'POST', headers: { cookie } },
+      );
+    }
   }
 
   private requireBaseUrl() {
@@ -209,4 +271,11 @@ export class AuthAdminOrganizationProvisioningAdapter implements AuthOrganizatio
       throw new Error(`AUTH_ASSIGNMENT_FAILED_${response.status}`);
     }
   }
+}
+
+function normalizeIdentifier(value: string) {
+  const trimmed = value.trim().toLowerCase();
+  return /^[+\d()\s-]+$/.test(trimmed)
+    ? trimmed.replace(/[^0-9+]/g, '')
+    : trimmed;
 }

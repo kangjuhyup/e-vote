@@ -42,3 +42,27 @@ export interface ManagedOrganization {
   id: string;
   code: string;
 }
+export interface OrganizationMembership extends ManagedOrganization {
+  name: string;
+  canManage: boolean;
+}
+
+export type OrganizationMemberRole = 'MEMBER' | 'MANAGER';
+export interface OrganizationInvitation {
+  id: string;
+  organizationName: string;
+  organizationGroupId: string;
+  contactHint: string;
+  role: OrganizationMemberRole;
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED';
+  invitedAt: string;
+  expiresAt: string;
+  acceptedAt?: string;
+}
+export interface OrganizationInvitationPage {
+  items: OrganizationInvitation[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}

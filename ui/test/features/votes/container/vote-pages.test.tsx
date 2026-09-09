@@ -127,8 +127,8 @@ describe('vote containers', () => {
     expect(await screen.findAllByText('2026 상반기 대표 선출')).toHaveLength(2);
   });
 
-  it('sends a user without a managed organization to organization application', async () => {
-    vi.spyOn(organizationApi, 'fetchManagedOrganizations').mockResolvedValue([]);
+  it('sends a user without an organization to organization application', async () => {
+    vi.spyOn(organizationApi, 'fetchMemberships').mockResolvedValue([]);
     navigation.pathname = '/votes/new';
 
     renderWithQueryClient(

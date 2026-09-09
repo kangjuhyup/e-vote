@@ -8,6 +8,10 @@ import type {
   OrganizationApplicationPage,
   OrganizationApplicationStatus,
   ManagedOrganization,
+  OrganizationInvitation,
+  OrganizationInvitationPage,
+  OrganizationMembership,
+  OrganizationMemberRole,
   RejectOrganizationApplicationInput,
 } from '../model/organization.types';
 
@@ -53,7 +57,7 @@ async function request<T>(
     if (response.status === 403)
       throw new Error('이 요청을 처리할 권한이 없습니다.');
     if (response.status === 404)
-      throw new Error('조직 신청을 찾을 수 없습니다.');
+      throw new Error('요청한 정보를 찾을 수 없습니다.');
     if (response.status === 409)
       throw new Error('이미 처리 중인 신청이 있거나 조직 정보가 중복됩니다.');
     if (response.status === 503)
@@ -77,6 +81,7 @@ export function createOrganizationApiClient(
   const now = options.now ?? (() => new Date().toISOString());
   let currentApplication: OrganizationApplication | undefined;
   const adminApplications: OrganizationApplication[] = [];
+  const mockInvitations: (OrganizationInvitation & { token?: string })[] = [];
 
   async function fetchManagedOrganizations(): Promise<ManagedOrganization[]> {
     if (mode === 'mock') return [{ id: 'mock-organization', code: 'ORG-001' }];
@@ -86,6 +91,135 @@ export function createOrganizationApiClient(
       '/organizations/managed',
     );
     return result.items;
+  }
+
+  async function fetchMemberships(): Promise<OrganizationMembership[]> {
+    if (mode === 'mock')
+      return [
+        {
+          id: 'mock-organization',
+          code: 'ORG-001',
+          name: '샘플 조직',
+          canManage: true,
+        },
+      ];
+    const result = await request<{ items: OrganizationMembership[] }>(
+      fetcher,
+      baseUrl,
+      '/organizations/memberships',
+    );
+    return result.items;
+  }
+
+  async function addExistingMember(input: {
+    organizationGroupId: string;
+    identifier: string;
+    role: OrganizationMemberRole;
+  }) {
+    if (mode === 'mock')
+      return {
+        userId: 'mock-member',
+        username: input.identifier,
+        requiresReauthentication: true,
+      };
+    return request<{
+      userId: string;
+      username: string;
+      requiresReauthentication: boolean;
+    }>(
+      fetcher,
+      baseUrl,
+      `/organizations/${encodeURIComponent(input.organizationGroupId)}/members`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          identifier: input.identifier,
+          role: input.role,
+        }),
+      },
+    );
+  }
+
+  async function createInvitation(input: {
+    organizationGroupId: string;
+    contact: string;
+    role: OrganizationMemberRole;
+  }) {
+    if (mode === 'mock') {
+      const token = `mock-invitation-${mockInvitations.length + 1}`;
+      const invitation: OrganizationInvitation & { token: string } = {
+        id: token,
+        organizationName: '샘플 조직',
+        organizationGroupId: input.organizationGroupId,
+        contactHint: input.contact.includes('@')
+          ? `${input.contact.slice(0, 2)}***@${input.contact.split('@')[1]}`
+          : `${input.contact.slice(0, 3)}****${input.contact.slice(-4)}`,
+        role: input.role,
+        status: 'PENDING',
+        invitedAt: now(),
+        expiresAt: new Date(Date.parse(now()) + 7 * 86_400_000).toISOString(),
+        token,
+      };
+      mockInvitations.unshift(invitation);
+      return invitation;
+    }
+    return request<OrganizationInvitation & { token: string }>(
+      fetcher,
+      baseUrl,
+      `/organizations/${encodeURIComponent(input.organizationGroupId)}/invitations`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ contact: input.contact, role: input.role }),
+      },
+    );
+  }
+
+  async function fetchInvitations(organizationGroupId: string, page = 1) {
+    if (mode === 'mock')
+      return {
+        items: mockInvitations.filter(
+          (item) => item.organizationGroupId === organizationGroupId,
+        ),
+        page,
+        pageSize: 20,
+        totalItems: mockInvitations.length,
+        totalPages: mockInvitations.length ? 1 : 0,
+      };
+    return request<OrganizationInvitationPage>(
+      fetcher,
+      baseUrl,
+      `/organizations/${encodeURIComponent(organizationGroupId)}/invitations?page=${page}&pageSize=20`,
+    );
+  }
+
+  async function fetchInvitation(token: string) {
+    if (mode === 'mock') {
+      const invitation = mockInvitations.find((item) => item.token === token);
+      if (!invitation) throw new Error('초대를 찾을 수 없습니다.');
+      return invitation;
+    }
+    return request<OrganizationInvitation>(
+      fetcher,
+      baseUrl,
+      `/organization-invitations/${encodeURIComponent(token)}`,
+    );
+  }
+
+  async function acceptInvitation(token: string) {
+    if (mode === 'mock') {
+      const invitation = await fetchInvitation(token);
+      invitation.status = 'ACCEPTED';
+      return { invitation, requiresReauthentication: true };
+    }
+    return request<{
+      invitation: OrganizationInvitation;
+      requiresReauthentication: boolean;
+    }>(
+      fetcher,
+      baseUrl,
+      `/organization-invitations/${encodeURIComponent(token)}/accept`,
+      { method: 'POST' },
+    );
   }
 
   async function fetchMyApplication() {
@@ -214,11 +348,17 @@ export function createOrganizationApiClient(
   }
 
   return {
+    acceptInvitation,
+    addExistingMember,
     approveApplication,
     createApplication,
     fetchAdminApplications,
     fetchMyApplication,
     fetchManagedOrganizations,
+    fetchMemberships,
+    fetchInvitation,
+    fetchInvitations,
+    createInvitation,
     rejectApplication,
     retryProvisioning,
   };

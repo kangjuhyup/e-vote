@@ -15,8 +15,9 @@ import { E_VOTE_PROVIDER_ID } from "@/shared/auth/oidc";
 
 export function SignInContainer({
   redirectTo,
+  signupHref = "/signup",
   description = "E-Vote 인증 서버 계정으로 운영 대시보드에 접속합니다.",
-}: { redirectTo?: string; description?: string } = {}) {
+}: { redirectTo?: string; signupHref?: string; description?: string } = {}) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,var(--accent),transparent_42%)] px-4 py-10">
       <Card className="w-full max-w-md rounded-xl shadow-lg">
@@ -27,9 +28,7 @@ export function SignInContainer({
           <CardTitle asChild>
             <h1 className="text-2xl">전자투표 로그인</h1>
           </CardTitle>
-          <CardDescription>
-            {description}
-          </CardDescription>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -48,7 +47,7 @@ export function SignInContainer({
         <CardFooter className="justify-center border-t text-sm text-muted-foreground">
           아직 계정이 없나요?
           <Button asChild variant="link" className="h-auto px-2 py-0">
-            <Link href="/signup">회원가입</Link>
+            <Link href={signupHref}>회원가입</Link>
           </Button>
         </CardFooter>
       </Card>

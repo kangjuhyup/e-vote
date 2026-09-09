@@ -11,9 +11,15 @@ import { PageShell } from '@/components/layout/page-shell';
 import { isApiMockMode } from '@/shared/config/api-mode';
 
 import { organizationApi } from '../api/organization-api';
-import { myOrganizationApplicationQueryOptions } from '../api/organization-query-options';
+import {
+  managedOrganizationsQueryOptions,
+  myOrganizationApplicationQueryOptions,
+  organizationMembershipsQueryOptions,
+} from '../api/organization-query-options';
 import { OrganizationApplicationForm } from '../ui/organization-application-form';
 import { OrganizationApplicationStatus } from '../ui/organization-application-status';
+import { OrganizationMembershipSummary } from '../ui/organization-membership-summary';
+import { OrganizationMembershipContainer } from './organization-membership-container';
 
 export function OrganizationOnboardingContainer({
   account,
@@ -23,6 +29,10 @@ export function OrganizationOnboardingContainer({
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const applicationQuery = useQuery(myOrganizationApplicationQueryOptions());
+  const managedOrganizationsQuery = useQuery(
+    managedOrganizationsQueryOptions(),
+  );
+  const membershipsQuery = useQuery(organizationMembershipsQueryOptions());
   const createMutation = useMutation({
     mutationFn: organizationApi.createApplication,
     onSuccess: (application) => {
@@ -42,9 +52,9 @@ export function OrganizationOnboardingContainer({
       title="조직 신청 및 권한"
       description="조직 생성 신청 상태를 확인하고 승인 후 투표 관리 권한을 갱신합니다."
     >
-      {applicationQuery.isLoading ? (
+      {applicationQuery.isLoading || membershipsQuery.isLoading ? (
         <SkeletonCardGrid count={1} label="조직 신청을 불러오는 중…" />
-      ) : applicationQuery.isError ? (
+      ) : applicationQuery.isError || membershipsQuery.isError ? (
         <RetryErrorCard
           title="조직 신청을 불러오지 못했습니다."
           description={
@@ -52,8 +62,26 @@ export function OrganizationOnboardingContainer({
               ? applicationQuery.error.message
               : '잠시 후 다시 시도하세요.'
           }
-          onRetry={() => applicationQuery.refetch()}
+          onRetry={() => {
+            void applicationQuery.refetch();
+            void membershipsQuery.refetch();
+          }}
         />
+      ) : (membershipsQuery.data?.length ?? 0) > 0 ? (
+        <div className="space-y-5">
+          {membershipsQuery.data?.map((membership) => (
+            <OrganizationMembershipSummary
+              key={membership.id}
+              membership={membership}
+            />
+          ))}
+          {managedOrganizationsQuery.data?.map((organization) => (
+            <OrganizationMembershipContainer
+              key={organization.id}
+              organization={organization}
+            />
+          ))}
+        </div>
       ) : application && !showForm ? (
         <OrganizationApplicationStatus
           application={application}

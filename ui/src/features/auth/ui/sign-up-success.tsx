@@ -12,9 +12,13 @@ import {
 
 interface SignUpSuccessProps {
   username: string;
+  continueTo?: string;
 }
 
-export function SignUpSuccess({ username }: SignUpSuccessProps) {
+export function SignUpSuccess({
+  username,
+  continueTo = "/",
+}: SignUpSuccessProps) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <Card className="w-full max-w-md rounded-xl text-center shadow-lg shadow-primary/5">
@@ -30,9 +34,11 @@ export function SignUpSuccess({ username }: SignUpSuccessProps) {
         </CardHeader>
         <CardContent>
           <Button asChild className="w-full">
-            <Link href="/">
+            <Link href={continueTo}>
               <LogIn aria-hidden="true" />
-              로그인하러 가기
+              {continueTo === "/"
+                ? "로그인하러 가기"
+                : "로그인하고 초대 수락하기"}
             </Link>
           </Button>
         </CardContent>

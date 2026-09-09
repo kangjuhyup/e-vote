@@ -104,4 +104,36 @@ describe('organization api', () => {
       '조직 설정이 지연되고 있습니다',
     );
   });
+
+  it('sends member and invitation actions only through Vote organization APIs', async () => {
+    const fetcher = vi
+      .fn<(input: string, init?: RequestInit) => Promise<Response>>()
+      .mockImplementation(async () =>
+        jsonResponse({ id: 'invite-1', token: 'one-time-token' }),
+      );
+    const client = createOrganizationApiClient({
+      baseUrl: '/api/vote-server',
+      fetcher,
+      mode: 'live',
+    });
+    await client.addExistingMember({
+      organizationGroupId: 'org/1',
+      identifier: 'member@example.com',
+      role: 'MEMBER',
+    });
+    await client.createInvitation({
+      organizationGroupId: 'org/1',
+      contact: 'new@example.com',
+      role: 'MANAGER',
+    });
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      '/api/vote-server/organizations/org%2F1/members',
+      '/api/vote-server/organizations/org%2F1/invitations',
+    ]);
+    expect(
+      fetcher.mock.calls.every(
+        ([url]) => !String(url).includes('/admin/users'),
+      ),
+    ).toBe(true);
+  });
 });

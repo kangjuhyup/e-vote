@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { managedOrganizationsQueryOptions } from '../api/organization-query-options';
+import { organizationMembershipsQueryOptions } from '../api/organization-query-options';
 
 const ORGANIZATION_OPTIONAL_PATHS = [
   '/admin/organization-applications',
@@ -24,7 +24,7 @@ export function OrganizationAccessContainer({
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   const organizationsQuery = useQuery({
-    ...managedOrganizationsQueryOptions(),
+    ...organizationMembershipsQueryOptions(),
     enabled: !isExempt,
   });
   const requiresApplication =
@@ -37,7 +37,9 @@ export function OrganizationAccessContainer({
   }, [requiresApplication, router]);
 
   if (!isExempt && organizationsQuery.isPending) {
-    return <OrganizationGateStatus>조직 권한을 확인하는 중…</OrganizationGateStatus>;
+    return (
+      <OrganizationGateStatus>조직 권한을 확인하는 중…</OrganizationGateStatus>
+    );
   }
   if (!isExempt && organizationsQuery.isError) {
     return (
@@ -47,7 +49,11 @@ export function OrganizationAccessContainer({
     );
   }
   if (requiresApplication) {
-    return <OrganizationGateStatus>조직 신청 화면으로 이동하는 중…</OrganizationGateStatus>;
+    return (
+      <OrganizationGateStatus>
+        조직 신청 화면으로 이동하는 중…
+      </OrganizationGateStatus>
+    );
   }
 
   return children;
@@ -56,7 +62,11 @@ export function OrganizationAccessContainer({
 function OrganizationGateStatus({ children }: { children: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
-      <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
+      <p
+        className="text-sm text-muted-foreground"
+        role="status"
+        aria-live="polite"
+      >
         {children}
       </p>
     </main>
