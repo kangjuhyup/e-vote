@@ -65,7 +65,7 @@ describe('User decorator', () => {
       tenantCode: 'acme',
       username: 'admin',
       email: 'admin@example.com',
-      roles: ['ADMIN'],
+      tenantRoles: [{ id: 'role-1', code: 'ADMIN' }],
       scopes: ['openid', 'profile'],
     });
 
@@ -117,30 +117,48 @@ describe('User decorator', () => {
 
 describe('UserPrincipal', () => {
   it('is initialized through of and defensively copies authorities', () => {
-    const roles = ['ADMIN'];
+    const tenantRoles = [{ id: 'role-1', code: 'ADMIN' }];
     const scopes = ['openid'];
     const principal = UserPrincipal.of({
       id: 'user-1',
       tenantId: 'tenant-id-1',
-      roles,
+      tenantRoles,
       scopes,
     });
 
-    roles.push('FIELD_MANAGER');
+    tenantRoles[0].code = 'FIELD_MANAGER';
     scopes.push('email');
 
     expect(principal).toMatchObject({
       id: 'user-1',
       tenantId: 'tenant-id-1',
-      roles: ['ADMIN'],
+      tenantRoles: [{ id: 'role-1', code: 'ADMIN' }],
       scopes: ['openid'],
     });
-    expect(Object.isFrozen(principal.roles)).toBe(true);
+    expect(Object.isFrozen(principal.tenantRoles)).toBe(true);
+    expect(Object.isFrozen(principal.tenantRoles[0])).toBe(true);
     expect(Object.isFrozen(principal.scopes)).toBe(true);
     expect(Object.isFrozen(principal)).toBe(true);
   });
 
   it('rejects an empty principal id', () => {
     expect(() => UserPrincipal.of({ id: ' ' })).toThrow(TypeError);
+  });
+
+  it('trusts tenant roles only when the token includes the tenant_roles scope', () => {
+    const tenantRoles = [{ id: 'role-1', code: 'vote-admin' }];
+
+    expect(
+      UserPrincipal.of({
+        id: 'admin-1',
+        tenantRoles,
+        scopes: ['tenant_roles'],
+      }).hasTenantRole('vote-admin'),
+    ).toBe(true);
+    expect(
+      UserPrincipal.of({ id: 'admin-1', tenantRoles }).hasTenantRole(
+        'vote-admin',
+      ),
+    ).toBe(false);
   });
 });

@@ -3,6 +3,11 @@ export interface UserPrincipalGroupRole {
   readonly code: string;
 }
 
+export interface UserPrincipalTenantRole {
+  readonly id: string;
+  readonly code: string;
+}
+
 export interface UserPrincipalGroup {
   readonly id: string;
   readonly code: string;
@@ -22,7 +27,7 @@ export class UserPrincipal {
     readonly tenantCode: string | undefined,
     readonly username: string | undefined,
     readonly email: string | undefined,
-    readonly roles: readonly string[],
+    readonly tenantRoles: readonly UserPrincipalTenantRole[],
     readonly groups: readonly UserPrincipalGroup[],
     readonly scopes: readonly string[],
   ) {}
@@ -33,7 +38,7 @@ export class UserPrincipal {
     tenantCode?: string;
     username?: string;
     email?: string;
-    roles?: readonly string[];
+    tenantRoles?: readonly UserPrincipalTenantRole[];
     groups?: readonly UserPrincipalGroup[];
     scopes?: readonly string[];
   }): UserPrincipal {
@@ -48,7 +53,9 @@ export class UserPrincipal {
         params.tenantCode,
         params.username,
         params.email,
-        Object.freeze([...(params.roles ?? [])]),
+        Object.freeze(
+          (params.tenantRoles ?? []).map((role) => Object.freeze({ ...role })),
+        ),
         Object.freeze(
           (params.groups ?? []).map((group) =>
             Object.freeze({
@@ -61,6 +68,13 @@ export class UserPrincipal {
         ),
         Object.freeze([...(params.scopes ?? [])]),
       ),
+    );
+  }
+
+  hasTenantRole(code: string): boolean {
+    return (
+      this.scopes.includes('tenant_roles') &&
+      this.tenantRoles.some((role) => role.code === code)
     );
   }
 

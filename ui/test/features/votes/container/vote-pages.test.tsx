@@ -128,7 +128,10 @@ describe('vote containers', () => {
   });
 
   it('sends a user without an organization to organization application', async () => {
-    vi.spyOn(organizationApi, 'fetchMemberships').mockResolvedValue([]);
+    vi.spyOn(organizationApi, 'fetchOrganizationAccess').mockResolvedValue({
+      memberships: [],
+      voteAdmin: false,
+    });
     navigation.pathname = '/votes/new';
 
     renderWithQueryClient(
@@ -144,6 +147,55 @@ describe('vote containers', () => {
       expect(navigation.replace).toHaveBeenCalledWith('/organization');
     });
     expect(screen.queryByText('투표 생성 화면')).toBeNull();
+  });
+
+  it('sends a vote admin from the signed-in landing page to administration', async () => {
+    vi.spyOn(organizationApi, 'fetchOrganizationAccess').mockResolvedValue({
+      memberships: [],
+      voteAdmin: true,
+    });
+    navigation.pathname = '/';
+
+    renderWithQueryClient(
+      <OrganizationAccessContainer>
+        <p>일반 대시보드</p>
+      </OrganizationAccessContainer>,
+    );
+
+    expect(await screen.findByText('화면으로 이동하는 중…')).toBeTruthy();
+    await waitFor(() => {
+      expect(navigation.replace).toHaveBeenCalledWith(
+        '/admin/organization-applications',
+      );
+    });
+    expect(screen.queryByText('일반 대시보드')).toBeNull();
+  });
+
+  it('sends a non-admin away from an administration route', async () => {
+    vi.spyOn(organizationApi, 'fetchOrganizationAccess').mockResolvedValue({
+      memberships: [
+        {
+          id: 'organization-1',
+          code: 'ORG-001',
+          name: '샘플 조직',
+          canManage: true,
+        },
+      ],
+      voteAdmin: false,
+    });
+    navigation.pathname = '/admin/organization-applications';
+
+    renderWithQueryClient(
+      <OrganizationAccessContainer>
+        <p>관리자 화면</p>
+      </OrganizationAccessContainer>,
+    );
+
+    expect(await screen.findByText('화면으로 이동하는 중…')).toBeTruthy();
+    await waitFor(() => {
+      expect(navigation.replace).toHaveBeenCalledWith('/');
+    });
+    expect(screen.queryByText('관리자 화면')).toBeNull();
   });
 
   it('filters the vote list by status', async () => {

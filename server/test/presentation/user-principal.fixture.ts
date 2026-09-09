@@ -5,6 +5,6 @@ export const TEST_USER_PRINCIPAL = UserPrincipal.of({
   tenantCode: 'acme',
   username: 'test-admin',
   email: 'test-admin@example.com',
-  roles: ['ADMIN'],
+  tenantRoles: [{ id: 'role-1', code: 'ADMIN' }],
   scopes: ['openid', 'profile', 'email'],
 });

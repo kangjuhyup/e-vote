@@ -14,7 +14,7 @@ import { organizationApi } from '../api/organization-api';
 import {
   managedOrganizationsQueryOptions,
   myOrganizationApplicationQueryOptions,
-  organizationMembershipsQueryOptions,
+  organizationAccessQueryOptions,
 } from '../api/organization-query-options';
 import { OrganizationApplicationForm } from '../ui/organization-application-form';
 import { OrganizationApplicationStatus } from '../ui/organization-application-status';
@@ -32,7 +32,8 @@ export function OrganizationOnboardingContainer({
   const managedOrganizationsQuery = useQuery(
     managedOrganizationsQueryOptions(),
   );
-  const membershipsQuery = useQuery(organizationMembershipsQueryOptions());
+  const accessQuery = useQuery(organizationAccessQueryOptions());
+  const memberships = accessQuery.data?.memberships;
   const createMutation = useMutation({
     mutationFn: organizationApi.createApplication,
     onSuccess: (application) => {
@@ -52,9 +53,9 @@ export function OrganizationOnboardingContainer({
       title="조직 신청 및 권한"
       description="조직 생성 신청 상태를 확인하고 승인 후 투표 관리 권한을 갱신합니다."
     >
-      {applicationQuery.isLoading || membershipsQuery.isLoading ? (
+      {applicationQuery.isLoading || accessQuery.isLoading ? (
         <SkeletonCardGrid count={1} label="조직 신청을 불러오는 중…" />
-      ) : applicationQuery.isError || membershipsQuery.isError ? (
+      ) : applicationQuery.isError || accessQuery.isError ? (
         <RetryErrorCard
           title="조직 신청을 불러오지 못했습니다."
           description={
@@ -64,12 +65,12 @@ export function OrganizationOnboardingContainer({
           }
           onRetry={() => {
             void applicationQuery.refetch();
-            void membershipsQuery.refetch();
+            void accessQuery.refetch();
           }}
         />
-      ) : (membershipsQuery.data?.length ?? 0) > 0 ? (
+      ) : (memberships?.length ?? 0) > 0 ? (
         <div className="space-y-5">
-          {membershipsQuery.data?.map((membership) => (
+          {memberships?.map((membership) => (
             <OrganizationMembershipSummary
               key={membership.id}
               membership={membership}

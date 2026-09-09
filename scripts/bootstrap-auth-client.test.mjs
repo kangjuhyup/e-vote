@@ -39,8 +39,13 @@ function existingScopesResponse() {
     items: [
       { id: 'scope-1', ...createDesiredScope(), builtIn: false },
       { id: 'scope-2', ...createDesiredScope('groups'), builtIn: false },
+      {
+        id: 'scope-3',
+        ...createDesiredScope('tenant_roles'),
+        builtIn: false,
+      },
     ],
-    total: 2,
+    total: 3,
     page: 1,
     limit: 100,
   });
@@ -69,21 +74,25 @@ test('creates the offline scope and both local OIDC clients', async () => {
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 9);
+  assert.equal(calls.length, 11);
   assert.deepEqual(JSON.parse(calls[2].options.body), createDesiredScope());
   assert.deepEqual(
     JSON.parse(calls[4].options.body),
     createDesiredScope('groups'),
   );
-  assert.deepEqual(JSON.parse(calls[6].options.body), createDesiredClient(env));
   assert.deepEqual(
-    JSON.parse(calls[7].options.body),
+    JSON.parse(calls[6].options.body),
+    createDesiredScope('tenant_roles'),
+  );
+  assert.deepEqual(JSON.parse(calls[8].options.body), createDesiredClient(env));
+  assert.deepEqual(
+    JSON.parse(calls[9].options.body),
     createDesiredResourceServer(env),
   );
-  assert.match(calls[6].options.headers.cookie, /admin_session=session-token/);
+  assert.match(calls[8].options.headers.cookie, /admin_session=session-token/);
   assert.equal(
     createDesiredClient(env).scope,
-    'openid profile email offline_access groups',
+    'openid profile email offline_access groups tenant_roles',
   );
   assert.deepEqual(createDesiredClient(env).allowedResources, [
     'https://vote-api.example.com',
@@ -160,7 +169,7 @@ test('is idempotent when the scope and clients already exist', async () => {
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'existing');
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 5);
 });
 
 test('updates refresh scope and allowed resource on a legacy public client', async () => {
@@ -202,10 +211,10 @@ test('updates refresh scope and allowed resource on a legacy public client', asy
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 6);
-  assert.equal(calls[4].options.method, 'PUT');
-  assert.deepEqual(JSON.parse(calls[4].options.body), {
-    scope: 'openid profile email offline_access groups',
+  assert.equal(calls.length, 7);
+  assert.equal(calls[5].options.method, 'PUT');
+  assert.deepEqual(JSON.parse(calls[5].options.body), {
+    scope: 'openid profile email offline_access groups tenant_roles',
     allowedResources: ['https://vote-api.example.com'],
   });
 });

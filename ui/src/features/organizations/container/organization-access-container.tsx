@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { organizationMembershipsQueryOptions } from '../api/organization-query-options';
+import { organizationAccessQueryOptions } from '../api/organization-query-options';
 
 const ORGANIZATION_OPTIONAL_PATHS = [
   '/admin/organization-applications',
@@ -20,33 +20,47 @@ export function OrganizationAccessContainer({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isAdminPath =
+    pathname === '/admin' || pathname.startsWith('/admin/');
   const isExempt = ORGANIZATION_OPTIONAL_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
-  const organizationsQuery = useQuery({
-    ...organizationMembershipsQueryOptions(),
-    enabled: !isExempt,
-  });
+  const accessQuery = useQuery(organizationAccessQueryOptions());
+  const redirectsToAdmin =
+    pathname === '/' && accessQuery.data?.voteAdmin === true;
+  const redirectsFromAdmin =
+    isAdminPath && accessQuery.isSuccess && !accessQuery.data.voteAdmin;
   const requiresApplication =
     !isExempt &&
-    organizationsQuery.isSuccess &&
-    organizationsQuery.data.length === 0;
+    accessQuery.isSuccess &&
+    accessQuery.data.memberships.length === 0;
 
   useEffect(() => {
+    if (redirectsToAdmin) {
+      router.replace('/admin/organization-applications');
+      return;
+    }
+    if (redirectsFromAdmin) {
+      router.replace('/');
+      return;
+    }
     if (requiresApplication) router.replace('/organization');
-  }, [requiresApplication, router]);
+  }, [redirectsFromAdmin, redirectsToAdmin, requiresApplication, router]);
 
-  if (!isExempt && organizationsQuery.isPending) {
+  if (accessQuery.isPending && (!isExempt || isAdminPath || pathname === '/')) {
     return (
       <OrganizationGateStatus>조직 권한을 확인하는 중…</OrganizationGateStatus>
     );
   }
-  if (!isExempt && organizationsQuery.isError) {
+  if (accessQuery.isError && (!isExempt || isAdminPath || pathname === '/')) {
     return (
       <OrganizationGateStatus>
         조직 권한을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.
       </OrganizationGateStatus>
     );
+  }
+  if (redirectsToAdmin || redirectsFromAdmin) {
+    return <OrganizationGateStatus>화면으로 이동하는 중…</OrganizationGateStatus>;
   }
   if (requiresApplication) {
     return (

@@ -28,7 +28,8 @@ function admin() {
     id: 'admin-1',
     tenantId: 'tenant-1',
     tenantCode: 'acme',
-    roles: ['vote-admin'],
+    tenantRoles: [{ id: 'role-admin', code: 'vote-admin' }],
+    scopes: ['tenant_roles'],
   });
 }
 
@@ -100,7 +101,8 @@ describe('OrganizationOnboardingService', () => {
       id: 'manager-1',
       tenantId: 'tenant-1',
       tenantCode: 'acme',
-      roles: ['vote-manager'],
+      tenantRoles: [{ id: 'role-manager', code: 'vote-manager' }],
+      scopes: ['tenant_roles'],
     });
     await expect(
       service.approve(manager, 'application-1'),

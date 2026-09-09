@@ -32,7 +32,7 @@ describe('AuthenticatedUserGuard', () => {
   const principal = UserPrincipal.of({
     id: 'user-1',
     tenantCode: 'acme',
-    roles: ['commission-admin'],
+    tenantRoles: [{ id: 'role-1', code: 'commission-admin' }],
     scopes: ['openid'],
   });
 

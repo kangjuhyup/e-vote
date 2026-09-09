@@ -33,7 +33,9 @@ export class VoteOrganizationAccessGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
     if (!protectedRoute) return true;
-    const request = context.switchToHttp().getRequest<VoteOrganizationRequest>();
+    const request = context
+      .switchToHttp()
+      .getRequest<VoteOrganizationRequest>();
     const voteId = request.params?.voteId;
     if (!voteId) return true;
     const user = request.user;
@@ -41,12 +43,16 @@ export class VoteOrganizationAccessGuard implements CanActivate {
     const vote = await this.votes.findById(voteId);
     if (!vote) throw new ForbiddenException();
 
-    if (!vote.tenantId || !vote.organizationGroupId || !vote.organizationGroupCode) {
+    if (
+      !vote.tenantId ||
+      !vote.organizationGroupId ||
+      !vote.organizationGroupCode
+    ) {
       if (vote.isCreatedBy(user.id)) return true;
       throw new ForbiddenException();
     }
     if (user.tenantId !== vote.tenantId) throw new ForbiddenException();
-    if (user.roles.includes('vote-admin')) return true;
+    if (user.hasTenantRole('vote-admin')) return true;
     if (
       user.managesOrganization({
         organizationGroupId: vote.organizationGroupId,

@@ -172,7 +172,7 @@ export class OrganizationOnboardingService {
   }
 
   private assertVoteAdmin(user: UserPrincipal) {
-    if (!user.roles.includes('vote-admin')) {
+    if (!user.hasTenantRole('vote-admin')) {
       throw new OrganizationApplicationAccessDeniedError();
     }
   }

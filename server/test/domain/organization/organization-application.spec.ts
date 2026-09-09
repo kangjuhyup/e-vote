@@ -25,7 +25,6 @@ describe('organization onboarding policy', () => {
       id: 'user-1',
       tenantId: 'tenant-1',
       tenantCode: 'acme',
-      roles: ['vote-manager'],
       groups: [
         { id: 'org-1', code: 'apt-2026-001', roles: [] },
         {

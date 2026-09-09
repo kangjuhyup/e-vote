@@ -5,6 +5,11 @@ export interface OidcIntrospectedGroupRole {
   readonly code: string;
 }
 
+export interface OidcIntrospectedTenantRole {
+  readonly id: string;
+  readonly code: string;
+}
+
 export interface OidcIntrospectedGroup {
   readonly id: string;
   readonly code: string;
@@ -112,12 +117,36 @@ function getScopes(payload: IntrospectionPayload): readonly string[] {
 function requireGroupString(
   value: Readonly<Record<string, unknown>>,
   name: string,
+  path = 'groups',
 ): string {
   const item = value[name];
   if (typeof item !== 'string' || item.trim().length === 0) {
-    throw new TypeError(`OIDC introspection groups.${name} must be a string`);
+    throw new TypeError(`OIDC introspection ${path}.${name} must be a string`);
   }
   return item.trim();
+}
+
+function getTenantRoles(
+  payload: IntrospectionPayload,
+): readonly OidcIntrospectedTenantRole[] {
+  const tenantRoles = payload.tenant_roles;
+  if (tenantRoles === undefined) return [];
+  if (!Array.isArray(tenantRoles)) {
+    throw new TypeError('OIDC introspection tenant_roles must be an array');
+  }
+
+  return tenantRoles.map((rawRole) => {
+    if (!rawRole || typeof rawRole !== 'object' || Array.isArray(rawRole)) {
+      throw new TypeError(
+        'OIDC introspection tenant_roles entry must be an object',
+      );
+    }
+    const role = rawRole as Readonly<Record<string, unknown>>;
+    return Object.freeze({
+      id: requireGroupString(role, 'id', 'tenant_roles'),
+      code: requireGroupString(role, 'code', 'tenant_roles'),
+    });
+  });
 }
 
 function getGroups(
@@ -177,7 +206,7 @@ export class OidcIntrospectTokenResult {
     readonly tenantCode: string | undefined,
     readonly username: string | undefined,
     readonly email: string | undefined,
-    readonly roles: readonly string[],
+    readonly tenantRoles: readonly OidcIntrospectedTenantRole[],
     readonly groups: readonly OidcIntrospectedGroup[],
     readonly scopes: readonly string[],
   ) {}
@@ -220,7 +249,7 @@ export class OidcIntrospectTokenResult {
         getOptionalString(payload, 'tenant_code', 'tenantCode'),
         getOptionalString(payload, 'preferred_username', 'username', 'name'),
         getOptionalString(payload, 'email'),
-        Object.freeze([...getOptionalStringArray(payload, 'roles')]),
+        Object.freeze([...getTenantRoles(payload)]),
         Object.freeze([...getGroups(payload)]),
         Object.freeze([...getScopes(payload)]),
       ),

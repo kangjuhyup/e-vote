@@ -35,7 +35,7 @@ export class OidcAccessTokenVerifierAdapter implements AccessTokenVerifierPort {
       tenantCode: result.tenantCode ?? this.config.tenantCode,
       username: result.username,
       email: result.email,
-      roles: result.roles,
+      tenantRoles: result.tenantRoles,
       groups: result.groups.map((group) => ({
         id: group.id,
         code: group.code,

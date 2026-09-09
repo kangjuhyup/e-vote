@@ -30,8 +30,8 @@ describe('createOidcTokenIntrospector', () => {
       tenant_id: 'tenant-id-1',
       preferred_username: 'kim',
       email: 'kim@example.com',
-      roles: ['commission-admin'],
-      scope: 'openid votes:write',
+      tenant_roles: [{ id: 'role-1', code: 'vote-admin' }],
+      scope: 'openid votes:write tenant_roles',
       ...overrides,
     };
   }
@@ -67,8 +67,8 @@ describe('createOidcTokenIntrospector', () => {
       tenantId: 'tenant-id-1',
       username: 'kim',
       email: 'kim@example.com',
-      roles: ['commission-admin'],
-      scopes: ['openid', 'votes:write'],
+      tenantRoles: [{ id: 'role-1', code: 'vote-admin' }],
+      scopes: ['openid', 'votes:write', 'tenant_roles'],
     });
     expect(Object.isFrozen(result)).toBe(true);
     expect(callCount).toBe(1);
@@ -109,6 +109,23 @@ describe('createOidcTokenIntrospector', () => {
 
     await expect(introspect('opaque-token')).rejects.toBeInstanceOf(
       InvalidAccessTokenError,
+    );
+  });
+
+  it.each([
+    ['non-array tenant roles', { tenant_roles: 'vote-admin' }],
+    ['tenant role without an id', { tenant_roles: [{ code: 'vote-admin' }] }],
+    ['tenant role without a code', { tenant_roles: [{ id: 'role-1' }] }],
+  ])('rejects a malformed %s claim', async (_case, overrides) => {
+    const fetcher = jest
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response(JSON.stringify(activePayload(overrides)), { status: 200 }),
+      );
+    const introspect = createOidcTokenIntrospector(config, fetcher, () => now);
+
+    await expect(introspect('opaque-token')).rejects.toBeInstanceOf(
+      AccessTokenVerificationUnavailableError,
     );
   });
 

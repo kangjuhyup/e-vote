@@ -7,6 +7,7 @@ import type {
   OrganizationApplication,
   OrganizationApplicationPage,
   OrganizationApplicationStatus,
+  OrganizationAccess,
   ManagedOrganization,
   OrganizationInvitation,
   OrganizationInvitationPage,
@@ -93,22 +94,31 @@ export function createOrganizationApiClient(
     return result.items;
   }
 
-  async function fetchMemberships(): Promise<OrganizationMembership[]> {
+  async function fetchOrganizationAccess(): Promise<OrganizationAccess> {
     if (mode === 'mock')
-      return [
-        {
-          id: 'mock-organization',
-          code: 'ORG-001',
-          name: '샘플 조직',
-          canManage: true,
-        },
-      ];
-    const result = await request<{ items: OrganizationMembership[] }>(
+      return {
+        memberships: [
+          {
+            id: 'mock-organization',
+            code: 'ORG-001',
+            name: '샘플 조직',
+            canManage: true,
+          },
+        ],
+        voteAdmin: true,
+      };
+    const result = await request<{
+      items: OrganizationMembership[];
+      voteAdmin: boolean;
+    }>(
       fetcher,
       baseUrl,
       '/organizations/memberships',
     );
-    return result.items;
+    return {
+      memberships: result.items,
+      voteAdmin: result.voteAdmin,
+    };
   }
 
   async function createInvitation(input: {
@@ -325,7 +335,7 @@ export function createOrganizationApiClient(
     fetchAdminApplications,
     fetchMyApplication,
     fetchManagedOrganizations,
-    fetchMemberships,
+    fetchOrganizationAccess,
     fetchInvitation,
     fetchInvitations,
     createInvitation,

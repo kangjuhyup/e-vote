@@ -4,6 +4,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -28,6 +29,8 @@ import {
 
 @Controller()
 export class OrganizationOnboardingController {
+  private readonly logger = new Logger(OrganizationOnboardingController.name);
+
   constructor(private readonly service: OrganizationOnboardingService) {}
 
   @Post('organization-applications')
@@ -50,7 +53,14 @@ export class OrganizationOnboardingController {
 
   @Get('organizations/memberships')
   async getMemberships(@User() user: UserPrincipal) {
-    return { items: await this.service.getMemberships(user) };
+    const voteAdmin = user.hasTenantRole('vote-admin');
+    this.logger.log(
+      `organization access resolved userPrincipalId=${user.id} tenantId=${user.tenantId ?? '<none>'} tenantRoles=${user.tenantRoles.map((role) => role.code).join(',') || '<none>'} voteAdmin=${voteAdmin}`,
+    );
+    return {
+      items: await this.service.getMemberships(user),
+      voteAdmin,
+    };
   }
 
   @Get('admin/organization-applications')

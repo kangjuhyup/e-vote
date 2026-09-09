@@ -21,10 +21,10 @@ export function managedOrganizationsQueryOptions() {
   });
 }
 
-export function organizationMembershipsQueryOptions() {
+export function organizationAccessQueryOptions() {
   return queryOptions({
-    queryKey: ['organizations', apiMode, 'memberships'],
-    queryFn: organizationApi.fetchMemberships,
+    queryKey: ['organizations', apiMode, 'access'],
+    queryFn: organizationApi.fetchOrganizationAccess,
   });
 }
 

@@ -20,6 +20,45 @@ const application = {
 };
 
 describe('organization api', () => {
+  it('reads organization memberships and vote administration capability together', async () => {
+    const fetcher = vi
+      .fn<(input: string, init?: RequestInit) => Promise<Response>>()
+      .mockResolvedValue(
+        jsonResponse({
+          items: [
+            {
+              id: 'organization-1',
+              code: 'ORG-001',
+              name: '동부센트레빌아파트',
+              canManage: false,
+            },
+          ],
+          voteAdmin: true,
+        }),
+      );
+    const client = createOrganizationApiClient({
+      baseUrl: '/api/vote-server',
+      fetcher,
+      mode: 'live',
+    });
+
+    await expect(client.fetchOrganizationAccess()).resolves.toEqual({
+      memberships: [
+        {
+          id: 'organization-1',
+          code: 'ORG-001',
+          name: '동부센트레빌아파트',
+          canManage: false,
+        },
+      ],
+      voteAdmin: true,
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/vote-server/organizations/memberships',
+      expect.any(Object),
+    );
+  });
+
   it('calls only Vote onboarding APIs for application and approval', async () => {
     const fetcher = vi
       .fn<(input: string, init?: RequestInit) => Promise<Response>>()

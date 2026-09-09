@@ -41,7 +41,7 @@ export function createDesiredClient(env = process.env) {
     grantTypes: ['authorization_code', 'refresh_token'],
     responseTypes: ['code'],
     tokenEndpointAuthMethod: 'none',
-    scope: 'openid profile email offline_access groups',
+    scope: 'openid profile email offline_access groups tenant_roles',
     postLogoutRedirectUris: [
       env.AUTH_CLIENT_POST_LOGOUT_URI || DEFAULT_POST_LOGOUT_URI,
     ],
@@ -81,13 +81,27 @@ export function createDesiredResourceServer(env = process.env) {
 }
 
 export function createDesiredScope(name = 'offline_access') {
+  const metadata = {
+    offline_access: {
+      displayName: 'Offline Access',
+      description: 'Allows the e-vote client to renew expired access tokens.',
+    },
+    groups: {
+      displayName: 'Groups',
+      description:
+        'Includes direct group authorization context in access tokens and introspection.',
+    },
+    tenant_roles: {
+      displayName: 'Tenant Roles',
+      description:
+        'Includes tenant-wide role context in access tokens and introspection.',
+    },
+  }[name];
+  if (!metadata) throw new Error('AUTH_SCOPE_NAME_INVALID');
+
   return {
     name,
-    displayName: name === 'groups' ? 'Groups' : 'Offline Access',
-    description:
-      name === 'groups'
-        ? 'Includes direct group authorization context in access tokens and introspection.'
-        : 'Allows the e-vote client to renew expired access tokens.',
+    ...metadata,
     claimKeys: [],
     enabled: true,
   };
@@ -221,6 +235,12 @@ export async function bootstrapAuthClient({
     name: 'offline_access',
   });
   await ensureScope({ baseUrl, cookieHeader, fetchImpl, name: 'groups' });
+  await ensureScope({
+    baseUrl,
+    cookieHeader,
+    fetchImpl,
+    name: 'tenant_roles',
+  });
 
   const listResponse = await requireOk(
     await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/clients?limit=100`, {

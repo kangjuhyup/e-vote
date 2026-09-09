@@ -71,7 +71,7 @@ export class VoteReadController {
         organizationGroupIds: user
           .managedOrganizations()
           .map((item) => item.id),
-        voteAdmin: user.roles.includes('vote-admin'),
+        voteAdmin: user.hasTenantRole('vote-admin'),
       }),
     );
 
@@ -108,7 +108,7 @@ export class VoteReadController {
           organizationGroupIds: user
             .managedOrganizations()
             .map((item) => item.id),
-          voteAdmin: user.roles.includes('vote-admin'),
+          voteAdmin: user.hasTenantRole('vote-admin'),
         }),
       );
 

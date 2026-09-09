@@ -27,7 +27,7 @@ describe('OidcAccessTokenVerifierAdapter', () => {
         tenant_id: 'tenant-id-1',
         preferred_username: 'kim',
         email: 'kim@example.com',
-        roles: ['commission-admin'],
+        tenant_roles: [{ id: 'tenant-role-1', code: 'vote-admin' }],
         groups: [
           {
             id: 'group-manager-1',
@@ -36,7 +36,7 @@ describe('OidcAccessTokenVerifierAdapter', () => {
             roles: [{ id: 'role-1', code: 'vote-manager' }],
           },
         ],
-        scope: 'openid profile votes:write',
+        scope: 'openid profile votes:write tenant_roles',
       }),
     );
     const adapter = new OidcAccessTokenVerifierAdapter(config, introspector);
@@ -50,7 +50,7 @@ describe('OidcAccessTokenVerifierAdapter', () => {
       tenantCode: 'acme',
       username: 'kim',
       email: 'kim@example.com',
-      roles: ['commission-admin'],
+      tenantRoles: [{ id: 'tenant-role-1', code: 'vote-admin' }],
       groups: [
         {
           id: 'group-manager-1',
@@ -59,7 +59,7 @@ describe('OidcAccessTokenVerifierAdapter', () => {
           roles: [{ id: 'role-1', code: 'vote-manager' }],
         },
       ],
-      scopes: ['openid', 'profile', 'votes:write'],
+      scopes: ['openid', 'profile', 'votes:write', 'tenant_roles'],
     });
     expect(Object.isFrozen(principal)).toBe(true);
   });

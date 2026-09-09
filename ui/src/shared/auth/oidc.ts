@@ -77,7 +77,7 @@ export function createEVoteOidcProvider(
     authorization: {
       params: {
         prompt: 'consent',
-        scope: 'openid profile email offline_access groups',
+        scope: 'openid profile email offline_access groups tenant_roles',
         resource: getVoteApiResource(environment),
       },
     },

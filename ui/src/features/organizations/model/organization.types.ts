@@ -47,6 +47,11 @@ export interface OrganizationMembership extends ManagedOrganization {
   canManage: boolean;
 }
 
+export interface OrganizationAccess {
+  memberships: OrganizationMembership[];
+  voteAdmin: boolean;
+}
+
 export type OrganizationMemberRole = 'MEMBER' | 'MANAGER';
 export interface OrganizationInvitation {
   id: string;
