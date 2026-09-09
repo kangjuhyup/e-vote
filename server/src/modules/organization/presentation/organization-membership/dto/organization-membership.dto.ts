@@ -26,11 +26,6 @@ interface OrganizationInvitationResponseSource {
   };
 }
 
-export class AddOrganizationMemberBody {
-  @IsString() @IsNotEmpty() @MaxLength(254) readonly identifier!: string;
-  @IsIn(ORGANIZATION_INVITATION_ROLES)
-  readonly role!: OrganizationInvitationRole;
-}
 export class CreateOrganizationInvitationBody {
   @IsString() @IsNotEmpty() @MaxLength(254) readonly contact!: string;
   @IsIn(ORGANIZATION_INVITATION_ROLES)

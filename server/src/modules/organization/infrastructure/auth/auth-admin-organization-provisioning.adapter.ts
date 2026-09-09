@@ -73,32 +73,6 @@ export class AuthAdminOrganizationProvisioningAdapter implements AuthOrganizatio
     };
   }
 
-  async findUserByIdentifier(input: {
-    tenantCode: string;
-    identifier: string;
-  }): Promise<AuthOrganizationUser | undefined> {
-    const baseUrl = this.requireBaseUrl();
-    const cookie = await this.login(baseUrl);
-    const path = `/t/${encodeURIComponent(input.tenantCode)}/admin/users?search=${encodeURIComponent(input.identifier)}&page=1&limit=20`;
-    const response = await fetch(`${baseUrl}${path}`, {
-      headers: { cookie },
-      signal: AbortSignal.timeout(5_000),
-    });
-    if (!response.ok)
-      throw new Error(`AUTH_USER_LIST_FAILED_${response.status}`);
-    const body = (await response.json()) as {
-      items?: AuthOrganizationUser[];
-      data?: { items?: AuthOrganizationUser[] };
-    };
-    const normalized = normalizeIdentifier(input.identifier);
-    const matches = (body.items ?? body.data?.items ?? []).filter((user) =>
-      [user.username, user.email, user.phone]
-        .filter((value): value is string => Boolean(value))
-        .some((value) => normalizeIdentifier(value) === normalized),
-    );
-    return matches.length === 1 ? matches[0] : undefined;
-  }
-
   async getUser(input: { tenantCode: string; userId: string }) {
     const baseUrl = this.requireBaseUrl();
     const cookie = await this.login(baseUrl);
@@ -271,11 +245,4 @@ export class AuthAdminOrganizationProvisioningAdapter implements AuthOrganizatio
       throw new Error(`AUTH_ASSIGNMENT_FAILED_${response.status}`);
     }
   }
-}
-
-function normalizeIdentifier(value: string) {
-  const trimmed = value.trim().toLowerCase();
-  return /^[+\d()\s-]+$/.test(trimmed)
-    ? trimmed.replace(/[^0-9+]/g, '')
-    : trimmed;
 }

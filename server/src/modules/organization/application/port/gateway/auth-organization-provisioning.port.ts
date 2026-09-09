@@ -18,10 +18,6 @@ export interface AuthOrganizationProvisioningPort {
     organizationName: string;
     organizationManagementNumber: string;
   }): Promise<AuthOrganizationProvisioningResult>;
-  findUserByIdentifier(input: {
-    tenantCode: string;
-    identifier: string;
-  }): Promise<AuthOrganizationUser | undefined>;
   getUser(input: {
     tenantCode: string;
     userId: string;

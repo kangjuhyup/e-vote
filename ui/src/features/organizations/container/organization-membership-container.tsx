@@ -19,17 +19,6 @@ export function OrganizationMembershipContainer({
   const invitations = useQuery(
     organizationInvitationsQueryOptions(organization.id),
   );
-  const addMember = useMutation({
-    mutationFn: organizationApi.addExistingMember,
-    onSuccess: (result) =>
-      setMessage(
-        `${result.username}님을 조직에 추가했습니다. 새 권한은 다음 로그인부터 적용됩니다.`,
-      ),
-    onError: (error) =>
-      setMessage(
-        error instanceof Error ? error.message : '회원을 추가하지 못했습니다.',
-      ),
-  });
   const createInvitation = useMutation({
     mutationFn: organizationApi.createInvitation,
     onSuccess: (result) => {
@@ -52,13 +41,9 @@ export function OrganizationMembershipContainer({
     <OrganizationMembershipManagement
       organizationCode={organization.code}
       invitations={invitations.data?.items ?? []}
-      isAdding={addMember.isPending}
       isCreatingInvitation={createInvitation.isPending}
       message={message}
       invitationLink={invitationLink}
-      onAddMember={(input) =>
-        addMember.mutate({ organizationGroupId: organization.id, ...input })
-      }
       onCreateInvitation={(input) =>
         createInvitation.mutate({
           organizationGroupId: organization.id,

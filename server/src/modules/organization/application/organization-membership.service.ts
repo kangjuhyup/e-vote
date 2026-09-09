@@ -14,7 +14,6 @@ import {
   OrganizationInvitationExpiredError,
   OrganizationInvitationNotFoundError,
   OrganizationInvitationRecipientMismatchError,
-  OrganizationMemberNotFoundError,
   OrganizationProvisioningUnavailableError,
 } from './organization-onboarding.error';
 import {
@@ -42,38 +41,6 @@ export class OrganizationMembershipService {
     private readonly auth: AuthOrganizationProvisioningPort,
     private readonly config: ConfigService,
   ) {}
-
-  async addExistingMember(
-    user: UserPrincipal,
-    input: {
-      organizationGroupId: string;
-      identifier: string;
-      role: OrganizationInvitationRole;
-    },
-  ) {
-    const organization = await this.requireManagedOrganization(
-      user,
-      input.organizationGroupId,
-    );
-    let member: AuthOrganizationUser | undefined;
-    try {
-      member = await this.auth.findUserByIdentifier({
-        tenantCode: organization.props.tenantCode,
-        identifier: input.identifier.trim(),
-      });
-      if (!member || member.status !== 'ACTIVE')
-        throw new OrganizationMemberNotFoundError();
-      await this.assign(organization, member.id, input.role);
-    } catch (error) {
-      if (error instanceof OrganizationMemberNotFoundError) throw error;
-      throw new OrganizationProvisioningUnavailableError();
-    }
-    return {
-      userId: member.id,
-      username: member.username,
-      requiresReauthentication: true,
-    };
-  }
 
   async createInvitation(
     user: UserPrincipal,
@@ -218,23 +185,6 @@ export class OrganizationMembershipService {
       throw new OrganizationApplicationAccessDeniedError();
     }
     return organization;
-  }
-
-  private assign(
-    organization: Awaited<
-      ReturnType<OrganizationMembershipService['requireManagedOrganization']>
-    >,
-    userId: string,
-    role: OrganizationInvitationRole,
-  ) {
-    return this.auth.addUserToOrganization({
-      tenantCode: organization.props.tenantCode,
-      userId,
-      organizationGroupId: organization.props.authOrganizationGroupId!,
-      ...(role === 'MANAGER'
-        ? { managerGroupId: organization.props.authManagerGroupId! }
-        : {}),
-    });
   }
 
   private contactHash(value: string) {

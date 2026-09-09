@@ -105,7 +105,7 @@ describe('organization api', () => {
     );
   });
 
-  it('sends member and invitation actions only through Vote organization APIs', async () => {
+  it('creates invitations only through the Vote organization API', async () => {
     const fetcher = vi
       .fn<(input: string, init?: RequestInit) => Promise<Response>>()
       .mockImplementation(async () =>
@@ -116,18 +116,12 @@ describe('organization api', () => {
       fetcher,
       mode: 'live',
     });
-    await client.addExistingMember({
-      organizationGroupId: 'org/1',
-      identifier: 'member@example.com',
-      role: 'MEMBER',
-    });
     await client.createInvitation({
       organizationGroupId: 'org/1',
       contact: 'new@example.com',
       role: 'MANAGER',
     });
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
-      '/api/vote-server/organizations/org%2F1/members',
       '/api/vote-server/organizations/org%2F1/invitations',
     ]);
     expect(

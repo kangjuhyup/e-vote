@@ -54,7 +54,6 @@ function setup() {
     markAccepted: jest.fn(),
   } as unknown as jest.Mocked<OrganizationInvitationRepositoryPort>;
   const auth = {
-    findUserByIdentifier: jest.fn(),
     getUser: jest.fn(),
     addUserToOrganization: jest.fn(),
   } as unknown as jest.Mocked<AuthOrganizationProvisioningPort>;
@@ -74,26 +73,8 @@ function setup() {
 }
 
 describe('organization membership policy', () => {
-  it('adds an existing active member only to the selected organization', async () => {
-    const { service, auth } = setup();
-    auth.findUserByIdentifier.mockResolvedValue({
-      id: 'member-1',
-      username: 'member',
-      email: 'member@example.com',
-      status: 'ACTIVE',
-    });
-    await service.addExistingMember(manager, {
-      organizationGroupId: 'org-1',
-      identifier: 'member@example.com',
-      role: 'MEMBER',
-    });
-    expect(auth.addUserToOrganization.mock.calls).toContainEqual([
-      { tenantCode: 'acme', userId: 'member-1', organizationGroupId: 'org-1' },
-    ]);
-  });
-
   it('stores only a contact hash and masked hint when creating an invitation', async () => {
-    const { service, invitations } = setup();
+    const { service, invitations, auth } = setup();
     const result = await service.createInvitation(manager, {
       organizationGroupId: 'org-1',
       contact: 'member@example.com',
@@ -103,6 +84,7 @@ describe('organization membership policy', () => {
     const saved = invitations.save.mock.calls[0]?.[0];
     expect(saved?.props.contactHint).toBe('me***@example.com');
     expect(saved?.props.contactHash).not.toContain('member@example.com');
+    expect(auth.addUserToOrganization.mock.calls).toHaveLength(0);
   });
 
   it('accepts a matching account and assigns both organization groups to a manager', async () => {

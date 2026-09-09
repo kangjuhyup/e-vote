@@ -111,35 +111,6 @@ export function createOrganizationApiClient(
     return result.items;
   }
 
-  async function addExistingMember(input: {
-    organizationGroupId: string;
-    identifier: string;
-    role: OrganizationMemberRole;
-  }) {
-    if (mode === 'mock')
-      return {
-        userId: 'mock-member',
-        username: input.identifier,
-        requiresReauthentication: true,
-      };
-    return request<{
-      userId: string;
-      username: string;
-      requiresReauthentication: boolean;
-    }>(
-      fetcher,
-      baseUrl,
-      `/organizations/${encodeURIComponent(input.organizationGroupId)}/members`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          identifier: input.identifier,
-          role: input.role,
-        }),
-      },
-    );
-  }
-
   async function createInvitation(input: {
     organizationGroupId: string;
     contact: string;
@@ -349,7 +320,6 @@ export function createOrganizationApiClient(
 
   return {
     acceptInvitation,
-    addExistingMember,
     approveApplication,
     createApplication,
     fetchAdminApplications,

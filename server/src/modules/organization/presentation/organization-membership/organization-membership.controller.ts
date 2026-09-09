@@ -22,11 +22,9 @@ import {
   OrganizationInvitationExpiredError,
   OrganizationInvitationNotFoundError,
   OrganizationInvitationRecipientMismatchError,
-  OrganizationMemberNotFoundError,
   OrganizationProvisioningUnavailableError,
 } from '../../application/organization-onboarding.error';
 import {
-  AddOrganizationMemberBody,
   CreateOrganizationInvitationBody,
   OrganizationInvitationPageQuery,
   OrganizationInvitationResponse,
@@ -36,17 +34,6 @@ import {
 @Controller()
 export class OrganizationMembershipController {
   constructor(private readonly service: OrganizationMembershipService) {}
-
-  @Post('organizations/:organizationGroupId/members')
-  async addMember(
-    @User() user: UserPrincipal,
-    @Param('organizationGroupId') organizationGroupId: string,
-    @Body() body: AddOrganizationMemberBody,
-  ) {
-    return this.map(() =>
-      this.service.addExistingMember(user, { organizationGroupId, ...body }),
-    );
-  }
 
   @Post('organizations/:organizationGroupId/invitations')
   async createInvitation(
@@ -121,8 +108,7 @@ export class OrganizationMembershipController {
         throw new ForbiddenException();
       if (
         error instanceof OrganizationApplicationNotFoundError ||
-        error instanceof OrganizationInvitationNotFoundError ||
-        error instanceof OrganizationMemberNotFoundError
+        error instanceof OrganizationInvitationNotFoundError
       )
         throw new NotFoundException();
       if (error instanceof OrganizationInvitationExpiredError)
