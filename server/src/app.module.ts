@@ -186,6 +186,10 @@ import { AUTH_ORGANIZATION_PROVISIONING_PORT } from './modules/organization/appl
 import { AuthAdminOrganizationProvisioningAdapter } from './modules/organization/infrastructure/auth/auth-admin-organization-provisioning.adapter';
 import { UserProfileController } from './modules/user-profile/presentation/user-profile.controller';
 import { UserProfileService } from './modules/user-profile/application/user-profile.service';
+import { VoteRegistrationController } from './modules/user-profile/presentation/vote-registration.controller';
+import { VoteRegistrationService } from './modules/user-profile/application/vote-registration.service';
+import { AUTH_ACCOUNT_REGISTRATION_PORT } from './modules/user-profile/application/port/auth-account-registration.port';
+import { AuthAdminAccountRegistrationAdapter } from './modules/user-profile/infrastructure/auth/auth-admin-account-registration.adapter';
 
 const developmentParticipationLinkEnabled =
   isDevelopmentParticipationLinkEnabled(process.env.NODE_ENV);
@@ -233,6 +237,7 @@ const developmentParticipationLinkEnabled =
     OrganizationOnboardingController,
     OrganizationMembershipController,
     UserProfileController,
+    VoteRegistrationController,
     ...(developmentParticipationLinkEnabled
       ? [
           DevelopmentParticipationLinkController,
@@ -242,6 +247,7 @@ const developmentParticipationLinkEnabled =
   ],
   providers: [
     UserProfileService,
+    VoteRegistrationService,
     DeleteElectoralRollHandler,
     DeleteElectionCommissionHandler,
     RemoveElectionCommissionMemberHandler,
@@ -253,6 +259,10 @@ const developmentParticipationLinkEnabled =
     {
       provide: AUTH_ORGANIZATION_PROVISIONING_PORT,
       useClass: AuthAdminOrganizationProvisioningAdapter,
+    },
+    {
+      provide: AUTH_ACCOUNT_REGISTRATION_PORT,
+      useClass: AuthAdminAccountRegistrationAdapter,
     },
     {
       provide: APP_GUARD,
