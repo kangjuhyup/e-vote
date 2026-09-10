@@ -87,7 +87,7 @@ describe('SignUpContainer', () => {
 
     expect(await screen.findByText('회원가입이 완료되었습니다')).toBeTruthy();
     expect(fetcher).toHaveBeenCalledWith(
-      '/api/registration',
+      '/api/vote-server/registrations',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({

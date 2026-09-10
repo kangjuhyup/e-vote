@@ -77,7 +77,11 @@ async function proxyVoteApiRequest(
     request.method === 'GET' &&
     path.length === 2 &&
     path[0] === 'organization-invitations';
-  if (!accessToken && !isPublicInvitationLookup) {
+  const isPublicRegistration =
+    request.method === 'POST' &&
+    path.length === 1 &&
+    path[0] === 'registrations';
+  if (!accessToken && !isPublicInvitationLookup && !isPublicRegistration) {
     return Response.json({ message: '로그인이 필요합니다.' }, { status: 401 });
   }
 

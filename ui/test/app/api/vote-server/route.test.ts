@@ -96,4 +96,32 @@ describe('/api/vote-server authenticated proxy', () => {
     });
     expect(fetcher).not.toHaveBeenCalled();
   });
+
+  it('forwards public Vote registration without an OIDC session', async () => {
+    vi.stubEnv('VOTE_API_BASE_URL', 'http://localhost:3100');
+    getTokenMock.mockResolvedValue(null);
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(Response.json({ success: true }, { status: 201 }));
+    vi.stubGlobal('fetch', fetcher);
+    const body = JSON.stringify({ username: 'voter01' });
+
+    const response = await POST(
+      new Request('http://localhost/api/vote-server/registrations', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body,
+      }),
+      { params: Promise.resolve({ path: ['registrations'] }) },
+    );
+
+    expect(response.status).toBe(201);
+    expect(fetcher.mock.calls[0][0]).toBe(
+      'http://localhost:3100/registrations',
+    );
+    expect(new TextDecoder().decode(fetcher.mock.calls[0][1].body)).toBe(body);
+    expect(
+      new Headers(fetcher.mock.calls[0][1].headers).has('authorization'),
+    ).toBe(false);
+  });
 });

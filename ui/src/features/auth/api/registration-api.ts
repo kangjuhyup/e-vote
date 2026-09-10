@@ -19,7 +19,7 @@ export async function registerAccount(
   input: SignUpInput,
   fetcher: RegistrationFetcher = fetch,
 ) {
-  const response = await fetcher("/api/registration", {
+  const response = await fetcher("/api/vote-server/registrations", {
     method: "POST",
     headers: {
       "content-type": "application/json",
