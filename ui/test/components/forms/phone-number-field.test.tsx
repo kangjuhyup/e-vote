@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PhoneNumberField } from '@/components/forms/phone-number-field';
 import {
   formatKoreanMobileNumber,
-  toKoreanMobileE164,
+  toAuthKoreanMobileNumber,
 } from '@/shared/lib/korean-mobile-number';
 
 afterEach(cleanup);
@@ -33,13 +33,16 @@ describe('PhoneNumberField', () => {
 });
 
 describe('Korean mobile number conversion', () => {
-  it('converts the display format to E.164', () => {
-    expect(toKoreanMobileE164('010-1234-5678')).toBe('+821012345678');
+  it('converts the display format to the Auth phone format', () => {
+    expect(toAuthKoreanMobileNumber('010-1234-5678')).toBe(
+      '+8201012345678',
+    );
     expect(formatKoreanMobileNumber('+821012345678')).toBe('010-1234-5678');
+    expect(formatKoreanMobileNumber('+8201012345678')).toBe('010-1234-5678');
   });
 
   it('rejects non-010 and overlong numbers', () => {
-    expect(toKoreanMobileE164('011-1234-5678')).toBeUndefined();
-    expect(toKoreanMobileE164('010-1234-56789')).toBeUndefined();
+    expect(toAuthKoreanMobileNumber('011-1234-5678')).toBeUndefined();
+    expect(toAuthKoreanMobileNumber('010-1234-56789')).toBeUndefined();
   });
 });

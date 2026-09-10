@@ -36,7 +36,7 @@ export class SubmitOrganizationApplicationBody {
   @IsString() @IsNotEmpty() @MaxLength(64) contactName!: string;
   @IsOptional()
   @IsString()
-  @Matches(/^\+8210[0-9]{8}$/)
+  @Matches(/^\+82010[0-9]{8}$/)
   contactPhone?: string;
 }
 

@@ -25,7 +25,7 @@ describe('VoteRegistrationService', () => {
     await service.register(input);
 
     expect(authAccounts.register.mock.calls).toContainEqual([
-      { ...input, phone: '+821012345678' },
+      { ...input, phone: '+8201012345678' },
     ]);
     expect(profiles.save.mock.calls).toContainEqual([
       {
@@ -33,7 +33,7 @@ describe('VoteRegistrationService', () => {
         userPrincipalId: 'auth-user-1',
         name: '김투표',
         email: 'voter@example.com',
-        phone: '+821012345678',
+        phone: '+8201012345678',
       },
     ]);
     expect(authAccounts.remove.mock.calls).toHaveLength(0);

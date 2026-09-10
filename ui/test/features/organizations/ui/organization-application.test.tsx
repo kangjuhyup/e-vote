@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { OrganizationApplicationForm } from '@/features/organizations/ui/organization-application-form';
 import { OrganizationApplicationStatus } from '@/features/organizations/ui/organization-application-status';
+import { OrganizationMembershipManagement } from '@/features/organizations/ui/organization-membership-management';
 
 afterEach(cleanup);
 
@@ -31,7 +32,7 @@ describe('organization application UI', () => {
         organizationName: '동부센트레빌아파트',
         organizationType: 'APARTMENT',
         contactName: '김관리',
-        contactPhone: '+821012345678',
+        contactPhone: '+8201012345678',
       }),
     );
     expect(screen.queryByLabelText('조직관리번호')).toBeNull();
@@ -57,5 +58,30 @@ describe('organization application UI', () => {
     expect(screen.getByText(/새 조직 권한은 새 로그인부터 적용/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '다시 로그인' }));
     expect(onReauthenticate).toHaveBeenCalledOnce();
+  });
+
+  it('creates an invitation with the Auth mobile number format', () => {
+    const onCreateInvitation = vi.fn();
+    render(
+      <OrganizationMembershipManagement
+        organizationCode="org-1"
+        invitations={[]}
+        isCreatingInvitation={false}
+        onCreateInvitation={onCreateInvitation}
+        onCopyLink={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('받는 사람 휴대전화 번호'), {
+      target: { value: '01012345678' },
+    });
+    fireEvent.submit(
+      screen.getByRole('button', { name: '초대 링크 만들기' }).closest('form')!,
+    );
+
+    expect(onCreateInvitation).toHaveBeenCalledWith({
+      contact: '+8201012345678',
+      role: 'MEMBER',
+    });
   });
 });

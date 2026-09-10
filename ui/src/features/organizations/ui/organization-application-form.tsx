@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { toKoreanMobileE164 } from '@/shared/lib/korean-mobile-number';
+import { toAuthKoreanMobileNumber } from '@/shared/lib/korean-mobile-number';
 
 import type { CreateOrganizationApplicationInput } from '../model/organization.types';
 
@@ -29,7 +29,7 @@ export function OrganizationApplicationForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const contactPhone = toKoreanMobileE164(
+    const contactPhone = toAuthKoreanMobileNumber(
       String(form.get('contactPhone') ?? ''),
     );
     onSubmit({

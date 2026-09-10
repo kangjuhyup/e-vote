@@ -4,7 +4,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { UserPrincipal } from '../../../shared/application/security/user-principal';
-import { normalizeKoreanMobileNumber } from '../../../shared/domain/korean-mobile-number';
+import {
+  koreanMobileNumberAliases,
+  normalizeKoreanMobileNumber,
+} from '../../../shared/domain/korean-mobile-number';
 import {
   OrganizationInvitationAggregate,
   type OrganizationInvitationRole,
@@ -117,11 +120,11 @@ export class OrganizationMembershipService {
     if (
       !authUser ||
       authUser.status !== 'ACTIVE' ||
-      !contacts.some(
-        (value) =>
-          value &&
-          this.contactHash(normalizeContact(value).value) ===
-            invitation.props.contactHash,
+      !contacts.some((value) =>
+        contactCandidates(value, invitation.props.contactType).some(
+          (candidate) =>
+            this.contactHash(candidate) === invitation.props.contactHash,
+        ),
       )
     ) {
       throw new OrganizationInvitationRecipientMismatchError();
@@ -221,4 +224,17 @@ function maskContact(value: string, type: 'EMAIL' | 'PHONE') {
     return `${local.slice(0, 2)}***@${domain}`;
   }
   return `${value.slice(0, 3)}****${value.slice(-4)}`;
+}
+
+function contactCandidates(
+  value: string | undefined,
+  type: 'EMAIL' | 'PHONE',
+): string[] {
+  if (!value) return [];
+  if (type === 'PHONE') return koreanMobileNumberAliases(value);
+  try {
+    return [normalizeContact(value).value];
+  } catch {
+    return [];
+  }
 }

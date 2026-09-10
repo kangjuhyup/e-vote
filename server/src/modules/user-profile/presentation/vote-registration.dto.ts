@@ -31,7 +31,7 @@ export class RegisterVoteAccountBody {
   email!: string;
 
   @IsString()
-  @Matches(/^\+8210[0-9]{8}$/)
+  @Matches(/^\+82010[0-9]{8}$/)
   @MaskLog({ type: 'phone' })
   phone!: string;
 }

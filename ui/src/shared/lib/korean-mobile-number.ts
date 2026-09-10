@@ -2,6 +2,7 @@ const KOREAN_MOBILE_PATTERN = /^010\d{8}$/;
 
 function toDomesticDigits(value: string) {
   const digits = value.replace(/\D/g, '');
+  if (digits.startsWith('82010')) return digits.slice(2);
   if (digits.startsWith('8210')) return `0${digits.slice(2)}`;
   return digits;
 }
@@ -13,9 +14,9 @@ export function formatKoreanMobileNumber(value: string) {
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 }
 
-export function toKoreanMobileE164(value: string) {
+export function toAuthKoreanMobileNumber(value: string) {
   const digits = toDomesticDigits(value);
   return KOREAN_MOBILE_PATTERN.test(digits)
-    ? `+82${digits.slice(1)}`
+    ? `+82${digits}`
     : undefined;
 }

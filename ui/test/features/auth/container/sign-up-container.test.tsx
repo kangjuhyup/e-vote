@@ -93,7 +93,7 @@ describe('SignUpContainer', () => {
         body: JSON.stringify({
           email: 'voter@example.com',
           name: '김투표',
-          phone: '+821012345678',
+          phone: '+8201012345678',
           username: 'voter01',
           password: 'password123',
         }),

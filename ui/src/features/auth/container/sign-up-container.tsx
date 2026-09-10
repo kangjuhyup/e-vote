@@ -8,7 +8,7 @@ import type {
   SignUpDraft,
   SignUpInput,
 } from '@/features/auth/model/auth.types';
-import { toKoreanMobileE164 } from '@/shared/lib/korean-mobile-number';
+import { toAuthKoreanMobileNumber } from '@/shared/lib/korean-mobile-number';
 
 import { SignUpForm } from '../ui/sign-up-form';
 import { SignUpSuccess } from '../ui/sign-up-success';
@@ -23,7 +23,7 @@ const initialDraft: SignUpDraft = {
 };
 
 function toSignUpInput(draft: SignUpDraft): SignUpInput {
-  const phone = toKoreanMobileE164(draft.phone);
+  const phone = toAuthKoreanMobileNumber(draft.phone);
   if (!phone) throw new TypeError('invalid Korean mobile number');
   return {
     email: draft.email.trim(),
@@ -58,7 +58,7 @@ export function SignUpContainer({
       setValidationError('이름, 이메일, 휴대전화 번호를 모두 입력해 주세요.');
       return;
     }
-    if (!toKoreanMobileE164(draft.phone)) {
+    if (!toAuthKoreanMobileNumber(draft.phone)) {
       setValidationError('휴대전화 번호를 010-1234-5678 형식으로 입력해 주세요.');
       return;
     }

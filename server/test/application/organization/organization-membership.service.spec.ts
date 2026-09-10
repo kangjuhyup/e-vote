@@ -1,3 +1,5 @@
+import { createHmac } from 'node:crypto';
+
 import { ConfigService } from '@nestjs/config';
 
 import { OrganizationMembershipService } from '../../../src/modules/organization/application/organization-membership.service';
@@ -127,7 +129,7 @@ describe('organization membership policy', () => {
     ]);
   });
 
-  it('matches a domestic invitation number with an Auth E.164 number', async () => {
+  it('matches a domestic invitation number with the Auth phone format', async () => {
     const { service, invitations, auth } = setup();
     const created = await service.createInvitation(manager, {
       organizationGroupId: 'org-1',
@@ -149,7 +151,7 @@ describe('organization membership policy', () => {
     auth.getUser.mockResolvedValue({
       id: 'member-1',
       username: 'member',
-      phone: '+821012345678',
+      phone: '+8201012345678',
       status: 'ACTIVE',
     });
 
@@ -169,6 +171,49 @@ describe('organization membership policy', () => {
         organizationGroupId: 'org-1',
       },
     ]);
+  });
+
+  it('accepts an existing invitation hashed with the previous +8210 format', async () => {
+    const { service, invitations, auth } = setup();
+    const created = await service.createInvitation(manager, {
+      organizationGroupId: 'org-1',
+      contact: '010-1234-5678',
+      role: 'MEMBER',
+    });
+    const stored = invitations.save.mock.calls[0]?.[0];
+    if (!stored) throw new Error('expected a saved invitation');
+    const legacyInvitation = OrganizationInvitationAggregate.restore({
+      ...stored.props,
+      contactHash: createHmac('sha256', 'a-secure-test-secret')
+        .update('+821012345678')
+        .digest('hex'),
+    });
+    invitations.findByTokenHash.mockResolvedValue(legacyInvitation);
+    invitations.markAccepted.mockResolvedValue(
+      OrganizationInvitationAggregate.restore({
+        ...legacyInvitation.props,
+        status: 'ACCEPTED',
+        acceptedByUserPrincipalId: 'member-1',
+        acceptedAt: new Date(),
+      }),
+    );
+    auth.getUser.mockResolvedValue({
+      id: 'member-1',
+      username: 'member',
+      phone: '+8201012345678',
+      status: 'ACTIVE',
+    });
+
+    await expect(
+      service.acceptInvitation(
+        UserPrincipal.of({
+          id: 'member-1',
+          tenantId: 'tenant-1',
+          tenantCode: 'acme',
+        }),
+        created.token,
+      ),
+    ).resolves.toBeDefined();
   });
 
   it('rejects a logged-in account whose contact does not match the invitation', async () => {

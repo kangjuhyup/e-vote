@@ -1,5 +1,6 @@
 import { Check, Copy, Link2 } from 'lucide-react';
 
+import { PhoneNumberField } from '@/components/forms/phone-number-field';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -8,8 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { toAuthKoreanMobileNumber } from '@/shared/lib/korean-mobile-number';
 
 import type {
   OrganizationInvitation,
@@ -46,22 +47,24 @@ export function OrganizationMembershipManagement(props: Props) {
             onSubmit={(event) => {
               event.preventDefault();
               const data = new FormData(event.currentTarget);
+              const contact = toAuthKoreanMobileNumber(
+                String(data.get('contact') ?? ''),
+              );
+              if (!contact) return;
               props.onCreateInvitation({
-                contact: String(data.get('contact') ?? '').trim(),
+                contact,
                 role: String(
                   data.get('role') ?? 'MEMBER',
                 ) as OrganizationMemberRole,
               });
             }}
           >
-            <label className="grid gap-1.5 text-sm font-medium">
-              받는 사람
-              <Input
-                name="contact"
-                required
-                placeholder="이메일 또는 휴대전화 번호"
-              />
-            </label>
+            <PhoneNumberField
+              id="invitation-contact"
+              label="받는 사람 휴대전화 번호"
+              name="contact"
+              required
+            />
             <RoleSelect />
             <Button disabled={props.isCreatingInvitation} type="submit">
               <Link2 aria-hidden="true" />
