@@ -5,6 +5,7 @@ import {
   bootstrapAuthClient,
   createDesiredClient,
   createDesiredResourceServer,
+  createDesiredRole,
   createDesiredScope,
 } from './bootstrap-auth-client.mjs';
 
@@ -51,7 +52,16 @@ function existingScopesResponse() {
   });
 }
 
-test('creates the offline scope and both local OIDC clients', async () => {
+function existingRolesResponse() {
+  return response({
+    items: [{ id: 'role-1', ...createDesiredRole() }],
+    total: 1,
+    page: 1,
+    limit: 100,
+  });
+}
+
+test('creates the required scope, role, and local OIDC clients', async () => {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
@@ -61,6 +71,12 @@ test('creates the offline scope and both local OIDC clients', async () => {
     }
     if (url.endsWith('/admin/scopes')) {
       return response({ id: 'scope-1' }, { status: 201 });
+    }
+    if (url.includes('/admin/roles?')) {
+      return response({ items: [], total: 0, page: 1, limit: 100 });
+    }
+    if (url.endsWith('/admin/roles')) {
+      return response({ id: 'role-1' }, { status: 201 });
     }
     if (url.includes('/admin/clients?')) {
       return response({ items: [], total: 0, page: 1, limit: 100 });
@@ -74,7 +90,7 @@ test('creates the offline scope and both local OIDC clients', async () => {
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 11);
+  assert.equal(calls.length, 13);
   assert.deepEqual(JSON.parse(calls[2].options.body), createDesiredScope());
   assert.deepEqual(
     JSON.parse(calls[4].options.body),
@@ -84,9 +100,10 @@ test('creates the offline scope and both local OIDC clients', async () => {
     JSON.parse(calls[6].options.body),
     createDesiredScope('tenant_roles'),
   );
-  assert.deepEqual(JSON.parse(calls[8].options.body), createDesiredClient(env));
+  assert.deepEqual(JSON.parse(calls[8].options.body), createDesiredRole());
+  assert.deepEqual(JSON.parse(calls[10].options.body), createDesiredClient(env));
   assert.deepEqual(
-    JSON.parse(calls[9].options.body),
+    JSON.parse(calls[11].options.body),
     createDesiredResourceServer(env),
   );
   assert.match(calls[8].options.headers.cookie, /admin_session=session-token/);
@@ -147,6 +164,7 @@ test('is idempotent when the scope and clients already exist', async () => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
     if (url.includes('/admin/scopes?')) return existingScopesResponse();
+    if (url.includes('/admin/roles?')) return existingRolesResponse();
     if (url.includes('/admin/clients?')) {
       return response({
         items: [
@@ -169,7 +187,7 @@ test('is idempotent when the scope and clients already exist', async () => {
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'existing');
-  assert.equal(calls.length, 5);
+  assert.equal(calls.length, 6);
 });
 
 test('updates refresh scope and allowed resource on a legacy public client', async () => {
@@ -180,6 +198,7 @@ test('updates refresh scope and allowed resource on a legacy public client', asy
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
     if (url.includes('/admin/scopes?')) return existingScopesResponse();
+    if (url.includes('/admin/roles?')) return existingRolesResponse();
     if (url.includes('/admin/clients?')) {
       return response({
         items: [
@@ -211,9 +230,9 @@ test('updates refresh scope and allowed resource on a legacy public client', asy
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 7);
-  assert.equal(calls[5].options.method, 'PUT');
-  assert.deepEqual(JSON.parse(calls[5].options.body), {
+  assert.equal(calls.length, 8);
+  assert.equal(calls[6].options.method, 'PUT');
+  assert.deepEqual(JSON.parse(calls[6].options.body), {
     scope: 'openid profile email offline_access groups tenant_roles',
     allowedResources: ['https://vote-api.example.com'],
   });
@@ -225,6 +244,7 @@ test('fails closed when an existing client has incompatible settings', async () 
   const fetchImpl = async (url) => {
     if (url.endsWith('/admin/session')) return loginResponse();
     if (url.includes('/admin/scopes?')) return existingScopesResponse();
+    if (url.includes('/admin/roles?')) return existingRolesResponse();
     return response({
       items: [
         {

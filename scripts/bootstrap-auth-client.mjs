@@ -107,6 +107,14 @@ export function createDesiredScope(name = 'offline_access') {
   };
 }
 
+export function createDesiredRole() {
+  return {
+    code: 'vote-manager',
+    name: '전자투표 조직 관리자',
+    description: '조직 내 전자투표를 관리하는 역할',
+  };
+}
+
 export function isCompatibleClient(actual, expected) {
   return (
     actual?.clientId === expected.clientId &&
@@ -205,6 +213,34 @@ async function ensureScope({ baseUrl, cookieHeader, fetchImpl, name }) {
   return 'created';
 }
 
+async function ensureRole({ baseUrl, cookieHeader, fetchImpl }) {
+  const desiredRole = createDesiredRole();
+  const path = `/t/${TENANT_CODE}/admin/roles`;
+  const listResponse = await requireOk(
+    await fetchImpl(`${baseUrl}${path}?limit=100`, {
+      headers: { cookie: cookieHeader },
+    }),
+    'AUTH_ROLE_LIST_FAILED',
+  );
+  const result = await listResponse.json();
+  if (result.items?.some((role) => role.code === desiredRole.code)) {
+    return 'existing';
+  }
+
+  await requireOk(
+    await fetchImpl(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: cookieHeader,
+      },
+      body: JSON.stringify(desiredRole),
+    }),
+    'AUTH_ROLE_CREATE_FAILED',
+  );
+  return 'created';
+}
+
 export async function bootstrapAuthClient({
   env = process.env,
   fetchImpl = fetch,
@@ -228,19 +264,20 @@ export async function bootstrapAuthClient({
   );
   const cookieHeader = extractCookieHeader(loginResponse);
 
-  await ensureScope({
-    baseUrl,
-    cookieHeader,
-    fetchImpl,
-    name: 'offline_access',
-  });
-  await ensureScope({ baseUrl, cookieHeader, fetchImpl, name: 'groups' });
-  await ensureScope({
-    baseUrl,
-    cookieHeader,
-    fetchImpl,
-    name: 'tenant_roles',
-  });
+  let created = false;
+  for (const name of ['offline_access', 'groups', 'tenant_roles']) {
+    if (
+      (await ensureScope({ baseUrl, cookieHeader, fetchImpl, name })) ===
+      'created'
+    ) {
+      created = true;
+    }
+  }
+  if (
+    (await ensureRole({ baseUrl, cookieHeader, fetchImpl })) === 'created'
+  ) {
+    created = true;
+  }
 
   const listResponse = await requireOk(
     await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/clients?limit=100`, {
@@ -249,7 +286,6 @@ export async function bootstrapAuthClient({
     'AUTH_CLIENT_LIST_FAILED',
   );
   const result = await listResponse.json();
-  let created = false;
   for (const desiredClient of desiredClients) {
     const existing = result.items?.find(
       (client) => client.clientId === desiredClient.clientId,
