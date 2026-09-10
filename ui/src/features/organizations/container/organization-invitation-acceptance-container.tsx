@@ -40,18 +40,8 @@ export function OrganizationInvitationAcceptanceContainer({
       isAccepting={accept.isPending}
       accepted={accept.isSuccess}
       error={accept.error instanceof Error ? accept.error.message : undefined}
-      onAccept={() =>
-        accept.mutate(undefined, {
-          onSuccess: () =>
-            setTimeout(
-              () =>
-                void signOut({
-                  redirectTo: `/organization/invitations/${encodeURIComponent(token)}`,
-                }),
-              1200,
-            ),
-        })
-      }
+      onAccept={() => accept.mutate()}
+      onConfirm={() => void signOut({ redirectTo: '/' })}
     />
   );
 }

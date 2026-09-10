@@ -17,12 +17,14 @@ export function OrganizationInvitationAcceptance({
   accepted,
   error,
   onAccept,
+  onConfirm,
 }: {
   invitation: OrganizationInvitation;
   isAccepting: boolean;
   accepted: boolean;
   error?: string;
   onAccept: () => void;
+  onConfirm: () => void;
 }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
@@ -48,13 +50,19 @@ export function OrganizationInvitationAcceptance({
             </p>
           </div>
           {accepted || invitation.status === 'ACCEPTED' ? (
-            <p role="status">
-              <CircleCheckBig
-                className="mr-2 inline size-5 text-emerald-600"
-                aria-hidden="true"
-              />
-              조직 참여가 완료되었습니다. 새 권한으로 다시 로그인해 주세요.
-            </p>
+            <div className="space-y-4">
+              <p role="status">
+                <CircleCheckBig
+                  className="mr-2 inline size-5 text-emerald-600"
+                  aria-hidden="true"
+                />
+                조직 참여가 완료되었습니다. 새 권한을 적용하려면 다시 로그인해
+                주세요.
+              </p>
+              <Button className="w-full" onClick={onConfirm}>
+                확인
+              </Button>
+            </div>
           ) : (
             <Button
               className="w-full"

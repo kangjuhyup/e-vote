@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { OrganizationApplicationForm } from '@/features/organizations/ui/organization-application-form';
 import { OrganizationApplicationStatus } from '@/features/organizations/ui/organization-application-status';
+import { OrganizationInvitationAcceptance } from '@/features/organizations/ui/organization-invitation-acceptance';
 import { OrganizationMembershipManagement } from '@/features/organizations/ui/organization-membership-management';
 
 afterEach(cleanup);
@@ -83,5 +84,31 @@ describe('organization application UI', () => {
       contact: '+8201012345678',
       role: 'MEMBER',
     });
+  });
+
+  it('moves on from an accepted invitation through confirmation', () => {
+    const onConfirm = vi.fn();
+    render(
+      <OrganizationInvitationAcceptance
+        invitation={{
+          id: 'invitation-1',
+          organizationName: '가나다 조직',
+          organizationGroupId: 'organization-1',
+          contactHint: '+82****5678',
+          role: 'MEMBER',
+          status: 'ACCEPTED',
+          invitedAt: '2026-09-10T00:00:00.000Z',
+          expiresAt: '2026-09-17T00:00:00.000Z',
+        }}
+        isAccepting={false}
+        accepted
+        onAccept={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '확인' }));
+
+    expect(onConfirm).toHaveBeenCalledOnce();
   });
 });
