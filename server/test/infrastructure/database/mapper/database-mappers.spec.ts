@@ -98,7 +98,7 @@ describe('database mappers', () => {
   });
 
   it('maps vote detail entity state into a vote detail aggregate', () => {
-    const voteDetail = VoteDetailMapper.toDomain({
+    const entity = {
       id: 'detail-1',
       vote: { id: 'vote-1' },
       title: 'President',
@@ -109,7 +109,8 @@ describe('database mappers', () => {
       voteWeightModeOverride: null,
       sortOrder: 2,
       status: VoteDetailStatus.Closed,
-    });
+    };
+    const [voteDetail] = [entity].map(VoteDetailMapper.toDomain);
 
     expect(voteDetail.voteId).toBe('vote-1');
     expect(voteDetail.overrides).toEqual({

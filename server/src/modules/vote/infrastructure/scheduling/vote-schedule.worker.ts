@@ -90,6 +90,7 @@ export class VoteScheduleWorker
     if (event.type !== 'polling.iteration.error_backoff') return;
     this.logger.error(
       `vote schedule worker failed; retrying after ${event.backoffMs}ms`,
+      event.error instanceof Error ? event.error.stack : String(event.error),
     );
   }
 }

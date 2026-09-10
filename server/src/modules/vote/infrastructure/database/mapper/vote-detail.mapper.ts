@@ -24,13 +24,16 @@ export type VoteDetailPersistence = {
 };
 
 export class VoteDetailMapper {
-  static toDomain(entity: VoteDetailPersistence): VoteDetailAggregate {
+  static toDomain(
+    this: void,
+    entity: VoteDetailPersistence,
+  ): VoteDetailAggregate {
     return VoteDetailAggregate.reconstitute({
       id: entity.id,
       voteId: entity.vote.id,
       title: entity.title,
       type: entity.type,
-      overrides: this.toPolicyOverrides(entity),
+      overrides: VoteDetailMapper.toPolicyOverrides(entity),
       sortOrder: entity.sortOrder,
       status: entity.status,
     });
