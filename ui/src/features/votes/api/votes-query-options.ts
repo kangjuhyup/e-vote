@@ -6,7 +6,7 @@ import type { VoteSummary } from "../model/vote.types";
 const voteApiMode = resolveVoteApiMode();
 const votesApiClient = createVotesApiClient();
 export const VOTE_LIFECYCLE_REFETCH_INTERVAL_MS = 500;
-const VOTE_FINALIZED_MAX_REFETCH_INTERVAL_MS = 60_000;
+const VOTE_TRANSITION_MAX_REFETCH_INTERVAL_MS = 60_000;
 
 export function getVoteListRefetchInterval(
   votes?: VoteSummary[],
@@ -28,15 +28,21 @@ export function getVoteDetailRefetchInterval(
   ) {
     return VOTE_LIFECYCLE_REFETCH_INTERVAL_MS;
   }
-  if (vote?.status !== "finalized") return false;
+  const transitionAt =
+    vote?.status === "finalized"
+      ? vote.startsAt
+      : vote?.status === "active"
+        ? vote.endsAt
+        : undefined;
+  if (!transitionAt) return false;
 
-  const startsAt = Date.parse(vote.startsAt);
-  if (!Number.isFinite(startsAt) || startsAt <= now) {
+  const transitionTime = Date.parse(transitionAt);
+  if (!Number.isFinite(transitionTime) || transitionTime <= now) {
     return VOTE_LIFECYCLE_REFETCH_INTERVAL_MS;
   }
   return Math.min(
-    startsAt - now + VOTE_LIFECYCLE_REFETCH_INTERVAL_MS,
-    VOTE_FINALIZED_MAX_REFETCH_INTERVAL_MS,
+    transitionTime - now + VOTE_LIFECYCLE_REFETCH_INTERVAL_MS,
+    VOTE_TRANSITION_MAX_REFETCH_INTERVAL_MS,
   );
 }
 
@@ -51,6 +57,8 @@ export function voteListQueryOptions() {
   return queryOptions({
     queryKey: ["votes", voteApiMode, "list"],
     queryFn: votesApiClient.fetchVoteList,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     refetchInterval: (query) =>
       getVoteListRefetchInterval(query.state.data),
   });

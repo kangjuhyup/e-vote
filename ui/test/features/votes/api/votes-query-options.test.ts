@@ -105,6 +105,8 @@ describe("votes query options", () => {
       "mock",
       "list",
     ]);
+    expect(voteListQueryOptions().refetchOnMount).toBe("always");
+    expect(voteListQueryOptions().refetchOnWindowFocus).toBe(true);
   });
 
   it("keeps list polling through a finalized vote's opening transition", () => {
@@ -121,10 +123,11 @@ describe("votes query options", () => {
       ),
     ).toBe(VOTE_LIFECYCLE_REFETCH_INTERVAL_MS);
     expect(
-      getVoteListRefetchInterval([
-        { ...finalizedVote, status: "active" },
-      ]),
-    ).toBe(false);
+      getVoteListRefetchInterval(
+        [{ ...finalizedVote, status: "active" }],
+        Date.parse(finalizedVote.endsAt),
+      ),
+    ).toBe(VOTE_LIFECYCLE_REFETCH_INTERVAL_MS);
   });
 
   it("polls a finalized detail through its scheduled opening transition", () => {
@@ -147,7 +150,26 @@ describe("votes query options", () => {
       ),
     ).toBe(VOTE_LIFECYCLE_REFETCH_INTERVAL_MS);
     expect(
-      getVoteDetailRefetchInterval({ ...finalizedVote, status: "active" }),
-    ).toBe(false);
+      getVoteDetailRefetchInterval(
+        { ...finalizedVote, status: "active" },
+        Date.parse(finalizedVote.endsAt),
+      ),
+    ).toBe(VOTE_LIFECYCLE_REFETCH_INTERVAL_MS);
+  });
+
+  it("schedules polling through an active vote's closing transition", () => {
+    const activeVote = {
+      ...draftVote,
+      billingOrderStatus: "PAID" as const,
+      status: "active" as const,
+    };
+    const oneSecondBeforeEnd = Date.parse(activeVote.endsAt) - 1_000;
+
+    expect(getVoteListRefetchInterval([activeVote], oneSecondBeforeEnd)).toBe(
+      1_500,
+    );
+    expect(getVoteDetailRefetchInterval(activeVote, oneSecondBeforeEnd)).toBe(
+      1_500,
+    );
   });
 });
