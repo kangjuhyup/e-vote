@@ -31,7 +31,7 @@ import { GetCandidateResponse } from './dto/get-candidate-response.dto';
 
 @ApiTags('candidates')
 @Controller('votes/:voteId/sub-votes/:voteDetailId/candidates')
-@VoteOrganizationProtected()
+@VoteOrganizationProtected('read')
 export class CandidateReadController {
   constructor(
     private readonly getCandidateHandler: GetCandidateHandler,

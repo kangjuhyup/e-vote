@@ -33,7 +33,7 @@ import { GetElectorResponse } from './dto/get-elector-response.dto';
 
 @ApiTags('electors')
 @Controller('votes/:voteId/electors')
-@VoteOrganizationProtected()
+@VoteOrganizationProtected('read')
 export class ElectorReadController {
   constructor(
     private readonly getElectorHandler: GetElectorHandler,

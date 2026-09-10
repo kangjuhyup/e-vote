@@ -13,6 +13,7 @@ import {
 } from '../../application/port/persistence/command/vote-repository.port';
 import type { UserPrincipal } from '../../../../shared/application/security/user-principal';
 import { VOTE_ORGANIZATION_PROTECTED } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
+import type { VoteOrganizationAccess } from '../../../../shared/presentation/common/decorator/vote-organization-protected.decorator';
 
 type VoteOrganizationRequest = {
   readonly params?: { readonly voteId?: string };
@@ -28,11 +29,12 @@ export class VoteOrganizationAccessGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const protectedRoute = this.reflector.getAllAndOverride<boolean>(
-      VOTE_ORGANIZATION_PROTECTED,
-      [context.getHandler(), context.getClass()],
-    );
-    if (!protectedRoute) return true;
+    const requiredAccess =
+      this.reflector.getAllAndOverride<VoteOrganizationAccess>(
+        VOTE_ORGANIZATION_PROTECTED,
+        [context.getHandler(), context.getClass()],
+      );
+    if (!requiredAccess) return true;
     const request = context
       .switchToHttp()
       .getRequest<VoteOrganizationRequest>();
@@ -53,6 +55,15 @@ export class VoteOrganizationAccessGuard implements CanActivate {
     }
     if (user.tenantId !== vote.tenantId) throw new ForbiddenException();
     if (user.hasTenantRole('vote-admin')) return true;
+    if (
+      requiredAccess === 'read' &&
+      user.belongsToOrganization({
+        organizationGroupId: vote.organizationGroupId,
+        organizationGroupCode: vote.organizationGroupCode,
+      })
+    ) {
+      return true;
+    }
     if (
       user.managesOrganization({
         organizationGroupId: vote.organizationGroupId,

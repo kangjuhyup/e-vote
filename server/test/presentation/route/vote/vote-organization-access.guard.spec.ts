@@ -19,6 +19,12 @@ const managedUser = UserPrincipal.of({
   ],
 });
 
+const memberUser = UserPrincipal.of({
+  id: 'member-1',
+  tenantId: 'tenant-1',
+  groups: [{ id: 'organization-1', code: 'ORG-001', roles: [] }],
+});
+
 function context(user: UserPrincipal): ExecutionContext {
   return {
     getClass: () => class TestController {},
@@ -45,6 +51,37 @@ describe('vote organization management access', () => {
     const guard = new VoteOrganizationAccessGuard(repository, reflector);
 
     await expect(guard.canActivate(context(managedUser))).resolves.toBe(true);
+  });
+
+  it('allows an organization member to read its vote', async () => {
+    const readReflector = {
+      getAllAndOverride: jest.fn().mockReturnValue('read'),
+    } as unknown as Reflector;
+    const repository = {
+      findById: jest.fn().mockResolvedValue({
+        tenantId: 'tenant-1',
+        organizationGroupId: 'organization-1',
+        organizationGroupCode: 'ORG-001',
+      }),
+    } as unknown as VoteRepositoryPort;
+    const guard = new VoteOrganizationAccessGuard(repository, readReflector);
+
+    await expect(guard.canActivate(context(memberUser))).resolves.toBe(true);
+  });
+
+  it('does not grant management access to an organization member', async () => {
+    const repository = {
+      findById: jest.fn().mockResolvedValue({
+        tenantId: 'tenant-1',
+        organizationGroupId: 'organization-1',
+        organizationGroupCode: 'ORG-001',
+      }),
+    } as unknown as VoteRepositoryPort;
+    const guard = new VoteOrganizationAccessGuard(repository, reflector);
+
+    await expect(guard.canActivate(context(memberUser))).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 
   it('allows a tenant administrator with the scoped vote-admin role', async () => {

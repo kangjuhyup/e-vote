@@ -45,6 +45,7 @@ export class VoteSmsController {
   ) {}
 
   @Get('participation-reminder/template')
+  @VoteOrganizationProtected('read')
   @ApiOperation({ summary: '투표 참여 독려 발송 템플릿 조회' })
   @ApiOkResponse({ type: GetParticipationReminderTemplateResponse })
   getParticipationReminderTemplate(

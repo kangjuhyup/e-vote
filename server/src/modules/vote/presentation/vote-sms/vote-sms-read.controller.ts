@@ -34,7 +34,7 @@ import {
 
 @ApiTags('vote-sms')
 @Controller('votes/:voteId/sms/dispatches')
-@VoteOrganizationProtected()
+@VoteOrganizationProtected('read')
 export class VoteSmsReadController {
   constructor(
     private readonly getPageHandler: GetSmsDispatchPageHandler,

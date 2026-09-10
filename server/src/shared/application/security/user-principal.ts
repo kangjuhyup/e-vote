@@ -78,23 +78,35 @@ export class UserPrincipal {
     );
   }
 
-  managesOrganization(input: {
+  belongsToOrganization(input: {
     organizationGroupId: string;
     organizationGroupCode: string;
   }): boolean {
-    const belongsToOrganization = this.groups.some(
+    return this.groups.some(
       (group) =>
         group.id === input.organizationGroupId &&
         group.code === input.organizationGroupCode &&
         group.parentId === undefined,
     );
+  }
+
+  organizationMemberships(): readonly ManagedOrganization[] {
+    return this.groups
+      .filter((group) => group.parentId === undefined)
+      .map((group) => Object.freeze({ id: group.id, code: group.code }));
+  }
+
+  managesOrganization(input: {
+    organizationGroupId: string;
+    organizationGroupCode: string;
+  }): boolean {
     const hasScopedManagerRole = this.groups.some(
       (group) =>
         group.parentId === input.organizationGroupId &&
         group.code === `${input.organizationGroupCode}.vote-managers` &&
         group.roles.some((role) => role.code === 'vote-manager'),
     );
-    return belongsToOrganization && hasScopedManagerRole;
+    return this.belongsToOrganization(input) && hasScopedManagerRole;
   }
 
   managedOrganizations(): readonly ManagedOrganization[] {

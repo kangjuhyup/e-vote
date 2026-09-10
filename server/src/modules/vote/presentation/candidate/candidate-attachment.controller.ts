@@ -169,6 +169,7 @@ export class CandidateAttachmentController {
   }
 
   @Get(':candidateId/attachments/:attachmentId/download-url')
+  @VoteOrganizationProtected('read')
   @ApiOperation({ summary: '후보자 첨부파일 다운로드 주소 요청' })
   @ApiOkResponse({ type: GetAttachmentDownloadUrlResponse })
   async getCandidateAttachmentDownloadUrl(

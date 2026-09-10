@@ -34,6 +34,7 @@ import {
 } from '../../../../src/shared/domain/voting/type/vote-policy.type';
 import { VoteStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
+import { UserPrincipal } from '../../../../src/shared/application/security/user-principal';
 import { VoteAttachmentController } from '../../../../src/modules/vote/presentation/vote/vote-attachment.controller';
 import { VoteReadController } from '../../../../src/modules/vote/presentation/vote/vote-read.controller';
 import { VoteController } from '../../../../src/modules/vote/presentation/vote/vote.controller';
@@ -103,8 +104,13 @@ describe('VoteController', () => {
 
   it('maps GET /votes to vote page query handler', async () => {
     getVotePageExecute.mockResolvedValue(createVotePageView());
+    const organizationMember = UserPrincipal.of({
+      id: 'member-1',
+      tenantId: 'tenant-1',
+      groups: [{ id: 'organization-1', code: 'ORG-001', roles: [] }],
+    });
 
-    const response = await readController.getVotePage(TEST_USER_PRINCIPAL, {
+    const response = await readController.getVotePage(organizationMember, {
       page: '2',
       pageSize: '10',
     });
@@ -144,7 +150,10 @@ describe('VoteController', () => {
     expect(getVotePageExecute.mock.calls[0][0]).toMatchObject({
       page: 2,
       pageSize: 10,
-      userPrincipalId: TEST_USER_PRINCIPAL.id,
+      userPrincipalId: organizationMember.id,
+      tenantId: 'tenant-1',
+      organizationGroupIds: ['organization-1'],
+      voteAdmin: false,
     });
   });
 

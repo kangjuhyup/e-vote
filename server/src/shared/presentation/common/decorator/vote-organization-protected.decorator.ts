@@ -1,6 +1,8 @@
 import { SetMetadata } from '@nestjs/common';
 
 export const VOTE_ORGANIZATION_PROTECTED = 'vote-organization-protected';
+export type VoteOrganizationAccess = 'read' | 'manage';
 
-export const VoteOrganizationProtected = () =>
-  SetMetadata(VOTE_ORGANIZATION_PROTECTED, true);
+export const VoteOrganizationProtected = (
+  access: VoteOrganizationAccess = 'manage',
+) => SetMetadata(VOTE_ORGANIZATION_PROTECTED, access);

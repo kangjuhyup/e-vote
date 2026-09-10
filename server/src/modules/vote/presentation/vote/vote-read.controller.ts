@@ -30,7 +30,7 @@ import { VoteOrganizationProtected } from '../../../../shared/presentation/commo
 
 @ApiTags('votes')
 @Controller('votes')
-@VoteOrganizationProtected()
+@VoteOrganizationProtected('read')
 export class VoteReadController {
   constructor(
     private readonly getVoteHandler: GetVoteHandler,
@@ -69,7 +69,7 @@ export class VoteReadController {
         userPrincipalId: user.id,
         tenantId: user.tenantId,
         organizationGroupIds: user
-          .managedOrganizations()
+          .organizationMemberships()
           .map((item) => item.id),
         voteAdmin: user.hasTenantRole('vote-admin'),
       }),
@@ -106,7 +106,7 @@ export class VoteReadController {
           userPrincipalId: user.id,
           tenantId: user.tenantId,
           organizationGroupIds: user
-            .managedOrganizations()
+            .organizationMemberships()
             .map((item) => item.id),
           voteAdmin: user.hasTenantRole('vote-admin'),
         }),

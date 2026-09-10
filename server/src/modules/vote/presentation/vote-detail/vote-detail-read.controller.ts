@@ -31,7 +31,7 @@ import { GetVoteDetailResponse } from './dto/get-vote-detail-response.dto';
 
 @ApiTags('vote-details')
 @Controller('votes/:voteId/sub-votes')
-@VoteOrganizationProtected()
+@VoteOrganizationProtected('read')
 export class VoteDetailReadController {
   constructor(
     private readonly getVoteDetailHandler: GetVoteDetailHandler,

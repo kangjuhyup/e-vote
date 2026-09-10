@@ -161,4 +161,27 @@ describe('UserPrincipal', () => {
       ),
     ).toBe(false);
   });
+
+  it('separates organization membership from management authority', () => {
+    const member = UserPrincipal.of({
+      id: 'member-1',
+      groups: [{ id: 'organization-1', code: 'ORG-001', roles: [] }],
+    });
+
+    expect(member.organizationMemberships()).toEqual([
+      { id: 'organization-1', code: 'ORG-001' },
+    ]);
+    expect(
+      member.belongsToOrganization({
+        organizationGroupId: 'organization-1',
+        organizationGroupCode: 'ORG-001',
+      }),
+    ).toBe(true);
+    expect(
+      member.managesOrganization({
+        organizationGroupId: 'organization-1',
+        organizationGroupCode: 'ORG-001',
+      }),
+    ).toBe(false);
+  });
 });

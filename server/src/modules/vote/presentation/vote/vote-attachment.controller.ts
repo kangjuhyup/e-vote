@@ -142,6 +142,7 @@ export class VoteAttachmentController {
   }
 
   @Get(':voteId/attachments/:attachmentId/download-url')
+  @VoteOrganizationProtected('read')
   @ApiOperation({ summary: '부모 투표 첨부파일 다운로드 주소 요청' })
   @ApiOkResponse({ type: GetAttachmentDownloadUrlResponse })
   async getVoteAttachmentDownloadUrl(

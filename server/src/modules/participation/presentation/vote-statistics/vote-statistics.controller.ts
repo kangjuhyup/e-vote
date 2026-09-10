@@ -31,7 +31,7 @@ import { GetVoteTurnoutResponse } from './dto/get-vote-turnout-response.dto';
 
 @ApiTags('vote-statistics')
 @Controller('votes/:voteId/sub-votes/:voteDetailId')
-@VoteOrganizationProtected()
+@VoteOrganizationProtected('read')
 export class VoteStatisticsController {
   constructor(
     private readonly getVoteTurnoutHandler: GetVoteTurnoutHandler,
