@@ -127,6 +127,50 @@ describe('organization membership policy', () => {
     ]);
   });
 
+  it('matches a domestic invitation number with an Auth E.164 number', async () => {
+    const { service, invitations, auth } = setup();
+    const created = await service.createInvitation(manager, {
+      organizationGroupId: 'org-1',
+      contact: '010-1234-5678',
+      role: 'MEMBER',
+    });
+    const stored = invitations.save.mock.calls[0]?.[0];
+    if (!stored) throw new Error('expected a saved invitation');
+    expect(stored.props.contactHint).toBe('+82****5678');
+    invitations.findByTokenHash.mockResolvedValue(stored);
+    invitations.markAccepted.mockResolvedValue(
+      OrganizationInvitationAggregate.restore({
+        ...stored.props,
+        status: 'ACCEPTED',
+        acceptedByUserPrincipalId: 'member-1',
+        acceptedAt: new Date(),
+      }),
+    );
+    auth.getUser.mockResolvedValue({
+      id: 'member-1',
+      username: 'member',
+      phone: '+821012345678',
+      status: 'ACTIVE',
+    });
+
+    await service.acceptInvitation(
+      UserPrincipal.of({
+        id: 'member-1',
+        tenantId: 'tenant-1',
+        tenantCode: 'acme',
+      }),
+      created.token,
+    );
+
+    expect(auth.addUserToOrganization.mock.calls).toContainEqual([
+      {
+        tenantCode: 'acme',
+        userId: 'member-1',
+        organizationGroupId: 'org-1',
+      },
+    ]);
+  });
+
   it('rejects a logged-in account whose contact does not match the invitation', async () => {
     const { service, invitations, auth } = setup();
     const created = await service.createInvitation(manager, {

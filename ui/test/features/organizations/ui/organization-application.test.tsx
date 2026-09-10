@@ -20,6 +20,9 @@ describe('organization application UI', () => {
     fireEvent.change(screen.getByLabelText('담당자 이름'), {
       target: { value: '김관리' },
     });
+    fireEvent.change(screen.getByLabelText('연락처 (선택)'), {
+      target: { value: '01012345678' },
+    });
     fireEvent.submit(
       screen.getByRole('button', { name: '조직 생성 신청' }).closest('form')!,
     );
@@ -28,6 +31,7 @@ describe('organization application UI', () => {
         organizationName: '동부센트레빌아파트',
         organizationType: 'APARTMENT',
         contactName: '김관리',
+        contactPhone: '+821012345678',
       }),
     );
     expect(screen.queryByLabelText('조직관리번호')).toBeNull();

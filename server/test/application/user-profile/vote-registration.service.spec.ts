@@ -8,7 +8,7 @@ const input = {
   password: 'password123',
   name: '김투표',
   email: 'voter@example.com',
-  phone: '+821012345678',
+  phone: '010-1234-5678',
 };
 
 describe('VoteRegistrationService', () => {
@@ -24,7 +24,9 @@ describe('VoteRegistrationService', () => {
 
     await service.register(input);
 
-    expect(authAccounts.register.mock.calls).toContainEqual([input]);
+    expect(authAccounts.register.mock.calls).toContainEqual([
+      { ...input, phone: '+821012345678' },
+    ]);
     expect(profiles.save.mock.calls).toContainEqual([
       {
         tenantCode: 'acme',

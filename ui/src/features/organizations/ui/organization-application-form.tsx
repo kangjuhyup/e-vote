@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react';
 
+import { PhoneNumberField } from '@/components/forms/phone-number-field';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,6 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { toKoreanMobileE164 } from '@/shared/lib/korean-mobile-number';
 
 import type { CreateOrganizationApplicationInput } from '../model/organization.types';
 
@@ -27,7 +29,9 @@ export function OrganizationApplicationForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const contactPhone = String(form.get('contactPhone') ?? '').trim();
+    const contactPhone = toKoreanMobileE164(
+      String(form.get('contactPhone') ?? ''),
+    );
     onSubmit({
       organizationName: String(form.get('organizationName') ?? '').trim(),
       organizationType: String(
@@ -90,18 +94,11 @@ export function OrganizationApplicationForm({
                 maxLength={64}
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="contact-phone">
-                연락처 <span className="text-muted-foreground">(선택)</span>
-              </label>
-              <Input
-                id="contact-phone"
-                name="contactPhone"
-                type="tel"
-                autoComplete="tel"
-                maxLength={32}
-              />
-            </div>
+            <PhoneNumberField
+              id="contact-phone"
+              name="contactPhone"
+              label="연락처 (선택)"
+            />
           </div>
           {errorMessage ? (
             <p role="alert" className="text-sm text-destructive">

@@ -40,7 +40,7 @@ function fillRequiredFields(confirmPassword = 'password123') {
     target: { value: 'voter@example.com' },
   });
   fireEvent.change(screen.getByLabelText('휴대전화 번호'), {
-    target: { value: '+821012345678' },
+    target: { value: '01012345678' },
   });
 }
 

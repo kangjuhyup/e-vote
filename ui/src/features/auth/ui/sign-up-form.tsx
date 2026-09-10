@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { LoaderCircle, ShieldCheck, UserPlus } from 'lucide-react';
 import type { FormEvent } from 'react';
 
+import { PhoneNumberField } from '@/components/forms/phone-number-field';
 import { TextField } from '@/components/forms/text-field';
 import { Button } from '@/components/ui/button';
 import {
@@ -131,21 +132,13 @@ export function SignUpForm({
               }
             />
 
-            <TextField
+            <PhoneNumberField
               id="phone"
               label="휴대전화 번호"
               name="phone"
-              type="tel"
-              autoComplete="tel"
-              inputMode="tel"
-              pattern="\+?[0-9]{7,15}"
               required
-              placeholder="+821012345678"
               value={draft.phone}
-              onChange={(event) =>
-                onFieldChange('phone', event.currentTarget.value)
-              }
-              hint="국가번호를 포함한 숫자 7~15자리 형식으로 입력하세요."
+              onValueChange={(value) => onFieldChange('phone', value)}
             />
 
             {error ? (

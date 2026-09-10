@@ -4,6 +4,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { UserPrincipal } from '../../../shared/application/security/user-principal';
+import { normalizeKoreanMobileNumber } from '../../../shared/domain/korean-mobile-number';
 import {
   OrganizationInvitationAggregate,
   type OrganizationInvitationRole,
@@ -205,8 +206,11 @@ function normalizeContact(raw: string): {
 } {
   const value = raw.trim().toLowerCase();
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return { type: 'EMAIL', value };
-  const phone = value.replace(/[^0-9+]/g, '');
-  if (/^\+?[0-9]{8,15}$/.test(phone)) return { type: 'PHONE', value: phone };
+  try {
+    return { type: 'PHONE', value: normalizeKoreanMobileNumber(value) };
+  } catch {
+    // Fall through to the contact validation error below.
+  }
   throw new TypeError(
     'invitation contact must be a valid email or phone number',
   );

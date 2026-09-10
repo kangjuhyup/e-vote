@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -33,7 +34,10 @@ export class SubmitOrganizationApplicationBody {
   @IsIn(['APARTMENT', 'ASSOCIATION', 'COMPANY', 'OTHER'])
   organizationType!: OrganizationType;
   @IsString() @IsNotEmpty() @MaxLength(64) contactName!: string;
-  @IsOptional() @IsString() @MaxLength(32) contactPhone?: string;
+  @IsOptional()
+  @IsString()
+  @Matches(/^\+8210[0-9]{8}$/)
+  contactPhone?: string;
 }
 
 export class RejectOrganizationApplicationBody {

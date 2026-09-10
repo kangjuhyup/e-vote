@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { normalizeKoreanMobileNumber } from '../../../shared/domain/korean-mobile-number';
 import {
   AUTH_ACCOUNT_REGISTRATION_PORT,
   type AuthAccountRegistrationPort,
@@ -24,14 +25,18 @@ export class VoteRegistrationService {
   ) {}
 
   async register(input: RegisterVoteAccountInput): Promise<void> {
-    const account = await this.authAccounts.register(input);
+    const normalizedInput = {
+      ...input,
+      phone: normalizeKoreanMobileNumber(input.phone),
+    };
+    const account = await this.authAccounts.register(normalizedInput);
     try {
       await this.profiles.save({
         tenantCode: input.tenantCode,
         userPrincipalId: account.userPrincipalId,
         name: input.name,
         email: input.email,
-        phone: input.phone,
+        phone: normalizedInput.phone,
       });
     } catch (error) {
       await this.authAccounts
