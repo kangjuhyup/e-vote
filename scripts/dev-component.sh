@@ -27,6 +27,7 @@ case "${1:-}" in
     exec pnpm start:dev
     ;;
   worker)
+    NODE_ENV="${NODE_ENV:-development}" \
     DATABASE_HOST="${DATABASE_HOST:-127.0.0.1}" \
     DATABASE_PORT="${DATABASE_PORT:-$POSTGRES_PORT}" \
     DATABASE_NAME="${DATABASE_NAME:-$POSTGRES_DB}" \
