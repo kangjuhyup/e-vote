@@ -45,8 +45,8 @@ The auth integration uses the v0.2.0 feature baseline plus the published
 post-release migration/bootstrap container fixes. Immutable GHCR digests are
 pinned by default and can be overridden with `AUTH_SERVICE_IMAGE` and
 `AUTH_UI_IMAGE`. Compose keeps auth data in a dedicated PostgreSQL database,
-runs migrations, bootstraps the `master` and `acme` tenants, and registers the
-public `e-vote` OIDC client before starting the admin UI.
+runs migrations, bootstraps the `master` tenant, creates the `e-vote` tenant,
+and registers the public `e-vote` OIDC client before starting the admin UI.
 
 The local admin credentials default to `admin` /
 `vote-local-admin-password-change-me`. Override `AUTH_ADMIN_USERNAME` and

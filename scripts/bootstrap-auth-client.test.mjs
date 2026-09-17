@@ -66,6 +66,12 @@ test('creates the required scope, role, and local OIDC clients', async () => {
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
+    if (url.includes('/admin/tenants?')) {
+      return response({ items: [{ id: '1', code: 'master' }] });
+    }
+    if (url.endsWith('/admin/tenants')) {
+      return response({ id: '2' }, { status: 201 });
+    }
     if (url.includes('/admin/scopes?')) {
       return response({ items: [], total: 0, page: 1, limit: 100 });
     }
@@ -84,29 +90,34 @@ test('creates the required scope, role, and local OIDC clients', async () => {
     if (url.endsWith('/admin/clients')) {
       return response({ id: 'client-1' }, { status: 201 });
     }
-    return response({ issuer: 'http://localhost:3002/t/acme/oidc' });
+    return response({ issuer: 'http://localhost:3002/t/e-vote/oidc' });
   };
 
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 13);
-  assert.deepEqual(JSON.parse(calls[2].options.body), createDesiredScope());
+  assert.equal(calls.length, 15);
+  assert.deepEqual(JSON.parse(calls[2].options.body), {
+    code: 'e-vote',
+    name: 'E-Vote',
+  });
+  assert.deepEqual(JSON.parse(calls[4].options.body), createDesiredScope());
   assert.deepEqual(
-    JSON.parse(calls[4].options.body),
+    JSON.parse(calls[6].options.body),
     createDesiredScope('groups'),
   );
   assert.deepEqual(
-    JSON.parse(calls[6].options.body),
+    JSON.parse(calls[8].options.body),
     createDesiredScope('tenant_roles'),
   );
-  assert.deepEqual(JSON.parse(calls[8].options.body), createDesiredRole());
-  assert.deepEqual(JSON.parse(calls[10].options.body), createDesiredClient(env));
+  assert.deepEqual(JSON.parse(calls[10].options.body), createDesiredRole());
+  assert.deepEqual(JSON.parse(calls[12].options.body), createDesiredClient(env));
   assert.deepEqual(
-    JSON.parse(calls[11].options.body),
+    JSON.parse(calls[13].options.body),
     createDesiredResourceServer(env),
   );
-  assert.match(calls[8].options.headers.cookie, /admin_session=session-token/);
+  assert.match(calls[10].options.headers.cookie, /admin_session=session-token/);
+  assert.ok(calls.every(({ url }) => !url.includes('/t/acme/')));
   assert.equal(
     createDesiredClient(env).scope,
     'openid profile email offline_access groups tenant_roles',
@@ -163,6 +174,9 @@ test('is idempotent when the scope and clients already exist', async () => {
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
+    if (url.includes('/admin/tenants?')) {
+      return response({ items: [{ id: '2', code: 'e-vote' }] });
+    }
     if (url.includes('/admin/scopes?')) return existingScopesResponse();
     if (url.includes('/admin/roles?')) return existingRolesResponse();
     if (url.includes('/admin/clients?')) {
@@ -187,7 +201,7 @@ test('is idempotent when the scope and clients already exist', async () => {
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'existing');
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 7);
 });
 
 test('updates refresh scope and allowed resource on a legacy public client', async () => {
@@ -197,6 +211,9 @@ test('updates refresh scope and allowed resource on a legacy public client', asy
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url, options });
     if (url.endsWith('/admin/session')) return loginResponse();
+    if (url.includes('/admin/tenants?')) {
+      return response({ items: [{ id: '2', code: 'e-vote' }] });
+    }
     if (url.includes('/admin/scopes?')) return existingScopesResponse();
     if (url.includes('/admin/roles?')) return existingRolesResponse();
     if (url.includes('/admin/clients?')) {
@@ -224,15 +241,15 @@ test('updates refresh scope and allowed resource on a legacy public client', asy
     if (url.endsWith('/admin/clients/legacy%2Fclient')) {
       return response(undefined, { status: 204 });
     }
-    return response({ issuer: 'http://localhost:3002/t/acme/oidc' });
+    return response({ issuer: 'http://localhost:3002/t/e-vote/oidc' });
   };
 
   const result = await bootstrapAuthClient({ env, fetchImpl, log: () => {} });
 
   assert.equal(result, 'created');
-  assert.equal(calls.length, 8);
-  assert.equal(calls[6].options.method, 'PUT');
-  assert.deepEqual(JSON.parse(calls[6].options.body), {
+  assert.equal(calls.length, 9);
+  assert.equal(calls[7].options.method, 'PUT');
+  assert.deepEqual(JSON.parse(calls[7].options.body), {
     scope: 'openid profile email offline_access groups tenant_roles',
     allowedResources: ['https://vote-api.example.com'],
   });
@@ -243,6 +260,9 @@ test('fails closed when an existing client has incompatible settings', async () 
   const desiredResourceServer = createDesiredResourceServer(env);
   const fetchImpl = async (url) => {
     if (url.endsWith('/admin/session')) return loginResponse();
+    if (url.includes('/admin/tenants?')) {
+      return response({ items: [{ id: '2', code: 'e-vote' }] });
+    }
     if (url.includes('/admin/scopes?')) return existingScopesResponse();
     if (url.includes('/admin/roles?')) return existingRolesResponse();
     return response({

@@ -8,7 +8,11 @@ const DEFAULT_ALLOWED_RESOURCE = 'https://vote-api.example.com';
 const DEFAULT_RESOURCE_SERVER_CLIENT_ID = 'vote-api';
 const DEFAULT_RESOURCE_SERVER_SECRET =
   'vote-local-introspection-secret-change-me';
-const TENANT_CODE = 'acme';
+const DEFAULT_TENANT_CODE = 'e-vote';
+
+function tenantCode(env) {
+  return env.AUTH_OIDC_TENANT_CODE?.trim() || DEFAULT_TENANT_CODE;
+}
 
 function normalizeAllowedResource(value) {
   let url;
@@ -184,9 +188,35 @@ async function requireOk(response, errorCode) {
   return response;
 }
 
-async function ensureScope({ baseUrl, cookieHeader, fetchImpl, name }) {
+async function ensureTenant({ baseUrl, cookieHeader, fetchImpl, code }) {
   const listResponse = await requireOk(
-    await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/scopes?limit=100`, {
+    await fetchImpl(`${baseUrl}/admin/tenants?limit=100`, {
+      headers: { cookie: cookieHeader },
+    }),
+    'AUTH_TENANT_LIST_FAILED',
+  );
+  const result = await listResponse.json();
+  if (result.items?.some((tenant) => tenant.code === code)) {
+    return 'existing';
+  }
+
+  await requireOk(
+    await fetchImpl(`${baseUrl}/admin/tenants`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: cookieHeader,
+      },
+      body: JSON.stringify({ code, name: 'E-Vote' }),
+    }),
+    'AUTH_TENANT_CREATE_FAILED',
+  );
+  return 'created';
+}
+
+async function ensureScope({ baseUrl, cookieHeader, fetchImpl, name, code }) {
+  const listResponse = await requireOk(
+    await fetchImpl(`${baseUrl}/t/${encodeURIComponent(code)}/admin/scopes?limit=100`, {
       headers: { cookie: cookieHeader },
     }),
     'AUTH_SCOPE_LIST_FAILED',
@@ -199,7 +229,7 @@ async function ensureScope({ baseUrl, cookieHeader, fetchImpl, name }) {
   if (existing) return 'existing';
 
   await requireOk(
-    await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/scopes`, {
+    await fetchImpl(`${baseUrl}/t/${encodeURIComponent(code)}/admin/scopes`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -213,9 +243,9 @@ async function ensureScope({ baseUrl, cookieHeader, fetchImpl, name }) {
   return 'created';
 }
 
-async function ensureRole({ baseUrl, cookieHeader, fetchImpl }) {
+async function ensureRole({ baseUrl, cookieHeader, fetchImpl, code }) {
   const desiredRole = createDesiredRole();
-  const path = `/t/${TENANT_CODE}/admin/roles`;
+  const path = `/t/${encodeURIComponent(code)}/admin/roles`;
   const listResponse = await requireOk(
     await fetchImpl(`${baseUrl}${path}?limit=100`, {
       headers: { cookie: cookieHeader },
@@ -249,6 +279,7 @@ export async function bootstrapAuthClient({
   const baseUrl = (env.AUTH_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '');
   const username = requireValue(env, 'AUTH_ADMIN_USERNAME');
   const password = requireValue(env, 'AUTH_ADMIN_PASSWORD');
+  const code = tenantCode(env);
   const desiredClients = [
     createDesiredClient(env),
     createDesiredResourceServer(env),
@@ -264,23 +295,25 @@ export async function bootstrapAuthClient({
   );
   const cookieHeader = extractCookieHeader(loginResponse);
 
-  let created = false;
+  let created =
+    (await ensureTenant({ baseUrl, cookieHeader, fetchImpl, code })) ===
+    'created';
   for (const name of ['offline_access', 'groups', 'tenant_roles']) {
     if (
-      (await ensureScope({ baseUrl, cookieHeader, fetchImpl, name })) ===
+      (await ensureScope({ baseUrl, cookieHeader, fetchImpl, name, code })) ===
       'created'
     ) {
       created = true;
     }
   }
   if (
-    (await ensureRole({ baseUrl, cookieHeader, fetchImpl })) === 'created'
+    (await ensureRole({ baseUrl, cookieHeader, fetchImpl, code })) === 'created'
   ) {
     created = true;
   }
 
   const listResponse = await requireOk(
-    await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/clients?limit=100`, {
+    await fetchImpl(`${baseUrl}/t/${encodeURIComponent(code)}/admin/clients?limit=100`, {
       headers: { cookie: cookieHeader },
     }),
     'AUTH_CLIENT_LIST_FAILED',
@@ -296,7 +329,7 @@ export async function bootstrapAuthClient({
         if (canUpdatePublicClient(existing, desiredClient)) {
           await requireOk(
             await fetchImpl(
-              `${baseUrl}/t/${TENANT_CODE}/admin/clients/${encodeURIComponent(existing.id)}`,
+              `${baseUrl}/t/${encodeURIComponent(code)}/admin/clients/${encodeURIComponent(existing.id)}`,
               {
                 method: 'PUT',
                 headers: {
@@ -320,7 +353,7 @@ export async function bootstrapAuthClient({
     }
 
     await requireOk(
-      await fetchImpl(`${baseUrl}/t/${TENANT_CODE}/admin/clients`, {
+      await fetchImpl(`${baseUrl}/t/${encodeURIComponent(code)}/admin/clients`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -340,7 +373,7 @@ export async function bootstrapAuthClient({
 
   await requireOk(
     await fetchImpl(
-      `${baseUrl}/t/${TENANT_CODE}/oidc/.well-known/openid-configuration`,
+      `${baseUrl}/t/${encodeURIComponent(code)}/oidc/.well-known/openid-configuration`,
     ),
     'AUTH_DISCOVERY_FAILED',
   );

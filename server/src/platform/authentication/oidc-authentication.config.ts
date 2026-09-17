@@ -104,7 +104,7 @@ export class OidcAuthenticationConfig {
     environment: AuthenticationEnvironment = process.env,
   ): OidcAuthenticationConfig {
     const tenantCode = requireNonEmpty(
-      environment.AUTH_OIDC_TENANT_CODE ?? 'acme',
+      environment.AUTH_OIDC_TENANT_CODE ?? 'e-vote',
       'AUTH_OIDC_TENANT_CODE',
     );
     const issuer = environment.VOTE_AUTH_ISSUER

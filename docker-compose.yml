@@ -94,7 +94,7 @@ services:
       [
         'sh',
         '-c',
-        'node dist/cli/bootstrap-admin.js && node dist/cli/bootstrap-acme.js',
+        'node dist/cli/bootstrap-admin.js',
       ]
 
   auth-service:
@@ -127,6 +127,7 @@ services:
       AUTH_ADMIN_USERNAME: ${AUTH_ADMIN_USERNAME:-admin}
       AUTH_ADMIN_PASSWORD: ${AUTH_ADMIN_PASSWORD:-vote-local-admin-password-change-me}
       AUTH_CLIENT_ID: e-vote
+      AUTH_OIDC_TENANT_CODE: ${AUTH_OIDC_TENANT_CODE:-e-vote}
       AUTH_CLIENT_REDIRECT_URI: ${AUTH_CLIENT_REDIRECT_URI:-http://localhost:3001/api/auth/callback/e-vote}
       AUTH_CLIENT_POST_LOGOUT_URI: ${AUTH_CLIENT_POST_LOGOUT_URI:-http://localhost:3001}
       AUTH_CLIENT_ALLOWED_RESOURCE: ${VOTE_AUTH_AUDIENCE:-https://vote-api.example.com}

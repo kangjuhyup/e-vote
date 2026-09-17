@@ -1,6 +1,17 @@
 import { OidcAuthenticationConfig } from '../../../src/platform/authentication/oidc-authentication.config';
 
 describe('OidcAuthenticationConfig', () => {
+  it('uses the e-vote tenant by default', () => {
+    expect(
+      OidcAuthenticationConfig.fromEnvironment({
+        VOTE_AUTH_INTROSPECTION_CLIENT_SECRET: 'secret',
+      }),
+    ).toMatchObject({
+      issuer: 'http://localhost:3002/t/e-vote/oidc',
+      tenantCode: 'e-vote',
+    });
+  });
+
   it('derives tenant issuer and introspection settings', () => {
     expect(
       OidcAuthenticationConfig.fromEnvironment({

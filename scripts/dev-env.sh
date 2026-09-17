@@ -25,7 +25,7 @@ fi
 : "${AUTH_URL:=http://localhost:3001}"
 : "${AUTH_TRUST_HOST:=true}"
 : "${AUTH_OIDC_ISSUER:=http://localhost:$AUTH_SERVICE_PORT}"
-: "${AUTH_OIDC_TENANT_CODE:=acme}"
+: "${AUTH_OIDC_TENANT_CODE:=e-vote}"
 : "${VOTE_AUTH_AUDIENCE:=https://vote-api.example.com}"
 : "${VOTE_AUTH_INTROSPECTION_CLIENT_ID:=vote-api}"
 : "${VOTE_AUTH_INTROSPECTION_CLIENT_SECRET:=vote-local-introspection-secret-change-me}"

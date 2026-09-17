@@ -2,11 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildTenantOidcIssuer,
+  getTenantOidcIssuer,
   getVoteApiResource,
   mapEVoteProfileToUser,
 } from '@/shared/auth/oidc';
 
 describe('buildTenantOidcIssuer', () => {
+  it('uses the e-vote tenant by default', () => {
+    expect(getTenantOidcIssuer({})).toBe(
+      'http://localhost:3000/t/e-vote/oidc',
+    );
+  });
+
   it('builds a tenant-scoped OIDC issuer from an origin and tenant code', () => {
     expect(
       buildTenantOidcIssuer({

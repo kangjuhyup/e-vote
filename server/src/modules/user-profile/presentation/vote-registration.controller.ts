@@ -25,7 +25,8 @@ export class VoteRegistrationController {
     try {
       await this.service.register({
         ...body,
-        tenantCode: this.config.get<string>('AUTH_OIDC_TENANT_CODE') ?? 'acme',
+        tenantCode:
+          this.config.get<string>('AUTH_OIDC_TENANT_CODE') ?? 'e-vote',
       });
       return { success: true };
     } catch (error) {
