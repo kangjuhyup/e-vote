@@ -42,9 +42,23 @@ function createSessionHeaders(request: Request): Headers {
 }
 
 function createUpstreamUrl(request: Request, path: readonly string[]): string {
-  const baseUrl = (
-    process.env.VOTE_API_BASE_URL ?? 'http://localhost:3000'
-  ).replace(/\/+$/, '');
+  const configuredBaseUrl = process.env.VOTE_API_BASE_URL;
+  if (process.env.NODE_ENV === 'production' && !configuredBaseUrl) {
+    throw new TypeError('VOTE_API_BASE_URL is required in production');
+  }
+  const baseUrl = (configuredBaseUrl ?? 'http://localhost:3000').replace(/\/+$/, '');
+  if (process.env.NODE_ENV === 'production') {
+    const url = new URL(baseUrl);
+    if (
+      !['http:', 'https:'].includes(url.protocol) ||
+      url.hostname === 'localhost' ||
+      url.hostname.endsWith('.example.com') ||
+      url.username ||
+      url.password
+    ) {
+      throw new TypeError('VOTE_API_BASE_URL must be a configured Vote API URL');
+    }
+  }
   const encodedPath = path.map(encodeURIComponent).join('/');
   const query = new URL(request.url).search;
 

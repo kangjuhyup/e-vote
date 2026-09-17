@@ -19,6 +19,24 @@ describe('AuthAdminAccountRegistrationAdapter', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
+  it('blocks production signup before using the shared admin session', async () => {
+    const fetcher = jest.spyOn(global, 'fetch');
+    const adapter = new AuthAdminAccountRegistrationAdapter(
+      new ConfigService({ NODE_ENV: 'production' }),
+    );
+
+    await expect(
+      adapter.register({
+        tenantCode: 'e-vote',
+        username: 'voter01',
+        password: 'password123',
+        email: 'voter@example.org',
+        phone: '+821012345678',
+      }),
+    ).rejects.toThrow('AUTH_ADMIN_PROVISIONING_NOT_CONFIGURED');
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it('creates an active user through the Auth admin API', async () => {
     const fetcher = jest
       .spyOn(global, 'fetch')

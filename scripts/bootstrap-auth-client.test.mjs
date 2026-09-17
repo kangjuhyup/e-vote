@@ -134,7 +134,7 @@ test('registers a confidential Vote API introspection client', () => {
     name: 'Vote API',
     type: 'service',
     redirectUris: [],
-    grantTypes: ['client_credentials'],
+    grantTypes: [],
     responseTypes: [],
     tokenEndpointAuthMethod: 'client_secret_basic',
     scope: 'openid',
@@ -164,6 +164,21 @@ test('rejects a non-HTTPS Vote API resource', () => {
         AUTH_CLIENT_ALLOWED_RESOURCE: 'http://api.example.com',
       }),
     /AUTH_CLIENT_ALLOWED_RESOURCE_INVALID/,
+  );
+});
+
+test('never runs the local public-client bootstrap against production Auth', async () => {
+  const fetchImpl = () => {
+    throw new Error('bootstrap must stop before network access');
+  };
+
+  await assert.rejects(
+    bootstrapAuthClient({
+      env: { ...env, AUTH_BASE_URL: 'https://auth.rvkang.app' },
+      fetchImpl,
+      log: () => {},
+    }),
+    /AUTH_CLIENT_BOOTSTRAP_DEVELOPMENT_ONLY/,
   );
 });
 
@@ -253,6 +268,45 @@ test('updates refresh scope and allowed resource on a legacy public client', asy
     scope: 'openid profile email offline_access groups tenant_roles',
     allowedResources: ['https://vote-api.example.com'],
   });
+});
+
+test('removes an unused machine-to-machine grant from the introspection client', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (url.endsWith('/admin/session')) return loginResponse();
+    if (url.includes('/admin/tenants?')) {
+      return response({ items: [{ id: '2', code: 'e-vote' }] });
+    }
+    if (url.includes('/admin/scopes?')) return existingScopesResponse();
+    if (url.includes('/admin/roles?')) return existingRolesResponse();
+    if (url.includes('/admin/clients?')) {
+      return response({
+        items: [
+          { id: 'web', ...createDesiredClient(env), enabled: true },
+          {
+            id: 'api',
+            ...createDesiredResourceServer(env),
+            secret: undefined,
+            grantTypes: ['client_credentials'],
+            enabled: true,
+          },
+        ],
+      });
+    }
+    if (url.endsWith('/admin/clients/api')) {
+      return response(undefined, { status: 204 });
+    }
+    return response({ issuer: 'http://localhost:3002/t/e-vote/oidc' });
+  };
+
+  assert.equal(
+    await bootstrapAuthClient({ env, fetchImpl, log: () => {} }),
+    'created',
+  );
+  const update = calls.find(({ url }) => url.endsWith('/admin/clients/api'));
+  assert.equal(update.options.method, 'PUT');
+  assert.deepEqual(JSON.parse(update.options.body), { grantTypes: [] });
 });
 
 test('fails closed when an existing client has incompatible settings', async () => {

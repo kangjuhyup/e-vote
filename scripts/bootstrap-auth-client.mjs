@@ -72,7 +72,7 @@ export function createDesiredResourceServer(env = process.env) {
     name: 'Vote API',
     type: 'service',
     redirectUris: [],
-    grantTypes: ['client_credentials'],
+    grantTypes: [],
     responseTypes: [],
     tokenEndpointAuthMethod: 'client_secret_basic',
     scope: 'openid',
@@ -157,6 +157,16 @@ function canUpdatePublicClient(actual, expected) {
       },
       expected,
     )
+  );
+}
+
+function canRemoveUnusedServiceGrant(actual, expected) {
+  return (
+    expected.type === 'service' &&
+    typeof actual?.id === 'string' &&
+    actual.id.length > 0 &&
+    sameValues(actual.grantTypes, ['client_credentials']) &&
+    isCompatibleClient({ ...actual, grantTypes: expected.grantTypes }, expected)
   );
 }
 
@@ -277,6 +287,13 @@ export async function bootstrapAuthClient({
   log = console.log,
 } = {}) {
   const baseUrl = (env.AUTH_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '');
+  const localAuthHosts = new Set(['localhost', '127.0.0.1', 'auth-service']);
+  if (
+    env.NODE_ENV === 'production' ||
+    !localAuthHosts.has(new URL(baseUrl).hostname)
+  ) {
+    throw new Error('AUTH_CLIENT_BOOTSTRAP_DEVELOPMENT_ONLY');
+  }
   const username = requireValue(env, 'AUTH_ADMIN_USERNAME');
   const password = requireValue(env, 'AUTH_ADMIN_PASSWORD');
   const code = tenantCode(env);
@@ -340,6 +357,24 @@ export async function bootstrapAuthClient({
                   scope: desiredClient.scope,
                   allowedResources: desiredClient.allowedResources,
                 }),
+              },
+            ),
+            'AUTH_CLIENT_UPDATE_FAILED',
+          );
+          created = true;
+          continue;
+        }
+        if (canRemoveUnusedServiceGrant(existing, desiredClient)) {
+          await requireOk(
+            await fetchImpl(
+              `${baseUrl}/t/${encodeURIComponent(code)}/admin/clients/${encodeURIComponent(existing.id)}`,
+              {
+                method: 'PUT',
+                headers: {
+                  'content-type': 'application/json',
+                  cookie: cookieHeader,
+                },
+                body: JSON.stringify({ grantTypes: [] }),
               },
             ),
             'AUTH_CLIENT_UPDATE_FAILED',

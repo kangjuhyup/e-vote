@@ -1,21 +1,28 @@
 import {
   E_VOTE_CLIENT_ID,
   getTenantOidcIssuer,
+  getVoteWebOrigin,
 } from '@/shared/auth/oidc';
 
 type AuthEnvironment = Readonly<Record<string, string | undefined>>;
 
 function getPostLogoutRedirectUri(environment: AuthEnvironment): string {
-  const configured =
-    environment.AUTH_CLIENT_POST_LOGOUT_URI ??
-    environment.AUTH_URL ??
-    'http://localhost:3001';
+  const configured = environment.AUTH_CLIENT_POST_LOGOUT_URI ?? getVoteWebOrigin(environment);
   const url = new URL(configured);
 
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
     throw new TypeError('Post-logout redirect URI must be an HTTP(S) URL');
   }
 
+  if (
+    environment.NODE_ENV === 'production' &&
+    (url.origin !== getVoteWebOrigin(environment) ||
+      url.pathname !== '/' ||
+      url.search ||
+      url.hash)
+  ) {
+    throw new TypeError('AUTH_CLIENT_POST_LOGOUT_URI must match AUTH_URL origin');
+  }
   return url.origin;
 }
 

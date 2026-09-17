@@ -149,6 +149,9 @@ explicit data re-encryption and re-hashing migration.
 
 ### UI OIDC Auth
 
+For production tenant/client settings, required environment values, and
+provisioning blockers, see [Production Auth contract](docs/auth-production-contract.md).
+
 ```bash
 cp ui/.env.example ui/.env.local
 ```

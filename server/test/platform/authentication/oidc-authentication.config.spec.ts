@@ -1,6 +1,43 @@
 import { OidcAuthenticationConfig } from '../../../src/platform/authentication/oidc-authentication.config';
 
 describe('OidcAuthenticationConfig', () => {
+  const productionEnvironment = {
+    NODE_ENV: 'production',
+    AUTH_OIDC_ISSUER: 'https://auth.rvkang.app',
+    AUTH_OIDC_TENANT_CODE: 'e-vote',
+    VOTE_AUTH_TENANT_ID: 'tenant-2',
+    VOTE_AUTH_AUDIENCE: 'https://vote-api.rvkang.app',
+    VOTE_AUTH_INTROSPECTION_CLIENT_SECRET: 'resource-secret',
+  };
+
+  it('requires the production e-vote issuer and explicit API audience', () => {
+    expect(
+      OidcAuthenticationConfig.fromEnvironment(productionEnvironment),
+    ).toMatchObject({
+      issuer: 'https://auth.rvkang.app/t/e-vote/oidc',
+      audience: 'https://vote-api.rvkang.app',
+      tenantId: 'tenant-2',
+      introspectionClientId: 'vote-api',
+    });
+    expect(() =>
+      OidcAuthenticationConfig.fromEnvironment({
+        ...productionEnvironment,
+        VOTE_AUTH_AUDIENCE: undefined,
+      }),
+    ).toThrow('VOTE_AUTH_AUDIENCE');
+    expect(() =>
+      OidcAuthenticationConfig.fromEnvironment({
+        ...productionEnvironment,
+        VOTE_AUTH_TENANT_ID: undefined,
+      }),
+    ).toThrow('VOTE_AUTH_TENANT_ID');
+    expect(() =>
+      OidcAuthenticationConfig.fromEnvironment({
+        ...productionEnvironment,
+        AUTH_OIDC_ISSUER: 'http://localhost:3002',
+      }),
+    ).toThrow('AUTH_OIDC_ISSUER');
+  });
   it('uses the e-vote tenant by default', () => {
     expect(
       OidcAuthenticationConfig.fromEnvironment({

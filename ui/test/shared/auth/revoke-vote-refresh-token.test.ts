@@ -34,4 +34,23 @@ describe('revokeVoteRefreshToken', () => {
 
     expect(fetcher).not.toHaveBeenCalled();
   });
+
+  it('authenticates revocation as the confidential web client in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('AUTH_OIDC_ISSUER', 'https://auth.rvkang.app');
+    vi.stubEnv('AUTH_OIDC_TENANT_CODE', 'e-vote');
+    vi.stubEnv('AUTH_E_VOTE_SECRET', 'web-secret');
+    const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+
+    await revokeVoteRefreshToken(
+      { voteRefreshToken: 'refresh-token' },
+      { fetcher },
+    );
+
+    const [, init] = fetcher.mock.calls[0] as [string, RequestInit];
+    expect(new Headers(init.headers).get('authorization')).toBe(
+      `Basic ${Buffer.from('e-vote:web-secret').toString('base64')}`,
+    );
+    expect(String(init.body)).not.toContain('client_id=');
+  });
 });

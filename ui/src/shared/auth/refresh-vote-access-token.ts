@@ -1,5 +1,6 @@
 import {
   E_VOTE_CLIENT_ID,
+  getEVoteClientSecret,
   getTenantOidcIssuer,
   getVoteApiResource,
 } from '@/shared/auth/oidc';
@@ -24,8 +25,7 @@ interface TokenEndpointResponse {
 }
 
 function createTokenRequest(refreshToken: string): RequestInit {
-  const clientSecret =
-    process.env.AUTH_E_VOTE_SECRET ?? process.env.AUTH_E_VOTE_CLIENT_SECRET;
+  const clientSecret = getEVoteClientSecret();
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
     refresh_token: refreshToken,

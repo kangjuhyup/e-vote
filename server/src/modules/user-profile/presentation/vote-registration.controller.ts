@@ -35,6 +35,14 @@ export class VoteRegistrationController {
           '이미 사용 중인 아이디, 이메일 또는 전화번호입니다.',
         );
       }
+      if (
+        error instanceof Error &&
+        error.message === 'AUTH_ADMIN_PROVISIONING_NOT_CONFIGURED'
+      ) {
+        throw new ServiceUnavailableException(
+          '현재 회원가입을 처리할 수 없습니다. 관리자에게 문의해 주세요.',
+        );
+      }
       throw new ServiceUnavailableException(
         '회원가입을 완료하지 못했습니다. 잠시 후 다시 시도하세요.',
       );

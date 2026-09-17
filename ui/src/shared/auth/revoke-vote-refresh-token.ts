@@ -1,5 +1,6 @@
 import {
   E_VOTE_CLIENT_ID,
+  getEVoteClientSecret,
   getTenantOidcIssuer,
 } from '@/shared/auth/oidc';
 import { getVoteRefreshToken } from '@/shared/auth/vote-session-token';
@@ -12,8 +13,7 @@ interface RevokeVoteRefreshTokenOptions {
 }
 
 function createRevocationRequest(refreshToken: string): RequestInit {
-  const clientSecret =
-    process.env.AUTH_E_VOTE_SECRET ?? process.env.AUTH_E_VOTE_CLIENT_SECRET;
+  const clientSecret = getEVoteClientSecret();
   const body = new URLSearchParams({
     token: refreshToken,
     token_type_hint: 'refresh_token',

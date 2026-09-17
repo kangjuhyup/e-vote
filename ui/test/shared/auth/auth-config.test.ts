@@ -31,6 +31,21 @@ describe('Auth.js OIDC configuration', () => {
     expect(provider.client?.token_endpoint_auth_method).toBe('none');
   });
 
+  it('keeps Vote tokens out of the browser-visible session', async () => {
+    const session = await authConfig.callbacks?.session?.({
+      session: { user: { name: 'Voter' }, expires: '2099-01-01' },
+      token: {
+        voteAccessToken: 'private-access-token',
+        voteRefreshToken: 'private-refresh-token',
+        voteAccessTokenExpiresAt: 4_000_000_000,
+      },
+    } as never);
+
+    expect(session).toMatchObject({ voteApiAuthStatus: 'ready' });
+    expect(JSON.stringify(session)).not.toContain('private-access-token');
+    expect(JSON.stringify(session)).not.toContain('private-refresh-token');
+  });
+
   it('revokes the server-side refresh token during Auth.js sign-out', async () => {
     const fetcher = vi
       .fn()

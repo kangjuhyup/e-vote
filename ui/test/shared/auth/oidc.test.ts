@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildTenantOidcIssuer,
+  createEVoteOidcProvider,
   getTenantOidcIssuer,
   getVoteApiResource,
   mapEVoteProfileToUser,
@@ -55,6 +56,51 @@ describe('getVoteApiResource', () => {
         AUTH_E_VOTE_RESOURCE: 'http://api.example.com',
       }),
     ).toThrow('AUTH_E_VOTE_RESOURCE must be an HTTPS origin');
+  });
+});
+
+describe('production OIDC configuration', () => {
+  const environment = {
+    NODE_ENV: 'production',
+    AUTH_SECRET: 'session-secret',
+    AUTH_URL: 'https://vote.rvkang.app',
+    AUTH_OIDC_ISSUER: 'https://auth.rvkang.app',
+    AUTH_OIDC_TENANT_CODE: 'e-vote',
+    AUTH_E_VOTE_RESOURCE: 'https://vote-api.rvkang.app',
+    AUTH_E_VOTE_SECRET: 'web-client-secret',
+  };
+
+  it('uses the confidential e-vote web client and exact issuer', () => {
+    const provider = createEVoteOidcProvider(environment);
+
+    expect(provider.clientId).toBe('e-vote');
+    expect(provider.client?.token_endpoint_auth_method).toBe('client_secret_basic');
+    expect(provider.checks).toContain('pkce');
+    expect(provider.issuer).toBe('https://auth.rvkang.app/t/e-vote/oidc');
+    expect(provider.authorization.params.resource).toBe('https://vote-api.rvkang.app');
+  });
+
+  it.each([
+    [{ AUTH_E_VOTE_SECRET: undefined }, 'AUTH_E_VOTE_SECRET'],
+    [{ AUTH_URL: 'http://localhost:3001' }, 'AUTH_URL'],
+    [{ AUTH_URL: 'https://other.example.org' }, 'AUTH_URL'],
+    [{ AUTH_E_VOTE_RESOURCE: undefined }, 'AUTH_E_VOTE_RESOURCE'],
+    [{ VOTE_AUTH_AUDIENCE: 'https://other.example.org' }, 'AUTH_E_VOTE_RESOURCE'],
+    [{ AUTH_OIDC_ISSUER: 'http://localhost:3002' }, 'AUTH_OIDC_ISSUER'],
+    [{ AUTH_OIDC_TENANT_CODE: 'acme' }, 'AUTH_OIDC_TENANT_CODE'],
+  ])('rejects invalid production configuration', (overrides, field) => {
+    expect(() =>
+      createEVoteOidcProvider({ ...environment, ...overrides }),
+    ).toThrow(field);
+  });
+
+  it('accepts the administrator host with the same e-vote client', () => {
+    const provider = createEVoteOidcProvider({
+      ...environment,
+      AUTH_URL: 'https://vote-admin.rvkang.app',
+    });
+
+    expect(provider.clientId).toBe('e-vote');
   });
 });
 

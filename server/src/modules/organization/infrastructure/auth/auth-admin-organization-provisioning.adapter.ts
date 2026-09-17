@@ -109,6 +109,9 @@ export class AuthAdminOrganizationProvisioningAdapter implements AuthOrganizatio
   }
 
   private requireBaseUrl() {
+    if (this.config.get<string>('NODE_ENV') === 'production') {
+      throw new Error('AUTH_ADMIN_PROVISIONING_NOT_CONFIGURED');
+    }
     const value = (
       this.config.get<string>('VOTE_AUTH_ADMIN_BASE_URL') ??
       this.config.get<string>('AUTH_OIDC_ISSUER')

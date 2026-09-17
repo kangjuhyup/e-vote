@@ -38,6 +38,9 @@ function assertValidForVoteApi(
     !result.active ||
     !result.subject ||
     !result.tenantId ||
+    (config.tenantId !== undefined && result.tenantId !== config.tenantId) ||
+    (result.tenantCode !== undefined &&
+      result.tenantCode !== config.tenantCode) ||
     result.issuer !== config.issuer ||
     !result.audience.includes(config.audience) ||
     result.expiresAt === undefined ||

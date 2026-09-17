@@ -114,7 +114,9 @@ export class OrganizationMembershipController {
       if (error instanceof OrganizationInvitationExpiredError)
         throw new ConflictException();
       if (error instanceof OrganizationProvisioningUnavailableError)
-        throw new ServiceUnavailableException();
+        throw new ServiceUnavailableException(
+          '현재 조직 초대 수락을 처리할 수 없습니다. 관리자에게 문의해 주세요.',
+        );
       throw error;
     }
   }

@@ -120,7 +120,9 @@ export class OrganizationOnboardingController {
     if (error instanceof OrganizationApplicationConflictError)
       throw new ConflictException();
     if (error instanceof OrganizationProvisioningUnavailableError)
-      throw new ServiceUnavailableException();
+      throw new ServiceUnavailableException(
+        '현재 조직 승인을 처리할 수 없습니다. 관리자에게 문의해 주세요.',
+      );
     throw error;
   }
 }

@@ -58,4 +58,26 @@ describe('refreshVoteAccessToken', () => {
       ),
     ).rejects.toThrow('OIDC_REFRESH_FAILED_400');
   });
+
+  it('authenticates refresh with the confidential web client in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('AUTH_OIDC_ISSUER', 'https://auth.rvkang.app');
+    vi.stubEnv('AUTH_OIDC_TENANT_CODE', 'e-vote');
+    vi.stubEnv('AUTH_E_VOTE_RESOURCE', 'https://vote-api.rvkang.app');
+    vi.stubEnv('AUTH_E_VOTE_SECRET', 'web-secret');
+    const fetcher = vi.fn().mockResolvedValue(
+      Response.json({ access_token: 'access-token', expires_in: 600 }),
+    );
+
+    await refreshVoteAccessToken(
+      { voteRefreshToken: 'refresh-token' },
+      { fetcher },
+    );
+
+    const [, init] = fetcher.mock.calls[0] as [string, RequestInit];
+    expect(new Headers(init.headers).get('authorization')).toBe(
+      `Basic ${Buffer.from('e-vote:web-secret').toString('base64')}`,
+    );
+    expect(String(init.body)).not.toContain('client_id=');
+  });
 });

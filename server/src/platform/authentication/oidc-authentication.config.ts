@@ -1,10 +1,13 @@
 type AuthenticationEnvironment = Readonly<Record<string, string | undefined>>;
+const PRODUCTION_AUTH_ORIGIN = 'https://auth.rvkang.app';
+const PRODUCTION_VOTE_API_ORIGIN = 'https://vote-api.rvkang.app';
 
 type OidcAuthenticationConfigParams = {
   readonly issuer: string;
   readonly introspectionUri: string;
   readonly audience: string;
   readonly tenantCode: string;
+  readonly tenantId?: string;
   readonly introspectionClientId: string;
   readonly introspectionClientSecret: string | undefined;
   readonly timeoutMs: number;
@@ -78,6 +81,7 @@ export class OidcAuthenticationConfig {
     readonly introspectionUri: string,
     readonly audience: string,
     readonly tenantCode: string,
+    readonly tenantId: string | undefined,
     readonly introspectionClientId: string,
     readonly introspectionClientSecret: string,
     readonly timeoutMs: number,
@@ -90,6 +94,9 @@ export class OidcAuthenticationConfig {
         normalizeAbsoluteHttpUrl(params.introspectionUri, 'introspectionUri'),
         normalizeHttpsOrigin(params.audience, 'audience'),
         requireNonEmpty(params.tenantCode, 'tenantCode'),
+        params.tenantId === undefined
+          ? undefined
+          : requireNonEmpty(params.tenantId, 'tenantId'),
         requireNonEmpty(params.introspectionClientId, 'introspectionClientId'),
         requireSecret(
           params.introspectionClientSecret,
@@ -103,10 +110,29 @@ export class OidcAuthenticationConfig {
   static fromEnvironment(
     environment: AuthenticationEnvironment = process.env,
   ): OidcAuthenticationConfig {
+    const production = environment.NODE_ENV === 'production';
     const tenantCode = requireNonEmpty(
       environment.AUTH_OIDC_TENANT_CODE ?? 'e-vote',
       'AUTH_OIDC_TENANT_CODE',
     );
+    if (production) {
+      if (environment.AUTH_OIDC_TENANT_CODE !== 'e-vote') {
+        throw new TypeError(
+          'AUTH_OIDC_TENANT_CODE must be e-vote in production',
+        );
+      }
+      if (environment.AUTH_OIDC_ISSUER !== PRODUCTION_AUTH_ORIGIN) {
+        throw new TypeError(
+          'AUTH_OIDC_ISSUER must match the production Auth origin',
+        );
+      }
+      if (!environment.VOTE_AUTH_AUDIENCE) {
+        throw new TypeError('VOTE_AUTH_AUDIENCE is required in production');
+      }
+      if (!environment.VOTE_AUTH_TENANT_ID?.trim()) {
+        throw new TypeError('VOTE_AUTH_TENANT_ID is required in production');
+      }
+    }
     const issuer = environment.VOTE_AUTH_ISSUER
       ? normalizeAbsoluteHttpUrl(
           environment.VOTE_AUTH_ISSUER,
@@ -117,14 +143,53 @@ export class OidcAuthenticationConfig {
           'AUTH_OIDC_ISSUER',
         )}/t/${encodeURIComponent(tenantCode)}/oidc`;
 
+    if (production && issuer !== `${PRODUCTION_AUTH_ORIGIN}/t/e-vote/oidc`) {
+      throw new TypeError('VOTE_AUTH_ISSUER must match the e-vote issuer');
+    }
+    const introspectionUri =
+      environment.VOTE_AUTH_INTROSPECTION_URI ??
+      `${issuer.replace(/\/+$/, '')}/token/introspection`;
+    if (production && introspectionUri !== `${issuer}/token/introspection`) {
+      throw new TypeError(
+        'VOTE_AUTH_INTROSPECTION_URI must match the e-vote issuer',
+      );
+    }
+    const audience =
+      environment.VOTE_AUTH_AUDIENCE ?? 'https://vote-api.example.com';
+    if (production) {
+      const audienceUrl = new URL(audience);
+      if (
+        audienceUrl.hostname === 'localhost' ||
+        audienceUrl.hostname.endsWith('.example.com') ||
+        audienceUrl.pathname !== '/' ||
+        audienceUrl.search ||
+        audienceUrl.hash
+      ) {
+        throw new TypeError(
+          'VOTE_AUTH_AUDIENCE must be a production API origin',
+        );
+      }
+      if (audienceUrl.origin !== PRODUCTION_VOTE_API_ORIGIN) {
+        throw new TypeError(
+          'VOTE_AUTH_AUDIENCE must match the Vote API origin',
+        );
+      }
+      if (
+        environment.VOTE_AUTH_INTROSPECTION_CLIENT_ID &&
+        environment.VOTE_AUTH_INTROSPECTION_CLIENT_ID !== 'vote-api'
+      ) {
+        throw new TypeError(
+          'VOTE_AUTH_INTROSPECTION_CLIENT_ID must be vote-api',
+        );
+      }
+    }
+
     return OidcAuthenticationConfig.of({
       issuer,
-      introspectionUri:
-        environment.VOTE_AUTH_INTROSPECTION_URI ??
-        `${issuer.replace(/\/+$/, '')}/token/introspection`,
-      audience:
-        environment.VOTE_AUTH_AUDIENCE ?? 'https://vote-api.example.com',
+      introspectionUri,
+      audience,
       tenantCode,
+      tenantId: environment.VOTE_AUTH_TENANT_ID,
       introspectionClientId:
         environment.VOTE_AUTH_INTROSPECTION_CLIENT_ID ?? 'vote-api',
       introspectionClientSecret:
