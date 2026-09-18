@@ -1,0 +1,28 @@
+FROM node:24.20.0-bookworm-slim AS build
+
+WORKDIR /app
+RUN npm install --global pnpm@9.15.9
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY ui/package.json ui/package.json
+COPY server/package.json server/package.json
+RUN pnpm install --frozen-lockfile --filter @vote/server...
+
+COPY server/ server/
+RUN pnpm --filter @vote/server build \
+    && pnpm --filter @vote/server deploy --prod ./deploy/server
+
+FROM node:24.20.0-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
+WORKDIR /app
+ARG VCS_REF
+LABEL org.opencontainers.image.revision=${VCS_REF}
+
+COPY --from=build --chown=node:node /app/deploy/server/node_modules/ ./node_modules/
+COPY --from=build --chown=node:node /app/server/dist/ ./dist/
+COPY --from=build --chown=node:node /app/server/package.json ./package.json
+
+USER node
+EXPOSE 3000
+CMD ["node", "dist/src/main.js"]

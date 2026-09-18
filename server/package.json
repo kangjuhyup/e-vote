@@ -24,6 +24,7 @@
     "test:e2e:redis": "node --no-warnings --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-redis-e2e.json",
     "db:migration:create": "mikro-orm migration:create",
     "db:migration:up": "mikro-orm migration:up",
+    "db:migration:up:prod": "NODE_ENV=production node dist/src/migrate",
     "db:migration:down": "mikro-orm migration:down"
   },
   "engines": {

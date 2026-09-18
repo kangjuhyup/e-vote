@@ -1,0 +1,38 @@
+FROM node:24.20.0-bookworm-slim AS build
+
+WORKDIR /app
+RUN npm install --global pnpm@9.15.9
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY ui/package.json ui/package.json
+COPY server/package.json server/package.json
+RUN pnpm install --frozen-lockfile --filter @vote/ui...
+
+COPY ui/ ui/
+
+ARG NEXT_PUBLIC_VOTE_API_MODE=live
+ARG NEXT_PUBLIC_VOTE_API_BASE_URL=/api/vote-server
+ARG NEXT_PUBLIC_PARTICIPATION_API_BASE_URL
+ENV NEXT_PUBLIC_VOTE_API_MODE=${NEXT_PUBLIC_VOTE_API_MODE} \
+    NEXT_PUBLIC_VOTE_API_BASE_URL=${NEXT_PUBLIC_VOTE_API_BASE_URL} \
+    NEXT_PUBLIC_PARTICIPATION_API_BASE_URL=${NEXT_PUBLIC_PARTICIPATION_API_BASE_URL}
+RUN test "$NEXT_PUBLIC_VOTE_API_MODE" = live \
+    && test "$NEXT_PUBLIC_VOTE_API_BASE_URL" = /api/vote-server \
+    && test -n "$NEXT_PUBLIC_PARTICIPATION_API_BASE_URL" \
+    && pnpm --filter @vote/ui build
+
+FROM node:24.20.0-bookworm-slim AS runtime
+
+ENV NODE_ENV=production PORT=3001 HOSTNAME=0.0.0.0
+WORKDIR /app
+ARG VCS_REF
+LABEL org.opencontainers.image.revision=${VCS_REF}
+
+COPY --from=build --chown=node:node /app/ui/.next/standalone/ ./
+COPY --from=build --chown=node:node /app/ui/.next/static/ ./ui/.next/static/
+COPY --from=build --chown=node:node /app/ui/public/ ./ui/public/
+RUN mkdir -p ui/.next/cache && chown node:node ui/.next/cache
+
+USER node
+EXPOSE 3001
+CMD ["node", "ui/server.js"]

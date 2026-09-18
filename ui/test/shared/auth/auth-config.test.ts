@@ -11,7 +11,7 @@ const nextAuthMock = vi.hoisted(() =>
 
 vi.mock('next-auth', () => ({ default: nextAuthMock }));
 
-import { authConfig } from '@/shared/auth/auth';
+import { createAuthConfig } from '@/shared/auth/auth';
 import { createEVoteOidcProvider } from '@/shared/auth/oidc';
 
 describe('Auth.js OIDC configuration', () => {
@@ -20,6 +20,7 @@ describe('Auth.js OIDC configuration', () => {
   });
 
   it('uses ID-token claims and requests offline access for the Vote API resource', () => {
+    expect(nextAuthMock).toHaveBeenCalledWith(expect.any(Function));
     const provider = createEVoteOidcProvider({});
 
     expect(provider.idToken).toBe(true);
@@ -32,7 +33,7 @@ describe('Auth.js OIDC configuration', () => {
   });
 
   it('keeps Vote tokens out of the browser-visible session', async () => {
-    const session = await authConfig.callbacks?.session?.({
+    const session = await createAuthConfig({}).callbacks?.session?.({
       session: { user: { name: 'Voter' }, expires: '2099-01-01' },
       token: {
         voteAccessToken: 'private-access-token',
@@ -52,7 +53,7 @@ describe('Auth.js OIDC configuration', () => {
       .mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal('fetch', fetcher);
 
-    await authConfig.events?.signOut?.({
+    await createAuthConfig({}).events?.signOut?.({
       token: { voteRefreshToken: 'refresh-token' },
     });
 

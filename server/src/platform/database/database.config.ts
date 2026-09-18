@@ -36,7 +36,7 @@ export function createDatabaseConfig(
     entitiesTs: databaseEntities,
     extensions: [Migrator],
     migrations: {
-      path: './dist/platform/database/migration',
+      path: './dist/src/platform/database/migration',
       pathTs: './src/platform/database/migration',
     },
     discovery: {

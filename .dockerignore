@@ -1,0 +1,15 @@
+.git
+.github
+.next
+**/.next
+**/node_modules
+**/dist
+**/coverage
+**/.env*
+.env*
+**/*.log
+**/*.tsbuildinfo
+**/.snapshot*
+docs
+ui/test
+server/test

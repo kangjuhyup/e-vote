@@ -62,7 +62,7 @@ describe('initial schema migration', () => {
     expect(config.extensions).toEqual([Migrator]);
     expect(config).toMatchObject({
       migrations: {
-        path: './dist/platform/database/migration',
+        path: './dist/src/platform/database/migration',
         pathTs: './src/platform/database/migration',
       },
     });

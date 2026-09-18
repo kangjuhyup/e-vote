@@ -54,6 +54,9 @@ The local admin credentials default to `admin` /
 
 ## Server
 
+For production UI/API/worker/migration image builds and rollout order, see
+[Vote container images](docs/image-deployment.md).
+
 ```bash
 # development
 pnpm start
@@ -63,6 +66,9 @@ pnpm start:dev
 
 # production mode
 pnpm start:prod
+
+# run compiled migrations before rolling out the API and worker
+pnpm --filter @vote/server db:migration:up:prod
 
 # payment outbox and vote schedule worker development mode
 pnpm start:worker:dev

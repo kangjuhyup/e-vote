@@ -95,8 +95,8 @@ repository and runtime injection has not been verified. Keep
 
 ## Deployment prerequisites
 
-The Vote repository currently has no container image build definition or
-GitOps deployment manifests. Before a production login test, build ARM64 UI
+The Vote repository provides [ARM64 image build definitions](image-deployment.md)
+but no GitOps deployment manifests. Before a production login test, build ARM64 UI
 and API images from the same reviewed Vote source revision, publish their
 digests, and deploy two UI instances, the API, and the required migration and
 worker processes. The deployment owner must provide exact routing and TLS for

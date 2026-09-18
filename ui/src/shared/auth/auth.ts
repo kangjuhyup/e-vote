@@ -11,8 +11,7 @@ import {
   persistVoteAccessToken,
 } from '@/shared/auth/vote-session-token';
 
-export const authConfig = {
-  providers: [createEVoteOidcProvider()],
+const authBehavior = {
   session: {
     strategy: 'jwt',
   },
@@ -50,6 +49,17 @@ export const authConfig = {
       }
     },
   },
-} satisfies NextAuthConfig;
+} satisfies Omit<NextAuthConfig, 'providers'>;
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export function createAuthConfig(
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+): NextAuthConfig {
+  return {
+    ...authBehavior,
+    providers: [createEVoteOidcProvider(environment)],
+  };
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth(() =>
+  createAuthConfig(),
+);
