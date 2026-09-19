@@ -1,0 +1,39 @@
+name: Prepare release PR
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vote-release-pr
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require a token that triggers PR checks
+        env:
+          RELEASE_PR_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
+        run: test -n "$RELEASE_PR_TOKEN"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PR_TOKEN }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create or update the Changesets release PR
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset:version
+          title: 'chore: release Vote'
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}

@@ -87,7 +87,10 @@ describe('CreateVoteDetailHandler', () => {
   });
 
   it('creates selectable 찬성 and 반대 choices with a new yes-no ballot', async () => {
-    const candidates = candidateRepository();
+    const savedCandidates: Array<
+      Parameters<CandidateRepositoryPort['save']>[0]
+    > = [];
+    const candidates = candidateRepository(savedCandidates);
     const handler = new CreateVoteDetailHandler(
       voteRepository(createVote()),
       {
@@ -110,9 +113,9 @@ describe('CreateVoteDetailHandler', () => {
       }),
     );
 
-    expect(candidates.save).toHaveBeenCalledTimes(2);
+    expect(savedCandidates).toHaveLength(2);
     expect(
-      jest.mocked(candidates.save).mock.calls.map(([candidate]) => ({
+      savedCandidates.map((candidate) => ({
         candidateNo: candidate.candidateNo,
         name: candidate.name,
         status: candidate.status,
@@ -135,12 +138,17 @@ describe('CreateVoteDetailHandler', () => {
   });
 });
 
-function candidateRepository(): CandidateRepositoryPort {
+function candidateRepository(
+  savedCandidates?: Array<Parameters<CandidateRepositoryPort['save']>[0]>,
+): CandidateRepositoryPort {
   let sequence = 0;
   return {
     nextId: jest.fn(() => `candidate-${++sequence}`),
     findById: jest.fn(),
-    save: jest.fn().mockResolvedValue(undefined),
+    save: jest.fn((candidate) => {
+      savedCandidates?.push(candidate);
+      return Promise.resolve();
+    }),
   };
 }
 
