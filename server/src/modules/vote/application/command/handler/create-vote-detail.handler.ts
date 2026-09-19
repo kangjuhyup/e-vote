@@ -1,10 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { VoteDetailAggregate } from '../../../domain/vote/vote-detail.aggregate';
+import { CandidateAggregate } from '../../../domain/candidate/candidate.aggregate';
+import { CandidateStatus } from '../../../../../shared/domain/voting/type/candidate-status.type';
 import { VoteDetailStatus } from '../../../../../shared/domain/voting/type/vote-status.type';
 import { CreateVoteDetailCommand } from '../dto/request/create-vote-detail.command';
 import { CreateVoteDetailResult } from '../dto/response/create-vote-detail-result.dto';
 import { VOTE_DETAIL_REPOSITORY_PORT } from '../../port/persistence/command/vote-detail-repository.port';
 import type { VoteDetailRepositoryPort } from '../../port/persistence/command/vote-detail-repository.port';
+import {
+  CANDIDATE_REPOSITORY_PORT,
+  type CandidateRepositoryPort,
+} from '../../port/persistence/command/candidate-repository.port';
 import {
   VOTE_REPOSITORY_PORT,
   type VoteRepositoryPort,
@@ -32,6 +38,8 @@ export class CreateVoteDetailHandler {
     private readonly voteRepository: VoteRepositoryPort,
     @Inject(VOTE_DETAIL_REPOSITORY_PORT)
     private readonly voteDetailRepository: VoteDetailRepositoryPort,
+    @Inject(CANDIDATE_REPOSITORY_PORT)
+    private readonly candidateRepository: CandidateRepositoryPort,
     @Inject(VOTE_SETUP_LIFECYCLE_PORT)
     private readonly voteSetupLifecycle: VoteSetupLifecyclePort,
     @Inject(DATABASE_TRANSACTION_MANAGER)
@@ -60,6 +68,19 @@ export class CreateVoteDetailHandler {
     });
 
     await this.voteDetailRepository.save(voteDetail);
+    if (voteDetail.type === 'YES_NO') {
+      for (const [index, name] of ['찬성', '반대'].entries()) {
+        await this.candidateRepository.save(
+          CandidateAggregate.create({
+            id: this.candidateRepository.nextId(),
+            voteDetailId: voteDetail.id,
+            candidateNo: index + 1,
+            name,
+            status: CandidateStatus.Active,
+          }),
+        );
+      }
+    }
 
     return CreateVoteDetailResult.of({
       id: voteDetail.id,

@@ -6,5 +6,6 @@ export const SMS_DISPATCH_REPOSITORY_PORT = Symbol(
 
 export interface SmsDispatchRepositoryPort {
   nextId(): string;
+  reserveUpcomingVoteNotice(voteId: string): Promise<string>;
   save(dispatch: SmsDispatchAggregate): Promise<void>;
 }

@@ -36,13 +36,14 @@ export class BillingOrderCancellationController {
   @ApiOperation({
     summary: '투표 이용료 주문 및 확정 투표 취소',
     description:
-      '투표가 시작되기 전이며 주문 생성 후 7일 이내일 때 취소합니다. 미결제 주문은 CANCELED, 결제된 주문은 REFUND_PENDING 상태가 됩니다.',
+      '투표 시작 전이면서 투표 예정 안내 문자가 발송되지 않았을 때 결제된 주문을 환불 요청할 수 있습니다. 미결제 주문은 시작 전이면서 주문 생성 후 7일 이내에 취소할 수 있습니다. 미결제 주문은 CANCELED, 결제된 주문은 REFUND_PENDING 상태가 됩니다.',
   })
   @ApiOkResponse({ type: BillingOrderResponse })
   @ApiNotFoundResponse({ description: '주문이 없습니다.' })
   @ApiForbiddenResponse({ description: '현재 사용자가 주문자가 아닙니다.' })
   @ApiConflictResponse({
-    description: '취소 기한 만료, 투표 시작 또는 취소할 수 없는 주문 상태',
+    description:
+      '안내 문자 발송, 미결제 주문 취소 기한 만료, 투표 시작 또는 취소할 수 없는 주문 상태',
   })
   async cancel(
     @User() user: UserPrincipal,

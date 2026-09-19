@@ -3,6 +3,11 @@ set -eu
 
 : "${IMAGE_PREFIX:?Set IMAGE_PREFIX to the approved registry and repository prefix}"
 
+if [ "${PUSH_IMAGES:-false}" = true ]; then
+  printf 'Image publishing is only allowed by the merged release PR workflow\n' >&2
+  exit 1
+fi
+
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
 cd "$repo_root"
@@ -10,10 +15,6 @@ cd "$repo_root"
 revision=$(git rev-parse HEAD)
 revision_tag=$(git rev-parse --short=12 HEAD)
 if [ -n "$(git status --porcelain)" ]; then
-  if [ "${PUSH_IMAGES:-false}" = true ]; then
-    printf 'Refusing to publish images from a dirty worktree\n' >&2
-    exit 1
-  fi
   revision_tag="${revision_tag}-dirty"
 fi
 
@@ -30,10 +31,5 @@ docker build --platform linux/arm64 --file Dockerfile.ui \
 docker build --platform linux/arm64 --file Dockerfile.server \
   --build-arg "VCS_REF=$revision" \
   --tag "$server_image" .
-
-if [ "${PUSH_IMAGES:-false}" = true ]; then
-  docker push "$ui_image"
-  docker push "$server_image"
-fi
 
 printf 'Built %s and %s from %s\n' "$ui_image" "$server_image" "$revision"

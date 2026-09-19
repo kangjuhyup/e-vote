@@ -1,30 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ACCESS_TOKEN_VERIFIER_PORT } from '../../shared/application/port/security/access-token-verifier.port';
-import { OidcAccessTokenVerifierAdapter } from './oidc-access-token-verifier.adapter';
+import { requireAuthzAssertionKey } from './authz-assertion';
 import {
-  OIDC_AUTHENTICATION_CONFIG,
-  OidcAuthenticationConfig,
-} from './oidc-authentication.config';
-import {
-  createOidcTokenIntrospector,
-  OIDC_TOKEN_INTROSPECTOR,
-} from './oidc-token-introspector';
+  AUTHZ_ASSERTION_KEY,
+  AuthzAssertionVerifierAdapter,
+} from './authz-assertion-verifier.adapter';
 
 @Module({
   providers: [
     {
-      provide: OIDC_AUTHENTICATION_CONFIG,
-      useFactory: (): OidcAuthenticationConfig =>
-        OidcAuthenticationConfig.fromEnvironment(),
-    },
-    {
-      provide: OIDC_TOKEN_INTROSPECTOR,
-      inject: [OIDC_AUTHENTICATION_CONFIG],
-      useFactory: createOidcTokenIntrospector,
+      provide: AUTHZ_ASSERTION_KEY,
+      useFactory: requireAuthzAssertionKey,
     },
     {
       provide: ACCESS_TOKEN_VERIFIER_PORT,
-      useClass: OidcAccessTokenVerifierAdapter,
+      useClass: AuthzAssertionVerifierAdapter,
     },
   ],
   exports: [ACCESS_TOKEN_VERIFIER_PORT],

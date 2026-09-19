@@ -36,13 +36,14 @@ import { VoteSetupContainer } from '@/features/votes/container/vote-setup-contai
 
 const navigation = vi.hoisted(() => ({
   pathname: '/votes',
+  push: vi.fn(),
   replace: vi.fn(),
   search: '',
 }));
 
 vi.mock('next/navigation', () => ({
   usePathname: () => navigation.pathname,
-  useRouter: () => ({ replace: navigation.replace }),
+  useRouter: () => ({ push: navigation.push, replace: navigation.replace }),
   useSearchParams: () => new URLSearchParams(navigation.search),
 }));
 
@@ -101,12 +102,14 @@ describe('vote containers', () => {
   beforeEach(() => {
     navigation.pathname = '/votes';
     navigation.search = '';
+    navigation.push.mockReset();
     navigation.replace.mockReset();
     useVotesUiStore.getState().resetVotesUi();
   });
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.restoreAllMocks();
     queryClients.splice(0).forEach((queryClient) => queryClient.clear());
     voteFixtureDetails.splice(
@@ -123,8 +126,26 @@ describe('vote containers', () => {
     expect(
       screen.getByRole('link', { name: '투표 생성' }).getAttribute('href'),
     ).toBe('/votes/new');
-    expect(await screen.findByText('현재 진행 중인 투표')).toBeTruthy();
-    expect(await screen.findAllByText('2026 상반기 대표 선출')).toHaveLength(2);
+    expect(await screen.findByRole('heading', { name: '진행 중 투표 참여율' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '운영 단계 분포' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '진행 예정 투표' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: '현재 진행 중인 투표' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: '참여율 확인 필요' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: '최근 투표 활동' })).toBeNull();
+    expect(screen.queryByText('현재 참여 가능한 투표')).toBeNull();
+    expect(screen.getAllByText('2026 상반기 대표 선출')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: '전체 투표 보기' }).getAttribute('href')).toBe('/votes');
+  });
+
+  it('hides the upcoming vote section when there are no scheduled votes', async () => {
+    voteFixtureDetails.forEach((vote) => {
+      if (vote.status === 'scheduled') vote.status = 'completed';
+    });
+
+    renderWithQueryClient(<VoteDashboardContainer />);
+
+    expect(await screen.findByRole('heading', { name: '운영 단계 분포' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: '진행 예정 투표' })).toBeNull();
   });
 
   it('sends a user without an organization to organization application', async () => {
@@ -165,7 +186,7 @@ describe('vote containers', () => {
     expect(await screen.findByText('화면으로 이동하는 중…')).toBeTruthy();
     await waitFor(() => {
       expect(navigation.replace).toHaveBeenCalledWith(
-        '/admin/organization-applications',
+        '/admin/operations',
       );
     });
     expect(screen.queryByText('일반 대시보드')).toBeNull();
@@ -303,6 +324,16 @@ describe('vote containers', () => {
     expect(screen.getByRole('heading', { name: '선거인명부' })).toBeTruthy();
   });
 
+  it('routes an active vote from the edit action to the approval request instead of showing a disabled edit button', async () => {
+    renderWithQueryClient(<VoteDetailContainer voteId="active-general" />);
+
+    expect(
+      (await screen.findByRole('link', { name: '내용 변경 요청' })).getAttribute('href'),
+    ).toBe('/votes/active-general/content-change');
+    expect(screen.queryByRole('button', { name: '투표 수정' })).toBeNull();
+    expect(screen.getAllByRole('link', { name: '내용 변경 요청' })).toHaveLength(1);
+  });
+
   it('shows a finalized vote consistently and disables editing from detail', async () => {
     const vote = voteFixtureDetails.find(
       (item) => item.id === 'scheduled-budget',
@@ -322,6 +353,49 @@ describe('vote containers', () => {
     } finally {
       vote.status = originalStatus;
     }
+  });
+
+  it('links an unpaid vote without an order to the payment review step', async () => {
+    const vote = voteFixtureDetails.find((item) => item.id === 'scheduled-budget');
+    if (!vote) throw new Error('scheduled-budget fixture is required');
+    vote.status = 'draft';
+
+    renderWithQueryClient(<VoteDetailContainer voteId={vote.id} />);
+
+    expect(await screen.findByRole('link', { name: '결제하기' })).toHaveProperty(
+      'href',
+      expect.stringContaining(`/votes/${vote.id}/edit?step=review#vote-edit-step-review`),
+    );
+  });
+
+  it('opens payment review when entered from the detail payment action', async () => {
+    navigation.search = 'step=review';
+    renderWithQueryClient(<VoteEditContainer voteId="scheduled-budget" />);
+
+    expect(await screen.findByRole('button', { name: '6단계 검토 접기' })).toHaveProperty(
+      'ariaExpanded',
+      'true',
+    );
+  });
+
+  it('links a paid finalized vote to refund management before its start', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-19T00:00:00.000Z'));
+    const vote = voteFixtureDetails.find((item) => item.id === 'scheduled-budget');
+    if (!vote) throw new Error('scheduled-budget fixture is required');
+    vote.status = 'finalized';
+    vote.startsAt = '2026-09-20T00:00:00.000Z';
+    vote.endsAt = '2026-09-21T00:00:00.000Z';
+    vote.activeBillingOrderId = 'billing-order-1';
+    vote.billingOrderStatus = 'PAID';
+
+    renderWithQueryClient(<VoteDetailContainer voteId={vote.id} />);
+
+    expect(await screen.findByRole('link', { name: '결제·환불 관리' })).toHaveProperty(
+      'href',
+      expect.stringContaining('/billing/vote-usage-orders/billing-order-1'),
+    );
+    expect(screen.queryByRole('link', { name: '결제하기' })).toBeNull();
   });
 
   it('shows finalized votes in the vote list', async () => {
@@ -357,6 +431,10 @@ describe('vote containers', () => {
     try {
       renderWithQueryClient(<VoteListContainer />);
       expect(await screen.findByText('결제 처리 중')).toBeTruthy();
+      expect(screen.getByRole('link', { name: '결제 이어하기' })).toHaveProperty(
+        'href',
+        expect.stringContaining('/billing/vote-usage-orders/billing-order-restored-list'),
+      );
     } finally {
       vote.status = original.status;
       vote.activeBillingOrderId = original.activeBillingOrderId;
@@ -390,6 +468,16 @@ describe('vote containers', () => {
         'disabled',
         true,
       );
+      expect(screen.getAllByRole('link', { name: '결제 이어하기' })[0]).toHaveProperty(
+        'href',
+        expect.stringContaining(
+          '/billing/vote-usage-orders/billing-order-restored-detail',
+        ),
+      );
+      expect(screen.getByRole('button', { name: '투표 예정 안내 문자 발송' })).toHaveProperty(
+        'disabled',
+        true,
+      );
       await waitFor(() => {
         expect(fetchOrder).toHaveBeenCalledWith(
           'billing-order-restored-detail',
@@ -397,6 +485,31 @@ describe('vote containers', () => {
       });
     } finally {
       fetchOrder.mockRestore();
+      vote.status = original.status;
+      vote.activeBillingOrderId = original.activeBillingOrderId;
+      vote.billingOrderStatus = original.billingOrderStatus;
+    }
+  });
+
+  it('keeps the payment return action visible when a stale vote status disagrees with its pending order', async () => {
+    const vote = voteFixtureDetails.find((item) => item.id === 'scheduled-budget');
+    if (!vote) throw new Error('scheduled-budget fixture is required');
+    const original = {
+      activeBillingOrderId: vote.activeBillingOrderId,
+      billingOrderStatus: vote.billingOrderStatus,
+      status: vote.status,
+    };
+    vote.status = 'finalized';
+    vote.activeBillingOrderId = 'billing-order-stale-vote';
+    vote.billingOrderStatus = 'PENDING_PAYMENT';
+
+    try {
+      renderWithQueryClient(<VoteDetailContainer voteId={vote.id} />);
+      expect((await screen.findAllByRole('link', { name: '결제 이어하기' }))[0]).toHaveProperty(
+        'href',
+        expect.stringContaining('/billing/vote-usage-orders/billing-order-stale-vote'),
+      );
+    } finally {
       vote.status = original.status;
       vote.activeBillingOrderId = original.activeBillingOrderId;
       vote.billingOrderStatus = original.billingOrderStatus;
@@ -980,6 +1093,8 @@ describe('vote containers', () => {
   });
 
   it('creates a vote by connecting an existing electoral roll', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-06T14:12:00'));
     const createSubVote = vi.spyOn(voteOperationsApi, 'createSubVote');
     renderWithQueryClient(<VoteSetupContainer />);
 
@@ -1169,6 +1284,17 @@ describe('vote containers', () => {
         name: '이용료 결제 요청',
       }),
     ).toHaveProperty('disabled', true);
+    fireEvent.click(
+      screen.getByRole('checkbox', {
+        name: /결제가 완료되거나 주문 취소·환불이 끝날 때까지/,
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: '이용료 결제 요청' }));
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/billing\/vote-usage-orders\/[^/]+$/),
+      );
+    });
     expect(
       voteFixtureDetails.find((vote) => vote.title === 'Mock 신규 투표'),
     ).toMatchObject({
@@ -1178,6 +1304,8 @@ describe('vote containers', () => {
   });
 
   it('rejects a vote creation window whose end is not after its start', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-06T14:12:00'));
     renderWithQueryClient(<VoteSetupContainer />);
 
     fireEvent.change(screen.getByLabelText('투표 제목'), {
@@ -1206,6 +1334,8 @@ describe('vote containers', () => {
   });
 
   it('sets the vote end with a quick duration option', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-06T14:12:00'));
     renderWithQueryClient(<VoteSetupContainer />);
 
     expect(document.querySelector('input[type="datetime-local"]')).toBeNull();
@@ -1274,6 +1404,12 @@ describe('vote containers', () => {
       }),
     );
     fireEvent.click(finalizeButton);
+
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/billing\/vote-usage-orders\/[^/]+$/),
+      );
+    });
 
     expect(
       await screen.findByText(

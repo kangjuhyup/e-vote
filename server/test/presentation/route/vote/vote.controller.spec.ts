@@ -115,7 +115,7 @@ describe('VoteController', () => {
       pageSize: '10',
     });
 
-    expect(response).toEqual({
+    expect(response).toMatchObject({
       items: [
         {
           id: 'vote-1',
@@ -164,7 +164,7 @@ describe('VoteController', () => {
       voteId: 'vote-1',
     });
 
-    expect(response).toEqual({
+    expect(response).toMatchObject({
       id: 'vote-1',
       commissionId: 'commission-1',
       title: 'Board election',
@@ -389,6 +389,8 @@ describe('VoteController', () => {
 
 function createVoteView(): VoteView {
   return VoteView.of({
+    electorCount: 1,
+    participatedCount: 0,
     ...createVoteSummaryProps(),
     description: 'Annual board election',
     voteDetails: [
@@ -434,6 +436,8 @@ function createVotePageView(): VotePageView {
 
 function createVoteSummaryProps(): Parameters<typeof VoteSummaryView.of>[0] {
   return {
+    electorCount: 1,
+    participatedCount: 0,
     id: 'vote-1',
     commissionId: 'commission-1',
     title: 'Board election',

@@ -1,4 +1,4 @@
-export type PaymentIntegrationMode = 'disabled' | 'mock';
+export type PaymentIntegrationMode = 'disabled' | 'mock' | 'toss-test';
 
 export const PAYMENT_INTEGRATION_MODE = Symbol('PAYMENT_INTEGRATION_MODE');
 export const MOCK_PAYMENT_RANDOM_SOURCE = Symbol('MOCK_PAYMENT_RANDOM_SOURCE');
@@ -16,7 +16,8 @@ export function resolvePaymentIntegrationMode(
   if (
     configuredMode !== undefined &&
     configuredMode !== 'disabled' &&
-    configuredMode !== 'mock'
+    configuredMode !== 'mock' &&
+    configuredMode !== 'toss-test'
   ) {
     throw new Error(
       `unsupported BILLING_PAYMENT_MODE: ${configuredMode || '<empty>'}`,
@@ -25,6 +26,9 @@ export function resolvePaymentIntegrationMode(
 
   if (env.NODE_ENV === 'production' && configuredMode === 'mock') {
     throw new Error('mock billing payments are forbidden in production');
+  }
+  if (env.NODE_ENV === 'production' && configuredMode === 'toss-test') {
+    throw new Error('toss-test billing payments are forbidden in production');
   }
 
   if (configuredMode) return configuredMode;

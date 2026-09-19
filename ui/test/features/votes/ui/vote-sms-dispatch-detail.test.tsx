@@ -16,7 +16,7 @@ const reminderDispatch: SmsDispatchDetail = {
     },
     {
       electorId: "elector-failure",
-      failureReason: "SIMULATED_FAILURE",
+      failureReason: "SIMULATED_RANDOM_FAILURE",
       recipientIdentifier: "member-102",
       recipientName: "이선거",
       status: "FAILURE",
@@ -68,5 +68,17 @@ describe("VoteSmsDispatchDetail", () => {
     expect(
       screen.queryByRole("columnheader", { name: "참여 링크" }),
     ).toBeNull();
+  });
+
+  it("shows a readable reason for simulated delivery failures", () => {
+    render(
+      <VoteSmsDispatchDetail
+        dispatch={reminderDispatch}
+        onPageChange={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText("문자 발송에 실패했습니다.")).toBeTruthy();
+    expect(screen.queryByText("SIMULATED_RANDOM_FAILURE")).toBeNull();
   });
 });

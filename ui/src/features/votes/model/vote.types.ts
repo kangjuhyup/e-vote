@@ -104,6 +104,7 @@ export interface VoteDashboard {
   metrics: VoteDashboardMetrics;
   activeVotes: VoteSummary[];
   upcomingVotes: VoteSummary[];
+  paymentAttentionVotes: VoteSummary[];
   attentionVotes: VoteSummary[];
   recentActivities: VoteActivity[];
   generatedAt: string;

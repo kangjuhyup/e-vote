@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Paperclip } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
@@ -38,7 +38,7 @@ import { resolveVoteSchedule } from "@/features/votes/lib/vote-schedule";
 import { readIdentityVerificationPolicy } from "@/features/votes/lib/identity-verification-policy";
 
 import { VoteCommissionSetup } from "../ui/vote-commission-setup";
-import { AttachmentUploadSection } from "../ui/attachment-upload-section";
+import { AttachmentUploadContainer } from "./attachment-upload-container";
 import {
   VoteAgendaSetup,
   type VoteAgendaInput,
@@ -61,12 +61,15 @@ interface VoteEditContainerProps {
 export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [message, setMessage] = useState<string>();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [billingOrderId, setBillingOrderId] = useState<string>();
   const [billingConfirmed, setBillingConfirmed] = useState(false);
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
-  const [openSteps, setOpenSteps] = useState<VoteEditStepKey[]>(["basics"]);
+  const [openSteps, setOpenSteps] = useState<VoteEditStepKey[]>(
+    searchParams.get("step") === "review" ? ["review"] : ["basics"],
+  );
   const [selectedElectoralRollId, setSelectedElectoralRollId] = useState("");
   const voteQuery = useQuery(voteDetailQueryOptions(voteId));
   const vote = voteQuery.data;
@@ -174,6 +177,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
           ? "결제가 완료되어 투표가 확정됐습니다."
           : "결제 주문을 생성했습니다. 결제가 완료될 때까지 투표 설정이 잠깁니다.",
       );
+      router.push(`/billing/vote-usage-orders/${order.id}`);
     },
   });
   const deleteMutation = useMutation({
@@ -443,7 +447,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
               onToggle={() => toggleStep("attachments")}
             >
               <div className="space-y-4">
-                <AttachmentUploadSection
+                <AttachmentUploadContainer
             attachments={vote.attachments ?? []}
             title="투표 첨부파일"
             description="공고문, 안내 자료와 기타 문서를 등록합니다. 파일은 20MB까지 등록할 수 있습니다."
@@ -501,7 +505,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
                 .sort((left, right) => left.order - right.order)
                 .map((subVote) => (
                   <div key={subVote.id} className="space-y-3">
-                    <AttachmentUploadSection
+                    <AttachmentUploadContainer
                       attachments={subVote.attachments ?? []}
                       title={`${subVote.title} 안건 첨부파일`}
                       description="안건 공고문, 안내 자료와 기타 문서를 관리합니다."
@@ -547,7 +551,7 @@ export function VoteEditContainer({ account, voteId }: VoteEditContainerProps) {
                       }
                     />
                     {subVote.candidates.map((candidate) => (
-                      <AttachmentUploadSection
+                      <AttachmentUploadContainer
                         key={candidate.id}
                         attachments={candidate.attachments ?? []}
                         title={`${subVote.title} · ${candidate.name} 첨부파일`}

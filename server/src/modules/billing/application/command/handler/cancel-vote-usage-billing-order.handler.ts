@@ -57,17 +57,26 @@ export class CancelVoteUsageBillingOrderHandler {
 
     const wasTerminal =
       lockedOrder.status === BillingOrderStatus.Canceled ||
+      lockedOrder.status === BillingOrderStatus.RefundPending ||
       lockedOrder.status === BillingOrderStatus.Refunded;
     if (!wasTerminal) {
       await this.voteSetupLifecycle.assertBillingCancellationAllowed({
         voteId: lockedOrder.voteId,
         billingOrderId: lockedOrder.id,
+        canceledAt: command.canceledAt,
       });
     }
-    lockedOrder.requestCancellation({
-      reason: command.reason,
-      canceledAt: command.canceledAt,
-    });
+    if (lockedOrder.status === BillingOrderStatus.Paid) {
+      lockedOrder.requestRefund({
+        reason: command.reason,
+        requestedAt: command.canceledAt,
+      });
+    } else {
+      lockedOrder.requestCancellation({
+        reason: command.reason,
+        canceledAt: command.canceledAt,
+      });
+    }
     if (!wasTerminal && lockedOrder.status === BillingOrderStatus.Canceled) {
       await this.voteSetupLifecycle.releaseBilling({
         voteId: lockedOrder.voteId,

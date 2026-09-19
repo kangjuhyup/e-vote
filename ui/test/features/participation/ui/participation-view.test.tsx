@@ -92,6 +92,39 @@ describe('ParticipationView', () => {
     });
   });
 
+  it('lets a voter choose 찬성 or 반대 on a yes-no ballot', () => {
+    const onSubmitResults = vi.fn().mockResolvedValue(undefined);
+    renderView({
+      onSubmitResults,
+      state: {
+        kind: 'ready',
+        access: {
+          ...access,
+          ballots: [{
+            ...access.ballots[0],
+            type: 'YES_NO',
+            title: '예산안 승인',
+            candidates: [
+              { id: 'yes', candidateNo: 1, name: '찬성', description: '' },
+              { id: 'no', candidateNo: 2, name: '반대', description: '' },
+            ],
+          }],
+        },
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '본인확인으로 계속' }));
+    expect(screen.getByRole('radio', { name: '찬성' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: '반대' }));
+    fireEvent.click(screen.getByRole('button', { name: '선택 확인' }));
+    fireEvent.click(screen.getByRole('button', { name: '선택 저장' }));
+    fireEvent.click(screen.getByRole('button', { name: '결과 제출' }));
+
+    expect(onSubmitResults).toHaveBeenCalledWith({
+      '22222222-2222-4222-8222-222222222222': 'no',
+    });
+  });
+
   it('closes the selection dialog with Escape and keeps the selected candidate', () => {
     renderView();
 

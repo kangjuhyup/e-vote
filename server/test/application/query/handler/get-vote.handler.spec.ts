@@ -119,6 +119,8 @@ class RecordingTransactionManager implements DatabaseTransactionManager {
 
 function createVoteView(): VoteView {
   return VoteView.of({
+    electorCount: 1,
+    participatedCount: 0,
     id: 'vote-1',
     commissionId: 'commission-1',
     title: 'Board election',
@@ -141,6 +143,8 @@ function createVotePageView(): VotePageView {
   return VotePageView.of({
     items: [
       VoteSummaryView.of({
+        electorCount: 1,
+        participatedCount: 0,
         id: 'vote-1',
         commissionId: 'commission-1',
         title: 'Board election',

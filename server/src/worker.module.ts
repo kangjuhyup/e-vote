@@ -10,6 +10,12 @@ import { MarkBillingOrderPaidHandler } from './modules/billing/application/comma
 import { MarkBillingOrderRefundedHandler } from './modules/billing/application/command/handler/mark-billing-order-refunded.handler';
 import { MockPaymentIntegrationEventPublisherAdapter } from './modules/billing/infrastructure/payment/mock-payment-integration-event-publisher.adapter';
 import { MockPaymentOutboxWorker } from './modules/billing/infrastructure/payment/mock-payment-outbox.worker';
+import { TossTestIntegrationEventPublisherAdapter } from './modules/billing/infrastructure/payment/toss-test-integration-event-publisher.adapter';
+import { createTossTestPaymentGateway } from './modules/billing/infrastructure/payment/toss-test-payment-gateway.adapter';
+import {
+  PAYMENT_GATEWAY_PORT,
+  type PaymentGatewayPort,
+} from './modules/billing/application/port/gateway/payment-gateway.port';
 import {
   MOCK_PAYMENT_RANDOM_SOURCE,
   PAYMENT_INTEGRATION_MODE,
@@ -28,7 +34,11 @@ import { VOTE_REPOSITORY_PORT } from './modules/vote/application/port/persistenc
 import { VOTE_SCHEDULE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-schedule-repository.port';
 import { ProcessDueVoteSchedulesHandler } from './modules/vote/application/command/handler/process-due-vote-schedules.handler';
 import { VoteScheduleWorker } from './modules/vote/infrastructure/scheduling/vote-schedule.worker';
-import { VOTE_USAGE_ENTITLEMENT_ACCESS_PORT } from './shared/application/port/capability/vote-billing.port';
+import {
+  UNPAID_VOTE_BILLING_EXPIRATION_PORT,
+  VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
+} from './shared/application/port/capability/vote-billing.port';
+import { ExpireUnpaidVoteBillingOrdersHandler } from './modules/billing/application/command/handler/expire-unpaid-vote-billing-orders.handler';
 import { BILLING_ORDER_REPOSITORY_PORT } from './modules/billing/application/port/persistence/command/billing-order-repository.port';
 import {
   INTEGRATION_EVENT_PUBLISHER_PORT,
@@ -82,8 +92,23 @@ import { ParticipationInvitationRecipientAccessAdapter } from './modules/partici
       useExisting: BILLING_ORDER_REPOSITORY_PORT,
     },
     BillingOrderOutboxRecorder,
+    ExpireUnpaidVoteBillingOrdersHandler,
+    {
+      provide: UNPAID_VOTE_BILLING_EXPIRATION_PORT,
+      useExisting: ExpireUnpaidVoteBillingOrdersHandler,
+    },
     MarkBillingOrderPaidHandler,
     MarkBillingOrderRefundedHandler,
+    {
+      provide: PAYMENT_GATEWAY_PORT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): PaymentGatewayPort =>
+        createTossTestPaymentGateway(
+          config.get<string>('BILLING_PAYMENT_MODE'),
+          config.get<string>('TOSS_SECRET_KEY'),
+          config.get<string>('NODE_ENV'),
+        ),
+    },
     {
       provide: PAYMENT_INTEGRATION_MODE,
       inject: [ConfigService],
@@ -106,12 +131,14 @@ import { ParticipationInvitationRecipientAccessAdapter } from './modules/partici
         MarkBillingOrderPaidHandler,
         MarkBillingOrderRefundedHandler,
         MOCK_PAYMENT_RANDOM_SOURCE,
+        PAYMENT_GATEWAY_PORT,
       ],
       useFactory: (
         mode: PaymentIntegrationMode,
         markPaidHandler: MarkBillingOrderPaidHandler,
         markRefundedHandler: MarkBillingOrderRefundedHandler,
         random: MockPaymentRandomSource,
+        gateway: PaymentGatewayPort,
       ): IntegrationEventPublisherPort =>
         mode === 'mock'
           ? new MockPaymentIntegrationEventPublisherAdapter(
@@ -119,7 +146,12 @@ import { ParticipationInvitationRecipientAccessAdapter } from './modules/partici
               markRefundedHandler,
               random,
             )
-          : new NotConfiguredIntegrationEventPublisherAdapter(),
+          : mode === 'toss-test'
+            ? new TossTestIntegrationEventPublisherAdapter(
+                gateway,
+                markRefundedHandler,
+              )
+            : new NotConfiguredIntegrationEventPublisherAdapter(),
     },
     {
       provide: IntegrationEventOutboxDispatcher,

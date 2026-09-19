@@ -3,7 +3,6 @@ import { VoteOrganizationProtected } from '../../../../shared/presentation/commo
 import { User } from '../../../../shared/presentation/common/decorator/user.decorator';
 import { throwMappedSmsSenderError } from '../../../../shared/presentation/common/mapper/sms-sender-error.mapper';
 import {
-  Body,
   Controller,
   ForbiddenException,
   Get,
@@ -13,7 +12,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiAcceptedResponse,
-  ApiBody,
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
@@ -29,11 +27,11 @@ import {
   type VoteSmsMessagePurpose,
 } from '../../../../shared/domain/voting/type/sms-message-purpose.type';
 import { VoteParam } from '../vote/dto/create-vote-request.dto';
-import { SendVoteSmsBody } from './dto/send-vote-sms-request.dto';
 import { SendVoteSmsResponse } from './dto/send-vote-sms-response.dto';
 import { GetParticipationReminderTemplateQuery } from '../../application/query/dto/request/get-participation-reminder-template.query';
 import { GetParticipationReminderTemplateHandler } from '../../application/query/handler/get-participation-reminder-template.handler';
 import { GetParticipationReminderTemplateResponse } from './dto/get-participation-reminder-template-response.dto';
+import { GetVoteNoticeTemplateHandler } from '../../application/query/handler/get-vote-notice-template.handler';
 
 @ApiTags('vote-sms')
 @Controller('votes/:voteId/sms')
@@ -42,6 +40,7 @@ export class VoteSmsController {
   constructor(
     private readonly sendVoteSmsHandler: SendVoteSmsHandler,
     private readonly getParticipationReminderTemplateHandler: GetParticipationReminderTemplateHandler,
+    private readonly getVoteNoticeTemplateHandler: GetVoteNoticeTemplateHandler,
   ) {}
 
   @Get('participation-reminder/template')
@@ -56,6 +55,26 @@ export class VoteSmsController {
       this.getParticipationReminderTemplateHandler.execute(
         GetParticipationReminderTemplateQuery.of({ voteId: params.voteId }),
       ),
+    );
+  }
+
+  @Get('result-notice/template')
+  @VoteOrganizationProtected('read')
+  @ApiOperation({ summary: '투표 결과 안내 발송 템플릿 조회' })
+  getResultNoticeTemplate(@User() user: UserPrincipal) {
+    void user;
+    return this.getVoteNoticeTemplateHandler.execute(
+      SmsMessagePurpose.VoteResultNotice,
+    );
+  }
+
+  @Get('upcoming-notice/template')
+  @VoteOrganizationProtected('read')
+  @ApiOperation({ summary: '투표 예정 안내 발송 템플릿 조회' })
+  getUpcomingVoteNoticeTemplate(@User() user: UserPrincipal) {
+    void user;
+    return this.getVoteNoticeTemplateHandler.execute(
+      SmsMessagePurpose.UpcomingVoteNotice,
     );
   }
 
@@ -80,36 +99,30 @@ export class VoteSmsController {
   @Post('result-notice')
   @HttpCode(202)
   @ApiOperation({ summary: '투표 결과 안내 문자 발송' })
-  @ApiBody({ type: SendVoteSmsBody })
   @ApiAcceptedResponse({ type: SendVoteSmsResponse })
   sendResultNotice(
     @User() user: UserPrincipal,
     @Param() params: VoteParam,
-    @Body() body: SendVoteSmsBody,
   ): Promise<SendVoteSmsResponse> {
     return this.send(
       user.id,
       params.voteId,
       SmsMessagePurpose.VoteResultNotice,
-      body.message,
     );
   }
 
   @Post('upcoming-notice')
   @HttpCode(202)
   @ApiOperation({ summary: '투표 예정 안내 문자 발송' })
-  @ApiBody({ type: SendVoteSmsBody })
   @ApiAcceptedResponse({ type: SendVoteSmsResponse })
   sendUpcomingVoteNotice(
     @User() user: UserPrincipal,
     @Param() params: VoteParam,
-    @Body() body: SendVoteSmsBody,
   ): Promise<SendVoteSmsResponse> {
     return this.send(
       user.id,
       params.voteId,
       SmsMessagePurpose.UpcomingVoteNotice,
-      body.message,
     );
   }
 
@@ -117,7 +130,6 @@ export class VoteSmsController {
     requestedByUserPrincipalId: string,
     voteId: string,
     purpose: VoteSmsMessagePurpose,
-    message?: string,
   ): Promise<SendVoteSmsResponse> {
     try {
       return SendVoteSmsResponse.of(
@@ -126,7 +138,6 @@ export class VoteSmsController {
             voteId,
             requestedByUserPrincipalId,
             purpose,
-            message,
           }),
         ),
       );

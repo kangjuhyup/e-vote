@@ -29,6 +29,21 @@ fi
 : "${VOTE_AUTH_AUDIENCE:=https://vote-api.example.com}"
 : "${VOTE_AUTH_INTROSPECTION_CLIENT_ID:=vote-api}"
 : "${VOTE_AUTH_INTROSPECTION_CLIENT_SECRET:=vote-local-introspection-secret-change-me}"
+if [ -z "${VOTE_AUTHZ_ASSERTION_KEY:-}" ]; then
+  authz_key_dir="$repo_root/.tmp"
+  authz_key_file="$authz_key_dir/vote-authz-assertion-key"
+  mkdir -p "$authz_key_dir"
+  if [ ! -s "$authz_key_file" ]; then
+    (
+      umask 077
+      authz_temp_key_file=$(mktemp "$authz_key_dir/vote-authz-key.XXXXXX")
+      openssl rand -hex 32 > "$authz_temp_key_file"
+      ln "$authz_temp_key_file" "$authz_key_file" 2>/dev/null || true
+      rm -f "$authz_temp_key_file"
+    )
+  fi
+  VOTE_AUTHZ_ASSERTION_KEY=$(cat "$authz_key_file")
+fi
 : "${VOTE_AUTH_ADMIN_BASE_URL:=$AUTH_OIDC_ISSUER}"
 : "${VOTE_AUTH_ADMIN_USERNAME:=$AUTH_ADMIN_USERNAME}"
 : "${VOTE_AUTH_ADMIN_PASSWORD:=$AUTH_ADMIN_PASSWORD}"
@@ -55,6 +70,7 @@ export AUTH_OIDC_TENANT_CODE
 export VOTE_AUTH_AUDIENCE
 export VOTE_AUTH_INTROSPECTION_CLIENT_ID
 export VOTE_AUTH_INTROSPECTION_CLIENT_SECRET
+export VOTE_AUTHZ_ASSERTION_KEY
 export VOTE_AUTH_ADMIN_BASE_URL
 export VOTE_AUTH_ADMIN_USERNAME
 export VOTE_AUTH_ADMIN_PASSWORD

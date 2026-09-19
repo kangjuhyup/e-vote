@@ -25,6 +25,21 @@ describe('payment integration config', () => {
     ).toBe('mock');
   });
 
+  it('allows Toss sandbox only outside production', () => {
+    expect(
+      resolvePaymentIntegrationMode({
+        NODE_ENV: 'development',
+        BILLING_PAYMENT_MODE: 'toss-test',
+      }),
+    ).toBe('toss-test');
+    expect(() =>
+      resolvePaymentIntegrationMode({
+        NODE_ENV: 'production',
+        BILLING_PAYMENT_MODE: 'toss-test',
+      }),
+    ).toThrow('toss-test billing payments are forbidden in production');
+  });
+
   it('rejects mock payments in production and unknown modes', () => {
     expect(() =>
       resolvePaymentIntegrationMode({

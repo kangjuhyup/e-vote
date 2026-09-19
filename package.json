@@ -10,6 +10,7 @@
     "dev": "sh scripts/dev.sh",
     "dev:migrate": "sh scripts/dev-component.sh migrate",
     "dev:api": "sh scripts/dev-component.sh api",
+    "dev:authz": "sh scripts/dev-component.sh authz",
     "dev:worker": "sh scripts/dev-component.sh worker",
     "dev:ui:local": "sh scripts/dev-component.sh ui",
     "dev:auth-service": "sh scripts/dev-component.sh auth-service",
@@ -39,6 +40,12 @@
     "test:debug": "pnpm --filter @vote/server test:debug",
     "test:e2e": "pnpm --filter @vote/server test:e2e",
     "test:e2e:redis": "pnpm --filter @vote/server test:e2e:redis",
-    "test:e2e:redis:docker": "sh -c 'docker compose -p vote-redis-e2e -f docker-compose.redis-e2e.yml up -d --wait && pnpm --filter @vote/server test:e2e:redis; status=$?; docker compose -p vote-redis-e2e -f docker-compose.redis-e2e.yml down -v; exit $status'"
+    "test:e2e:redis:docker": "sh -c 'docker compose -p vote-redis-e2e -f docker-compose.redis-e2e.yml up -d --wait && pnpm --filter @vote/server test:e2e:redis; status=$?; docker compose -p vote-redis-e2e -f docker-compose.redis-e2e.yml down -v; exit $status'",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "changeset:version": "changeset version && pnpm install --lockfile-only --no-frozen-lockfile"
+  },
+  "devDependencies": {
+    "@changesets/cli": "2.31.1"
   }
 }

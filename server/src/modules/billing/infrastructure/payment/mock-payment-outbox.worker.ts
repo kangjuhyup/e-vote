@@ -43,7 +43,7 @@ export class MockPaymentOutboxWorker
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    if (this.mode !== 'mock' || this.abortController) return;
+    if (this.mode === 'disabled' || this.abortController) return;
 
     const abortController = new AbortController();
     this.abortController = abortController;

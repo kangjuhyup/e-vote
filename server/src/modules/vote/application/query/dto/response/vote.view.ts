@@ -206,6 +206,8 @@ export class VoteDetailView {
 
 type VoteSummaryViewProps = {
   readonly id: string;
+  readonly electorCount: number;
+  readonly participatedCount: number;
   readonly commissionId: string;
   readonly title: string;
   readonly attachments?: readonly AttachmentView[];
@@ -229,6 +231,8 @@ export class VoteSummaryView {
 
   private constructor(
     readonly id: string,
+    readonly electorCount: number,
+    readonly participatedCount: number,
     readonly commissionId: string,
     readonly title: string,
     readonly attachments: readonly AttachmentView[],
@@ -258,6 +262,8 @@ export class VoteSummaryView {
   static of(params: VoteSummaryViewProps): VoteSummaryView {
     return new VoteSummaryView(
       params.id,
+      params.electorCount,
+      params.participatedCount,
       params.commissionId,
       params.title,
       params.attachments ?? [],
@@ -288,6 +294,8 @@ export class VoteView {
 
   private constructor(
     readonly id: string,
+    readonly electorCount: number,
+    readonly participatedCount: number,
     readonly commissionId: string,
     readonly title: string,
     readonly description: string,
@@ -319,6 +327,8 @@ export class VoteView {
   static of(params: VoteViewProps): VoteView {
     return new VoteView(
       params.id,
+      params.electorCount,
+      params.participatedCount,
       params.commissionId,
       params.title,
       params.description,

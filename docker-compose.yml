@@ -31,6 +31,18 @@ x-auth-service-environment: &auth-service-environment
   SEED_AUTH_PUBLIC_BASE: ${AUTH_SERVICE_PUBLIC_BASE:-http://localhost:3002}
 
 services:
+  vote-envoy:
+    image: envoyproxy/envoy:v1.36.9
+    container_name: vote-envoy
+    restart: unless-stopped
+    command: ['envoy', '-c', '/etc/envoy/vote-envoy.yaml', '--log-level', 'warning']
+    ports:
+      - '127.0.0.1:3000:3000'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - ./docker/vote-envoy.yaml:/etc/envoy/vote-envoy.yaml:ro
+
   postgres:
     image: postgres:16-alpine
     container_name: vote-postgres
@@ -123,6 +135,7 @@ services:
       auth-service:
         condition: service_healthy
     environment:
+      NODE_ENV: development
       AUTH_BASE_URL: http://auth-service:3000
       AUTH_ADMIN_USERNAME: ${AUTH_ADMIN_USERNAME:-admin}
       AUTH_ADMIN_PASSWORD: ${AUTH_ADMIN_PASSWORD:-vote-local-admin-password-change-me}

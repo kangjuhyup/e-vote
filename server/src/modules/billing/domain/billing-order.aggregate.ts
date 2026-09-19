@@ -265,6 +265,44 @@ export class BillingOrderAggregate {
     );
   }
 
+  expirePendingPayment(params: { reason: string; expiredAt: Date }): void {
+    const reason = params.reason.trim();
+    if (reason.length === 0) {
+      throw new DomainError('billing order expiration reason is required');
+    }
+    if (reason.length > 500) {
+      throw new DomainError(
+        'billing order expiration reason must not exceed 500 characters',
+      );
+    }
+    if (this.status === BillingOrderStatus.Canceled) {
+      if (this.cancellationReason !== reason) {
+        throw new DomainError(
+          'billing order was already canceled with another reason',
+        );
+      }
+      return;
+    }
+    if (this.status !== BillingOrderStatus.PendingPayment) {
+      throw new DomainError('only pending billing orders can expire');
+    }
+    if (params.expiredAt.getTime() < this.issuedAt.getTime()) {
+      throw new DomainError('billing order cannot expire before it is issued');
+    }
+
+    this.status = BillingOrderStatus.Canceled;
+    this.canceledAt = params.expiredAt;
+    this.cancellationReason = reason;
+    this.version += 1;
+    this.events.push(
+      BillingOrderCanceled.of({
+        aggregateId: this.id,
+        aggregateVersion: this.version,
+        occurredAt: params.expiredAt,
+      }),
+    );
+  }
+
   requestRefund(params: { reason: string; requestedAt: Date }): void {
     const reason = params.reason.trim();
     if (reason.length === 0) {

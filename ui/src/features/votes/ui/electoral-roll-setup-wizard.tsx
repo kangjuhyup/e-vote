@@ -13,6 +13,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,10 +22,7 @@ import { Input } from '@/components/ui/input';
 import type {
   CreateElectoralRollResult,
   ElectoralRollImportMemberInput,
-  StageElectoralRollMembersResult,
 } from '@/features/votes/model/electoral-roll.types';
-
-import { ElectoralRollImportCard } from './electoral-roll-import-card';
 
 export type ElectoralRollSetupStep =
   | 'complete'
@@ -37,14 +35,12 @@ interface ElectoralRollSetupWizardProps {
   createdRoll?: CreateElectoralRollResult;
   errorMessage?: string;
   isSubmitting: boolean;
+  importCard?: ReactNode;
   members: ElectoralRollImportMemberInput[];
   mode: ElectoralRollRegistrationMode;
   name: string;
   onAddMember: (data: FormData) => boolean;
   onCreate: () => void;
-  onImportMembers: (
-    members: ElectoralRollImportMemberInput[],
-  ) => Promise<StageElectoralRollMembersResult>;
   onModeChange: (mode: ElectoralRollRegistrationMode) => void;
   onNameSubmit: (name: string) => void;
   onRemoveMember: (identifier: string) => void;
@@ -153,12 +149,12 @@ export function ElectoralRollSetupWizard(
         ) : null}
         {props.step === 'members' ? (
           <MembersStep
+            importCard={props.importCard}
             isSubmitting={props.isSubmitting}
             members={props.members}
             mode={props.mode}
             onAddMember={props.onAddMember}
             onBack={() => props.onStepChange('details')}
-            onImportMembers={props.onImportMembers}
             onModeChange={props.onModeChange}
             onNext={() => props.onStepChange('review')}
             onRemoveMember={props.onRemoveMember}
@@ -239,24 +235,22 @@ function DetailsStep({
 }
 
 function MembersStep({
+  importCard,
   isSubmitting,
   members,
   mode,
   onAddMember,
   onBack,
-  onImportMembers,
   onModeChange,
   onNext,
   onRemoveMember,
 }: {
+  importCard?: ReactNode;
   isSubmitting: boolean;
   members: ElectoralRollImportMemberInput[];
   mode: ElectoralRollRegistrationMode;
   onAddMember: (data: FormData) => boolean;
   onBack: () => void;
-  onImportMembers: (
-    members: ElectoralRollImportMemberInput[],
-  ) => Promise<StageElectoralRollMembersResult>;
   onModeChange: (mode: ElectoralRollRegistrationMode) => void;
   onNext: () => void;
   onRemoveMember: (identifier: string) => void;
@@ -293,11 +287,7 @@ function MembersStep({
       </Card>
 
       {mode === 'excel' ? (
-        <ElectoralRollImportCard
-          isSubmitting={isSubmitting}
-          mode="create"
-          onImportMembers={onImportMembers}
-        />
+        importCard
       ) : (
         <ManualMemberCard
           isSubmitting={isSubmitting}

@@ -1,5 +1,6 @@
 import { TEST_USER_PRINCIPAL } from '../../user-principal.fixture';
 import {
+  ConflictException,
   ForbiddenException,
   NotFoundException,
   ServiceUnavailableException,
@@ -22,6 +23,7 @@ import {
   SmsDispatchNotFoundError,
 } from '../../../../src/modules/vote/application/query/handler/get-sms-dispatch.handler';
 import { SmsDeliveryStatus } from '../../../../src/shared/domain/sms/type/sms-delivery-status.type';
+import { DomainError } from '../../../../src/shared/domain/domain-error';
 import { maskDecoratedPersonalData } from '../../../../src/shared/presentation/common/serializer/mask-personal-data';
 
 describe('SMS controllers', () => {
@@ -40,6 +42,9 @@ describe('SMS controllers', () => {
     } as unknown as SendVoteSmsHandler,
     {
       execute: getParticipationReminderTemplateExecute,
+    },
+    {
+      execute: jest.fn((purpose) => ({ code: purpose, content: '고정 문안' })),
     },
   );
   const fieldSessionController = new FieldVotingSessionSmsController({
@@ -75,6 +80,31 @@ describe('SMS controllers', () => {
     );
   });
 
+  it('returns fixed previews for the upcoming and result notices', () => {
+    expect(voteController.getUpcomingVoteNoticeTemplate()).toEqual({
+      code: SmsMessagePurpose.UpcomingVoteNotice,
+      content: '고정 문안',
+    });
+    expect(voteController.getResultNoticeTemplate()).toEqual({
+      code: SmsMessagePurpose.VoteResultNotice,
+      content: '고정 문안',
+    });
+  });
+
+  it('returns a conflict when an upcoming notice loses the race to a refund', async () => {
+    sendVoteExecute.mockRejectedValue(
+      new DomainError(
+        'upcoming vote notices require an active paid billing order',
+      ),
+    );
+
+    await expect(
+      voteController.sendUpcomingVoteNotice(TEST_USER_PRINCIPAL, {
+        voteId: 'vote-1',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
   it.each([
     {
       invoke: () =>
@@ -85,20 +115,16 @@ describe('SMS controllers', () => {
     },
     {
       invoke: () =>
-        voteController.sendResultNotice(
-          TEST_USER_PRINCIPAL,
-          { voteId: 'vote-1' },
-          { message: '결과 안내' },
-        ),
+        voteController.sendResultNotice(TEST_USER_PRINCIPAL, {
+          voteId: 'vote-1',
+        }),
       purpose: SmsMessagePurpose.VoteResultNotice,
     },
     {
       invoke: () =>
-        voteController.sendUpcomingVoteNotice(
-          TEST_USER_PRINCIPAL,
-          { voteId: 'vote-1' },
-          { message: '예정 안내' },
-        ),
+        voteController.sendUpcomingVoteNotice(TEST_USER_PRINCIPAL, {
+          voteId: 'vote-1',
+        }),
       purpose: SmsMessagePurpose.UpcomingVoteNotice,
     },
   ])('maps a fixed vote SMS endpoint to $purpose', async (testCase) => {
@@ -171,11 +197,9 @@ describe('SMS controllers', () => {
     sendVoteExecute.mockRejectedValue(new SmsSenderNotConfiguredError());
 
     await expect(
-      voteController.sendUpcomingVoteNotice(
-        TEST_USER_PRINCIPAL,
-        { voteId: 'vote-1' },
-        { message: '예정 안내' },
-      ),
+      voteController.sendUpcomingVoteNotice(TEST_USER_PRINCIPAL, {
+        voteId: 'vote-1',
+      }),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 

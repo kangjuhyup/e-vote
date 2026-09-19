@@ -7,6 +7,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { FormEvent } from "react";
+import type { ReactNode } from "react";
 
 import { SearchField } from "@/components/forms/search-field";
 import { Button } from "@/components/ui/button";
@@ -18,22 +19,17 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type {
-  ElectoralRollImportMemberInput,
   ElectoralRollMemberDraft,
   ElectoralRollMemberDraftField,
-  StageElectoralRollMembersResult,
 } from "../model/electoral-roll.types";
-import { ElectoralRollImportCard } from "./electoral-roll-import-card";
 
 const MEMBERS_PER_PAGE = 25;
 
 interface ElectoralRollMemberSectionProps {
+  importCard?: ReactNode;
   isSubmitting: boolean;
   members: ElectoralRollMemberDraft[];
   onAddMember: (data: FormData) => boolean | void;
-  onImportMembers: (
-    members: ElectoralRollImportMemberInput[],
-  ) => Promise<StageElectoralRollMembersResult>;
   onDiscardChanges: () => void;
   onMemberChange: (
     draftId: string,
@@ -50,10 +46,10 @@ interface ElectoralRollMemberSectionProps {
 }
 
 export function ElectoralRollMemberSection({
+  importCard,
   isSubmitting,
   members,
   onAddMember,
-  onImportMembers,
   onDiscardChanges,
   onMemberChange,
   onPageChange,
@@ -123,10 +119,7 @@ export function ElectoralRollMemberSection({
         </div>
       </div>
 
-      <ElectoralRollImportCard
-        isSubmitting={isSubmitting}
-        onImportMembers={onImportMembers}
-      />
+      {importCard}
 
       <Card className="rounded-lg">
         <CardHeader>

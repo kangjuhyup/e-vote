@@ -30,6 +30,7 @@ import type {
 
 import { ElectoralRollManagement } from '../ui/electoral-roll-management';
 import { VoteNavigation } from '../ui/vote-navigation';
+import { ElectoralRollImportContainer } from './electoral-roll-import-container';
 
 let memberDraftSequence = 0;
 
@@ -218,6 +219,15 @@ export function ElectoralRollManagementContainer({
         />
       ) : (
         <ElectoralRollManagement
+          importCard={
+            <ElectoralRollImportContainer
+              isSubmitting={isSubmitting}
+              onImportMembers={(members) => {
+                clearStatus();
+                return Promise.resolve(stageMembers(members));
+              }}
+            />
+          }
           roll={rollQuery.data ?? null}
           rollPage={
             rollPageQuery.data ?? {
@@ -303,10 +313,6 @@ export function ElectoralRollManagementContainer({
               );
               return false;
             }
-          }}
-          onImportMembers={(members) => {
-            clearStatus();
-            return Promise.resolve(stageMembers(members));
           }}
           onDiscardMemberChanges={() => {
             clearStatus();

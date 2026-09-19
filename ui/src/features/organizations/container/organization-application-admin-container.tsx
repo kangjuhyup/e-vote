@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { RetryErrorCard } from '@/components/feedback/retry-error-card';
 import { SkeletonCardGrid } from '@/components/feedback/skeleton-card-grid';
 import { PageShell } from '@/components/layout/page-shell';
+import { AdminNavigation } from '@/features/admin/ui/admin-navigation';
 
 import { organizationApi } from '../api/organization-api';
 import { organizationApplicationAdminQueryOptions } from '../api/organization-query-options';
@@ -47,6 +48,7 @@ export function OrganizationApplicationAdminContainer({
   return (
     <PageShell
       account={account}
+      navigation={<AdminNavigation current="applications" />}
       eyebrow="서비스 운영"
       title="조직 신청 검토"
       description="신청 정보를 확인하고 조직 생성을 승인하거나 반려합니다."

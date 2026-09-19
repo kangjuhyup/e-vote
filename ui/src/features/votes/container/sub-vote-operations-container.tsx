@@ -16,7 +16,7 @@ import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
 import { voteDetailQueryOptions } from "@/features/votes/api/votes-query-options";
 import { isVoteSetupEditable } from "@/features/votes/lib/vote-finalization";
 
-import { AttachmentUploadSection } from "../ui/attachment-upload-section";
+import { AttachmentUploadContainer } from "./attachment-upload-container";
 import { SubVoteOperationsView } from "../ui/sub-vote-operations-view";
 import { VoteNavigation } from "../ui/vote-navigation";
 
@@ -101,7 +101,7 @@ export function SubVoteOperationsContainer({ account, voteDetailId, voteId }: Su
         <SubVoteOperationsView
           operations={operationsQuery.data}
           attachmentsPanel={
-            <AttachmentUploadSection
+            <AttachmentUploadContainer
               attachments={operationsQuery.data.attachments ?? []}
               title={`${operationsQuery.data.title} 첨부파일`}
               description="등록된 안건 첨부파일을 확인하고 내려받을 수 있습니다."
@@ -145,7 +145,7 @@ export function SubVoteOperationsContainer({ account, voteDetailId, voteId }: Su
           candidateAttachments={Object.fromEntries(
             operationsQuery.data.candidates.map((candidate) => [
               candidate.id,
-              <AttachmentUploadSection
+              <AttachmentUploadContainer
                 key={candidate.id}
                 attachments={candidate.attachments ?? []}
                 title={`${candidate.name} 첨부파일`}

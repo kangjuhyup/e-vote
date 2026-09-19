@@ -10,6 +10,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { billingApi } from "@/features/billing/api/billing-api";
+import { voteSmsApi } from "@/features/votes/api/vote-sms-api";
 import { BillingOrderContainer } from "@/features/billing/container/billing-order-container";
 import type { BillingOrder } from "@/features/billing/model/billing.types";
 import { BillingOrderConfirmation } from "@/features/billing/ui/billing-order-confirmation";
@@ -69,7 +70,7 @@ describe("billing order UI", () => {
       />,
     );
 
-    expect(screen.getByText(/주문 생성과 동시에 결제 처리가 시작/)).toBeTruthy();
+    expect(screen.getByText(/주문 생성 후 결제 화면으로 이동/)).toBeTruthy();
     expect(
       screen.getByRole("button", {
         name: "이용료 결제 요청",
@@ -288,6 +289,50 @@ describe("billing order UI", () => {
     expect(fetchOrder.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("hides the refund action after an upcoming vote notice was dispatched", async () => {
+    const order = billingOrder({
+      paidAt: "2026-09-05T00:00:01.000Z",
+      paymentId: "payment-1",
+      status: "PAID",
+    });
+    vi.spyOn(billingApi, "fetchVoteUsageOrder").mockResolvedValue(order);
+    vi.spyOn(voteSmsApi, "fetchDispatchPage").mockResolvedValue({
+      items: [{
+        failureCount: 0,
+        id: "dispatch-1",
+        purpose: "UPCOMING_VOTE_NOTICE",
+        recipientCount: 1,
+        sentAt: "2026-09-05T00:00:02.000Z",
+        successCount: 1,
+        voteId: order.voteId,
+      }],
+      page: 1,
+      pageSize: 100,
+      totalItems: 1,
+      totalPages: 1,
+    });
+
+    renderWithQueryClient(<BillingOrderContainer billingOrderId={order.id} />);
+
+    expect(await screen.findByText("투표 안내 문자 발송이 시작되어 환불할 수 없습니다.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "투표 취소·환불 요청" })).toBeNull();
+  });
+
+  it("hides the refund action when the vote start time has passed", async () => {
+    const order = billingOrder({
+      paidAt: "2026-09-05T00:00:01.000Z",
+      paymentId: "payment-1",
+      status: "PAID",
+      voteId: "active-general",
+    });
+    vi.spyOn(billingApi, "fetchVoteUsageOrder").mockResolvedValue(order);
+
+    renderWithQueryClient(<BillingOrderContainer billingOrderId={order.id} />);
+
+    expect(await screen.findByText("투표 시작 시각이 지나 주문을 취소하거나 환불할 수 없습니다.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "투표 취소·환불 요청" })).toBeNull();
+  });
+
   it("polls a refund request until the server reports refund complete", async () => {
     const pendingOrder = await billingApi.createVoteUsageOrder(
       "billing-refund-polling-vote",
@@ -330,7 +375,7 @@ describe("billing order UI", () => {
       ),
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "주문 및 투표 취소" }),
+      screen.getByRole("button", { name: "투표 취소·환불 요청" }),
     );
 
     expect(await screen.findByText("환불 처리 중")).toBeTruthy();

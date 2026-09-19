@@ -321,6 +321,30 @@ export class VoteAggregate {
     );
   }
 
+  cancelWhenPaymentOverdue(canceledAt: Date): boolean {
+    if (this.status === VoteStatus.Canceled) return false;
+    if (
+      this.status !== VoteStatus.Draft ||
+      !this.billingOrderId ||
+      this.finalizedAt
+    ) {
+      throw new DomainError(
+        'only billing-locked draft votes can be canceled for overdue payment',
+      );
+    }
+    if (canceledAt.getTime() < this.startedAt.getTime()) {
+      throw new DomainError(
+        'vote cannot be canceled for overdue payment before its start time',
+      );
+    }
+
+    this.status = VoteStatus.Canceled;
+    this.events.push(
+      VoteCanceled.of({ aggregateId: this.id, occurredAt: canceledAt }),
+    );
+    return true;
+  }
+
   lockForBilling(billingOrderId: string): void {
     const normalizedBillingOrderId = createId(billingOrderId);
     if (this.billingOrderId === normalizedBillingOrderId) return;
@@ -376,6 +400,24 @@ export class VoteAggregate {
       this.status !== VoteStatus.Finalized
     ) {
       throw new DomainError('only unopened votes can cancel billing');
+    }
+  }
+
+  assertBillingCancellationAllowedAt(
+    billingOrderId: string,
+    canceledAt: Date,
+    hasUpcomingNoticeDispatch: boolean,
+  ): void {
+    this.assertBillingCancellationAllowed(billingOrderId);
+    if (canceledAt.getTime() >= this.startedAt.getTime()) {
+      throw new DomainError(
+        'vote billing cannot be canceled at or after start time',
+      );
+    }
+    if (hasUpcomingNoticeDispatch) {
+      throw new DomainError(
+        'vote billing cannot be canceled after an upcoming vote notice dispatch started',
+      );
     }
   }
 

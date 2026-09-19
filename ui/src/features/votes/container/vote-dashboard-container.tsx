@@ -31,7 +31,7 @@ export function VoteDashboardContainer({ account }: VoteDashboardContainerProps)
       }
       eyebrow="운영 현황"
       title="투표 대시보드"
-      description="진행 중인 투표, 예정 투표, 참여율이 낮은 투표를 한 화면에서 확인합니다."
+      description="진행 중인 투표와 시작 전 결제·확정 확인이 필요한 투표를 한 화면에서 확인합니다."
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild>
@@ -61,8 +61,8 @@ export function VoteDashboardContainer({ account }: VoteDashboardContainerProps)
     >
       {dashboardQuery.isLoading ? (
         <SkeletonCardGrid
-          count={4}
-          className="md:grid-cols-4"
+          count={2}
+          className="lg:grid-cols-2"
           label="대시보드를 불러오는 중…"
         />
       ) : dashboardQuery.isError ? (

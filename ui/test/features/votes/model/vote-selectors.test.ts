@@ -138,6 +138,61 @@ describe("vote selectors", () => {
     );
   });
 
+  it("counts finalized votes waiting for their start as upcoming", () => {
+    const finalizedVote = {
+      ...summaries[1],
+      status: "finalized" as const,
+    };
+
+    const dashboard = buildVoteDashboard(
+      [finalizedVote],
+      "2026-08-13T00:00:00.000Z",
+    );
+
+    expect(dashboard.metrics.scheduledVotes).toBe(1);
+    expect(dashboard.upcomingVotes).toMatchObject([finalizedVote]);
+  });
+
+  it("flags unfinalized votes starting within 24 hours unless payment is confirmed", () => {
+    const base: VoteSummary = {
+      id: "base",
+      title: "결제 확인 투표",
+      status: "draft",
+      startsAt: "2026-09-19T06:00:00.000Z",
+      endsAt: "2026-09-20T06:00:00.000Z",
+      electorCount: 10,
+      participatedCount: 0,
+      participationKnown: false,
+    };
+    const vote = (id: string, overrides: Partial<VoteSummary>): VoteSummary => ({
+      ...base,
+      id,
+      ...overrides,
+    });
+    const dashboard = buildVoteDashboard(
+      [
+        vote("unknown", {}),
+        vote("pending", {
+          startsAt: "2026-09-19T02:00:00.000Z",
+          billingOrderStatus: "PENDING_PAYMENT",
+        }),
+        vote("paid", { billingOrderStatus: "PAID" }),
+        vote("finalized", { status: "finalized" }),
+        vote("later", { startsAt: "2026-09-20T00:00:01.000Z" }),
+        vote("past", { startsAt: "2026-09-18T23:59:59.000Z" }),
+        vote("boundary", { startsAt: "2026-09-20T00:00:00.000Z" }),
+      ],
+      "2026-09-19T00:00:00.000Z",
+    );
+
+    expect(dashboard.paymentAttentionVotes.map(({ id }) => id)).toEqual([
+      "pending",
+      "unknown",
+      "boundary",
+    ]);
+    expect(dashboard.metrics.scheduledVotes).toBe(1);
+  });
+
   it("does not calculate attention or average metrics from unknown participation counts", () => {
     const unknownActiveVote: VoteSummary = {
       id: "unknown-active",

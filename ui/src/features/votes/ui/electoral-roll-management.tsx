@@ -1,4 +1,5 @@
 import { ArrowLeft, ClipboardList, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,10 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type {
   ElectoralRollPageRecord,
   ElectoralRollRecord,
-  ElectoralRollImportMemberInput,
   ElectoralRollMemberDraft,
   ElectoralRollMemberDraftField,
-  StageElectoralRollMembersResult,
 } from '@/features/votes/model/electoral-roll.types';
 
 import { ElectoralRollList } from './electoral-roll-list';
@@ -17,6 +16,7 @@ import { ElectoralRollMemberSection } from './electoral-roll-member-section';
 import { RegistryDeletionDialog } from './registry-deletion-dialog';
 
 interface ElectoralRollManagementProps {
+  importCard?: ReactNode;
   deleteErrorMessage?: string;
   errorMessage?: string;
   isDeleteDialogOpen: boolean;
@@ -28,9 +28,6 @@ interface ElectoralRollManagementProps {
   onAddMember: (data: FormData) => boolean | void;
   onCancelDelete: () => void;
   onConfirmDelete: () => void;
-  onImportMembers: (
-    members: ElectoralRollImportMemberInput[],
-  ) => Promise<StageElectoralRollMembersResult>;
   onMemberChange: (
     draftId: string,
     field: ElectoralRollMemberDraftField,
@@ -52,6 +49,7 @@ interface ElectoralRollManagementProps {
 }
 
 export function ElectoralRollManagement({
+  importCard,
   deleteErrorMessage,
   errorMessage,
   isDeleteDialogOpen,
@@ -63,7 +61,6 @@ export function ElectoralRollManagement({
   onAddMember,
   onCancelDelete,
   onConfirmDelete,
-  onImportMembers,
   onMemberChange,
   onDiscardMemberChanges,
   onMemberPageChange,
@@ -150,13 +147,13 @@ export function ElectoralRollManagement({
           </Card>
 
           <ElectoralRollMemberSection
+            importCard={importCard}
             members={memberDrafts}
             page={memberPage}
             searchText={memberSearchText}
             isSubmitting={isSubmitting}
             pendingChangeCount={pendingChangeCount}
             onAddMember={onAddMember}
-            onImportMembers={onImportMembers}
             onDiscardChanges={onDiscardMemberChanges}
             onMemberChange={onMemberChange}
             onPageChange={onMemberPageChange}

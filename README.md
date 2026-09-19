@@ -16,19 +16,21 @@ pnpm install
 ## Local Development
 
 ```bash
-# start PostgreSQL, Redis, the OIDC auth service and admin UI, the API server,
-# payment outbox worker, and the vote UI as separate processes
+# start PostgreSQL, Redis, local Envoy, OIDC Auth, Vote authz, the API,
+# payment outbox worker, and the vote UI
 pnpm dev
 ```
 
-When run inside Orca, `pnpm dev` opens four independent terminal tabs for the
-Vote API, Vote UI, Auth Service, and Auth UI. PostgreSQL and Redis continue in
-the background. Database migrations run before those terminals open. Outside
-Orca, the API and UI keep running in the current terminal as before.
+When run inside Orca, `pnpm dev` opens six terminals for the Vote API, Vote
+authz, worker, Vote UI, Auth Service logs, and Auth UI logs. PostgreSQL, Redis,
+and Envoy continue in Compose. Database migrations run before those terminals
+open. Outside Orca, the API, authz, worker, and UI run under the current command.
 
 The default local ports are `5432` for PostgreSQL, `6381` for Redis, `3000`
-for the API server, `3001` for the vote UI, `3002` for the OIDC auth service,
-and `3003` for the auth admin UI.
+for Envoy's API endpoint, `3001` for the vote UI, `3002` for OIDC Auth,
+`3003` for the Auth admin UI, `3004` for Nest, and `3005` for Vote authz.
+See [the local authentication boundary](docs/local-authz.md) for the request
+path and fail-closed behavior.
 
 Swagger UI is available at <http://localhost:3000/docs>, and the OpenAPI JSON
 document at <http://localhost:3000/docs-json>. Use the Swagger UI `Authorize`
@@ -195,12 +197,13 @@ parameter so replacement opaque access tokens retain the configured audience.
 Signing out revokes the refresh token before clearing the Auth.js session, then
 continues through the tenant OIDC end-session endpoint.
 
-The Vote API treats the access token as opaque. It authenticates as a
-confidential resource server and sends the token to the tenant's RFC 7662
-introspection endpoint. A `UserPrincipal` is assigned to `request.user` only
-when the response has `active=true`, non-empty `sub` and `tenant_id`, the exact
-issuer and Vote API audience, and an unexpired `exp`. A future `nbf` is also
-rejected.
+Vote authz treats the access token as opaque. It authenticates as the
+confidential `vote-api` resource server and sends the token to the tenant's
+RFC 7662 introspection endpoint. It checks `active=true`, non-empty `sub` and
+`tenant_id`, the exact issuer and Vote API audience, an unexpired `exp`, and
+`nbf` if present. It then sends a short-lived signed principal assertion to
+the API through Envoy. The API verifies that assertion against the bearer
+token before assigning `request.user`.
 
 Local development uses this contract:
 
@@ -219,13 +222,41 @@ and return at least `active`, `client_id`, `token_type`, `scope`, `iss`, `aud`,
 and `sub` values populate `UserPrincipal`; profile attributes and role
 assignments are intentionally not required from introspection.
 
-For deployments, configure `VOTE_AUTH_INTROSPECTION_CLIENT_SECRET` and
+For the authz deployment, configure `VOTE_AUTH_INTROSPECTION_CLIENT_SECRET` and
 optionally override `VOTE_AUTH_ISSUER`, `VOTE_AUTH_INTROSPECTION_URI`,
 `VOTE_AUTH_AUDIENCE`, `VOTE_AUTH_INTROSPECTION_CLIENT_ID`, and
 `VOTE_AUTH_INTROSPECTION_TIMEOUT_MS` (default `3000`). Use HTTPS for the issuer
 and introspection endpoint. Invalid or inactive tokens return 401; an
 unreachable or invalid introspection service response returns 503. Do not use
-the public `e-vote` UI client credentials for introspection.
+the public `e-vote` UI client credentials for introspection. Authz and API
+require the same `VOTE_AUTHZ_ASSERTION_KEY`; only authz needs the introspection
+client secret.
+
+### Toss Payments test integration
+
+Use matching **test** client/secret keys from the Toss Payments developer
+console. Add `BILLING_PAYMENT_MODE=toss-test` and `TOSS_SECRET_KEY=test_gsk_...`
+to `server/.env` (or export them for **both** API and worker processes). Add
+`NEXT_PUBLIC_BILLING_PAYMENT_MODE=toss-test` and
+`NEXT_PUBLIC_TOSS_CLIENT_KEY=test_gck_...` to `ui/.env.local`, then restart API,
+worker, and UI. The secret key must never be sent to the browser. Test mode is
+rejected in production; the default local `mock` mode remains available.
+
+Create a vote scheduled in the future, request its usage order, then open its
+order detail page. The Toss checkout UI appears for `PENDING_PAYMENT` orders.
+After payment authentication, the success page calls the authenticated server
+approval endpoint, which checks the stored amount/order against the provider
+response. If the start time has passed, the order enters refund processing.
+Cancellation of an already-paid order is published through the outbox and the
+worker requests a full refund with the same idempotency key on retries.
+
+For payment-status webhook testing, register the public HTTPS URL
+`/billing/toss-test-webhook` for `PAYMENT_STATUS_CHANGED` with Toss Payments.
+Localhost is not directly reachable from Toss; use a tunnel to the Vote API.
+The endpoint re-queries the payment with the server secret key because ordinary
+payment webhooks have no signature header. Card checkout is the supported path;
+virtual-account deposits and asynchronous overseas refunds are not enabled.
+Keep the worker running to complete refunds.
 
 ### UI Mock Mode
 

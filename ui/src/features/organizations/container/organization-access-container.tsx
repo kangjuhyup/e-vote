@@ -7,6 +7,8 @@ import { useEffect } from 'react';
 import { organizationAccessQueryOptions } from '../api/organization-query-options';
 
 const ORGANIZATION_OPTIONAL_PATHS = [
+  '/admin/operations',
+  '/admin/payments',
   '/admin/organization-applications',
   '/organization',
   '/participate',
@@ -37,7 +39,7 @@ export function OrganizationAccessContainer({
 
   useEffect(() => {
     if (redirectsToAdmin) {
-      router.replace('/admin/organization-applications');
+      router.replace('/admin/operations');
       return;
     }
     if (redirectsFromAdmin) {

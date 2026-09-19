@@ -81,6 +81,8 @@ type IdentityVerificationPolicySource = {
 
 type VoteSummarySource = {
   readonly id: string;
+  readonly electorCount: number;
+  readonly participatedCount: number;
   readonly commissionId: string;
   readonly title: string;
   readonly attachments?: readonly AttachmentMetadataSource[];
@@ -286,6 +288,15 @@ export class VoteSummaryResponse {
   })
   readonly id: string;
 
+  @ApiProperty({ example: 100, description: '투표의 선거인 수입니다.' })
+  readonly electorCount: number;
+
+  @ApiProperty({
+    example: 42,
+    description: '한 개 이상 안건에 참여한 선거인 수입니다.',
+  })
+  readonly participatedCount: number;
+
   @ApiProperty({
     example: 'commission-1',
     description: '투표를 주관하는 선거관리위원회 ID입니다.',
@@ -385,6 +396,8 @@ export class VoteSummaryResponse {
 
   protected constructor(source: VoteSummarySource) {
     this.id = source.id;
+    this.electorCount = source.electorCount;
+    this.participatedCount = source.participatedCount;
     this.commissionId = source.commissionId;
     if (source.electoralRollSnapshotId !== undefined) {
       this.electoralRollSnapshotId = source.electoralRollSnapshotId;

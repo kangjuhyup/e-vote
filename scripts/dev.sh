@@ -17,6 +17,10 @@ if command -v orca >/dev/null 2>&1 && orca status --json >/dev/null 2>&1; then
     --command "nvm use && pnpm run dev:api"
   orca terminal create \
     --worktree "path:$repo_root" \
+    --title "Vote Authz" \
+    --command "nvm use && pnpm run dev:authz"
+  orca terminal create \
+    --worktree "path:$repo_root" \
     --title "Payment Outbox Worker" \
     --command "nvm use && pnpm run dev:worker"
   orca terminal create \
@@ -32,12 +36,15 @@ if command -v orca >/dev/null 2>&1 && orca status --json >/dev/null 2>&1; then
     --title "Auth UI" \
     --command "pnpm run dev:auth-ui"
 
-  printf '\nDevelopment logs opened in five Orca terminals.\n'
+  printf '\nDevelopment logs opened in six Orca terminals.\n'
   exit 0
 fi
 
 sh "$script_dir/dev-component.sh" api &
 server_pid=$!
+
+sh "$script_dir/dev-component.sh" authz &
+authz_pid=$!
 
 sh "$script_dir/dev-component.sh" worker &
 worker_pid=$!
@@ -46,8 +53,8 @@ sh "$script_dir/dev-component.sh" ui &
 ui_pid=$!
 
 cleanup() {
-  kill "$server_pid" "$worker_pid" "$ui_pid" 2>/dev/null || true
+  kill "$server_pid" "$authz_pid" "$worker_pid" "$ui_pid" 2>/dev/null || true
 }
 
 trap cleanup INT TERM EXIT
-wait "$server_pid" "$worker_pid" "$ui_pid"
+wait "$server_pid" "$authz_pid" "$worker_pid" "$ui_pid"

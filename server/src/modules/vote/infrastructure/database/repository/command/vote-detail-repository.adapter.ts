@@ -30,6 +30,8 @@ export class VoteDetailRepositoryAdapter implements VoteDetailRepositoryPort {
     const { VoteDetailEntity } = await getDatabaseEntities();
     const entity = (await this.em.findOne(
       VoteDetailEntity as any,
+      // MikroORM cannot infer the shape of an entity loaded at runtime.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       { id: voteDetailId } as any,
       {
         populate: VOTE_DETAIL_RELATIONS,
@@ -48,6 +50,7 @@ export class VoteDetailRepositoryAdapter implements VoteDetailRepositoryPort {
     const { VoteDetailEntity } = await getDatabaseEntities();
     const entities = (await this.em.find(
       VoteDetailEntity as any,
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       { vote: { id: { $in: voteIds } } } as any,
       {
         populate: VOTE_DETAIL_RELATIONS,
