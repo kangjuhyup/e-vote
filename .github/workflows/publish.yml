@@ -101,7 +101,7 @@ jobs:
             NEXT_PUBLIC_VOTE_API_BASE_URL=/api/vote-server
             NEXT_PUBLIC_PARTICIPATION_API_BASE_URL=https://vote-api.rvkang.app
           tags: |
-            ghcr.io/${{ needs.verify.outputs.repository_lc }}/${{ matrix.name }}:v${{ needs.verify.outputs.version }}
-            ghcr.io/${{ needs.verify.outputs.repository_lc }}/${{ matrix.name }}:sha-${{ github.event.pull_request.merge_commit_sha }}
+            ghcr.io/${{ needs.verify.outputs.repository_lc }}/${{ matrix.name }}:${{ needs.verify.outputs.version }}
+            ghcr.io/${{ needs.verify.outputs.repository_lc }}/${{ matrix.name }}:latest
           cache-from: type=gha,scope=vote-${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=vote-${{ matrix.name }},ignore-error=true

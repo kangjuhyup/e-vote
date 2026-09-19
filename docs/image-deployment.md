@@ -29,14 +29,18 @@ the Server and UI CI checks pass. Only the merged release PR triggers
 tests, and builds before publishing Linux ARM64 images to GHCR:
 
 ```text
-ghcr.io/<owner>/<repo>/server:v<version>
-ghcr.io/<owner>/<repo>/ui:v<version>
+ghcr.io/<owner>/<repo>/server:latest
+ghcr.io/<owner>/<repo>/server:<version>
+ghcr.io/<owner>/<repo>/ui:latest
+ghcr.io/<owner>/<repo>/ui:<version>
 ```
 
-The publish workflow also attaches `sha-<merge-commit>` tags. Record the
-resulting registry digests and use those immutable digests in deployment
-declarations. No npm packages are published. Auth remains an external service;
-these workflows do not build or publish Auth images.
+The version tag uses the package version without a `v` prefix (for example,
+`0.1.0`). The `latest` tag moves to each new release. The workflow does not
+publish commit-hash tags. Record the resulting registry digests and use those
+immutable digests in deployment declarations. No npm packages are published.
+Auth remains an external service; these workflows do not build or publish
+Auth images.
 
 Repository setup is required before the workflow can operate:
 
