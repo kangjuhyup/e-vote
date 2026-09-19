@@ -10,6 +10,7 @@
     "dev": "sh scripts/dev.sh",
     "dev:migrate": "sh scripts/dev-component.sh migrate",
     "dev:api": "sh scripts/dev-component.sh api",
+    "dev:authz": "sh scripts/dev-component.sh authz",
     "dev:worker": "sh scripts/dev-component.sh worker",
     "dev:ui:local": "sh scripts/dev-component.sh ui",
     "dev:auth-service": "sh scripts/dev-component.sh auth-service",

@@ -9,6 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import {
   ACCESS_TOKEN_VERIFIER_PORT,
+  AUTHZ_ASSERTION_HEADER,
   AccessTokenVerificationUnavailableError,
   type AccessTokenVerifierPort,
 } from '../../../application/port/security/access-token-verifier.port';
@@ -18,6 +19,7 @@ import { PUBLIC_ROUTE_METADATA_KEY } from '../decorator/public.decorator';
 type AuthenticatedRequest = {
   readonly headers: {
     readonly authorization?: string | string[];
+    readonly [AUTHZ_ASSERTION_HEADER]?: string | string[];
   };
   user?: UserPrincipal;
 };
@@ -56,9 +58,16 @@ export class AuthenticatedUserGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     delete request.user;
     const accessToken = getBearerToken(request.headers.authorization);
+    const assertion = request.headers[AUTHZ_ASSERTION_HEADER];
+    if (typeof assertion !== 'string') {
+      throw new UnauthorizedException('verified identity is required');
+    }
 
     try {
-      request.user = await this.accessTokenVerifier.verify(accessToken);
+      request.user = await this.accessTokenVerifier.verify(
+        accessToken,
+        assertion,
+      );
       return true;
     } catch (error) {
       delete request.user;

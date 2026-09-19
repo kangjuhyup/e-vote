@@ -14,6 +14,7 @@ import { AuthenticatedUserGuard } from '../../../../../src/shared/presentation/c
 type TestRequest = {
   headers: {
     authorization?: string | string[];
+    'x-vote-authz-assertion'?: string | string[];
   };
   user?: UserPrincipal | { id: string };
 };
@@ -58,7 +59,10 @@ describe('AuthenticatedUserGuard', () => {
     const verify = jest.fn().mockResolvedValue(principal);
     const verifier: AccessTokenVerifierPort = { verify };
     const request: TestRequest = {
-      headers: { authorization: 'Bearer signed-access-token' },
+      headers: {
+        authorization: 'Bearer signed-access-token',
+        'x-vote-authz-assertion': 'verified-assertion',
+      },
       user: { id: 'untrusted-user' },
     };
     const guard = new AuthenticatedUserGuard(reflector, verifier);
@@ -66,7 +70,10 @@ describe('AuthenticatedUserGuard', () => {
     await expect(
       guard.canActivate(createExecutionContext(request)),
     ).resolves.toBe(true);
-    expect(verify).toHaveBeenCalledWith('signed-access-token');
+    expect(verify).toHaveBeenCalledWith(
+      'signed-access-token',
+      'verified-assertion',
+    );
     expect(request.user).toBe(principal);
   });
 
@@ -96,6 +103,22 @@ describe('AuthenticatedUserGuard', () => {
     expect(verify).not.toHaveBeenCalled();
   });
 
+  it('rejects direct bearer requests without a proxy assertion', async () => {
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue(false),
+    } as unknown as Reflector;
+    const verify = jest.fn();
+    const request: TestRequest = {
+      headers: { authorization: 'Bearer valid-token' },
+    };
+    const guard = new AuthenticatedUserGuard(reflector, { verify });
+
+    await expect(
+      guard.canActivate(createExecutionContext(request)),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(verify).not.toHaveBeenCalled();
+  });
+
   it('fails closed when access-token verification fails', async () => {
     const reflector = {
       getAllAndOverride: jest.fn().mockReturnValue(false),
@@ -104,7 +127,10 @@ describe('AuthenticatedUserGuard', () => {
       verify: jest.fn().mockRejectedValue(new Error('signature mismatch')),
     };
     const request: TestRequest = {
-      headers: { authorization: 'Bearer invalid-token' },
+      headers: {
+        authorization: 'Bearer invalid-token',
+        'x-vote-authz-assertion': 'invalid-assertion',
+      },
       user: { id: 'untrusted-user' },
     };
     const guard = new AuthenticatedUserGuard(reflector, verifier);
@@ -127,7 +153,10 @@ describe('AuthenticatedUserGuard', () => {
         .mockRejectedValue(new AccessTokenVerificationUnavailableError()),
     };
     const request: TestRequest = {
-      headers: { authorization: 'Bearer opaque-token' },
+      headers: {
+        authorization: 'Bearer opaque-token',
+        'x-vote-authz-assertion': 'verified-assertion',
+      },
       user: { id: 'untrusted-user' },
     };
     const guard = new AuthenticatedUserGuard(reflector, verifier);

@@ -17,6 +17,7 @@ case "${1:-}" in
     exec pnpm --filter @vote/server db:migration:up
     ;;
   api)
+    PORT=3004 \
     DATABASE_HOST="${DATABASE_HOST:-127.0.0.1}" \
     DATABASE_PORT="${DATABASE_PORT:-$POSTGRES_PORT}" \
     DATABASE_NAME="${DATABASE_NAME:-$POSTGRES_DB}" \
@@ -25,6 +26,10 @@ case "${1:-}" in
     REDIS_HOST="${REDIS_HOST:-127.0.0.1}" \
     REDIS_PORT="$REDIS_PORT" \
     exec pnpm start:dev
+    ;;
+  authz)
+    VOTE_AUTHZ_PORT=3005 \
+    exec pnpm --filter @vote/server start:authz:dev
     ;;
   worker)
     NODE_ENV="${NODE_ENV:-development}" \
@@ -45,7 +50,7 @@ case "${1:-}" in
     exec docker compose logs --follow --tail=100 auth-ui
     ;;
   *)
-    printf 'Usage: %s {migrate|api|worker|ui|auth-service|auth-ui}\n' "$0" >&2
+    printf 'Usage: %s {migrate|api|authz|worker|ui|auth-service|auth-ui}\n' "$0" >&2
     exit 2
     ;;
 esac

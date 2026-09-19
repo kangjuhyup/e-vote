@@ -95,6 +95,7 @@ describe('participant authentication HTTP', () => {
     await request(app.getHttpServer() as Server)
       .put(path)
       .auth('test-token', { type: 'bearer' })
+      .set('x-vote-authz-assertion', 'test-assertion')
       .send({
         ...authBody,
         userPrincipalId: 'attacker',
@@ -110,6 +111,7 @@ describe('participant authentication HTTP', () => {
     await request(app.getHttpServer() as Server)
       .post('/participations')
       .auth('test-token', { type: 'bearer' })
+      .set('x-vote-authz-assertion', 'test-assertion')
       .send({
         ...castBody,
         userPrincipalId: 'attacker',
@@ -124,11 +126,13 @@ describe('participant authentication HTTP', () => {
     await request(app.getHttpServer() as Server)
       .put(path)
       .auth('test-token', { type: 'bearer' })
+      .set('x-vote-authz-assertion', 'test-assertion')
       .send({})
       .expect(400);
     await request(app.getHttpServer() as Server)
       .post('/participations')
       .auth('test-token', { type: 'bearer' })
+      .set('x-vote-authz-assertion', 'test-assertion')
       .send({ ...castBody, votingChannel: 'INVALID' })
       .expect(400);
     expect(authenticate.execute).not.toHaveBeenCalled();
@@ -139,6 +143,7 @@ describe('participant authentication HTTP', () => {
     await request(app.getHttpServer() as Server)
       .post('/participations')
       .auth('test-token', { type: 'bearer' })
+      .set('x-vote-authz-assertion', 'test-assertion')
       .send(castBody)
       .expect(403);
   });
@@ -149,6 +154,7 @@ describe('participant authentication HTTP', () => {
     await request(app.getHttpServer() as Server)
       .put(path)
       .auth('test-token', { type: 'bearer' })
+      .set('x-vote-authz-assertion', 'test-assertion')
       .send(authBody)
       .expect(503);
   });
