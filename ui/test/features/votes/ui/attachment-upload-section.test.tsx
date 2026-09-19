@@ -3,10 +3,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  AttachmentUploadSection,
-  type AttachmentUploadSectionProps,
-} from '@/features/votes/ui/attachment-upload-section';
+import type { AttachmentUploadSectionProps } from '@/features/votes/ui/attachment-upload-section';
+import { AttachmentUploadContainer } from '@/features/votes/container/attachment-upload-container';
 
 const metadata = {
   attachmentType: 'NOTICE' as const,
@@ -68,7 +66,7 @@ function renderUploader(overrides: {
       }),
   };
   render(
-    <AttachmentUploadSection
+    <AttachmentUploadContainer
       attachments={overrides.attachments ?? []}
       title="투표 첨부파일"
       description="공고문을 등록합니다."
@@ -164,7 +162,7 @@ describe('AttachmentUploadSection', () => {
 
   it('keeps download available but hides upload and delete in read-only mode', () => {
     render(
-      <AttachmentUploadSection
+      <AttachmentUploadContainer
         attachments={[attachment]}
         description="등록된 파일을 확인합니다."
         onConfirmUpload={vi.fn()}

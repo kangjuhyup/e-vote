@@ -1,5 +1,5 @@
-import { isApiMockMode } from "@/shared/config/api-mode";
-import { voteApiFetch } from "@/shared/auth/vote-api-fetch";
+import { isApiMockMode } from '@/shared/config/api-mode';
+import { voteApiFetch } from '@/shared/auth/vote-api-fetch';
 
 import type {
   SendFieldSessionSmsInput,
@@ -11,15 +11,15 @@ import type {
   SmsDispatchSummary,
   SmsPurpose,
   VoteSmsPurpose,
-} from "../model/vote-sms.types";
-import { unwrapVoteApiResponse } from "./votes-api";
+} from '../model/vote-sms.types';
+import { unwrapVoteApiResponse } from './votes-api';
 
 type ApiFetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
 interface CreateVoteSmsApiClientOptions {
   baseUrl?: string;
   fetcher?: ApiFetcher;
-  mode?: "live" | "mock";
+  mode?: 'live' | 'mock';
   now?: () => string;
 }
 
@@ -35,17 +35,38 @@ interface SendSmsResponseDto {
 }
 
 const purposePaths: Record<VoteSmsPurpose, string> = {
-  UPCOMING_VOTE_NOTICE: "upcoming-notice",
-  VOTE_PARTICIPATION_REMINDER: "participation-reminder",
-  VOTE_RESULT_NOTICE: "result-notice",
+  UPCOMING_VOTE_NOTICE: 'upcoming-notice',
+  VOTE_PARTICIPATION_REMINDER: 'participation-reminder',
+  VOTE_RESULT_NOTICE: 'result-notice',
+};
+
+const mockVoteSmsTemplates: Record<
+  VoteSmsPurpose,
+  ParticipationReminderTemplate
+> = {
+  UPCOMING_VOTE_NOTICE: {
+    code: 'UPCOMING_VOTE_NOTICE',
+    content:
+      '[전자투표]\n곧 투표가 시작됩니다. 투표 일정과 참여 방법을 확인해 주세요.',
+  },
+  VOTE_PARTICIPATION_REMINDER: {
+    buttonLabel: '투표 참여하기',
+    code: 'VOTE_PARTICIPATION_REMINDER',
+    content:
+      '[전자투표]\n아직 투표에 참여하지 않으셨습니다.\n아래 버튼을 눌러 투표에 참여해 주세요.',
+  },
+  VOTE_RESULT_NOTICE: {
+    code: 'VOTE_RESULT_NOTICE',
+    content: '[전자투표]\n투표가 종료되었습니다. 투표 결과를 확인해 주세요.',
+  },
 };
 
 function resolveBaseUrl() {
   return (
     process.env.NEXT_PUBLIC_VOTE_API_BASE_URL ??
     process.env.NEXT_PUBLIC_API_BASE_URL ??
-    ""
-  ).replace(/\/+$/, "");
+    ''
+  ).replace(/\/+$/, '');
 }
 
 function encode(value: string) {
@@ -53,7 +74,7 @@ function encode(value: string) {
 }
 
 function buildUrl(baseUrl: string, path: string, query?: URLSearchParams) {
-  const search = query && query.size > 0 ? `?${query.toString()}` : "";
+  const search = query && query.size > 0 ? `?${query.toString()}` : '';
   return `${baseUrl}${path}${search}`;
 }
 
@@ -65,27 +86,27 @@ async function request<T>(
   query?: URLSearchParams,
 ) {
   if (baseUrl.length === 0) {
-    throw new Error("NEXT_PUBLIC_VOTE_API_BASE_URL is required in live mode");
+    throw new Error('NEXT_PUBLIC_VOTE_API_BASE_URL is required in live mode');
   }
 
   const response = await fetcher(buildUrl(baseUrl, path, query), {
     ...init,
     headers: {
-      Accept: "application/json",
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      Accept: 'application/json',
+      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
       ...init.headers,
     },
   });
 
   if (!response.ok) {
     if (response.status === 409) {
-      throw new Error("현재 투표 상태에서는 이 문자를 발송할 수 없습니다.");
+      throw new Error('현재 투표 상태에서는 이 문자를 발송할 수 없습니다.');
     }
     if (response.status === 503) {
-      throw new Error("문자 발송 서비스가 설정되지 않았습니다.");
+      throw new Error('문자 발송 서비스가 설정되지 않았습니다.');
     }
     if (response.status === 404) {
-      throw new Error("문자 발송 대상이나 이력을 찾을 수 없습니다.");
+      throw new Error('문자 발송 대상이나 이력을 찾을 수 없습니다.');
     }
     throw new Error(`문자 API 요청에 실패했습니다. (${response.status})`);
   }
@@ -113,20 +134,21 @@ function paginate<T>(items: T[], page: number, pageSize: number) {
 }
 
 function createMockDeliveries(purpose: SmsPurpose): SmsDelivery[] {
-  const prefix = purpose === "VOTE_PARTICIPATION_REMINDER" ? "미참여" : "선거인";
+  const prefix =
+    purpose === 'VOTE_PARTICIPATION_REMINDER' ? '미참여' : '선거인';
   return [
     {
-      electorId: "elector-1",
-      recipientName: "이*거",
+      electorId: 'elector-1',
+      recipientName: '이*거',
       recipientIdentifier: `${prefix}-101`,
-      status: "SUCCESS",
+      status: 'SUCCESS',
     },
     {
-      electorId: "elector-2",
-      failureReason: "SIMULATED_RANDOM_FAILURE",
-      recipientName: "박*참",
+      electorId: 'elector-2',
+      failureReason: 'SIMULATED_RANDOM_FAILURE',
+      recipientName: '박*참',
       recipientIdentifier: `${prefix}-102`,
-      status: "FAILURE",
+      status: 'FAILURE',
     },
   ];
 }
@@ -134,8 +156,8 @@ function createMockDeliveries(purpose: SmsPurpose): SmsDelivery[] {
 export function createVoteSmsApiClient(
   options: CreateVoteSmsApiClientOptions = {},
 ) {
-  const mode = options.mode ?? (isApiMockMode() ? "mock" : "live");
-  const baseUrl = (options.baseUrl ?? resolveBaseUrl()).replace(/\/+$/, "");
+  const mode = options.mode ?? (isApiMockMode() ? 'mock' : 'live');
+  const baseUrl = (options.baseUrl ?? resolveBaseUrl()).replace(/\/+$/, '');
   const fetcher = options.fetcher ?? voteApiFetch;
   const now = options.now ?? (() => new Date().toISOString());
   let sequence = 0;
@@ -151,13 +173,15 @@ export function createVoteSmsApiClient(
     const dispatch: SmsDispatchDetail = {
       ...input,
       deliveries,
-      failureCount: deliveries.filter((item) => item.status === "FAILURE").length,
+      failureCount: deliveries.filter((item) => item.status === 'FAILURE')
+        .length,
       id: `sms-dispatch-${sequence}`,
       recipientCount: deliveries.length,
       page: 1,
       pageSize: deliveries.length,
       sentAt: now(),
-      successCount: deliveries.filter((item) => item.status === "SUCCESS").length,
+      successCount: deliveries.filter((item) => item.status === 'SUCCESS')
+        .length,
       totalItems: deliveries.length,
       totalPages: deliveries.length > 0 ? 1 : 0,
     };
@@ -168,8 +192,11 @@ export function createVoteSmsApiClient(
   async function sendVoteSms(
     input: SendVoteSmsInput,
   ): Promise<SmsDispatchSummary> {
-    if (mode === "mock") {
-      return createMockDispatch({ purpose: input.purpose, voteId: input.voteId });
+    if (mode === 'mock') {
+      return createMockDispatch({
+        purpose: input.purpose,
+        voteId: input.voteId,
+      });
     }
 
     return toSummary(
@@ -177,39 +204,33 @@ export function createVoteSmsApiClient(
         fetcher,
         baseUrl,
         `/votes/${encode(input.voteId)}/sms/${purposePaths[input.purpose]}`,
-        input.purpose === "VOTE_PARTICIPATION_REMINDER"
-          ? { method: "POST" }
-          : { method: "POST", body: JSON.stringify({ message: input.message }) },
+        { method: 'POST' },
       ),
     );
   }
 
-  async function fetchParticipationReminderTemplate(
+  async function fetchVoteSmsTemplate(
     voteId: string,
+    purpose: VoteSmsPurpose,
   ): Promise<ParticipationReminderTemplate> {
-    if (mode === "mock") {
-      return {
-        buttonLabel: "투표 참여하기",
-        code: "VOTE_PARTICIPATION_REMINDER",
-        content:
-          "[전자투표]\n아직 투표에 참여하지 않으셨습니다.\n아래 버튼을 눌러 투표에 참여해 주세요.",
-      };
+    if (mode === 'mock') {
+      return mockVoteSmsTemplates[purpose];
     }
 
     return request<ParticipationReminderTemplate>(
       fetcher,
       baseUrl,
-      `/votes/${encode(voteId)}/sms/participation-reminder/template`,
+      `/votes/${encode(voteId)}/sms/${purposePaths[purpose]}/template`,
     );
   }
 
   async function sendFieldSessionSms(
     input: SendFieldSessionSmsInput,
   ): Promise<SmsDispatchSummary> {
-    if (mode === "mock") {
+    if (mode === 'mock') {
       return createMockDispatch({
         fieldVotingSessionId: input.fieldVotingSessionId,
-        purpose: "FIELD_VOTING_SESSION_NOTICE",
+        purpose: 'FIELD_VOTING_SESSION_NOTICE',
         voteId: input.voteId,
       });
     }
@@ -219,7 +240,7 @@ export function createVoteSmsApiClient(
         fetcher,
         baseUrl,
         `/field-voting-sessions/${encode(input.fieldVotingSessionId)}/sms`,
-        { method: "POST", body: JSON.stringify({ message: input.message }) },
+        { method: 'POST', body: JSON.stringify({ message: input.message }) },
       ),
     );
   }
@@ -229,7 +250,7 @@ export function createVoteSmsApiClient(
     page = 1,
     pageSize = 20,
   ): Promise<SmsDispatchPage> {
-    if (mode === "mock") {
+    if (mode === 'mock') {
       return paginate(
         mockDispatches.filter((item) => item.voteId === voteId),
         page,
@@ -252,12 +273,12 @@ export function createVoteSmsApiClient(
     page = 1,
     pageSize = 50,
   ) {
-    if (mode === "mock") {
+    if (mode === 'mock') {
       const dispatch = mockDispatches.find(
         (item) => item.voteId === voteId && item.id === dispatchId,
       );
       if (!dispatch) {
-        throw new Error("문자 발송 이력을 찾을 수 없습니다.");
+        throw new Error('문자 발송 이력을 찾을 수 없습니다.');
       }
       const deliveryPage = paginate(dispatch.deliveries, page, pageSize);
       return { ...dispatch, deliveries: deliveryPage.items, ...deliveryPage };
@@ -275,7 +296,7 @@ export function createVoteSmsApiClient(
   return {
     fetchDispatch,
     fetchDispatchPage,
-    fetchParticipationReminderTemplate,
+    fetchVoteSmsTemplate,
     mode,
     sendFieldSessionSms,
     sendVoteSms,

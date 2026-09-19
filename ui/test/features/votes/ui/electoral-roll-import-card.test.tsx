@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ElectoralRollImportCard } from "@/features/votes/ui/electoral-roll-import-card";
+import { ElectoralRollImportContainer } from "@/features/votes/container/electoral-roll-import-container";
 
 const mocks = vi.hoisted(() => ({
   download: vi.fn(),
@@ -44,7 +44,7 @@ describe("ElectoralRollImportCard", () => {
       stagedMemberCount: 1,
     });
     render(
-      <ElectoralRollImportCard
+      <ElectoralRollImportContainer
         isSubmitting={false}
         onImportMembers={onImportMembers}
       />,
@@ -89,7 +89,7 @@ describe("ElectoralRollImportCard", () => {
       .fn()
       .mockRejectedValue(new Error("Vote API request failed: 409"));
     render(
-      <ElectoralRollImportCard
+      <ElectoralRollImportContainer
         isSubmitting={false}
         onImportMembers={onImportMembers}
       />,
@@ -139,7 +139,7 @@ describe("ElectoralRollImportCard", () => {
       });
     });
     render(
-      <ElectoralRollImportCard
+      <ElectoralRollImportContainer
         isSubmitting={false}
         onImportMembers={onImportMembers}
       />,

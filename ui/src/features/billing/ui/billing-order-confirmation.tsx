@@ -71,7 +71,7 @@ export function BillingOrderConfirmation({
             </p>
             <Button asChild>
               <Link href={`/billing/vote-usage-orders/${order.id}`}>
-                결제 주문 상세
+                {order.status === "PENDING_PAYMENT" ? "결제 이어하기" : "결제 주문 상세"}
               </Link>
             </Button>
           </div>
@@ -85,7 +85,7 @@ export function BillingOrderConfirmation({
             <div className="flex items-start gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-100">
               <AlertTriangle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
               <div>
-                <p className="font-medium">주문 생성과 동시에 결제 처리가 시작됩니다.</p>
+                <p className="font-medium">주문 생성 후 결제 화면으로 이동합니다.</p>
                 <p className="mt-1 leading-6">
                   주문이 결제 대기 중인 동안에도 투표 설정, 선거인, 연결된 선거인명부 스냅샷은 잠깁니다. 결제가 완료되면 투표가 확정됩니다.
                 </p>

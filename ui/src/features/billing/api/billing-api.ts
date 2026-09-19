@@ -62,7 +62,7 @@ async function request<T>(
     }
     if (response.status === 409) {
       throw new Error(
-        "투표 시작 시각이 지났거나 현재 투표 또는 주문 상태에서는 요청을 처리할 수 없습니다.",
+        "투표 시작 시각이 지났거나 안내 문자 발송이 시작되어 환불할 수 없거나, 현재 투표·주문 상태에서는 요청을 처리할 수 없습니다.",
       );
     }
     throw new Error(`결제 API 요청에 실패했습니다. (${response.status})`);
@@ -203,11 +203,22 @@ export function createBillingApiClient(
       if (order.status !== "PENDING_PAYMENT" && order.status !== "PAID") {
         throw new Error("현재 주문 상태에서는 취소할 수 없습니다.");
       }
+      const canceledAt = now();
+      const vote = voteFixtureDetails.find((item) => item.id === order.voteId);
+      if (vote && Date.parse(vote.startsAt) <= Date.parse(canceledAt)) {
+        throw new Error("투표 시작 시각이 지나 취소하거나 환불할 수 없습니다.");
+      }
+      if (
+        order.status === "PENDING_PAYMENT" &&
+        Date.parse(canceledAt) > Date.parse(order.cancelableUntil)
+      ) {
+        throw new Error("미결제 주문 취소 기한이 지났습니다.");
+      }
       const canceled: BillingOrder = {
         ...order,
-        canceledAt: now(),
+        canceledAt,
         cancellationReason: input.reason,
-        ...(order.status === "PAID" ? { refundRequestedAt: now() } : {}),
+        ...(order.status === "PAID" ? { refundRequestedAt: canceledAt } : {}),
         status: order.status === "PAID" ? "REFUND_PENDING" : "CANCELED",
       };
       mockOrders.set(canceled.id, canceled);
@@ -242,10 +253,54 @@ export function createBillingApiClient(
     );
   }
 
+  async function confirmTossTestPayment(input: {
+    billingOrderId: string;
+    paymentKey: string;
+    orderId: string;
+    amount: number;
+  }): Promise<BillingOrder> {
+    if (mode !== "live") {
+      throw new Error("테스트 결제는 실제 API 연결에서만 사용할 수 있습니다.");
+    }
+    return request<BillingOrder>(
+      fetcher,
+      baseUrl,
+      `/billing/vote-usage-orders/${encode(input.billingOrderId)}/toss-test-confirmation`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          paymentKey: input.paymentKey,
+          orderId: input.orderId,
+          amount: input.amount,
+        }),
+      },
+    );
+  }
+
+  async function reportPaymentFailure(input: {
+    billingOrderId: string;
+    failureCode: string;
+    failureMessage?: string;
+  }): Promise<void> {
+    if (mode === 'mock') return;
+    if (!baseUrl) throw new Error('결제 서비스에 연결할 수 없습니다.');
+    const response = await fetcher(
+      `${baseUrl}/billing/vote-usage-orders/${encode(input.billingOrderId)}/payment-failure`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ failureCode: input.failureCode, failureMessage: input.failureMessage }),
+      },
+    );
+    if (!response.ok) throw new Error('결제 실패 내역을 기록하지 못했습니다.');
+  }
+
   return {
     cancelVoteUsageOrder,
+    confirmTossTestPayment,
     createVoteUsageOrder,
     fetchVoteUsageOrder,
+    reportPaymentFailure,
     mode,
   };
 }

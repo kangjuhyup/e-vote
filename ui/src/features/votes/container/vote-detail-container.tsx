@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, CreditCard, Pencil } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
@@ -14,6 +14,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { billingOrderQueryOptions } from "@/features/billing/api/billing-query-options";
 import { voteAttachmentApi } from "@/features/votes/api/vote-attachment-api";
+import { voteContentChangeApi } from "@/features/votes/api/vote-content-change-api";
 import { voteDetailQueryOptions } from "@/features/votes/api/votes-query-options";
 import { isVoteApiMockMode } from "@/features/votes/api/votes-api";
 import {
@@ -30,7 +31,7 @@ import { FieldSessionContainer } from "./field-session-container";
 import { VoteSmsContainer } from "./vote-sms-container";
 import { VoteDetailRosterSection } from "../ui/vote-detail-roster-section";
 import { VoteDetailSummary } from "../ui/vote-detail-summary";
-import { AttachmentUploadSection } from "../ui/attachment-upload-section";
+import { AttachmentUploadContainer } from "./attachment-upload-container";
 import { VoteNavigation } from "../ui/vote-navigation";
 import { VoteSubVoteSection } from "../ui/vote-sub-vote-section";
 
@@ -76,6 +77,13 @@ export function VoteDetailContainer({
 
   const voteQuery = useQuery(voteDetailQueryOptions(voteId));
   const vote = voteQuery.data;
+  const contentChangeQuery = useQuery({
+    queryKey: ['vote-content-changes', voteId],
+    queryFn: () => voteContentChangeApi.listMine(voteId),
+    enabled: vote?.status === 'active',
+    retry: false,
+  });
+  const latestContentChange = contentChangeQuery.data?.[0];
   const activeBillingOrderId = vote?.activeBillingOrderId;
   const billingOrderQuery = useQuery({
     ...billingOrderQueryOptions(activeBillingOrderId ?? ""),
@@ -174,11 +182,43 @@ export function VoteDetailContainer({
       description="투표 내용, 자식 투표, 선거인명부와 참여 상태를 확인합니다."
       actions={
         <>
+          {billingOrderStatus === "PENDING_PAYMENT" && activeBillingOrderId ? (
+            <Button type="button" asChild>
+              <Link href={`/billing/vote-usage-orders/${activeBillingOrderId}`}>
+                <CreditCard aria-hidden="true" />
+                결제 이어하기
+              </Link>
+            </Button>
+          ) : vote &&
+            (vote.status === "draft" || vote.status === "scheduled") &&
+            !billingOrderStatus ? (
+            <Button type="button" asChild>
+              <Link href={`/votes/${voteId}/edit?step=review#vote-edit-step-review`}>
+                <CreditCard aria-hidden="true" />
+                결제하기
+              </Link>
+            </Button>
+          ) : null}
           {vote && isVoteSetupEditable(vote.status, billingOrderStatus) ? (
             <Button type="button" variant="outline" asChild>
               <Link href={`/votes/${voteId}/edit`}>
                 <Pencil aria-hidden="true" />
                 투표 수정
+              </Link>
+            </Button>
+          ) : vote?.status === "active" ? (
+            <Button type="button" variant="outline" asChild>
+              <Link href={`/votes/${voteId}/content-change`}>
+                <Pencil aria-hidden="true" />
+                {latestContentChange?.status === "PENDING"
+                  ? "내용 변경 요청 · 심사 대기"
+                  : latestContentChange?.status === "APPROVED"
+                    ? "내용 변경 요청 · 최근 승인"
+                    : latestContentChange?.status === "REJECTED"
+                      ? "내용 변경 요청 · 최근 거절"
+                      : latestContentChange?.status === "INVALIDATED"
+                        ? "내용 변경 요청 · 적용 불가"
+                        : "내용 변경 요청"}
               </Link>
             </Button>
           ) : (
@@ -196,6 +236,15 @@ export function VoteDetailContainer({
               투표 수정
             </Button>
           )}
+          {vote?.status === "finalized" &&
+          activeBillingOrderId &&
+          billingOrderStatus === "PAID" ? (
+            <Button type="button" variant="outline" asChild>
+              <Link href={`/billing/vote-usage-orders/${activeBillingOrderId}`}>
+                결제·환불 관리
+              </Link>
+            </Button>
+          ) : null}
           <Button type="button" variant="outline" asChild>
             <Link href="/votes">
               <ArrowLeft aria-hidden="true" />
@@ -232,7 +281,7 @@ export function VoteDetailContainer({
             billingOrderStatus={billingOrderStatus}
             vote={vote}
           />
-          <AttachmentUploadSection
+          <AttachmentUploadContainer
             attachments={vote.attachments ?? []}
             title="투표 첨부파일"
             description="등록된 공고문과 안내 자료를 확인하고 내려받을 수 있습니다. 추가와 삭제는 투표 수정에서 할 수 있습니다."
@@ -268,7 +317,12 @@ export function VoteDetailContainer({
               )
             }
           />
-          <VoteSmsContainer voteId={vote.id} voteStatus={vote.status} />
+          <VoteSmsContainer
+            billingOrderId={activeBillingOrderId}
+            billingOrderStatus={billingOrderStatus}
+            voteId={vote.id}
+            voteStatus={vote.status}
+          />
           <VoteSubVoteSection voteId={vote.id} subVotes={vote.subVotes} />
           <VoteDetailRosterSection
             electorPage={electorPage}

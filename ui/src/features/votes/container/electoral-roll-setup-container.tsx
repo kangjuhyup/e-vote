@@ -21,6 +21,7 @@ import {
   type ElectoralRollRegistrationMode,
   type ElectoralRollSetupStep,
 } from '../ui/electoral-roll-setup-wizard';
+import { ElectoralRollImportContainer } from './electoral-roll-import-container';
 
 interface ElectoralRollSetupContainerProps {
   account?: ReactNode;
@@ -129,6 +130,19 @@ export function ElectoralRollSetupContainer({
       }
     >
       <ElectoralRollSetupWizard
+        importCard={
+          <ElectoralRollImportContainer
+            isSubmitting={createMutation.isPending}
+            mode="create"
+            onImportMembers={(importedMembers) => {
+              try {
+                return Promise.resolve(stageMembers(importedMembers));
+              } catch (error) {
+                return Promise.reject(error);
+              }
+            }}
+          />
+        }
         createdRoll={createdRoll}
         errorMessage={errorMessage}
         isSubmitting={createMutation.isPending}
@@ -162,13 +176,6 @@ export function ElectoralRollSetupContainer({
         onCreate={() => {
           clearError();
           createMutation.mutate();
-        }}
-        onImportMembers={(importedMembers) => {
-          try {
-            return Promise.resolve(stageMembers(importedMembers));
-          } catch (error) {
-            return Promise.reject(error);
-          }
         }}
         onModeChange={(nextMode) => {
           clearError();

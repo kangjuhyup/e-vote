@@ -43,9 +43,18 @@ export function VoteListRow({ vote }: VoteListRowProps) {
           value={vote.participatedCount}
           max={vote.electorCount}
         />
-        <Button type="button" variant="outline" asChild>
-          <Link href={`/votes/${vote.id}`}>상세 보기</Link>
-        </Button>
+        <div className="grid gap-2">
+          {vote.billingOrderStatus === "PENDING_PAYMENT" && vote.activeBillingOrderId ? (
+            <Button type="button" asChild>
+              <Link href={`/billing/vote-usage-orders/${vote.activeBillingOrderId}`}>
+                결제 이어하기
+              </Link>
+            </Button>
+          ) : null}
+          <Button type="button" variant="outline" asChild>
+            <Link href={`/votes/${vote.id}`}>상세 보기</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

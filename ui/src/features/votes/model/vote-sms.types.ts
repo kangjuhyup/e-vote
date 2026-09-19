@@ -1,16 +1,14 @@
-import type { PageResult } from "./vote-operations.types";
-import type { VoteStatus } from "./vote.types";
+import type { PageResult } from './vote-operations.types';
+import type { VoteStatus } from './vote.types';
 
 export type VoteSmsPurpose =
-  | "VOTE_PARTICIPATION_REMINDER"
-  | "VOTE_RESULT_NOTICE"
-  | "UPCOMING_VOTE_NOTICE";
+  'VOTE_PARTICIPATION_REMINDER' | 'VOTE_RESULT_NOTICE' | 'UPCOMING_VOTE_NOTICE';
 
-export type SmsPurpose = VoteSmsPurpose | "FIELD_VOTING_SESSION_NOTICE";
-export type SmsDeliveryStatus = "SUCCESS" | "FAILURE";
+export type SmsPurpose = VoteSmsPurpose | 'FIELD_VOTING_SESSION_NOTICE';
+export type SmsDeliveryStatus = 'SUCCESS' | 'FAILURE';
 
 export interface ParticipationReminderTemplate {
-  buttonLabel: string;
+  buttonLabel?: string;
   code: string;
   content: string;
 }
@@ -42,16 +40,10 @@ export interface SmsDispatchDetail extends SmsDispatchSummary {
   totalPages: number;
 }
 
-export type SendVoteSmsInput =
-  | {
-      purpose: "VOTE_PARTICIPATION_REMINDER";
-      voteId: string;
-    }
-  | {
-      message: string;
-      purpose: Exclude<VoteSmsPurpose, "VOTE_PARTICIPATION_REMINDER">;
-      voteId: string;
-    };
+export interface SendVoteSmsInput {
+  purpose: VoteSmsPurpose;
+  voteId: string;
+}
 
 export interface SendFieldSessionSmsInput {
   fieldVotingSessionId: string;
@@ -65,15 +57,15 @@ export function getVoteSmsPurpose(
   status: VoteStatus,
 ): VoteSmsPurpose | undefined {
   switch (status) {
-    case "draft":
-    case "scheduled":
-    case "finalized":
-      return "UPCOMING_VOTE_NOTICE";
-    case "active":
-      return "VOTE_PARTICIPATION_REMINDER";
-    case "completed":
-      return "VOTE_RESULT_NOTICE";
-    case "canceled":
+    case 'draft':
+    case 'scheduled':
+    case 'finalized':
+      return 'UPCOMING_VOTE_NOTICE';
+    case 'active':
+      return 'VOTE_PARTICIPATION_REMINDER';
+    case 'completed':
+      return 'VOTE_RESULT_NOTICE';
+    case 'canceled':
       return undefined;
   }
 }

@@ -96,7 +96,27 @@ export function buildVoteDashboard(
 ): VoteDashboard {
   const summaries = votes.map(toVoteSummary);
   const activeVotes = summaries.filter((vote) => vote.status === "active");
-  const upcomingVotes = summaries.filter((vote) => vote.status === "scheduled");
+  const upcomingVotes = summaries.filter(
+    (vote) => vote.status === "scheduled" || vote.status === "finalized",
+  );
+  const parsedGeneratedAt = Date.parse(generatedAt);
+  const referenceTime = Number.isFinite(parsedGeneratedAt)
+    ? parsedGeneratedAt
+    : Date.now();
+  const paymentAttentionVotes = summaries
+    .filter((vote) => {
+      const startsAt = Date.parse(vote.startsAt);
+      return (
+        (vote.status === "draft" || vote.status === "scheduled") &&
+        vote.billingOrderStatus !== "PAID" &&
+        Number.isFinite(startsAt) &&
+        startsAt > referenceTime &&
+        startsAt - referenceTime <= 24 * 60 * 60 * 1000
+      );
+    })
+    .sort((left, right) =>
+      Date.parse(left.startsAt) - Date.parse(right.startsAt),
+    );
   const completedVotes = summaries.filter((vote) => vote.status === "completed");
   const attentionVotes = summaries.filter(
     (vote) =>
@@ -132,6 +152,7 @@ export function buildVoteDashboard(
     },
     activeVotes,
     upcomingVotes,
+    paymentAttentionVotes,
     attentionVotes,
     recentActivities: votes.slice(0, 4).map((vote) => ({
       id: `${vote.id}-activity`,

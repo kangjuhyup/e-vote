@@ -121,6 +121,28 @@ describe("billing api", () => {
     );
   });
 
+  it("confirms a Toss test payment through the authenticated billing API", async () => {
+    const fetcher = vi.fn(async () => jsonResponse(billingOrder({ status: "PAID" })));
+    const client = createBillingApiClient({
+      baseUrl: "https://api.example.com",
+      fetcher,
+      mode: "live",
+    });
+    await client.confirmTossTestPayment({
+      billingOrderId: "billing-order-1",
+      paymentKey: "payment-key",
+      orderId: "billing-order-1",
+      amount: 72_000,
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      "https://api.example.com/billing/vote-usage-orders/billing-order-1/toss-test-confirmation",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ paymentKey: "payment-key", orderId: "billing-order-1", amount: 72_000 }),
+      }),
+    );
+  });
+
   it("keeps mock creation idempotent and uses server-shaped pricing", async () => {
     const client = createBillingApiClient({
       mode: "mock",
@@ -222,7 +244,7 @@ describe("billing api", () => {
     });
 
     await expect(client.createVoteUsageOrder("vote-1")).rejects.toThrow(
-      "투표 시작 시각이 지났거나 현재 투표 또는 주문 상태에서는 요청을 처리할 수 없습니다.",
+      "투표 시작 시각이 지났거나 안내 문자 발송이 시작되어 환불할 수 없거나, 현재 투표·주문 상태에서는 요청을 처리할 수 없습니다.",
     );
   });
 });

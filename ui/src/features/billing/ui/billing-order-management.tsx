@@ -22,6 +22,7 @@ interface BillingOrderManagementProps {
   cancelConfirmed: boolean;
   cancelReason: string;
   canCancel: boolean;
+  cancelUnavailableReason?: string;
   errorMessage?: string;
   isCancelling: boolean;
   message?: string;
@@ -35,6 +36,7 @@ export function BillingOrderManagement({
   cancelConfirmed,
   cancelReason,
   canCancel,
+  cancelUnavailableReason,
   errorMessage,
   isCancelling,
   message,
@@ -55,6 +57,11 @@ export function BillingOrderManagement({
           {message}
         </p>
       ) : null}
+      {cancelUnavailableReason ? (
+        <p role="status" className="rounded-md border px-4 py-3 text-sm text-muted-foreground">
+          {cancelUnavailableReason}
+        </p>
+      ) : null}
       <Card className="rounded-lg">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -71,7 +78,9 @@ export function BillingOrderManagement({
           <BillingPriceBreakdown order={order} />
           <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Summary label="주문 시각" value={formatKoreanDateTime(order.issuedAt)} />
-            <Summary label="취소 가능 기한" value={formatKoreanDateTime(order.cancelableUntil)} />
+            {order.status === "PENDING_PAYMENT" ? (
+              <Summary label="미결제 주문 취소 기한" value={formatKoreanDateTime(order.cancelableUntil)} />
+            ) : null}
             <Summary label="상품 코드" value={order.productCode} />
           </dl>
           <p className="text-sm leading-6 text-muted-foreground">
@@ -108,14 +117,18 @@ export function BillingOrderManagement({
           <CardHeader>
             <div className="flex items-center gap-2">
               <RotateCcw className="size-5 text-destructive" aria-hidden="true" />
-              <CardTitle className="text-base">주문 및 투표 취소</CardTitle>
+              <CardTitle className="text-base">
+                {order.status === "PAID" ? "투표 취소·환불 요청" : "주문 및 투표 취소"}
+              </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-start gap-3 rounded-md bg-destructive/8 p-4 text-sm">
               <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
               <p className="leading-6">
-                미결제 주문은 취소 즉시 투표 설정 잠금이 해제됩니다. 결제 완료 주문은 환불 처리 중 상태로 전환되며, 환불 완료 후 투표를 다시 수정하거나 결제할 수 있습니다.
+                {order.status === "PAID"
+                  ? "투표 시작 전이고 안내 문자 발송을 시작하지 않은 경우에만 환불할 수 있습니다. 환불 완료 전까지 투표의 확정 상태와 설정 잠금이 유지됩니다."
+                  : "미결제 주문은 투표 시작 전이며 주문 생성 후 7일 이내에 취소할 수 있습니다. 취소 즉시 투표 설정 잠금이 해제됩니다."}
               </p>
             </div>
             <label className="grid gap-2 text-sm font-medium">
@@ -148,7 +161,11 @@ export function BillingOrderManagement({
               }
               onClick={onCancel}
             >
-              {isCancelling ? "취소 처리 중…" : "주문 및 투표 취소"}
+              {isCancelling
+                ? "취소 처리 중…"
+                : order.status === "PAID"
+                  ? "투표 취소·환불 요청"
+                  : "주문 및 투표 취소"}
             </Button>
           </CardContent>
         </Card>

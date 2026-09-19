@@ -424,6 +424,26 @@ describe("votes api", () => {
     ]);
   });
 
+  it("shows the participation counts supplied by the vote list", async () => {
+    const client = createVotesApiClient({
+      baseUrl: "http://localhost:3000",
+      mode: "live",
+      fetcher: vi.fn(async () =>
+        jsonResponse(
+          pageDto([voteSummaryDto({ electorCount: 1, participatedCount: 1 })]),
+        ),
+      ),
+    });
+
+    await expect(client.fetchVoteList()).resolves.toEqual([
+      expect.objectContaining({
+        electorCount: 1,
+        participatedCount: 1,
+        participationKnown: true,
+      }),
+    ]);
+  });
+
   it("fetches vote detail and elector roster from the configured server API", async () => {
     const fetcher = vi.fn(async (_input: string, _init?: RequestInit) => {
       void _input;

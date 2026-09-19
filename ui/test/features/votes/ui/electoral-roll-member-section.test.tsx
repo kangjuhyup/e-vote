@@ -30,7 +30,6 @@ describe("ElectoralRollMemberSection", () => {
       members,
       onAddMember: vi.fn(),
       onDiscardChanges: vi.fn(),
-      onImportMembers: vi.fn(),
       onMemberChange: vi.fn(),
       onPageChange,
       onRemoveMember: vi.fn(),
@@ -84,7 +83,6 @@ describe("ElectoralRollMemberSection", () => {
         members={members.slice(0, 2)}
         onAddMember={vi.fn()}
         onDiscardChanges={onDiscardChanges}
-        onImportMembers={vi.fn()}
         onMemberChange={onMemberChange}
         onPageChange={vi.fn()}
         onRemoveMember={vi.fn()}

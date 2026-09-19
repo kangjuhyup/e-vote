@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 
@@ -32,7 +33,7 @@ import type {
 } from '@/features/votes/model/vote-operations.types';
 
 import { VoteNavigation } from '../ui/vote-navigation';
-import { AttachmentUploadSection } from '../ui/attachment-upload-section';
+import { AttachmentUploadContainer } from './attachment-upload-container';
 import {
   VoteSetupWizard,
   type VoteSetupBallotDraft,
@@ -52,6 +53,7 @@ type CreatedSetupBallot = {
 
 export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const isMockMode = isVoteApiMockMode();
   const [step, setStep] = useState<VoteSetupStep>('basics');
   const [voteDraft, setVoteDraft] = useState<VoteDraft>();
@@ -170,6 +172,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
           ? '결제가 완료되어 투표가 확정됐습니다.'
           : '결제 주문을 생성했습니다. 결제가 완료될 때까지 투표 설정이 잠깁니다.',
       );
+      router.push(`/billing/vote-usage-orders/${order.id}`);
     },
   });
 
@@ -282,7 +285,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
       <VoteSetupWizard
         attachmentsPanel={
           createdVote ? (
-            <AttachmentUploadSection
+            <AttachmentUploadContainer
               attachments={createdVoteProjection?.attachments ?? []}
               title="투표 첨부파일"
               description="결제를 시작하기 전에 공고문, 안내 자료와 기타 문서를 등록하세요."
@@ -338,7 +341,7 @@ export function VoteSetupContainer({ account }: VoteSetupContainerProps) {
                     voteId: createdVote.id,
                   };
                   return (
-                    <AttachmentUploadSection
+                    <AttachmentUploadContainer
                     key={candidate.id}
                     attachments={projectedCandidate?.attachments ?? []}
                     title={`${ballot.title} · ${candidate.name} 첨부파일`}

@@ -86,7 +86,7 @@ export function VoteSmsDispatchDetail({
                         {delivery.status === "SUCCESS" ? "성공" : "실패"}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-muted-foreground">{delivery.failureReason ?? "-"}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{formatFailureReason(delivery.failureReason)}</td>
                     {showParticipationLinks ? (
                       <td className="px-3 py-3">
                         {delivery.status === "SUCCESS" ? (
@@ -121,6 +121,14 @@ export function VoteSmsDispatchDetail({
       </Card>
     </div>
   );
+}
+
+function formatFailureReason(reason: string | undefined): string {
+  if (!reason) return "-";
+  if (reason === "SIMULATED_RANDOM_FAILURE" || reason === "SIMULATED_FAILURE") {
+    return "문자 발송에 실패했습니다.";
+  }
+  return reason;
 }
 
 function Summary({ label, value, tone }: { label: string; value: string; tone?: "success" | "failure" }) {

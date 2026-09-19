@@ -1,7 +1,7 @@
 'use client';
 
 import { Download, FileUp, Paperclip, RotateCcw, Trash2, X } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,19 +16,10 @@ import {
   type AttachmentUploadMetadata,
   type AttachmentUploadResult,
 } from '@/features/votes/model/vote-attachment.types';
-import {
-  attachmentMetadataFromFile,
-  validateAttachmentMetadata,
-} from '@/features/votes/lib/vote-attachment';
 
 export interface AttachmentTypeOption<TType extends AttachmentType> {
   label: string;
   value: TType;
-}
-
-interface PendingUpload<TType extends AttachmentType> {
-  file: File;
-  grant: AttachmentUploadGrant<TType>;
 }
 
 export interface AttachmentUploadSectionProps<TType extends AttachmentType> {
@@ -55,7 +46,7 @@ export interface AttachmentUploadSectionProps<TType extends AttachmentType> {
   typeOptions: AttachmentTypeOption<TType>[];
 }
 
-type UploadStage =
+export type UploadStage =
   | 'idle'
   | 'requesting'
   | 'uploading'
@@ -64,122 +55,67 @@ type UploadStage =
   | 'upload-failed'
   | 'confirm-failed';
 
+export interface AttachmentUploadControl<TType extends AttachmentType> {
+  attachmentType: TType;
+  changeFile: (file?: File) => void;
+  changeType: (type: TType) => void;
+  confirm: (grant: AttachmentUploadGrant<TType>, file: File) => Promise<void>;
+  deleteConfirmationId?: string;
+  deletingId?: string;
+  download: (attachmentId: string) => Promise<void>;
+  downloadingId?: string;
+  errorMessage?: string;
+  file?: File;
+  fileInputKey: number;
+  isBusy: boolean;
+  pending?: { file: File; grant: AttachmentUploadGrant<TType> };
+  remove: (attachmentId: string) => Promise<void>;
+  setDeleteConfirmationId: (id?: string) => void;
+  stage: UploadStage;
+  upload: (file: File, type: TType) => Promise<void>;
+}
+
+type AttachmentUploadViewProps<TType extends AttachmentType> = Omit<
+  AttachmentUploadSectionProps<TType>,
+  | 'onConfirmUpload'
+  | 'onDeleteAttachment'
+  | 'onDownloadAttachment'
+  | 'onRequestUpload'
+  | 'onUploadObject'
+> & {
+  control: AttachmentUploadControl<TType>;
+};
+
 export function AttachmentUploadSection<TType extends AttachmentType>({
   attachments,
   description,
   disabled = false,
   disabledMessage = '투표가 잠겨 첨부파일을 등록할 수 없습니다.',
-  onConfirmUpload,
-  onDeleteAttachment,
-  onDownloadAttachment,
-  onRequestUpload,
-  onUploadObject,
+  control,
   readOnly = false,
   title,
   typeOptions,
-}: AttachmentUploadSectionProps<TType>) {
+}: AttachmentUploadViewProps<TType>) {
   const inputId = useId();
-  const [attachmentType, setAttachmentType] = useState<TType>(
-    typeOptions[0].value,
-  );
-  const [deleteConfirmationId, setDeleteConfirmationId] = useState<string>();
-  const [deletingId, setDeletingId] = useState<string>();
-  const [downloadingId, setDownloadingId] = useState<string>();
-  const [errorMessage, setErrorMessage] = useState<string>();
-  const [file, setFile] = useState<File>();
-  const [fileInputKey, setFileInputKey] = useState(0);
-  const [pending, setPending] = useState<PendingUpload<TType>>();
-  const [stage, setStage] = useState<UploadStage>('idle');
-  const isBusy =
-    stage === 'requesting' ||
-    stage === 'uploading' ||
-    stage === 'confirming';
-
-  async function confirm(grant: AttachmentUploadGrant<TType>, source: File) {
-    setStage('confirming');
-    setErrorMessage(undefined);
-    try {
-      await onConfirmUpload({
-        ...grant.metadata,
-        storageKey: grant.storageKey,
-      });
-      setPending(undefined);
-      setFile(undefined);
-      setFileInputKey((value) => value + 1);
-      setStage('idle');
-    } catch (error) {
-      setPending({ file: source, grant });
-      setStage('confirm-failed');
-      setErrorMessage(toErrorMessage(error));
-    }
-  }
-
-  async function upload(source: File, type: TType) {
-    const metadata = attachmentMetadataFromFile(source, type);
-    const validationError = validateAttachmentMetadata(metadata);
-    if (validationError) {
-      setErrorMessage(validationError);
-      setStage('idle');
-      return;
-    }
-
-    setErrorMessage(undefined);
-    setPending(undefined);
-    setStage('requesting');
-    let grant: AttachmentUploadGrant<TType>;
-    try {
-      grant = await onRequestUpload(metadata);
-    } catch (error) {
-      setStage('request-failed');
-      setErrorMessage(toErrorMessage(error));
-      return;
-    }
-
-    setStage('uploading');
-    try {
-      await onUploadObject(grant, source);
-    } catch (error) {
-      setStage('upload-failed');
-      setErrorMessage(toErrorMessage(error));
-      return;
-    }
-
-    setPending({ file: source, grant });
-    await confirm(grant, source);
-  }
-
-  async function download(attachmentId: string) {
-    setDownloadingId(attachmentId);
-    setErrorMessage(undefined);
-    try {
-      const grant = await onDownloadAttachment(attachmentId);
-      if (grant.attachmentId !== attachmentId || !grant.downloadUrl) {
-        throw new Error('다운로드 URL 응답이 올바르지 않습니다.');
-      }
-      const anchor = document.createElement('a');
-      anchor.href = grant.downloadUrl;
-      anchor.target = '_blank';
-      anchor.rel = 'noopener noreferrer';
-      anchor.click();
-    } catch (error) {
-      setErrorMessage(toErrorMessage(error));
-    } finally {
-      setDownloadingId(undefined);
-    }
-  }
-
-  async function remove(attachmentId: string) {
-    setDeletingId(attachmentId);
-    setErrorMessage(undefined);
-    try {
-      await onDeleteAttachment(attachmentId);
-      setDeleteConfirmationId(undefined);
-    } catch (error) {
-      setErrorMessage(toErrorMessage(error));
-    } finally {
-      setDeletingId(undefined);
-    }
-  }
+  const {
+    attachmentType,
+    changeFile,
+    changeType,
+    confirm,
+    deleteConfirmationId,
+    deletingId,
+    download,
+    downloadingId,
+    errorMessage,
+    file,
+    fileInputKey,
+    isBusy,
+    pending,
+    remove,
+    setDeleteConfirmationId,
+    stage,
+    upload,
+  } = control;
 
   const orderedAttachments = [...attachments].sort(
     (left, right) =>
@@ -219,12 +155,7 @@ export function AttachmentUploadSection<TType extends AttachmentType>({
               <Select
                 value={attachmentType}
                 disabled={disabled || isBusy}
-                onChange={(event) => {
-                  setAttachmentType(event.target.value as TType);
-                  setPending(undefined);
-                  setStage('idle');
-                  setErrorMessage(undefined);
-                }}
+                onChange={(event) => changeType(event.target.value as TType)}
               >
                 {typeOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -241,12 +172,7 @@ export function AttachmentUploadSection<TType extends AttachmentType>({
                 type="file"
                 accept={ALLOWED_ATTACHMENT_MIME_TYPES.join(',')}
                 disabled={disabled || isBusy}
-                onChange={(event) => {
-                  setFile(event.target.files?.[0]);
-                  setPending(undefined);
-                  setStage('idle');
-                  setErrorMessage(undefined);
-                }}
+                onChange={(event) => changeFile(event.target.files?.[0])}
               />
             </label>
             <Button
@@ -388,12 +314,6 @@ function stageLabel(stage: UploadStage) {
   if (stage === 'uploading') return '파일 전송 중…';
   if (stage === 'confirming') return '등록 확정 중…';
   return '첨부 등록';
-}
-
-function toErrorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : '파일을 등록하지 못했습니다. 잠시 후 다시 시도하세요.';
 }
 
 function formatFileSize(sizeBytes: number) {
