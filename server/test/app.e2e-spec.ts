@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/shared/presentation/common/filter/http-exception.filter';
 import { ResponseInterceptor } from '../src/shared/presentation/common/interceptor/response.interceptor';
@@ -15,6 +16,7 @@ import { Public } from '../src/shared/presentation/common/decorator/public.decor
 import { User } from '../src/shared/presentation/common/decorator/user.decorator';
 import { UserPrincipal } from '../src/shared/application/security/user-principal';
 import { ACCESS_TOKEN_VERIFIER_PORT } from '../src/shared/application/port/security/access-token-verifier.port';
+import { AUTHZ_ASSERTION_KEY } from '../src/platform/authentication/authz-assertion-verifier.adapter';
 import { DATABASE_HEALTH_PORT } from '../src/shared/application/port/health/database-health.port';
 import { REDIS_HEALTH_PORT } from '../src/shared/application/port/health/redis-health.port';
 import { STORAGE_HEALTH_PORT } from '../src/shared/application/port/health/storage-health.port';
@@ -70,6 +72,8 @@ describe('AppController (e2e)', () => {
       imports: [AppModule],
       controllers: [TestErrorController, TestAuthenticatedController],
     })
+      .overrideProvider(AUTHZ_ASSERTION_KEY)
+      .useValue('test-authz-assertion-key-at-least-32-bytes')
       .overrideProvider(ACCESS_TOKEN_VERIFIER_PORT)
       .useValue({
         verify: (accessToken: string): Promise<UserPrincipal> => {
@@ -89,6 +93,12 @@ describe('AppController (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+    app.use((req: Request, _res: Response, next: NextFunction) => {
+      if (req.headers.authorization) {
+        req.headers['x-vote-authz-assertion'] = 'test-proxy-assertion';
+      }
+      next();
+    });
     app.useGlobalPipes(new ValidationPipe());
     app.useGlobalInterceptors(new ResponseInterceptor());
     app.useGlobalFilters(new HttpExceptionFilter(exceptionLogger));

@@ -273,6 +273,47 @@ describe('billing order domain', () => {
     ).toThrow('cannot be canceled before it is issued');
   });
 
+  it('expires an unpaid order at vote start even after the user cancellation window', () => {
+    const order = issueOrder();
+    order.clearDomainEvents();
+    const expiredAt = new Date('2026-09-10T00:00:00.000Z');
+
+    order.expirePendingPayment({
+      reason: 'PAYMENT_NOT_COMPLETED_BEFORE_VOTE_START',
+      expiredAt,
+    });
+
+    expect(order).toMatchObject({
+      status: BillingOrderStatus.Canceled,
+      canceledAt: expiredAt,
+      cancellationReason: 'PAYMENT_NOT_COMPLETED_BEFORE_VOTE_START',
+      version: 2,
+    });
+    expect(order.domainEvents()).toEqual([
+      expect.objectContaining({
+        type: 'BillingOrderCanceled',
+        aggregateVersion: 2,
+      }),
+    ]);
+  });
+
+  it('does not expire an order after payment completed', () => {
+    const order = issueOrder();
+    order.markPaid({
+      paymentId: 'payment-1',
+      paidAmount: 3_000,
+      paidCurrency: 'KRW',
+      paidAt: issuedAt,
+    });
+
+    expect(() =>
+      order.expirePendingPayment({
+        reason: 'PAYMENT_NOT_COMPLETED_BEFORE_VOTE_START',
+        expiredAt: new Date('2026-09-10T00:00:00.000Z'),
+      }),
+    ).toThrow('only pending billing orders can expire');
+  });
+
   it('reconstitutes a legacy refunded order after migration backfill', () => {
     const refundedAt = new Date('2026-09-01T00:00:00.000Z');
     const order = BillingOrderAggregate.reconstitute({

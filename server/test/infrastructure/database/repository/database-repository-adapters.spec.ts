@@ -96,10 +96,21 @@ describe('database repository adapters', () => {
     const repository = new VoteRepositoryAdapter(em as any);
     const now = new Date('2026-09-06T10:00:00.000Z');
 
+    await expect(
+      repository.findDueForPaymentExpiration(now, 20),
+    ).resolves.toEqual([]);
     await expect(repository.findDueForOpening(now, 20)).resolves.toEqual([]);
     await expect(repository.findDueForClosing(now, 20)).resolves.toEqual([]);
 
     expect(em.getConnection().execute.mock.calls).toEqual([
+      [
+        expect.stringMatching(
+          /status.*DRAFT|select[\s\S]*started_at[\s\S]*for update skip locked/,
+        ),
+        ['DRAFT', now, 20],
+        'all',
+        'transaction-context',
+      ],
       [
         expect.stringMatching(
           /status.*FINALIZED|select[\s\S]*started_at[\s\S]*for update skip locked/,
@@ -118,12 +129,15 @@ describe('database repository adapters', () => {
       ],
     ]);
     expect(em.getConnection().execute.mock.calls[0][0]).toContain(
-      `"billing_order"."status" = 'PAID'`,
+      `"billing_order"."status" = 'PENDING_PAYMENT'`,
     );
-    expect(em.getConnection().execute.mock.calls[0][0]).toContain(
+    expect(em.getConnection().execute.mock.calls[0][0]).not.toContain(
       `"vote"."ended_at" > "vote"."started_at"`,
     );
     expect(em.getConnection().execute.mock.calls[1][0]).toContain(
+      `"vote"."ended_at" > "vote"."started_at"`,
+    );
+    expect(em.getConnection().execute.mock.calls[2][0]).toContain(
       `"vote"."ended_at" > "vote"."started_at"`,
     );
     expect(em.getConnection().execute.mock.calls[1][0]).not.toContain(

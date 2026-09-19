@@ -6,6 +6,18 @@ import { ElectionCommissionManagementAccess } from './modules/election-commissio
 import { ElectoralRollDeletionController } from './modules/electoral-roll/presentation/electoral-roll/electoral-roll-deletion.controller';
 import { ElectionCommissionManagementController } from './modules/election-commission/presentation/election-commission/election-commission-management.controller';
 import { Module } from '@nestjs/common';
+import { AdminOperationsController } from './modules/organization/presentation/organization-onboarding/admin-operations.controller';
+import { VoteContentChangeController } from './modules/vote/presentation/vote/vote-content-change.controller';
+import { VoteContentChangeWorkflow } from './modules/vote/application/command/vote-content-change.workflow';
+import { VoteContentChangeRepositoryAdapter } from './modules/vote/infrastructure/database/repository/command/vote-content-change-repository.adapter';
+import { VOTE_CONTENT_CHANGE_REPOSITORY_PORT } from './modules/vote/application/port/persistence/command/vote-content-change-repository.port';
+import { GetAdminOperationsHandler } from './modules/organization/application/query/handler/get-admin-operations.handler';
+import { AdminOperationsReadRepositoryAdapter } from './modules/organization/infrastructure/database/repository/admin-operations-read-repository.adapter';
+import { ADMIN_OPERATIONS_READ_REPOSITORY_PORT } from './modules/organization/application/port/persistence/admin-operations-read-repository.port';
+import { BillingPaymentFailureController } from './modules/billing/presentation/billing-order/billing-payment-failure.controller';
+import { RecordBillingPaymentFailureHandler } from './modules/billing/application/command/handler/record-billing-payment-failure.handler';
+import { BillingPaymentFailureRepositoryAdapter } from './modules/billing/infrastructure/database/repository/command/billing-payment-failure-repository.adapter';
+import { BILLING_PAYMENT_FAILURE_REPOSITORY_PORT } from './modules/billing/application/port/persistence/command/billing-payment-failure-repository.port';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AttachmentTargetValidator } from './modules/vote/application/command/attachment-target.validator';
@@ -60,6 +72,7 @@ import { GetVoteHandler } from './modules/vote/application/query/handler/get-vot
 import { GetSmsDispatchPageHandler } from './modules/vote/application/query/handler/get-sms-dispatch-page.handler';
 import { GetSmsDispatchHandler } from './modules/vote/application/query/handler/get-sms-dispatch.handler';
 import { GetParticipationReminderTemplateHandler } from './modules/vote/application/query/handler/get-participation-reminder-template.handler';
+import { GetVoteNoticeTemplateHandler } from './modules/vote/application/query/handler/get-vote-notice-template.handler';
 import { GetVoteResultHandler } from './modules/participation/application/query/handler/get-vote-result.handler';
 import { GetVoteTurnoutHandler } from './modules/participation/application/query/handler/get-vote-turnout.handler';
 import { AppController } from './app.controller';
@@ -123,6 +136,15 @@ import { AuthenticatedUserGuard } from './shared/presentation/common/guard/authe
 import { SMS_SENDER_PORT } from './shared/application/port/gateway/sms-sender.port';
 import { SMS_RECIPIENT_ACCESS_PORT } from './shared/application/port/capability/sms-recipient-access.port';
 import { BillingOrderController } from './modules/billing/presentation/billing-order/billing-order.controller';
+import { TossTestPaymentController } from './modules/billing/presentation/billing-order/toss-test-payment.controller';
+import { TossTestWebhookController } from './modules/billing/presentation/billing-order/toss-test-webhook.controller';
+import { ConfirmTossTestPaymentHandler } from './modules/billing/application/command/handler/confirm-toss-test-payment.handler';
+import { ProcessTossTestWebhookHandler } from './modules/billing/application/command/handler/process-toss-test-webhook.handler';
+import { MarkBillingOrderPaidHandler } from './modules/billing/application/command/handler/mark-billing-order-paid.handler';
+import { MarkBillingOrderRefundedHandler } from './modules/billing/application/command/handler/mark-billing-order-refunded.handler';
+import { PAYMENT_GATEWAY_PORT } from './modules/billing/application/port/gateway/payment-gateway.port';
+import { TOSS_TEST_PAYMENT_ENABLED } from './modules/billing/application/port/gateway/toss-test-payment-availability.port';
+import { createTossTestPaymentGateway } from './modules/billing/infrastructure/payment/toss-test-payment-gateway.adapter';
 import { CreateVoteUsageBillingOrderHandler } from './modules/billing/application/command/handler/create-vote-usage-billing-order.handler';
 import { GetBillingOrderHandler } from './modules/billing/application/query/handler/get-billing-order.handler';
 import { BillingOrderCancellationController } from './modules/billing/presentation/billing-order/billing-order-cancellation.controller';
@@ -207,6 +229,7 @@ const developmentParticipationLinkEnabled =
     ElectionCommissionManagementController,
     AppController,
     VoteController,
+    VoteContentChangeController,
     VoteSmsController,
     VoteSmsReadController,
     VoteReadController,
@@ -231,10 +254,14 @@ const developmentParticipationLinkEnabled =
     VoteStatisticsController,
     FieldParticipationEvidenceController,
     BillingOrderController,
+    TossTestPaymentController,
+    TossTestWebhookController,
     BillingOrderCancellationController,
     ParticipationAccessController,
     ParticipationInvitationController,
     OrganizationOnboardingController,
+    AdminOperationsController,
+    BillingPaymentFailureController,
     OrganizationMembershipController,
     UserProfileController,
     VoteRegistrationController,
@@ -255,6 +282,18 @@ const developmentParticipationLinkEnabled =
     ElectionCommissionManagementAccess,
     AppService,
     OrganizationOnboardingService,
+    GetAdminOperationsHandler,
+    AdminOperationsReadRepositoryAdapter,
+    RecordBillingPaymentFailureHandler,
+    BillingPaymentFailureRepositoryAdapter,
+    {
+      provide: BILLING_PAYMENT_FAILURE_REPOSITORY_PORT,
+      useExisting: BillingPaymentFailureRepositoryAdapter,
+    },
+    {
+      provide: ADMIN_OPERATIONS_READ_REPOSITORY_PORT,
+      useExisting: AdminOperationsReadRepositoryAdapter,
+    },
     OrganizationMembershipService,
     {
       provide: AUTH_ORGANIZATION_PROVISIONING_PORT,
@@ -302,6 +341,12 @@ const developmentParticipationLinkEnabled =
       useExisting: ElectoralRollSnapshotResolver,
     },
     AttachmentTargetValidator,
+    VoteContentChangeWorkflow,
+    VoteContentChangeRepositoryAdapter,
+    {
+      provide: VOTE_CONTENT_CHANGE_REPOSITORY_PORT,
+      useExisting: VoteContentChangeRepositoryAdapter,
+    },
     CreateVoteHandler,
     {
       provide: APP_GUARD,
@@ -346,6 +391,7 @@ const developmentParticipationLinkEnabled =
     GetSmsDispatchPageHandler,
     GetSmsDispatchHandler,
     GetParticipationReminderTemplateHandler,
+    GetVoteNoticeTemplateHandler,
     GetVotePageHandler,
     GetVoteDetailHandler,
     GetVoteDetailPageHandler,
@@ -362,6 +408,26 @@ const developmentParticipationLinkEnabled =
     GetVoteTurnoutHandler,
     GetVoteResultHandler,
     BillingOrderOutboxRecorder,
+    MarkBillingOrderPaidHandler,
+    MarkBillingOrderRefundedHandler,
+    ConfirmTossTestPaymentHandler,
+    ProcessTossTestWebhookHandler,
+    {
+      provide: PAYMENT_GATEWAY_PORT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        createTossTestPaymentGateway(
+          config.get<string>('BILLING_PAYMENT_MODE'),
+          config.get<string>('TOSS_SECRET_KEY'),
+          config.get<string>('NODE_ENV'),
+        ),
+    },
+    {
+      provide: TOSS_TEST_PAYMENT_ENABLED,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): boolean =>
+        config.get<string>('BILLING_PAYMENT_MODE') === 'toss-test',
+    },
     CreateVoteUsageBillingOrderHandler,
     CancelVoteUsageBillingOrderHandler,
     GetBillingOrderHandler,

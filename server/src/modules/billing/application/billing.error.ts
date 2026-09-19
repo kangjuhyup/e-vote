@@ -15,3 +15,9 @@ export class VoteBillingAccessDeniedError extends Error {
     super('vote billing access denied');
   }
 }
+
+export class TestPaymentUnavailableError extends Error {
+  constructor() {
+    super('test payment is not enabled');
+  }
+}

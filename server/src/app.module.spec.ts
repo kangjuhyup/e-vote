@@ -25,6 +25,7 @@ import { VOTE_REPOSITORY_PORT } from './modules/vote/application/port/persistenc
 import { VOTE_STATISTICS_READ_REPOSITORY_PORT } from './modules/participation/application/port/persistence/query/vote-statistics-read-repository.port';
 import { AppModule } from './app.module';
 import { PlatformModule } from './platform/platform.module';
+import { AUTHZ_ASSERTION_KEY } from './platform/authentication/authz-assertion-verifier.adapter';
 import { VoteScheduleWorker } from './modules/vote/infrastructure/scheduling/vote-schedule.worker';
 import { ParticipationController } from './modules/participation/presentation/participation/participation.controller';
 import { ElectorSignatureController } from './modules/elector/presentation/elector/elector-signature.controller';
@@ -239,6 +240,8 @@ describe('AppModule', () => {
     })
       .overrideModule(PlatformModule)
       .useModule(PlatformModuleStub)
+      .overrideProvider(AUTHZ_ASSERTION_KEY)
+      .useValue('test-authz-assertion-key-at-least-32-bytes')
       .compile();
 
     expect(moduleRef.get(AppModule)).toBeInstanceOf(AppModule);

@@ -7,10 +7,10 @@ import {
 import type {
   FieldVotingSessionSmsSendRequest,
   ParticipationReminderSmsSendRequest,
+  VoteNoticeSmsSendRequest,
   SmsRecipientDeliveryResult,
   SmsSenderPort,
   SmsSendResult,
-  VoteSmsSendRequest,
 } from '../../application/port/gateway/sms-sender.port';
 import { SmsDeliveryStatus } from '../../domain/sms/type/sms-delivery-status.type';
 import { ElectorStatus } from '../../domain/voting/type/elector-status.type';
@@ -42,11 +42,13 @@ export class RandomSmsSenderAdapter implements SmsSenderPort {
     );
   }
 
-  sendResultNotice(request: VoteSmsSendRequest): Promise<SmsSendResult> {
+  sendResultNotice(request: VoteNoticeSmsSendRequest): Promise<SmsSendResult> {
     return this.send(request.voteId);
   }
 
-  sendUpcomingVoteNotice(request: VoteSmsSendRequest): Promise<SmsSendResult> {
+  sendUpcomingVoteNotice(
+    request: VoteNoticeSmsSendRequest,
+  ): Promise<SmsSendResult> {
     return this.send(request.voteId);
   }
 

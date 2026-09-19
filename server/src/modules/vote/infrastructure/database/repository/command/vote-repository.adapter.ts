@@ -5,6 +5,7 @@ import type { VoteScheduleRepositoryPort } from '../../../../application/port/pe
 import type { VoteAggregate } from '../../../../domain/vote/vote.aggregate';
 import type { VoteSetupLifecyclePort } from '../../../../../../shared/application/port/capability/vote-billing.port';
 import { ManagedResourceNotFoundError } from '../../../../../../shared/application/error/managed-resource.error';
+import { SmsMessagePurpose } from '../../../../../../shared/domain/voting/type/sms-message-purpose.type';
 import { VoteMapper, type VotePersistence } from '../../mapper/vote.mapper';
 import {
   SELECT_IN_RELATION_LOAD_OPTIONS,
@@ -56,11 +57,18 @@ export class VoteRepositoryAdapter
   }
 
   async findDueForOpening(now: Date, limit: number): Promise<VoteAggregate[]> {
-    return this.findDue('FINALIZED', 'started_at', now, limit, true);
+    return this.findDue('FINALIZED', 'started_at', now, limit, undefined, true);
+  }
+
+  async findDueForPaymentExpiration(
+    now: Date,
+    limit: number,
+  ): Promise<VoteAggregate[]> {
+    return this.findDue('DRAFT', 'started_at', now, limit, 'PENDING_PAYMENT');
   }
 
   async findDueForClosing(now: Date, limit: number): Promise<VoteAggregate[]> {
-    return this.findDue('OPEN', 'ended_at', now, limit);
+    return this.findDue('OPEN', 'ended_at', now, limit, undefined, true);
   }
 
   async lockVote(voteId: string): Promise<void> {
@@ -174,10 +182,21 @@ export class VoteRepositoryAdapter
   async assertBillingCancellationAllowed(params: {
     voteId: string;
     billingOrderId: string;
+    canceledAt: Date;
   }): Promise<void> {
     const vote = await this.findById(params.voteId);
     if (!vote) throw new ManagedResourceNotFoundError('vote');
-    vote.assertBillingCancellationAllowed(params.billingOrderId);
+    const { SmsDispatchEntity } = await getDatabaseEntities();
+    const hasUpcomingNoticeDispatch =
+      (await this.em.count(SmsDispatchEntity as any, {
+        vote: { id: params.voteId },
+        purpose: SmsMessagePurpose.UpcomingVoteNotice,
+      })) > 0;
+    vote.assertBillingCancellationAllowedAt(
+      params.billingOrderId,
+      params.canceledAt,
+      hasUpcomingNoticeDispatch,
+    );
   }
 
   async releaseBilling(params: {
@@ -219,11 +238,12 @@ export class VoteRepositoryAdapter
   }
 
   private async findDue(
-    status: 'FINALIZED' | 'OPEN',
+    status: 'DRAFT' | 'FINALIZED' | 'OPEN',
     dueColumn: 'started_at' | 'ended_at',
     now: Date,
     limit: number,
-    requirePaidOrder = false,
+    billingOrderStatus?: 'PENDING_PAYMENT',
+    requirePositiveWindow = false,
   ): Promise<VoteAggregate[]> {
     const em = this.em.getContext();
     const rows = await em
@@ -234,15 +254,19 @@ export class VoteRepositoryAdapter
           from "votes" as "vote"
           where "vote"."status" = ?
             and "vote"."${dueColumn}" <= ?
-            and "vote"."ended_at" > "vote"."started_at"
           ${
-            requirePaidOrder
+            requirePositiveWindow
+              ? 'and "vote"."ended_at" > "vote"."started_at"'
+              : ''
+          }
+          ${
+            billingOrderStatus
               ? `and exists (
                   select 1
                   from "billing_orders" as "billing_order"
                   where "billing_order"."id" = "vote"."billing_order_id"
                     and "billing_order"."vote_id" = "vote"."id"
-                    and "billing_order"."status" = 'PAID'
+                    and "billing_order"."status" = '${billingOrderStatus}'
                 )`
               : ''
           }

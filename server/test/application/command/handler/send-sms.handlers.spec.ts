@@ -1,5 +1,9 @@
 import { SendVoteSmsCommand } from '../../../../src/modules/vote/application/command/dto/request/send-vote-sms.command';
 import {
+  UPCOMING_VOTE_NOTICE_TEMPLATE,
+  VOTE_RESULT_NOTICE_TEMPLATE,
+} from '../../../../src/shared/application/sms/vote-notice-templates';
+import {
   SendVoteSmsHandler,
   VoteSmsAccessDeniedError,
 } from '../../../../src/modules/vote/application/command/handler/send-vote-sms.handler';
@@ -85,7 +89,17 @@ describe('SMS command handlers', () => {
                   },
                 ],
               }
-            : { voteId: 'vote-1', message: '안내 문자' },
+            : testCase.purpose === SmsMessagePurpose.VoteResultNotice
+              ? {
+                  voteId: 'vote-1',
+                  message: VOTE_RESULT_NOTICE_TEMPLATE.content,
+                  templateCode: VOTE_RESULT_NOTICE_TEMPLATE.code,
+                }
+              : {
+                  voteId: 'vote-1',
+                  message: UPCOMING_VOTE_NOTICE_TEMPLATE.content,
+                  templateCode: UPCOMING_VOTE_NOTICE_TEMPLATE.code,
+                },
         ],
       ]);
       expect(result).toMatchObject({
@@ -95,6 +109,21 @@ describe('SMS command handlers', () => {
         successCount: 2,
         failureCount: 1,
       });
+      if (testCase.purpose === SmsMessagePurpose.UpcomingVoteNotice) {
+        expect(
+          smsDispatchRepository.reserveUpcomingVoteNotice.mock.calls,
+        ).toContainEqual(['vote-1']);
+        expect(
+          smsDispatchRepository.reserveUpcomingVoteNotice.mock
+            .invocationCallOrder[0],
+        ).toBeLessThan(
+          smsSender.sendUpcomingVoteNotice.mock.invocationCallOrder[0],
+        );
+      } else {
+        expect(
+          smsDispatchRepository.reserveUpcomingVoteNotice.mock.calls,
+        ).toHaveLength(0);
+      }
       expect(smsDispatchRepository.save.mock.calls).toEqual([
         [
           expect.objectContaining({
@@ -267,7 +296,7 @@ describe('SMS command handlers', () => {
     });
   });
 
-  it('rejects missing votes, blank messages, and an absent SMS adapter', async () => {
+  it('rejects missing votes and an absent SMS adapter', async () => {
     await expect(
       new SendVoteSmsHandler(
         createVoteAccess(undefined),
@@ -284,14 +313,6 @@ describe('SMS command handlers', () => {
         }),
       ),
     ).rejects.toBeInstanceOf(ManagedResourceNotFoundError);
-    expect(() =>
-      SendVoteSmsCommand.of({
-        voteId: 'vote-1',
-        requestedByUserPrincipalId: 'creator-1',
-        purpose: SmsMessagePurpose.UpcomingVoteNotice,
-        message: '   ',
-      }),
-    ).toThrow(DomainError);
     await expect(
       new SendVoteSmsHandler(
         createVoteAccess(createVote(VoteStatus.Finalized)),
@@ -465,10 +486,12 @@ function createSmsSender(): jest.Mocked<SmsSenderPort> {
 
 function createSmsDispatchRepository(): jest.Mocked<SmsDispatchRepositoryPort> {
   let sequence = 0;
+  const nextId = jest.fn(() =>
+    sequence++ === 0 ? 'dispatch-1' : `delivery-${sequence}`,
+  );
   return {
-    nextId: jest.fn(() =>
-      sequence++ === 0 ? 'dispatch-1' : `delivery-${sequence}`,
-    ),
+    nextId,
+    reserveUpcomingVoteNotice: jest.fn(() => Promise.resolve(nextId())),
     save: jest.fn().mockResolvedValue(undefined),
   };
 }

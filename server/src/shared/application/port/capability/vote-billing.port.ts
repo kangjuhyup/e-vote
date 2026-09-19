@@ -17,6 +17,7 @@ export interface VoteSetupLifecyclePort {
   assertBillingCancellationAllowed(params: {
     voteId: string;
     billingOrderId: string;
+    canceledAt: Date;
   }): Promise<void>;
   releaseBilling(params: {
     voteId: string;
@@ -31,4 +32,15 @@ export const VOTE_USAGE_ENTITLEMENT_ACCESS_PORT = Symbol(
 export interface VoteUsageEntitlementAccessPort {
   hasPaidOrder(voteId: string): Promise<boolean>;
   findPaidVoteIds(voteIds: readonly string[]): Promise<ReadonlySet<string>>;
+}
+
+export const UNPAID_VOTE_BILLING_EXPIRATION_PORT = Symbol(
+  'UNPAID_VOTE_BILLING_EXPIRATION_PORT',
+);
+
+export interface UnpaidVoteBillingExpirationPort {
+  expirePendingOrders(params: {
+    voteIds: readonly string[];
+    expiredAt: Date;
+  }): Promise<ReadonlySet<string>>;
 }

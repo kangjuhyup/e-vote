@@ -21,6 +21,10 @@ export interface VoteSmsSendRequest {
   readonly message: string;
 }
 
+export interface VoteNoticeSmsSendRequest extends VoteSmsSendRequest {
+  readonly templateCode: 'UPCOMING_VOTE_NOTICE' | 'VOTE_RESULT_NOTICE';
+}
+
 export interface ParticipationReminderSmsRecipient {
   readonly electorId: string;
   readonly invitationGeneration: number;
@@ -41,8 +45,10 @@ export interface SmsSenderPort {
   sendParticipationReminderToNonParticipants(
     request: ParticipationReminderSmsSendRequest,
   ): Promise<SmsSendResult>;
-  sendResultNotice(request: VoteSmsSendRequest): Promise<SmsSendResult>;
-  sendUpcomingVoteNotice(request: VoteSmsSendRequest): Promise<SmsSendResult>;
+  sendResultNotice(request: VoteNoticeSmsSendRequest): Promise<SmsSendResult>;
+  sendUpcomingVoteNotice(
+    request: VoteNoticeSmsSendRequest,
+  ): Promise<SmsSendResult>;
   sendFieldVotingSessionNotice(
     request: FieldVotingSessionSmsSendRequest,
   ): Promise<SmsSendResult>;

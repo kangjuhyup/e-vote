@@ -228,6 +228,39 @@ describe('vote domain aggregates', () => {
     expect(vote.status).toBe(VoteStatus.Closed);
   });
 
+  it('cancels a billing-locked draft vote when payment is overdue at its start time', () => {
+    const start = new Date('2026-09-06T10:00:00.000Z');
+    const vote = VoteAggregate.create({
+      id: 'unpaid-vote',
+      createdByUserPrincipalId: 'user-1',
+      commissionId: 'commission-1',
+      title: 'Unpaid vote',
+      votingChannels: [VotingChannel.Online],
+      defaultPolicy: VotePolicy.of({
+        privacyMode: PrivacyMode.Secret,
+        participationUnit: ParticipationUnit.Individual,
+        resultStorageMode: ResultStorageMode.Database,
+        voteWeightMode: VoteWeightMode.Equal,
+      }),
+      identityVerificationPolicy: IdentityVerificationPolicy.of({
+        required: false,
+      }),
+      startedAt: start,
+      endedAt: new Date('2026-09-06T11:00:00.000Z'),
+    });
+    vote.lockForBilling('billing-order-1');
+
+    expect(() =>
+      vote.cancelWhenPaymentOverdue(new Date(start.getTime() - 1)),
+    ).toThrow('before its start time');
+    expect(vote.cancelWhenPaymentOverdue(start)).toBe(true);
+    expect(vote.cancelWhenPaymentOverdue(start)).toBe(false);
+    expect(vote.status).toBe(VoteStatus.Canceled);
+    expect(vote.pullEvents()).toEqual([
+      expect.objectContaining({ type: 'VoteCanceled' }),
+    ]);
+  });
+
   it('finalizes only before the voting start boundary', () => {
     const start = new Date('2026-09-06T10:00:00.000Z');
     const createScheduledVote = (id: string) => {
@@ -323,6 +356,27 @@ describe('vote domain aggregates', () => {
       finalizedAt: new Date('2026-09-05T00:00:00.000Z'),
     });
     vote.assertBillingCancellationAllowed('billing-order-1');
+    expect(() =>
+      vote.assertBillingCancellationAllowedAt(
+        'billing-order-1',
+        new Date('2026-09-05T00:01:00.000Z'),
+        false,
+      ),
+    ).not.toThrow();
+    expect(() =>
+      vote.assertBillingCancellationAllowedAt(
+        'billing-order-1',
+        new Date(vote.startedAt),
+        false,
+      ),
+    ).toThrow('at or after start time');
+    expect(() =>
+      vote.assertBillingCancellationAllowedAt(
+        'billing-order-1',
+        new Date('2026-09-05T00:01:00.000Z'),
+        true,
+      ),
+    ).toThrow('upcoming vote notice dispatch started');
 
     expect(vote.status).toBe(VoteStatus.Finalized);
     expect(() =>

@@ -333,7 +333,13 @@ describe('billing command handlers', () => {
     expect(result.status).toBe('REFUND_PENDING');
     expect(
       voteLifecycle.assertBillingCancellationAllowed.mock.calls,
-    ).toContainEqual([{ voteId: 'vote-1', billingOrderId: 'billing-order-1' }]);
+    ).toContainEqual([
+      {
+        voteId: 'vote-1',
+        billingOrderId: 'billing-order-1',
+        canceledAt: new Date('2026-09-01T00:00:00.000Z'),
+      },
+    ]);
     expect(voteLifecycle.releaseBilling.mock.calls).toHaveLength(0);
     expect(repository.save.mock.calls).toContainEqual([existing]);
     expect(outbox.append.mock.calls).toContainEqual([
@@ -344,6 +350,82 @@ describe('billing command handlers', () => {
         }),
       ],
     ]);
+  });
+
+  it('allows a paid order refund after seven days when the vote has not started', async () => {
+    const existing = order();
+    existing.markPaid({
+      paymentId: 'payment-1',
+      paidAmount: 6_000,
+      paidCurrency: 'KRW',
+      paidAt: now,
+    });
+    existing.clearDomainEvents();
+    const repository = repositoryStub(existing);
+    const lifecycle = voteLifecycleStub();
+
+    await expect(
+      new CancelVoteUsageBillingOrderHandler(
+        repository,
+        lifecycle,
+        new BillingOrderOutboxRecorder(outboxStub()),
+        transactionManagerStub(),
+      ).execute(
+        CancelVoteUsageBillingOrderCommand.of({
+          billingOrderId: existing.id,
+          userPrincipalId: 'user-1',
+          reason: '투표 취소',
+          canceledAt: new Date('2026-09-10T00:00:00.000Z'),
+        }),
+      ),
+    ).resolves.toMatchObject({ status: 'REFUND_PENDING' });
+    expect(
+      lifecycle.assertBillingCancellationAllowed.mock.calls,
+    ).toContainEqual([
+      {
+        voteId: existing.voteId,
+        billingOrderId: existing.id,
+        canceledAt: new Date('2026-09-10T00:00:00.000Z'),
+      },
+    ]);
+  });
+
+  it('does not request a refund after an upcoming notice dispatch began', async () => {
+    const existing = order();
+    existing.markPaid({
+      paymentId: 'payment-1',
+      paidAmount: 6_000,
+      paidCurrency: 'KRW',
+      paidAt: now,
+    });
+    existing.clearDomainEvents();
+    const repository = repositoryStub(existing);
+    const lifecycle = voteLifecycleStub();
+    const outbox = outboxStub();
+    lifecycle.assertBillingCancellationAllowed.mockRejectedValue(
+      new Error(
+        'vote billing cannot be canceled after an upcoming vote notice dispatch started',
+      ),
+    );
+
+    await expect(
+      new CancelVoteUsageBillingOrderHandler(
+        repository,
+        lifecycle,
+        new BillingOrderOutboxRecorder(outbox),
+        transactionManagerStub(),
+      ).execute(
+        CancelVoteUsageBillingOrderCommand.of({
+          billingOrderId: existing.id,
+          userPrincipalId: 'user-1',
+          reason: '투표 취소',
+          canceledAt: new Date('2026-09-01T00:00:00.000Z'),
+        }),
+      ),
+    ).rejects.toThrow('upcoming vote notice dispatch started');
+    expect(existing.status).toBe('PAID');
+    expect(repository.save.mock.calls).toHaveLength(0);
+    expect(outbox.append.mock.calls).toHaveLength(0);
   });
 
   it.each(['REFUND_PENDING', 'REFUNDED'] as const)(

@@ -11,6 +11,8 @@ import { ProcessDueVoteSchedulesHandler } from '../src/modules/vote/application/
 import { VOTE_SCHEDULE_REPOSITORY_PORT } from '../src/modules/vote/application/port/persistence/command/vote-schedule-repository.port';
 import { ParticipationInvitationSmsWorker } from '../src/modules/participation/infrastructure/sms/participation-invitation-sms.worker';
 import { ProcessParticipationInvitationDeliveryHandler } from '../src/modules/participation/application/command/handler/process-participation-invitation-delivery.handler';
+import { ExpireUnpaidVoteBillingOrdersHandler } from '../src/modules/billing/application/command/handler/expire-unpaid-vote-billing-orders.handler';
+import { UNPAID_VOTE_BILLING_EXPIRATION_PORT } from '../src/shared/application/port/capability/vote-billing.port';
 
 describe('WorkerModule', () => {
   it('registers payment outbox polling only in the controller-free worker root', () => {
@@ -30,9 +32,13 @@ describe('WorkerModule', () => {
         MockPaymentOutboxWorker,
         VoteScheduleWorker,
         ProcessDueVoteSchedulesHandler,
+        ExpireUnpaidVoteBillingOrdersHandler,
         ParticipationInvitationSmsWorker,
         ProcessParticipationInvitationDeliveryHandler,
         expect.objectContaining({ provide: VOTE_SCHEDULE_REPOSITORY_PORT }),
+        expect.objectContaining({
+          provide: UNPAID_VOTE_BILLING_EXPIRATION_PORT,
+        }),
         expect.objectContaining({ provide: PAYMENT_INTEGRATION_MODE }),
         expect.objectContaining({ provide: MOCK_PAYMENT_RANDOM_SOURCE }),
         expect.objectContaining({ provide: INTEGRATION_EVENT_PUBLISHER_PORT }),

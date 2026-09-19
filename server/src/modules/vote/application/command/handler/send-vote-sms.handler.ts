@@ -8,6 +8,10 @@ import {
 } from '../../../../../shared/application/port/gateway/sms-sender.port';
 import { PARTICIPATION_REMINDER_TEMPLATE } from '../../../../../shared/application/sms/participation-reminder-template';
 import {
+  UPCOMING_VOTE_NOTICE_TEMPLATE,
+  VOTE_RESULT_NOTICE_TEMPLATE,
+} from '../../../../../shared/application/sms/vote-notice-templates';
+import {
   SMS_DISPATCH_REPOSITORY_PORT,
   type SmsDispatchRepositoryPort,
 } from '../../../../../shared/application/port/persistence/sms-dispatch-repository.port';
@@ -80,8 +84,12 @@ export class SendVoteSmsHandler {
 
     if (!this.smsSender) throw new SmsSenderNotConfiguredError();
 
+    const reservedDispatchId =
+      command.purpose === SmsMessagePurpose.UpcomingVoteNotice
+        ? await this.smsDispatchRepository.reserveUpcomingVoteNotice(vote.id)
+        : undefined;
     const outcome = await this.send(command, this.smsSender);
-    const dispatch = this.createDispatch(command, outcome);
+    const dispatch = this.createDispatch(command, outcome, reservedDispatchId);
     await this.smsDispatchRepository.save(dispatch);
 
     return SendVoteSmsResult.of({
@@ -126,14 +134,16 @@ export class SendVoteSmsHandler {
         return {
           result: await smsSender.sendResultNotice({
             voteId: command.voteId,
-            message: command.message!,
+            message: VOTE_RESULT_NOTICE_TEMPLATE.content,
+            templateCode: VOTE_RESULT_NOTICE_TEMPLATE.code,
           }),
         };
       case SmsMessagePurpose.UpcomingVoteNotice:
         return {
           result: await smsSender.sendUpcomingVoteNotice({
             voteId: command.voteId,
-            message: command.message!,
+            message: UPCOMING_VOTE_NOTICE_TEMPLATE.content,
+            templateCode: UPCOMING_VOTE_NOTICE_TEMPLATE.code,
           }),
         };
     }
@@ -142,9 +152,10 @@ export class SendVoteSmsHandler {
   private createDispatch(
     command: SendVoteSmsCommand,
     outcome: SmsSendOutcome,
+    reservedDispatchId?: string,
   ): SmsDispatchAggregate {
     return SmsDispatchAggregate.create({
-      id: this.smsDispatchRepository.nextId(),
+      id: reservedDispatchId ?? this.smsDispatchRepository.nextId(),
       voteId: command.voteId,
       purpose: command.purpose,
       sentAt: new Date(),

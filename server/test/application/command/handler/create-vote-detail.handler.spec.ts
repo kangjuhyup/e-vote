@@ -4,6 +4,7 @@ import { VoteDetailRepositoryPort } from '../../../../src/modules/vote/applicati
 import { VoteDetailAggregate } from '../../../../src/modules/vote/domain/vote/vote-detail.aggregate';
 import { VoteDetailStatus } from '../../../../src/shared/domain/voting/type/vote-status.type';
 import type { VoteRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/vote-repository.port';
+import type { CandidateRepositoryPort } from '../../../../src/modules/vote/application/port/persistence/command/candidate-repository.port';
 import { VoteAggregate } from '../../../../src/modules/vote/domain/vote/vote.aggregate';
 import { VotingChannel } from '../../../../src/shared/domain/voting/type/voting-channel.type';
 import { VotePolicy } from '../../../../src/shared/domain/voting/vo/vote-policy.vo';
@@ -25,6 +26,7 @@ describe('CreateVoteDetailHandler', () => {
     const handler = new CreateVoteDetailHandler(
       voteRepository(createVote()),
       repository,
+      candidateRepository(),
       voteLifecycleStub(),
       transactionManagerStub(),
     );
@@ -66,6 +68,7 @@ describe('CreateVoteDetailHandler', () => {
     const handler = new CreateVoteDetailHandler(
       voteRepository(vote),
       details,
+      candidateRepository(),
       voteLifecycleStub(),
       transactionManagerStub(),
     );
@@ -82,7 +85,64 @@ describe('CreateVoteDetailHandler', () => {
     ).rejects.toThrow('billing-locked vote resources cannot be created');
     expect(save).not.toHaveBeenCalled();
   });
+
+  it('creates selectable 찬성 and 반대 choices with a new yes-no ballot', async () => {
+    const candidates = candidateRepository();
+    const handler = new CreateVoteDetailHandler(
+      voteRepository(createVote()),
+      {
+        nextId: () => 'vote-detail-1',
+        findById: jest.fn(),
+        findByVoteIds: jest.fn().mockResolvedValue([]),
+        save: jest.fn().mockResolvedValue(undefined),
+      },
+      candidates,
+      voteLifecycleStub(),
+      transactionManagerStub(),
+    );
+
+    await handler.execute(
+      CreateVoteDetailCommand.of({
+        voteId: 'vote-1',
+        title: '예산안 승인',
+        type: 'YES_NO',
+        sortOrder: 0,
+      }),
+    );
+
+    expect(candidates.save).toHaveBeenCalledTimes(2);
+    expect(
+      jest.mocked(candidates.save).mock.calls.map(([candidate]) => ({
+        candidateNo: candidate.candidateNo,
+        name: candidate.name,
+        status: candidate.status,
+        voteDetailId: candidate.voteDetailId,
+      })),
+    ).toEqual([
+      {
+        candidateNo: 1,
+        name: '찬성',
+        status: 'ACTIVE',
+        voteDetailId: 'vote-detail-1',
+      },
+      {
+        candidateNo: 2,
+        name: '반대',
+        status: 'ACTIVE',
+        voteDetailId: 'vote-detail-1',
+      },
+    ]);
+  });
 });
+
+function candidateRepository(): CandidateRepositoryPort {
+  let sequence = 0;
+  return {
+    nextId: jest.fn(() => `candidate-${++sequence}`),
+    findById: jest.fn(),
+    save: jest.fn().mockResolvedValue(undefined),
+  };
+}
 
 function createVote(): VoteAggregate {
   return VoteAggregate.create({

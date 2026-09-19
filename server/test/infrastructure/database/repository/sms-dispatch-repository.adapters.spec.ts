@@ -6,6 +6,87 @@ import { SmsDeliveryStatus } from '../../../../src/shared/domain/sms/type/sms-de
 import { SmsMessagePurpose } from '../../../../src/shared/domain/voting/type/sms-message-purpose.type';
 
 describe('SMS dispatch repository adapters', () => {
+  it('reserves an upcoming notice before external delivery while holding the vote lock', async () => {
+    const execute = jest
+      .fn<Promise<unknown>, [string, unknown[], string, object]>()
+      .mockResolvedValueOnce([
+        {
+          billing_order_id: 'billing-order-1',
+          started_at: new Date(Date.now() + 60_000),
+          status: 'FINALIZED',
+        },
+      ])
+      .mockResolvedValueOnce([{ id: 'billing-order-1' }])
+      .mockResolvedValueOnce([]);
+    const transaction = {};
+    const transactionalEntityManager = {
+      getConnection: () => ({ execute }),
+      getTransactionContext: () => transaction,
+    };
+    const em = {
+      transactional: jest.fn(
+        (
+          work: (
+            entityManager: typeof transactionalEntityManager,
+          ) => Promise<unknown>,
+        ) => work(transactionalEntityManager),
+      ),
+    };
+
+    const id = await new SmsDispatchRepositoryAdapter(
+      em as any,
+    ).reserveUpcomingVoteNotice('vote-1');
+
+    expect(id).toBeTruthy();
+    expect(execute.mock.calls[0][0]).toContain('for update');
+    expect(execute.mock.calls[1][1]).toEqual([
+      'billing-order-1',
+      'vote-1',
+      'PAID',
+    ]);
+    expect(execute.mock.calls[2][0]).toContain('insert into "sms_dispatches"');
+    expect(execute.mock.calls[2][1]).toEqual([
+      id,
+      'vote-1',
+      SmsMessagePurpose.UpcomingVoteNotice,
+      expect.any(Date),
+      expect.any(Date),
+    ]);
+  });
+
+  it('does not reserve an upcoming notice after a refund request', async () => {
+    const execute = jest
+      .fn<Promise<unknown>, [string, unknown[], string, object]>()
+      .mockResolvedValueOnce([
+        {
+          billing_order_id: 'billing-order-1',
+          started_at: new Date(Date.now() + 60_000),
+          status: 'FINALIZED',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    const transactionalEntityManager = {
+      getConnection: () => ({ execute }),
+      getTransactionContext: () => ({}),
+    };
+    const em = {
+      transactional: jest.fn(
+        (
+          work: (
+            entityManager: typeof transactionalEntityManager,
+          ) => Promise<unknown>,
+        ) => work(transactionalEntityManager),
+      ),
+    };
+
+    await expect(
+      new SmsDispatchRepositoryAdapter(em as any).reserveUpcomingVoteNotice(
+        'vote-1',
+      ),
+    ).rejects.toThrow('active paid billing order');
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+
   it('persists an immutable summary and per-recipient outcomes', async () => {
     const created: Record<string, unknown>[] = [];
     const em = {
@@ -54,6 +135,46 @@ describe('SMS dispatch repository adapters', () => {
       participationInvitationGeneration: 3,
     });
     expect(created.every((data) => !('phoneNumber' in data))).toBe(true);
+    expect(em.flush).toHaveBeenCalledTimes(1);
+  });
+
+  it('fills a reserved upcoming notice with the provider delivery results', async () => {
+    const reserved = {
+      id: 'dispatch-1',
+      recipientCount: 0,
+      successCount: 0,
+      failureCount: 0,
+    };
+    const em = {
+      findOne: jest.fn().mockResolvedValue(reserved),
+      create: jest.fn(
+        (_entity: unknown, values: Record<string, unknown>) => values,
+      ),
+      persist: jest.fn(),
+      flush: jest.fn().mockResolvedValue(undefined),
+      getReference: jest.fn((_entity: unknown, id: string) => ({ id })),
+    };
+    const dispatch = SmsDispatchAggregate.create({
+      id: 'dispatch-1',
+      voteId: 'vote-1',
+      purpose: SmsMessagePurpose.UpcomingVoteNotice,
+      sentAt: new Date('2026-08-30T01:00:00.000Z'),
+      deliveries: [
+        {
+          id: 'delivery-1',
+          electorId: 'elector-1',
+          recipientName: '홍길동',
+          recipientIdentifier: 'member-1',
+          status: SmsDeliveryStatus.Success,
+        },
+      ],
+    });
+
+    await new SmsDispatchRepositoryAdapter(em as any).save(dispatch);
+
+    expect(reserved).toMatchObject({ recipientCount: 1, successCount: 1 });
+    expect(em.create).toHaveBeenCalledTimes(1);
+    expect(em.persist).toHaveBeenCalledTimes(1);
     expect(em.flush).toHaveBeenCalledTimes(1);
   });
 

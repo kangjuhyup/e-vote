@@ -19,6 +19,10 @@ type MockEntityManager = {
     [unknown, unknown, unknown?]
   >;
   readonly findOne: jest.Mock<Promise<unknown>, [unknown, unknown, unknown?]>;
+  readonly getConnection: jest.Mock<
+    { execute: jest.Mock<Promise<unknown[]>, [string, string[], string]> },
+    []
+  >;
 };
 
 describe('VoteReadRepositoryAdapter', () => {
@@ -79,6 +83,8 @@ describe('VoteReadRepositoryAdapter', () => {
         method: 'MOBILE',
       },
       status: VoteStatus.Draft,
+      electorCount: 1,
+      participatedCount: 1,
       activeBillingOrderId: 'billing-order-1',
       billingOrderStatus: 'PENDING_PAYMENT',
       voteDetails: [
@@ -169,12 +175,19 @@ describe('VoteReadRepositoryAdapter', () => {
           commissionId: 'commission-1',
           title: 'Board election',
           status: VoteStatus.Draft,
+          electorCount: 1,
+          participatedCount: 1,
           activeBillingOrderId: 'billing-order-1',
           billingOrderStatus: 'REFUND_PENDING',
         },
       ],
     });
     expect(em.find).toHaveBeenCalledTimes(1);
+    expect(em.getConnection().execute).toHaveBeenCalledWith(
+      expect.stringContaining('count(distinct vp.elector_id)'),
+      ['vote-1'],
+      'all',
+    );
   });
 
   it('omits active billing details when the order is not owned by the current principal', async () => {
@@ -198,7 +211,13 @@ describe('VoteReadRepositoryAdapter', () => {
 });
 
 function createMockEntityManager(): MockEntityManager {
+  const execute = jest
+    .fn<Promise<unknown[]>, [string, string[], string]>()
+    .mockResolvedValue([
+      { vote_id: 'vote-1', elector_count: '1', participated_count: '1' },
+    ]);
   return {
+    getConnection: jest.fn(() => ({ execute })),
     find: jest
       .fn<Promise<unknown[]>, [unknown, unknown, unknown?]>()
       .mockResolvedValue([]),

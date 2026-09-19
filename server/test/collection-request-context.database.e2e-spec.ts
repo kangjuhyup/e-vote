@@ -3,12 +3,12 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { MikroORM } from '@mikro-orm/postgresql';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from '../src/app.module';
 import { WorkerModule } from '../src/worker.module';
-import { OIDC_AUTHENTICATION_CONFIG } from '../src/platform/authentication/oidc-authentication.config';
-import { OIDC_TOKEN_INTROSPECTOR } from '../src/platform/authentication/oidc-token-introspector';
 import { getDatabaseEntities } from '../src/platform/database/repository/database-repository.util';
 import { ACCESS_TOKEN_VERIFIER_PORT } from '../src/shared/application/port/security/access-token-verifier.port';
+import { AUTHZ_ASSERTION_KEY } from '../src/platform/authentication/authz-assertion-verifier.adapter';
 import { UserPrincipal } from '../src/shared/application/security/user-principal';
 import { HttpExceptionFilter } from '../src/shared/presentation/common/filter/http-exception.filter';
 import { RvlogHttpExceptionLogger } from '../src/platform/logging/rvlog-http-exception.logger';
@@ -42,10 +42,8 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     moduleRef = await Test.createTestingModule({
       imports: [AppModule, WorkerModule],
     })
-      .overrideProvider(OIDC_AUTHENTICATION_CONFIG)
-      .useValue({})
-      .overrideProvider(OIDC_TOKEN_INTROSPECTOR)
-      .useValue({ introspect: jest.fn() })
+      .overrideProvider(AUTHZ_ASSERTION_KEY)
+      .useValue('test-authz-assertion-key-at-least-32-bytes')
       .overrideProvider(ACCESS_TOKEN_VERIFIER_PORT)
       .useValue({
         verify: async (accessToken: string): Promise<UserPrincipal> => {
@@ -88,6 +86,12 @@ describeDatabase('MikroORM collections in Nest request context', () => {
     });
     await orm.migrator.up();
     app = moduleRef.createNestApplication();
+    app.use((req: Request, _res: Response, next: NextFunction) => {
+      if (req.headers.authorization) {
+        req.headers['x-vote-authz-assertion'] = 'test-proxy-assertion';
+      }
+      next();
+    });
     app.useGlobalPipes(new ValidationPipe());
     app.useGlobalFilters(
       new HttpExceptionFilter(new RvlogHttpExceptionLogger()),

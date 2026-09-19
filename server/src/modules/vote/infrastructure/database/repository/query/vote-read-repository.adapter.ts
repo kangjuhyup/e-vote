@@ -157,8 +157,13 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
       [entity],
       request.userPrincipalId,
     );
+    const participationCounts = await this.findParticipationCounts([entity.id]);
 
-    return this.toVoteView(entity, billingOrders.get(entity.id));
+    return this.toVoteView(
+      entity,
+      billingOrders.get(entity.id),
+      participationCounts.get(entity.id)!,
+    );
   }
 
   async findPage(request: VotePageRequest): Promise<VotePageView> {
@@ -182,10 +187,17 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
       entities,
       request.userPrincipalId,
     );
+    const participationCounts = await this.findParticipationCounts(
+      entities.map((entity) => entity.id),
+    );
 
     return VotePageView.of({
       items: entities.map((entity) =>
-        this.toVoteSummaryView(entity, billingOrders.get(entity.id)),
+        this.toVoteSummaryView(
+          entity,
+          billingOrders.get(entity.id),
+          participationCounts.get(entity.id)!,
+        ),
       ),
       page: request.page,
       pageSize: request.pageSize,
@@ -220,9 +232,10 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
   private toVoteView(
     entity: VoteReadPersistence,
     billingOrder: ActiveBillingOrderReadPersistence | undefined,
+    counts: { electorCount: number; participatedCount: number },
   ): VoteView {
     return VoteView.of({
-      ...this.toVoteSummaryView(entity, billingOrder),
+      ...this.toVoteSummaryView(entity, billingOrder, counts),
       description: entity.description,
       voteDetails: loadedItems(entity.voteDetails)
         .map((voteDetail) => this.toVoteDetailView(entity.id, voteDetail))
@@ -233,9 +246,11 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
   private toVoteSummaryView(
     entity: VoteSummaryReadPersistence,
     billingOrder: ActiveBillingOrderReadPersistence | undefined,
+    counts: { electorCount: number; participatedCount: number },
   ): VoteSummaryView {
     return VoteSummaryView.of({
       id: entity.id,
+      ...counts,
       commissionId: entity.commission.id,
       title: entity.title,
       attachments: this.toAttachmentViews(entity.attachments),
@@ -262,6 +277,40 @@ export class VoteReadRepositoryAdapter implements VoteReadRepositoryPort {
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });
+  }
+
+  private async findParticipationCounts(
+    voteIds: readonly string[],
+  ): Promise<
+    ReadonlyMap<string, { electorCount: number; participatedCount: number }>
+  > {
+    if (voteIds.length === 0) return new Map();
+    const rows = await this.em.getConnection().execute<
+      {
+        vote_id: string;
+        elector_count: string | number;
+        participated_count: string | number;
+      }[]
+    >(
+      `select v.id as vote_id,
+              (select count(*) from electors e where e.vote_id = v.id) as elector_count,
+              (select count(distinct vp.elector_id)
+               from vote_details vd
+               join vote_participations vp on vp.vote_detail_id = vd.id
+               where vd.vote_id = v.id and vp.status = 'CAST') as participated_count
+       from votes v where v.id in (${voteIds.map(() => '?').join(', ')})`,
+      [...voteIds],
+      'all',
+    );
+    return new Map(
+      rows.map((row) => [
+        row.vote_id,
+        {
+          electorCount: Number(row.elector_count),
+          participatedCount: Number(row.participated_count),
+        },
+      ]),
+    );
   }
 
   private async findOwnedActiveBillingOrders(

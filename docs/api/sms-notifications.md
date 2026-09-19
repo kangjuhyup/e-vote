@@ -4,7 +4,7 @@
 
 ## 공통 요청과 응답
 
-모든 엔드포인트는 인증된 관리자 요청을 요구합니다. 투표 참여 독려는 서버가 관리하는 승인 템플릿을 사용하므로 요청 본문을 받지 않습니다. 그 외 자유 문구 엔드포인트는 아래 본문을 사용합니다.
+모든 엔드포인트는 인증된 관리자 요청을 요구합니다. 투표 예정 안내, 참여 독려, 결과 안내는 서버가 관리하는 고정 템플릿을 사용하므로 요청 본문을 받지 않습니다. 현장·방문 투표 세션 안내는 아래 본문을 사용합니다.
 
 ```json
 {
@@ -51,6 +51,13 @@ POST /votes/:voteId/sms/participation-reminder
 ## 투표 결과 안내 문자
 
 ```text
+GET /votes/:voteId/sms/result-notice/template
+```
+
+- 본문: `[전자투표]\n투표가 종료되었습니다. 투표 결과를 확인해 주세요.`
+- 발송 요청의 자유 문구는 무시하고 서버 템플릿만 사용합니다.
+
+```text
 POST /votes/:voteId/sms/result-notice
 ```
 
@@ -58,6 +65,13 @@ POST /votes/:voteId/sms/result-notice
 - `SmsSenderPort.sendResultNotice()`를 호출합니다.
 
 ## 투표 예정 안내 문자
+
+```text
+GET /votes/:voteId/sms/upcoming-notice/template
+```
+
+- 본문: `[전자투표]\n곧 투표가 시작됩니다. 투표 일정과 참여 방법을 확인해 주세요.`
+- 발송 요청의 자유 문구는 무시하고 서버 템플릿만 사용합니다.
 
 ```text
 POST /votes/:voteId/sms/upcoming-notice

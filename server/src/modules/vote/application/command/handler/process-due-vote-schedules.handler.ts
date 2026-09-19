@@ -4,6 +4,8 @@ import {
   type VoteScheduleRepositoryPort,
 } from '../../port/persistence/command/vote-schedule-repository.port';
 import {
+  UNPAID_VOTE_BILLING_EXPIRATION_PORT,
+  type UnpaidVoteBillingExpirationPort,
   VOTE_USAGE_ENTITLEMENT_ACCESS_PORT,
   type VoteUsageEntitlementAccessPort,
 } from '../../../../../shared/application/port/capability/vote-billing.port';
@@ -34,6 +36,8 @@ export class ProcessDueVoteSchedulesHandler {
     private readonly voteDetails: VoteDetailRepositoryPort,
     @Inject(VOTE_USAGE_ENTITLEMENT_ACCESS_PORT)
     private readonly entitlements: VoteUsageEntitlementAccessPort,
+    @Inject(UNPAID_VOTE_BILLING_EXPIRATION_PORT)
+    private readonly billingExpiration: UnpaidVoteBillingExpirationPort,
     @Inject(DATABASE_TRANSACTION_MANAGER)
     transactionManager: DatabaseTransactionManager,
   ) {
@@ -44,6 +48,27 @@ export class ProcessDueVoteSchedulesHandler {
   async execute(
     command: ProcessDueVoteSchedulesCommand,
   ): Promise<ProcessDueVoteSchedulesResult> {
+    const expiring = await this.schedules.findDueForPaymentExpiration(
+      command.now,
+      command.batchSize,
+    );
+    const expiredVoteIds = await this.billingExpiration.expirePendingOrders({
+      voteIds: expiring.map((vote) => vote.id),
+      expiredAt: command.now,
+    });
+    let canceledCount = 0;
+    for (const vote of expiring) {
+      if (
+        !expiredVoteIds.has(vote.id) ||
+        !vote.cancelWhenPaymentOverdue(command.now)
+      ) {
+        continue;
+      }
+      await this.schedules.save(vote);
+      canceledCount += 1;
+    }
+    await this.cancelVoteDetails([...expiredVoteIds]);
+
     const opening = await this.schedules.findDueForOpening(
       command.now,
       command.batchSize,
@@ -80,7 +105,20 @@ export class ProcessDueVoteSchedulesHandler {
       command.now,
     );
 
-    return ProcessDueVoteSchedulesResult.of({ openedCount, closedCount });
+    return ProcessDueVoteSchedulesResult.of({
+      openedCount,
+      closedCount,
+      canceledCount,
+    });
+  }
+
+  private async cancelVoteDetails(voteIds: readonly string[]): Promise<void> {
+    const details = await this.voteDetails.findByVoteIds(voteIds);
+    for (const detail of details) {
+      if (detail.status !== VoteDetailStatus.Draft) continue;
+      detail.cancel();
+      await this.voteDetails.save(detail);
+    }
   }
 
   private async openVoteDetails(
