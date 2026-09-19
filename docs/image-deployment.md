@@ -36,11 +36,11 @@ ghcr.io/<owner>/<repo>/ui:<version>
 ```
 
 The version tag uses the package version without a `v` prefix (for example,
-`0.1.0`). The `latest` tag moves to each new release. Existing `v<version>` and
-`sha-<merge-commit>` tags remain available. Record the resulting registry
-digests and use those immutable digests in deployment declarations. No npm
-packages are published. Auth remains an external service; these workflows do
-not build or publish Auth images.
+`0.1.0`). The `latest` tag moves to each new release. The workflow does not
+publish commit-hash tags. Record the resulting registry digests and use those
+immutable digests in deployment declarations. No npm packages are published.
+Auth remains an external service; these workflows do not build or publish
+Auth images.
 
 Repository setup is required before the workflow can operate:
 
